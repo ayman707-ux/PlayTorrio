@@ -60,7 +60,8 @@ Click the + icon to add each one. or just tick it and then you can scroll down a
 
 Some indexers may require login credentials — enter them if you have accounts.
 
-<img width="899" height="915" alt="image" src="https://github.com/user-attachments/assets/fe3a5c5c-9d80-4fdf-b896-3249869141b3" />
+<img width="893" height="870" alt="image" src="https://github.com/user-attachments/assets/408a7faf-e44e-4935-b347-a994025acb4b" />
+
 
 Then scroll all the way down after selecting your Torrent sites and click add selected
 <img width="894" height="304" alt="image" src="https://github.com/user-attachments/assets/c4531d56-a5b7-4415-9790-21c014fdbea3" />
