@@ -56,7 +56,7 @@ In Jackett’s dashboard, click “Add Indexer”.
 
 Search for your favorite torrent sites (like RARBG, 1337x, ThePirateBay, etc.).
 
-Click the + icon to add each one.
+Click the + icon to add each one. or just tick it and then you can scroll down and click add selected to add all of them in one go
 
 Some indexers may require login credentials — enter them if you have accounts.
 
