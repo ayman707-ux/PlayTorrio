@@ -731,10 +731,7 @@
         /* Settings Modal */
         .settings-modal {
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
+            inset: 0;
             background-color: rgba(0, 0, 0, 0.9);
             z-index: 4000;
             display: flex;
@@ -753,11 +750,13 @@
         .settings-content {
             background: linear-gradient(135deg, var(--primary), var(--dark));
             border-radius: 15px;
-            padding: 2.5rem;
-            max-width: 600px;
-            width: 90%;
+            padding: 2rem;
+            max-width: 800px;
+            width: min(92%, 800px);
             box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
             border: 2px solid var(--vlc-orange);
+            max-height: 85vh;
+            overflow: auto;
         }
         
         .settings-header {
@@ -1512,6 +1511,38 @@
     </div>
 </div>
 
+<!-- MPV Install Helper Modal -->
+<div class="settings-modal" id="mpvInstallModal">
+    <div class="settings-content">
+        <div class="settings-header">
+            <h2 class="settings-title">
+                <i class="fas fa-terminal"></i>
+                Install MPV (Admin required)
+            </h2>
+            <button class="settings-close" id="mpvInstallClose">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="settings-section">
+            <p style="margin-bottom:1rem;line-height:1.5;">
+                Please open PowerShell or CMD as Administrator yourself, then click "Copy" below and paste the command into that window. Press Enter and accept any prompts to complete installation.
+            </p>
+            <pre id="mpvScriptText" style="white-space:pre-wrap;word-break:break-word;background:rgba(255,255,255,0.06);padding:0.75rem;border-radius:8px;user-select:text;overflow:auto;max-width:100%;"></pre>
+        </div>
+        <div class="settings-buttons">
+            <button class="api-btn api-btn-secondary" id="mpvGoBackBtn">
+                <i class="fas fa-arrow-left"></i>
+                Go Back
+            </button>
+            <button class="api-btn api-btn-primary" id="mpvCopyBtn">
+                <i class="fas fa-copy"></i>
+                Copy
+            </button>
+        </div>
+    </div>
+    
+</div>
+
 <!-- Header -->
 <header>
 <div class="header-container">
@@ -2066,32 +2097,48 @@ Your browser does not support the video tag.
                 const result = await window.electronAPI.clearCache();
                 showNotification(result.message, !result.success);
             });
+            // MPV install flow: open elevated PowerShell and show helper modal
+            const mpvInstallModal = document.getElementById('mpvInstallModal');
+            const mpvInstallClose = document.getElementById('mpvInstallClose');
+            const mpvCopyBtn = document.getElementById('mpvCopyBtn');
+            const mpvGoBackBtn = document.getElementById('mpvGoBackBtn');
+            const mpvScriptText = document.getElementById('mpvScriptText');
+
+            const MPV_INSTALL_SCRIPT = "powershell -NoProfile -ExecutionPolicy Bypass -Command \"Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1')); choco install mpv -y\"";
+            mpvScriptText.textContent = MPV_INSTALL_SCRIPT;
+
+            function showMpvInstallModal() {
+                mpvInstallModal.classList.add('active');
+                document.body.style.overflow = 'hidden';
+            }
+            function hideMpvInstallModal() {
+                mpvInstallModal.classList.remove('active');
+                document.body.style.overflow = 'auto';
+            }
+
             installMPVBtn.addEventListener('click', async () => {
-                if (!window.electronAPI || !window.electronAPI.installMPV) {
-                    showNotification('Installer not available in this environment');
-                    return;
-                }
-                showNotification('Checking MPV installation...');
+                showMpvInstallModal();
+                showNotification('Open PowerShell or CMD as Administrator, click Copy, paste the command, and press Enter.');
+            });
+
+            mpvInstallClose.addEventListener('click', hideMpvInstallModal);
+            mpvGoBackBtn.addEventListener('click', hideMpvInstallModal);
+            mpvCopyBtn.addEventListener('click', async () => {
                 try {
-                    const res = await window.electronAPI.installMPV();
-                    if (res.status === 'already') {
-                        showNotification('MPV is already installed');
-                        return;
+                    if (window.electronAPI?.copyToClipboard) {
+                        const r = await window.electronAPI.copyToClipboard(MPV_INSTALL_SCRIPT);
+                        if (r?.success) {
+                            showNotification('Copied to clipboard. Paste it into the admin PowerShell and press Enter.');
+                        } else {
+                            await navigator.clipboard.writeText(MPV_INSTALL_SCRIPT);
+                            showNotification('Copied with browser clipboard. Paste it into the admin PowerShell.');
+                        }
+                    } else {
+                        await navigator.clipboard.writeText(MPV_INSTALL_SCRIPT);
+                        showNotification('Copied to clipboard. Paste it into the admin PowerShell.');
                     }
-                    if (res.status === 'installed') {
-                        showNotification('MPV installed successfully. Restarting app...');
-                        // Give the user a moment to see the notification
-                        setTimeout(() => {
-                            if (window.electronAPI.restartApp) {
-                                window.electronAPI.restartApp();
-                            }
-                        }, 1200);
-                        return;
-                    }
-                    // error fallback
-                    showNotification('There was an error. Please download MPV using Choco as admin globally.');
-                } catch (e) {
-                    showNotification('There was an error. Please download MPV using Choco as admin globally.');
+                } catch {
+                    showNotification('Failed to copy. Please select and copy manually.');
                 }
             });
             settingsClose.addEventListener('click', hideSettingsModal);
