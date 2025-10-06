@@ -7,15 +7,17 @@
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"/>
 <style>
         :root {
-            --primary: #0d253f;
-            --secondary: #01b4e4;
-            --tertiary: #90cea1;
-            --dark: #081b27;
-            --light: #f8f9fa;
-            --gray: #6c757d;
+            /* Purple theme */
+            --primary: #2a1847;    /* header/cards */
+            --secondary: #8b5cf6;  /* subtle accents */
+            --tertiary: #c084fc;   /* highlights/pills */
+            --dark: #120a1f;       /* page background */
+            --light: #f8f9fa;      /* text */
+            --gray: #6c757d;       /* muted text */
             --danger: #dc3545;
             --success: #28a745;
-            --vlc-orange: #ff6900;
+            /* Accent (kept var name for minimal changes) */
+            --vlc-orange: #a855f7; /* accent purple */
             --vlc-dark: #2d2d2d;
         }
         
@@ -85,7 +87,7 @@
         .search-container input:focus {
             outline: none;
             background-color: rgba(255, 255, 255, 0.15);
-            box-shadow: 0 0 0 3px rgba(255, 105, 0, 0.3);
+            box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.3);
         }
         
         .search-icon {
@@ -130,11 +132,11 @@
         }
         
         .btn-primary:hover {
-            background-color: #e55a00;
+            background-color: #9333ea;
         }
         
         .btn-outline:hover {
-            background-color: rgba(255, 105, 0, 0.1);
+            background-color: rgba(168, 85, 247, 0.1);
         }
         
         main {
@@ -232,7 +234,7 @@
             top: 10px;
             right: 10px;
             background-color: var(--tertiary);
-            color: var(--dark);
+            color: #1f1140;
             padding: 0.3rem 0.6rem;
             border-radius: 30px;
             font-weight: 700;
@@ -352,7 +354,7 @@
         
         .modal-rating {
             background-color: var(--tertiary);
-            color: var(--dark);
+            color: #1f1140;
             padding: 0.3rem 0.8rem;
             border-radius: 30px;
             font-weight: 700;
@@ -1548,7 +1550,7 @@
 <div class="header-container">
 <a class="logo" href="http://localhost:3000">
 <i class="fas fa-play-circle"></i>
-<span>Play</span> Torrio STREAMER
+<span>Play</span> Torrio
             </a>
 <div class="search-container">
 <i class="fas fa-search search-icon"></i>
