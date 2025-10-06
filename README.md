@@ -68,7 +68,7 @@ Then scroll all the way down after selecting your Torrent sites and click add se
 
 Step 3: Get Your Jackett API Key
 
-Playtorrio connects to Jackett using your personal API key.
+PlayTorrio connects to Jackett using your personal API key.
 
 Go to Jackett’s Dashboard.
 
