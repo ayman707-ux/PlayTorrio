@@ -8,5 +8,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
   clearCache: () => ipcRenderer.invoke('clear-cache'),
   installMPV: () => ipcRenderer.invoke('install-mpv'),
   restartApp: () => ipcRenderer.invoke('restart-app'),
-  openExternal: (url) => ipcRenderer.invoke('open-external', url)
+  openExternal: (url) => ipcRenderer.invoke('open-external', url),
+  copyToClipboard: (text) => ipcRenderer.invoke('copy-to-clipboard', text)
 });
