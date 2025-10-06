@@ -39,26 +39,28 @@ export function startServer(userDataPath) {
 
     // API Key Management
     let API_KEY = '';
+    let lastKeyPath = '';
 
     // Determine where to read/write the root-level key file
     const installDir = path.dirname(process.execPath); // In packaged builds, next to the app exe
     const devRoot = __dirname; // In dev, server.mjs resides at project root
 
+    // Prefer userData in installed builds to avoid permission issues; keep other locations for backward-compat
     const resolveReadCandidates = () => [
-        path.join(installDir, 'jackett_api_key.json'), // packaged app folder
-        path.join(devRoot, 'jackett_api_key.json'),    // project root (dev)
-        path.join(process.cwd(), 'jackett_api_key.json'), // current working dir (fallback)
-        // userData fallback (ensures app keeps working when root is not writable)
-        path.join(userDataPath, 'jackett_api_key.json')
+        path.join(userDataPath, 'jackett_api_key.json'), // primary location for installed app
+        path.join(installDir, 'jackett_api_key.json'),    // legacy next to exe (when per-user installs were writable)
+        path.join(devRoot, 'jackett_api_key.json'),       // project root (dev)
+        path.join(process.cwd(), 'jackett_api_key.json')  // current working dir (fallback)
     ];
 
     const rootKeyExists = () => {
-        const rootCandidates = [
+        const candidates = [
+            path.join(userDataPath, 'jackett_api_key.json'),
             path.join(installDir, 'jackett_api_key.json'),
             path.join(devRoot, 'jackett_api_key.json'),
             path.join(process.cwd(), 'jackett_api_key.json')
         ];
-        return rootCandidates.some(p => {
+        return candidates.some(p => {
             try { return fs.existsSync(p); } catch { return false; }
         });
     };
@@ -73,8 +75,9 @@ export function startServer(userDataPath) {
     })();
 
     const resolveWritePath = () => {
+        // In installed app, always write to userData to ensure we have permissions and resilience across updates
         return isPackagedByExe
-            ? path.join(installDir, 'jackett_api_key.json')
+            ? path.join(userDataPath, 'jackett_api_key.json')
             : path.join(devRoot, 'jackett_api_key.json');
     };
 
@@ -88,6 +91,7 @@ export function startServer(userDataPath) {
                         const key = JSON.parse(raw).apiKey || '';
                         if (key) {
                             API_KEY = key;
+                            lastKeyPath = candidate;
                             // Log only the source path (not the key)
                             console.log(`✅ API Key loaded from ${candidate}`);
                             return true;
@@ -108,30 +112,44 @@ export function startServer(userDataPath) {
 
     function saveAPIKey(apiKey) {
         const payload = JSON.stringify({ apiKey }, null, 2);
-        // 1) Try to save to root-level preferred location
+        // Primary: write to userData in installed builds, dev root in dev
         try {
-            const target = resolveWritePath();
-            fs.writeFileSync(target, payload);
+            const primary = resolveWritePath();
+            const primaryDir = path.dirname(primary);
+            fs.mkdirSync(primaryDir, { recursive: true });
+            fs.writeFileSync(primary, payload);
             API_KEY = apiKey;
-            console.log(`✅ API Key saved to ${target}`);
+            lastKeyPath = primary;
+            console.log(`✅ API Key saved to ${primary}`);
             return true;
         } catch (err) {
-            console.warn('⚠️ Failed to write API key to root location, falling back to userData:', err?.message || err);
+            console.warn('⚠️ Failed to write API key to primary location:', err?.message || err);
         }
 
-        // 2) Fallback to userData to keep the app working even if root is not writable
+        // Secondary: attempt next to the exe for legacy compatibility when writable
         try {
-            const userDataFile = path.join(userDataPath, 'jackett_api_key.json');
-            fs.mkdirSync(userDataPath, { recursive: true });
-            fs.writeFileSync(userDataFile, payload);
+            const legacy = path.join(installDir, 'jackett_api_key.json');
+            fs.writeFileSync(legacy, payload);
             API_KEY = apiKey;
-            console.log(`✅ API Key saved to userData fallback at ${userDataFile}`);
+            lastKeyPath = legacy;
+            console.log(`✅ API Key saved to legacy location at ${legacy}`);
             return true;
         } catch (error) {
-            console.error('Error saving API key to any location:', error);
+            console.error('❌ Error saving API key to any location:', error);
             return false;
         }
     }
+
+    // Diagnostics: where is the API key stored/loaded from?
+    app.get('/api/key-location', (req, res) => {
+        // Refresh view
+        loadAPIKey();
+        res.json({
+            hasApiKey: !!API_KEY,
+            path: lastKeyPath || null,
+            userDataPath,
+        });
+    });
 
     // Load any existing key at startup
     const hasAPIKey = loadAPIKey();
