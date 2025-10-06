@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, shell } from 'electron';
+import { app, BrowserWindow, ipcMain, shell, clipboard } from 'electron';
 import { spawn } from 'child_process';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -189,26 +189,26 @@ app.whenReady().then(() => {
         });
     }
 
-    // IPC handler: Install MPV flow
+    // IPC handler: Launch elevated CMD (admin) for manual MPV install flow
     ipcMain.handle('install-mpv', async () => {
-        // 1) Check existing installation
-        const pre = await checkMPVInstalled();
-        if (pre.installed) {
-            return { status: 'already', message: 'MPV is already installed' };
-        }
-
-        // 2) Run PowerShell installer
-        const res = await installMPV();
-        if (!res.success) {
-            return { status: 'error', message: 'There was an error. Please download MPV using Choco as admin globally.' };
-        }
-
-        // 3) Post-check
-        const post = await checkMPVInstalled();
-        if (post.installed) {
-            return { status: 'installed', message: 'MPV installed successfully', restartRequired: true };
-        }
-        return { status: 'error', message: 'There was an error. Please download MPV using Choco as admin globally.' };
+        return await new Promise((resolve) => {
+            try {
+                // Launch an elevated CMD window maximized
+                const child = spawn('powershell.exe', [
+                    '-NoProfile',
+                    '-ExecutionPolicy', 'Bypass',
+                    '-Command',
+                    'Start-Process cmd -Verb runAs -WindowStyle Maximized'
+                ], { windowsHide: false, detached: true });
+                child.on('error', (err) => {
+                    resolve({ status: 'error', message: err?.message || 'Failed to open elevated PowerShell' });
+                });
+                // We resolve immediately; the UAC prompt/admin shell is independent of our process
+                setTimeout(() => resolve({ status: 'launched' }), 200);
+            } catch (e) {
+                resolve({ status: 'error', message: e?.message || 'Failed to open elevated PowerShell' });
+            }
+        });
     });
 
     // IPC handler: Restart app on demand
@@ -227,6 +227,19 @@ app.whenReady().then(() => {
             return { success: true };
         } catch (err) {
             return { success: false, message: err?.message || 'Failed to open URL' };
+        }
+    });
+
+    // IPC: copy text to clipboard
+    ipcMain.handle('copy-to-clipboard', async (event, text) => {
+        try {
+            if (typeof text !== 'string' || !text.length) {
+                return { success: false, message: 'Nothing to copy' };
+            }
+            clipboard.writeText(text);
+            return { success: true };
+        } catch (err) {
+            return { success: false, message: err?.message || 'Failed to copy' };
         }
     });
 });
