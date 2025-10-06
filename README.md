@@ -75,7 +75,8 @@ At the top right corner, you’ll see your API Key.
 
 Copy it.
 
-<img width="900" height="925" alt="image" src="https://github.com/user-attachments/assets/72b28dfe-1f76-46b7-9871-ae7b7f442fd2" />
+<img width="902" height="923" alt="image" src="https://github.com/user-attachments/assets/f26f2987-0f64-4a47-b141-b9aba4c535bb" />
+
 
 
 Go to PlayTorrio and either add the jackett api key in the initial setup or from the settings at the top right
