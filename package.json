@@ -1,5 +1,5 @@
 {
-  "name": "PlayTorrio",
+  "name": "playtorrio",
   "version": "1.0.0",
   "description": "A sophisticated application designed to seamlessly interface with Jackett for fetching torrents and provide high-performance streaming directly through an integrated API.",
   "author": {
@@ -12,7 +12,7 @@
   "scripts": {
     "start": "electron .",
     "serve": "node server.mjs",
-    "build": "electron-builder"
+    "build": "electron-builder --win --x64"
   },
   "dependencies": {
     "cors": "^2.8.5",
@@ -40,7 +40,19 @@
       "node_modules/**/*"
     ],
     "win": {
-      "icon": "icon.ico"
+      "icon": "icon.ico",
+      "target": [
+        "nsis"
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": "always",
+      "createStartMenuShortcut": true,
+      "shortcutName": "PlayTorrio",
+      "artifactName": "${productName}-Setup-${version}.${ext}",
+      "runAfterFinish": false
     },
     "mac": {
       "icon": "icon.icns"
