@@ -35,9 +35,11 @@ Run jackett by double clicking on it in the icon trey
 
 <img width="237" height="219" alt="image" src="https://github.com/user-attachments/assets/7c650fb0-9f70-497c-8d71-91d1b59017d3" />
 
-
+---
 Note that jackett has to be running in order to use PlayTorrio
 You can make jackett automatically start by right clicking on it then click on auto start on boot
+---
+
 <img width="489" height="184" alt="image" src="https://github.com/user-attachments/assets/5efc5588-dc1a-4e13-a13a-86334a51e5d8" />
 
 After running Jackett go to http://127.0.0.1:9117/UI/Dashboard
