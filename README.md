@@ -51,7 +51,7 @@ Indexers are the torrent sources Jackett searches through.
 
 In Jackett’s dashboard, click “Add Indexer”.
 
-<img width="899" height="923" alt="image" src="https://github.com/user-attachments/assets/a1a14fdc-c126-42a9-8aa6-a2e6b97edbd0" />
+<img width="908" height="948" alt="image" src="https://github.com/user-attachments/assets/7b412338-5faf-4a2d-b492-60efd56650a5" />
 
 
 Search for your favorite torrent sites (like RARBG, 1337x, ThePirateBay, etc.).
