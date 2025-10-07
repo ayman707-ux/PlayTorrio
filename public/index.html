@@ -1203,12 +1203,14 @@
             margin-top: 0.5rem;
         }
 
-        .control-buttons {
+        .control-bar {
             display: flex;
             align-items: center;
-            justify-content: center;
+            justify-content: space-between;
             gap: 1rem;
         }
+        .control-left,
+        .control-right { display:flex; align-items:center; gap:1rem; }
 
         .control-btn {
             background: rgba(255, 255, 255, 0.2);
@@ -1292,6 +1294,31 @@
             transition: all 0.3s ease;
             z-index: 3000;
         }
+
+        /* Subtitles menu panel */
+        .subs-panel {
+            position: absolute;
+            right: 1rem;
+            bottom: 6rem;
+            width: 340px;
+            max-height: 40vh;
+            overflow: auto;
+            background: rgba(0,0,0,0.9);
+            border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 8px;
+            padding: 0.5rem;
+            display: none;
+            z-index: 10;
+        }
+        .subs-item { display:flex; align-items:center; justify-content:space-between; background: rgba(255,255,255,0.06); color:#fff; padding:0.5rem 0.6rem; border-radius:6px; margin:0.35rem 0; cursor:pointer; }
+        .subs-item:hover { background: rgba(168,85,247,0.25); }
+        .subs-badge { font-size: 0.75rem; color:#ccc; }
+        .subs-source { font-size: 0.75rem; opacity: 0.8; margin-left: 0.4rem; }
+        .row-spread { display:flex; align-items:center; justify-content:space-between; gap:0.5rem; }
+        .subs-header { display:flex; align-items:center; justify-content:space-between; color:#fff; margin-bottom:0.25rem; }
+        .subs-help { color:#bbb; font-size:0.8rem; margin-bottom:0.25rem; }
+        .menu-actions { display:flex; align-items:center; gap:0.5rem; }
+        .menu-refresh { background: rgba(255,255,255,0.15); border:none; color:#fff; padding:0.2rem 0.5rem; border-radius:4px; cursor:pointer; }
         
         .notification.show {
             transform: translateY(0);
@@ -1513,37 +1540,7 @@
     </div>
 </div>
 
-<!-- MPV Install Helper Modal -->
-<div class="settings-modal" id="mpvInstallModal">
-    <div class="settings-content">
-        <div class="settings-header">
-            <h2 class="settings-title">
-                <i class="fas fa-terminal"></i>
-                Install MPV (Admin required)
-            </h2>
-            <button class="settings-close" id="mpvInstallClose">
-                <i class="fas fa-times"></i>
-            </button>
-        </div>
-        <div class="settings-section">
-            <p style="margin-bottom:1rem;line-height:1.5;">
-                Please open PowerShell or CMD as Administrator yourself, then click "Copy" below and paste the command into that window. Press Enter and accept any prompts to complete installation.
-            </p>
-            <pre id="mpvScriptText" style="white-space:pre-wrap;word-break:break-word;background:rgba(255,255,255,0.06);padding:0.75rem;border-radius:8px;user-select:text;overflow:auto;max-width:100%;"></pre>
-        </div>
-        <div class="settings-buttons">
-            <button class="api-btn api-btn-secondary" id="mpvGoBackBtn">
-                <i class="fas fa-arrow-left"></i>
-                Go Back
-            </button>
-            <button class="api-btn api-btn-primary" id="mpvCopyBtn">
-                <i class="fas fa-copy"></i>
-                Copy
-            </button>
-        </div>
-    </div>
-    
-</div>
+<!-- MPV Install Helper Modal removed -->
 
 <!-- Header -->
 <header>
@@ -1563,9 +1560,7 @@
 <button class="btn btn-outline" id="clearCacheBtn">
 <i class="fas fa-trash"></i> Clear Cache
                 </button>
-<button class="btn btn-outline" id="installMPVBtn" title="Install MPV player">
-<i class="fas fa-download"></i> Install MPV
-                </button>
+<!-- Install MPV button removed -->
 <button class="btn btn-primary" id="settingsBtn">
 <i class="fas fa-cog"></i> Settings
                 </button>
@@ -1801,22 +1796,116 @@ Your browser does not support the video tag.
 </div>
 </div>
 
-<div class="control-buttons">
-<button class="control-btn" id="rewindBtn" title="Rewind 10s">
-<i class="fas fa-backward"></i>
-</button>
-<button class="control-btn play-pause" id="playPauseBtn" title="Play/Pause">
-<i class="fas fa-play"></i>
-</button>
-<button class="control-btn" id="forwardBtn" title="Forward 10s">
-<i class="fas fa-forward"></i>
-</button>
-<button class="control-btn fullscreen-btn" id="fullscreenBtn" title="Fullscreen">
-<i class="fas fa-expand"></i>
-</button>
+<div class="control-bar">
+    <div class="control-left">
+        <button class="control-btn" id="rewindBtn" title="Rewind 10s"><i class="fas fa-backward"></i></button>
+        <button class="control-btn play-pause" id="playPauseBtn" title="Play/Pause"><i class="fas fa-play"></i></button>
+        <button class="control-btn" id="forwardBtn" title="Forward 10s"><i class="fas fa-forward"></i></button>
+    </div>
+    <div class="control-right">
+        <div class="volume-group">
+                <button class="control-btn" id="htmlMuteBtn" title="Mute/Unmute"><i class="fas fa-volume-up"></i></button>
+                <input type="range" id="htmlVolume" class="volume-slider" min="0" max="100" value="80" />
+        </div>
+        <button class="control-btn" id="htmlSubsBtn" title="Subtitles"><i class="fas fa-closed-captioning"></i></button>
+        <button class="control-btn" id="fullscreenBtn" title="Fullscreen"><i class="fas fa-expand"></i></button>
+    </div>
 </div>
 </div>
 </div>
+<div class="subs-panel" id="htmlSubsPanel" style="right: 1rem; bottom: 6rem;">
+    <div class="subs-header">
+        <div>Subtitles</div>
+        <div class="menu-actions">
+            <button class="menu-refresh" id="htmlSubsRefresh">Refresh</button>
+            <button class="menu-refresh" id="htmlSubsClose">Close</button>
+        </div>
+    </div>
+    <div class="subs-help">Choose a subtitle. Sources: OpenSubtitles, Wyzie</div>
+    <div id="htmlSubsList"></div>
+</div>
+</div>
+
+<!-- WCJS (WebChimera) Player -->
+<div class="wcjs-player-container" id="wcjsPlayerContainer" style="opacity:0;pointer-events:none;">
+    <div class="player-header">
+        <div class="player-title" id="wcjsPlayerTitle">
+            <i class="fas fa-vial"></i>
+            <span>WebChimera Player</span>
+        </div>
+        <div class="player-actions">
+            <div class="subtitle-upload">
+                <input type="file" id="wcjsSubtitleFile" accept=".srt,.vtt,.ass,.ssa" />
+                <label for="wcjsSubtitleFile" class="upload-btn">
+                    <i class="fas fa-upload"></i> Upload Subtitles
+                </label>
+            </div>
+            <button class="close-player-btn" id="closeWcjsPlayer">
+                <i class="fas fa-times"></i> Close
+            </button>
+        </div>
+    </div>
+
+    <style>
+        .wcjs-player-container { position: fixed; inset: 0; background:#000; z-index: 3500; display:flex; flex-direction:column; }
+        .wcjs-canvas-container { flex: 1; position: relative; background:#000; display:flex; align-items:center; justify-content:center; }
+        #wcjsCanvas { width: 100%; height: 100%; display:block; }
+        .wcjs-loading { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; color: var(--vlc-orange); background: rgba(0,0,0,0.8); font-size:1.2rem; }
+        .volume-group { display:flex; align-items:center; gap:0.5rem; margin-left: 1rem; }
+        .volume-slider { width: 120px; }
+    </style>
+
+    <div class="wcjs-canvas-container">
+        <canvas id="wcjsCanvas"></canvas>
+        <div class="wcjs-loading" id="wcjsLoading" style="display:none;">
+            <i class="fas fa-spinner" style="animation: spin 1s linear infinite;"></i>
+            <span style="margin-left:0.75rem;">Loading stream...</span>
+        </div>
+        <div class="video-controls" id="wcjsControls" style="display:block;">
+            <div class="progress-container">
+                <div class="progress-bar" id="wcjsProgressBar">
+                    <div class="progress-filled" id="wcjsProgressFilled"></div>
+                </div>
+                <div class="progress-time">
+                    <span id="wcjsCurrentTime">0:00</span>
+                    <span id="wcjsTotalTime">0:00</span>
+                </div>
+            </div>
+
+            <div class="control-buttons">
+                <button class="control-btn" id="wcjsRewindBtn" title="Rewind 10s"><i class="fas fa-backward"></i></button>
+                <button class="control-btn play-pause" id="wcjsPlayPauseBtn" title="Play/Pause"><i class="fas fa-play"></i></button>
+                <button class="control-btn" id="wcjsForwardBtn" title="Forward 10s"><i class="fas fa-forward"></i></button>
+                <div class="volume-group">
+                    <button class="control-btn" id="wcjsMuteBtn" title="Mute/Unmute"><i class="fas fa-volume-up"></i></button>
+                    <input type="range" id="wcjsVolume" class="volume-slider" min="0" max="100" value="80" />
+                </div>
+                <button class="control-btn" id="wcjsSubsBtn" title="Subtitles"><i class="fas fa-closed-captioning"></i></button>
+                <button class="control-btn" id="wcjsAudioBtn" title="Audio Tracks"><i class="fas fa-headphones"></i></button>
+                <button class="control-btn fullscreen-btn" id="wcjsFullscreenBtn" title="Fullscreen"><i class="fas fa-expand"></i></button>
+            </div>
+        </div>
+    </div>
+    <div class="subs-panel" id="wcjsSubsPanel">
+        <div class="subs-header">
+            <div>Subtitles</div>
+            <div class="menu-actions">
+                <button class="menu-refresh" id="wcjsSubsRefresh">Refresh</button>
+                <button class="menu-refresh" id="wcjsSubsClose">Close</button>
+            </div>
+        </div>
+        <div class="subs-help">Choose a subtitle. Sources: OpenSubtitles, Wyzie</div>
+        <div id="wcjsSubsList"></div>
+    </div>
+    <div class="subs-panel" id="wcjsAudioPanel" style="right: 360px;">
+        <div class="subs-header">
+            <div>Audio Tracks</div>
+            <div class="menu-actions">
+                <button class="menu-refresh" id="wcjsAudioClose">Close</button>
+            </div>
+        </div>
+        <div id="wcjsAudioList"></div>
+    </div>
 </div>
 
 <!-- Notification -->
@@ -1880,7 +1969,6 @@ Your browser does not support the video tag.
         const settingsModal = document.getElementById('settingsModal');
     const settingsBtn = document.getElementById('settingsBtn');
     const clearCacheBtn = document.getElementById('clearCacheBtn');
-    const installMPVBtn = document.getElementById('installMPVBtn');
         const settingsClose = document.getElementById('settingsClose');
         const currentApiKey = document.getElementById('currentApiKey');
         const newApiKey = document.getElementById('newApiKey');
@@ -1900,7 +1988,7 @@ Your browser does not support the video tag.
         const mpvControls = document.getElementById('mpvControls');
         const openMPVBtn = document.getElementById('openMPVBtn');
         const copyStreamBtn = document.getElementById('copyStreamBtn');
-        const playNowBtn = document.getElementById('playNowBtn');
+    const playNowBtn = document.getElementById('playNowBtn');
 
         // Custom Player elements
         const customPlayerContainer = document.getElementById('customPlayerContainer');
@@ -1920,6 +2008,41 @@ Your browser does not support the video tag.
         const forwardBtn = document.getElementById('forwardBtn');
         const fullscreenBtn = document.getElementById('fullscreenBtn');
         const subtitleFile = document.getElementById('subtitleFile');
+    const htmlMuteBtn = document.getElementById('htmlMuteBtn');
+    const htmlVolume = document.getElementById('htmlVolume');
+    const htmlSubsBtn = document.getElementById('htmlSubsBtn');
+    const htmlSubsPanel = document.getElementById('htmlSubsPanel');
+    const htmlSubsList = document.getElementById('htmlSubsList');
+    const htmlSubsRefresh = document.getElementById('htmlSubsRefresh');
+    const htmlSubsClose = document.getElementById('htmlSubsClose');
+
+    // WCJS Player elements
+    const wcjsPlayerContainer = document.getElementById('wcjsPlayerContainer');
+    const wcjsPlayerTitle = document.getElementById('wcjsPlayerTitle');
+    const wcjsCanvas = document.getElementById('wcjsCanvas');
+    const wcjsLoading = document.getElementById('wcjsLoading');
+    const closeWcjsPlayer = document.getElementById('closeWcjsPlayer');
+    const wcjsControls = document.getElementById('wcjsControls');
+    const wcjsProgressBar = document.getElementById('wcjsProgressBar');
+    const wcjsProgressFilled = document.getElementById('wcjsProgressFilled');
+    const wcjsCurrentTime = document.getElementById('wcjsCurrentTime');
+    const wcjsTotalTime = document.getElementById('wcjsTotalTime');
+    const wcjsPlayPauseBtn = document.getElementById('wcjsPlayPauseBtn');
+    const wcjsRewindBtn = document.getElementById('wcjsRewindBtn');
+    const wcjsForwardBtn = document.getElementById('wcjsForwardBtn');
+    const wcjsFullscreenBtn = document.getElementById('wcjsFullscreenBtn');
+    const wcjsMuteBtn = document.getElementById('wcjsMuteBtn');
+    const wcjsVolume = document.getElementById('wcjsVolume');
+    const wcjsSubtitleFile = document.getElementById('wcjsSubtitleFile');
+    const wcjsSubsBtn = document.getElementById('wcjsSubsBtn');
+    const wcjsAudioBtn = document.getElementById('wcjsAudioBtn');
+    const wcjsSubsPanel = document.getElementById('wcjsSubsPanel');
+    const wcjsAudioPanel = document.getElementById('wcjsAudioPanel');
+    const wcjsSubsList = document.getElementById('wcjsSubsList');
+    const wcjsAudioList = document.getElementById('wcjsAudioList');
+    const wcjsSubsRefresh = document.getElementById('wcjsSubsRefresh');
+    const wcjsSubsClose = document.getElementById('wcjsSubsClose');
+    const wcjsAudioClose = document.getElementById('wcjsAudioClose');
         
         // Global variables
         let currentPage = 1; // home page pagination
@@ -1930,14 +2053,76 @@ Your browser does not support the video tag.
         let torrentsLoaded = false;
         let currentTorrentData = null;
         let currentStreamUrl = null;
+    let currentSelectedVideoName = null; // track selected torrent file name
         let currentSubtitleUrl = null;
         let currentSubtitles = [];
-        let subtitleTrack = null;
+    let subtitleTrack = null;
+    let currentSubtitleFile = null; // filename served under /subtitles to delete on switch
         let hasApiKey = false;
         let currentCategory = 'all';
         let allTorrents = [];
         let torrentsPage = 1;
         const torrentsPerPage = 20;
+
+        // Cache for filename -> TMDB lookup
+        const filenameTmdbCache = new Map();
+
+        // Parse title/season/episode from a torrent filename
+        function parseFromFilename(name = '') {
+            try {
+                const base = String(name).replace(/\.[^.]+$/,'');
+                const cleaned = base
+                    .replace(/[\[\(].*?[\)\]]/g, ' ')
+                    .replace(/[_]+/g,' ')
+                    .replace(/\s{2,}/g,' ')
+                    .trim();
+                const patterns = [
+                    { re: /(s)(\d{1,2})[ ._-]*e(\d{1,3})/i, season: 2, episode: 3 },
+                    { re: /\b(\d{1,2})[xX](\d{1,3})\b/, season: 1, episode: 2 },
+                    { re: /\b(\d{1,2})[ ._-]+(\d{1,2})\b/, season: 1, episode: 2 },
+                ];
+                let season = null, episode = null, title = cleaned, m = null, idx = -1;
+                for (const p of patterns) {
+                    const mm = cleaned.match(p.re);
+                    if (mm) {
+                        const sVal = parseInt(mm[p.season], 10);
+                        const eVal = parseInt(mm[p.episode], 10);
+                        if (!isNaN(sVal) && !isNaN(eVal) && sVal <= 99 && eVal <= 999) {
+                            season = sVal; episode = eVal; m = mm; idx = mm.index; break;
+                        }
+                    }
+                }
+                if (m && idx >= 0) title = cleaned.slice(0, idx).replace(/[-_.]+$/,'').trim();
+                title = title
+                    .replace(/\b(\d{3,4}p|4k|bluray|web[- ]?dl|webrip|bdrip|hdr|dv|x264|x265|hevc|h264)\b/ig, '')
+                    .replace(/\s{2,}/g,' ')
+                    .trim();
+                const type = season && episode ? 'tv' : 'movie';
+                return { title, season, episode, type };
+            } catch { return { title: '', season: null, episode: null, type: 'movie' }; }
+        }
+
+        async function getTmdbFromFilename(filename) {
+            if (!filename) return null;
+            if (filenameTmdbCache.has(filename)) return filenameTmdbCache.get(filename);
+            const parsed = parseFromFilename(filename);
+            const result = { id: null, type: parsed.type, season: parsed.season, episode: parsed.episode, title: parsed.title };
+            if (!parsed.title) { filenameTmdbCache.set(filename, result); return result; }
+            try {
+                const endpoint = parsed.type === 'tv' ? 'search/tv' : 'search/movie';
+                const url = `https://api.themoviedb.org/3/${endpoint}?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(parsed.title)}`;
+                const resp = await fetch(url);
+                if (resp.ok) {
+                    const data = await resp.json();
+                    const items = Array.isArray(data.results) ? data.results : [];
+                    if (items.length) {
+                        result.id = items[0].id;
+                    }
+                }
+            } catch {}
+            filenameTmdbCache.set(filename, result);
+            return result;
+        }
 
         // Routing and genres state
         let activeRoute = 'home';
@@ -2099,50 +2284,7 @@ Your browser does not support the video tag.
                 const result = await window.electronAPI.clearCache();
                 showNotification(result.message, !result.success);
             });
-            // MPV install flow: open elevated PowerShell and show helper modal
-            const mpvInstallModal = document.getElementById('mpvInstallModal');
-            const mpvInstallClose = document.getElementById('mpvInstallClose');
-            const mpvCopyBtn = document.getElementById('mpvCopyBtn');
-            const mpvGoBackBtn = document.getElementById('mpvGoBackBtn');
-            const mpvScriptText = document.getElementById('mpvScriptText');
-
-            const MPV_INSTALL_SCRIPT = "powershell -NoProfile -ExecutionPolicy Bypass -Command \"Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1')); choco install mpv -y\"";
-            mpvScriptText.textContent = MPV_INSTALL_SCRIPT;
-
-            function showMpvInstallModal() {
-                mpvInstallModal.classList.add('active');
-                document.body.style.overflow = 'hidden';
-            }
-            function hideMpvInstallModal() {
-                mpvInstallModal.classList.remove('active');
-                document.body.style.overflow = 'auto';
-            }
-
-            installMPVBtn.addEventListener('click', async () => {
-                showMpvInstallModal();
-                showNotification('Open PowerShell or CMD as Administrator, click Copy, paste the command, and press Enter.');
-            });
-
-            mpvInstallClose.addEventListener('click', hideMpvInstallModal);
-            mpvGoBackBtn.addEventListener('click', hideMpvInstallModal);
-            mpvCopyBtn.addEventListener('click', async () => {
-                try {
-                    if (window.electronAPI?.copyToClipboard) {
-                        const r = await window.electronAPI.copyToClipboard(MPV_INSTALL_SCRIPT);
-                        if (r?.success) {
-                            showNotification('Copied to clipboard. Paste it into the admin PowerShell and press Enter.');
-                        } else {
-                            await navigator.clipboard.writeText(MPV_INSTALL_SCRIPT);
-                            showNotification('Copied with browser clipboard. Paste it into the admin PowerShell.');
-                        }
-                    } else {
-                        await navigator.clipboard.writeText(MPV_INSTALL_SCRIPT);
-                        showNotification('Copied to clipboard. Paste it into the admin PowerShell.');
-                    }
-                } catch {
-                    showNotification('Failed to copy. Please select and copy manually.');
-                }
-            });
+            // MPV install helpers removed
             settingsClose.addEventListener('click', hideSettingsModal);
             saveSettings.addEventListener('click', saveSettings_);
             cancelSettings.addEventListener('click', hideSettingsModal);
@@ -2233,7 +2375,7 @@ Your browser does not support the video tag.
             // MPV Controls
             openMPVBtn.addEventListener('click', openInMPV);
             copyStreamBtn.addEventListener('click', copyStreamUrl);
-            playNowBtn.addEventListener('click', openCustomPlayer);
+            playNowBtn.addEventListener('click', () => openCustomPlayer());
             
             // Custom Player Controls
             playPauseBtn.addEventListener('click', togglePlayPause);
@@ -2242,6 +2384,37 @@ Your browser does not support the video tag.
             fullscreenBtn.addEventListener('click', toggleFullscreen);
             progressBar.addEventListener('click', seekVideo);
             subtitleFile.addEventListener('change', handleSubtitleUpload);
+            // HTML5 audio controls
+            htmlVolume.addEventListener('input', () => { customVideo.volume = Math.max(0, Math.min(1, Number(htmlVolume.value) / 100)); });
+            htmlMuteBtn.addEventListener('click', () => { customVideo.muted = !customVideo.muted; htmlMuteBtn.innerHTML = customVideo.muted ? '<i class="fas fa-volume-mute"></i>' : '<i class="fas fa-volume-up"></i>'; });
+            // HTML5 Subtitles menu
+            htmlSubsBtn.addEventListener('click', () => {
+                if (htmlSubsPanel.style.display === 'block') htmlSubsPanel.style.display = 'none';
+                else { htmlSubsPanel.style.display = 'block'; fetchAndRenderHtmlSubs(); }
+            });
+            htmlSubsRefresh.addEventListener('click', fetchAndRenderHtmlSubs);
+            htmlSubsClose.addEventListener('click', () => htmlSubsPanel.style.display = 'none');
+            // WCJS Controls
+            closeWcjsPlayer.addEventListener('click', closeWCJSPlayer);
+            wcjsPlayPauseBtn.addEventListener('click', wcjsTogglePlayPause);
+            wcjsRewindBtn.addEventListener('click', () => wcjsSkipTime(-10));
+            wcjsForwardBtn.addEventListener('click', () => wcjsSkipTime(10));
+            wcjsFullscreenBtn.addEventListener('click', wcjsToggleFullscreen);
+            wcjsProgressBar.addEventListener('click', wcjsSeek);
+            wcjsMuteBtn.addEventListener('click', wcjsToggleMute);
+            wcjsVolume.addEventListener('input', wcjsSetVolume);
+            wcjsSubtitleFile.addEventListener('change', wcjsHandleSubtitleUpload);
+            wcjsSubsBtn.addEventListener('click', () => {
+                if (wcjsSubsPanel.style.display === 'block') wcjsSubsPanel.style.display = 'none';
+                else { wcjsSubsPanel.style.display = 'block'; wcjsAudioPanel.style.display = 'none'; fetchAndRenderSubtitles(); }
+            });
+            wcjsAudioBtn.addEventListener('click', () => {
+                if (wcjsAudioPanel.style.display === 'block') wcjsAudioPanel.style.display = 'none';
+                else { wcjsAudioPanel.style.display = 'block'; wcjsSubsPanel.style.display = 'none'; renderAudioTracks(); }
+            });
+            wcjsSubsRefresh.addEventListener('click', fetchAndRenderSubtitles);
+            wcjsSubsClose.addEventListener('click', () => wcjsSubsPanel.style.display = 'none');
+            wcjsAudioClose.addEventListener('click', () => wcjsAudioPanel.style.display = 'none');
             
             // Video events
             customVideo.addEventListener('loadstart', () => {
@@ -2279,6 +2452,13 @@ Your browser does not support the video tag.
             customPlayerContainer.addEventListener('click', (e) => {
                 if (e.target === customPlayerContainer) {
                     closeCustomPlayer_();
+                }
+            });
+
+            // Close WCJS player when clicking outside
+            wcjsPlayerContainer.addEventListener('click', (e) => {
+                if (e.target === wcjsPlayerContainer) {
+                    closeWCJSPlayer();
                 }
             });
 
@@ -2329,6 +2509,28 @@ Your browser does not support the video tag.
                             break;
                         case 'KeyF':
                             toggleFullscreen();
+                            break;
+                        case 'Escape':
+                            closeCustomPlayer_();
+                            break;
+                    }
+                } else if (wcjsPlayerContainer.classList.contains('active')) {
+                    switch(e.code) {
+                        case 'Space':
+                            e.preventDefault();
+                            wcjsTogglePlayPause();
+                            break;
+                        case 'ArrowRight':
+                            wcjsSkipTime(10);
+                            break;
+                        case 'ArrowLeft':
+                            wcjsSkipTime(-10);
+                            break;
+                        case 'KeyF':
+                            wcjsToggleFullscreen();
+                            break;
+                        case 'Escape':
+                            closeWCJSPlayer();
                             break;
                     }
                 }
@@ -2971,6 +3173,7 @@ Your browser does not support the video tag.
 
                 item.addEventListener('click', () => {
                     currentStreamUrl = `${API_BASE_URL}/stream-file?hash=${currentTorrentData.infoHash}&file=${file.index}`;
+                    currentSelectedVideoName = file.name;
                     playerTitle.textContent = file.name;
                     mpvControls.style.display = 'flex';
                     showNotification(`Selected: ${file.name}`);
@@ -3047,7 +3250,7 @@ Your browser does not support the video tag.
             };
             const result = await window.electronAPI.openInMPV(data);
             if (result.success) {
-                showNotification('MPV launched Please Wait');
+                showNotification('MPV launched Please Wait Watch out for a new tab!');
             } else {
                 showNotification(`Error: ${result.message}`);
             }
@@ -3106,6 +3309,308 @@ Your browser does not support the video tag.
                 subtitleTrack.mode = 'hidden';
             }
             subtitleDisplay.style.display = 'none';
+            htmlSubsPanel.style.display = 'none';
+            try {
+                customVideo.muted = false;
+                const vol = Number(htmlVolume?.value || 80);
+                customVideo.volume = Math.max(0, Math.min(1, vol / 100));
+                htmlMuteBtn.innerHTML = '<i class="fas fa-volume-up"></i>';
+            } catch(_) {}
+        }
+
+        // ---- WCJS Player Logic ----
+        let wcjsPlayer = null;
+        let wcjsTimer = null;
+        function openWCJSPlayer() {
+            if (!currentStreamUrl) {
+                showNotification('No file selected to play');
+                return;
+            }
+            try {
+                const wc = window.electronAPI?.wcjs;
+                if (!wc || !wc.available) {
+                    openCustomPlayer();
+                    return;
+                }
+                // Show container
+                wcjsPlayerContainer.style.opacity = '1';
+                wcjsPlayerContainer.style.pointerEvents = 'all';
+                wcjsLoading.style.display = 'flex';
+                wcjsPlayerTitle.textContent = playerTitle.textContent || 'WebChimera Player';
+
+                // Init player and bind to canvas
+                const ctx = wc.init('#wcjsCanvas', ["--no-video-title-show"]);
+                if (!ctx || !ctx.player) {
+                    showNotification('WebChimera failed to initialize, falling back to built-in player.');
+                    closeWCJSPlayer();
+                    openCustomPlayer();
+                    return;
+                }
+                wcjsPlayer = ctx.player;
+                // Start playback
+                wcjsPlayer.play(currentStreamUrl);
+
+                // Setup events and UI updates
+                wcjsAttachEvents();
+            } catch (e) {
+                console.error('WCJS init error:', e);
+                showNotification('WebChimera init error, using built-in player.');
+                closeWCJSPlayer();
+                openCustomPlayer();
+            }
+        }
+
+        function wcjsAttachEvents() {
+            if (!wcjsPlayer) return;
+            // Length/time change handlers if available
+            try { wcjsPlayer.onLengthChanged = (len) => { wcjsTotalTime.textContent = formatTime((len||0)/1000); }; } catch(_){}
+            try { wcjsPlayer.onPlaying = () => { wcjsLoading.style.display = 'none'; wcjsPlayPauseBtn.innerHTML = '<i class="fas fa-pause"></i>'; }; } catch(_){}
+            try { wcjsPlayer.onPaused = () => { wcjsPlayPauseBtn.innerHTML = '<i class="fas fa-play"></i>'; }; } catch(_){}
+            try { wcjsPlayer.onEndReached = () => { wcjsPlayPauseBtn.innerHTML = '<i class="fas fa-play"></i>'; }; } catch(_){}
+
+            // Poll time/length as a reliable way across versions
+            clearInterval(wcjsTimer);
+            wcjsTimer = setInterval(() => {
+                if (!wcjsPlayer) return;
+                let len = 0, t = 0;
+                try { len = Number(wcjsPlayer.length || wcjsPlayer.input?.length || 0); } catch(_){}
+                try { t = Number(wcjsPlayer.time || wcjsPlayer.input?.time || 0); } catch(_){}
+                if (len > 0) wcjsTotalTime.textContent = formatTime(len/1000);
+                wcjsCurrentTime.textContent = formatTime(t/1000);
+                if (len > 0) {
+                    const pct = Math.max(0, Math.min(100, (t/len) * 100));
+                    wcjsProgressFilled.style.width = pct + '%';
+                }
+            }, 200);
+            // Refresh audio list on play
+            setTimeout(renderAudioTracks, 400);
+        }
+
+        async function closeWCJSPlayer() {
+            wcjsPlayerContainer.style.opacity = '0';
+            wcjsPlayerContainer.style.pointerEvents = 'none';
+            wcjsLoading.style.display = 'none';
+            clearInterval(wcjsTimer);
+            wcjsTimer = null;
+            if (wcjsPlayer) {
+                try { wcjsPlayer.stop(); } catch(_){}
+                try { wcjsPlayer.close && wcjsPlayer.close(); } catch(_){}
+            }
+            wcjsPlayer = null;
+            // Stop torrent stream on server and clean temp (same as MPV close)
+            if (currentTorrentData) {
+                try { await fetch(`${API_BASE_URL}/stop-stream?hash=${currentTorrentData.infoHash}`); } catch(e) {}
+                if (window.electronAPI) {
+                    try { await window.electronAPI.clearWebtorrentTemp(); } catch(e) {}
+                }
+            }
+            // Cleanup downloaded temporary subtitles
+            try { await fetch(`${API_BASE_URL}/subtitles/cleanup`, { method: 'POST' }); } catch(e) {}
+        }
+
+        function wcjsTogglePlayPause() {
+            if (!wcjsPlayer) return;
+            try { wcjsPlayer.togglePause(); } catch(_){}
+        }
+
+        function wcjsSkipTime(seconds) {
+            if (!wcjsPlayer) return;
+            try {
+                const cur = Number(wcjsPlayer.time || 0);
+                wcjsPlayer.time = Math.max(0, cur + seconds * 1000);
+            } catch(_){}
+        }
+
+        function wcjsToggleFullscreen() {
+            if (!document.fullscreenElement) {
+                wcjsPlayerContainer.requestFullscreen?.();
+            } else {
+                document.exitFullscreen?.();
+            }
+        }
+
+        function wcjsSeek(e) {
+            if (!wcjsPlayer) return;
+            const rect = wcjsProgressBar.getBoundingClientRect();
+            const offsetX = e.clientX - rect.left;
+            const pct = offsetX / rect.width;
+            try {
+                const len = Number(wcjsPlayer.length || 0);
+                if (len > 0) wcjsPlayer.time = Math.floor(len * pct);
+            } catch(_){}
+        }
+
+        function wcjsToggleMute() {
+            if (!wcjsPlayer) return;
+            try {
+                if (typeof wcjsPlayer.toggleMute === 'function') wcjsPlayer.toggleMute();
+                else wcjsPlayer.mute = !wcjsPlayer.mute;
+                // Update icon
+                const muted = !!wcjsPlayer.mute;
+                wcjsMuteBtn.innerHTML = muted ? '<i class="fas fa-volume-mute"></i>' : '<i class="fas fa-volume-up"></i>';
+            } catch(_){}
+        }
+
+        function wcjsSetVolume() {
+            if (!wcjsPlayer) return;
+            // wcjs volume is 0..200
+            const v = Number(wcjsVolume.value || 0);
+            try { wcjsPlayer.volume = Math.round(v * 2); } catch(_){}
+        }
+
+        async function wcjsHandleSubtitleUpload(event) {
+            const file = event.target.files[0];
+            if (!file || !wcjsPlayer) return;
+            try {
+                const text = await file.text();
+                const formData = new FormData();
+                formData.append('subtitle', new Blob([text]), file.name);
+                const response = await fetch(`${API_BASE_URL}/upload-subtitle`, { method: 'POST', body: formData });
+                const data = await response.json();
+                if (data?.url) {
+                    try { wcjsPlayer.subtitles && wcjsPlayer.subtitles.load && wcjsPlayer.subtitles.load(data.url); } catch(_){}
+                    showNotification('Subtitles loaded');
+                }
+            } catch (e) {
+                showNotification('Failed to load subtitles');
+            }
+        }
+
+        // Fetch and display subtitles from backend
+        async function fetchAndRenderSubtitles() {
+            wcjsSubsList.innerHTML = '<div class="subs-help"><i class="fas fa-spinner" style="animation: spin 1s linear infinite;"></i> Loading...</div>';
+            try {
+                // Always prefer the selected show's TMDB id and media type
+                let tmdbId = currentContent?.id;
+                let type = currentMediaType === 'tv' ? 'tv' : 'movie';
+                // For movies, if tmdbId is missing, derive it from the selected torrent filename
+                if (type === 'movie' && (!tmdbId || tmdbId === '')) {
+                    if (currentSelectedVideoName) {
+                        try {
+                            const derived = await getTmdbFromFilename(currentSelectedVideoName);
+                            if (derived?.id) tmdbId = derived.id;
+                        } catch(_) {}
+                    }
+                }
+                const params = new URLSearchParams({ type });
+                if (tmdbId) params.set('tmdbId', String(tmdbId));
+                if (currentSelectedVideoName) {
+                    params.set('filename', currentSelectedVideoName);
+                    // Provide show title/year for better matching
+                    const showTitle = currentContent?.title || currentContent?.name || '';
+                    const showYear = (currentContent?.release_date || currentContent?.first_air_date || '').slice(0,4);
+                    if (showTitle) params.set('title', showTitle);
+                    if (showYear) params.set('year', showYear);
+                } else if (type === 'tv' && currentSeason) {
+                    params.set('season', String(currentSeason));
+                }
+                // Try to detect selected episode from episodesGrid selection
+                const sel = document.querySelector('.episode-card.selected');
+                if (!currentSelectedVideoName && type === 'tv' && sel) {
+                    const titleEl = sel.querySelector('.episode-title');
+                    const m = titleEl?.textContent?.match(/E(\d+)/i);
+                    if (m) params.set('episode', String(parseInt(m[1], 10)));
+                }
+                const res = await fetch(`${API_BASE_URL}/subtitles?${params.toString()}`);
+                const data = await res.json();
+                const items = Array.isArray(data.subtitles) ? data.subtitles : [];
+                // Group by language and index duplicates
+                const grouped = {};
+                for (const it of items) {
+                    const key = `${(it.langName || it.lang || 'Unknown').toLowerCase()}|${it.source}`;
+                    if (!grouped[key]) grouped[key] = [];
+                    grouped[key].push(it);
+                }
+                wcjsSubsList.innerHTML = '';
+                const entries = Object.entries(grouped);
+                if (!entries.length) wcjsSubsList.innerHTML = '<div class="subs-help">No subtitles found.</div>';
+                for (const [key, arr] of entries) {
+                    const [langNameLower, source] = key.split('|');
+                    const langDisplay = langNameLower.charAt(0).toUpperCase() + langNameLower.slice(1);
+                    arr.forEach((sub, idx) => {
+                        const displayName = arr.length > 1 ? `${langDisplay} ${idx + 1}` : langDisplay;
+                        const row = document.createElement('div');
+                        row.className = 'subs-item';
+                        row.innerHTML = `<div>${displayName} <span class="subs-source">(${source})</span></div><div class="subs-badge">Select</div>`;
+                        row.addEventListener('click', async () => {
+                            try {
+                                // Download via backend to temp, then load into WCJS
+                                const payload = sub.source === 'opensubtitles'
+                                    ? { source: 'opensubtitles', fileId: sub.file_id, preferredName: sub.name }
+                                    : { source: 'wyzie', url: sub.url, preferredName: sub.name };
+                                const dl = await fetch(`${API_BASE_URL}/subtitles/download`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                                const dlJson = await dl.json();
+                                if (dl.ok && dlJson.url) {
+                                    try { wcjsPlayer.subtitles && wcjsPlayer.subtitles.load && wcjsPlayer.subtitles.load(dlJson.url); } catch(_){}
+                                    showNotification(`Loaded: ${displayName}`);
+                                    wcjsSubsPanel.style.display = 'none';
+                                } else {
+                                    if (dl.status === 429 || dlJson?.code === 'OS_QUOTA') {
+                                        showNotification('OpenSubtitles is rate-limited. Trying Wyzie automatically...');
+                                        // Try fallback to Wyzie: prefer same language, else any Wyzie
+                                        const sameLangWyzie = currentSubtitles.find(s => s.source === 'wyzie' && s.lang && s.lang === (sub.lang || '').toLowerCase());
+                                        const anyWyzie = currentSubtitles.find(s => s.source === 'wyzie');
+                                        const wyziePick = sameLangWyzie || anyWyzie;
+                                        if (wyziePick) {
+                                            try {
+                                                const wyPayload = { source: 'wyzie', url: wyziePick.url, preferredName: wyziePick.name || wyziePick.langName };
+                                                const wyDl = await fetch(`${API_BASE_URL}/subtitles/download`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(wyPayload) });
+                                                const wyJson = await wyDl.json();
+                                                if (wyDl.ok && wyJson.url) {
+                                                    try { wcjsPlayer.subtitles && wcjsPlayer.subtitles.load && wcjsPlayer.subtitles.load(wyJson.url); } catch(_){}
+                                                    showNotification(`Loaded from Wyzie: ${wyziePick.name || wyziePick.langName}`);
+                                                    wcjsSubsPanel.style.display = 'none';
+                                                } else {
+                                                    showNotification(wyJson.error || 'Wyzie fallback failed. Please pick a different subtitle.');
+                                                }
+                                            } catch (e) {
+                                                showNotification('Wyzie fallback failed. Please pick a different subtitle.');
+                                            }
+                                        } else {
+                                            showNotification('No Wyzie subtitles available. Please try another source later.');
+                                        }
+                                    } else {
+                                        showNotification(dlJson.error || 'Subtitle download failed');
+                                    }
+                                }
+                            } catch (e) {
+                                showNotification('Subtitle download error');
+                            }
+                        });
+                        wcjsSubsList.appendChild(row);
+                    });
+                }
+            } catch {
+                wcjsSubsList.innerHTML = '<div class="subs-help">Failed to load subtitles.</div>';
+            }
+        }
+
+        // Render audio tracks and allow switching
+        function renderAudioTracks() {
+            wcjsAudioList.innerHTML = '';
+            if (!wcjsPlayer || !wcjsPlayer.audio) {
+                wcjsAudioList.innerHTML = '<div class="subs-help">Audio track info not available.</div>';
+                return;
+            }
+            try {
+                const count = Number(wcjsPlayer.audio.count || 0);
+                if (!count) {
+                    wcjsAudioList.innerHTML = '<div class="subs-help">No alternate audio tracks.</div>';
+                    return;
+                }
+                for (let i = 1; i <= count; i++) {
+                    const name = wcjsPlayer.audio[i] || `Track ${i}`;
+                    const row = document.createElement('div');
+                    row.className = 'subs-item';
+                    row.innerHTML = `<div>${name}</div><div class="subs-badge">Select</div>`;
+                    row.addEventListener('click', () => {
+                        try { wcjsPlayer.audio.track = i; showNotification(`Audio: ${name}`); wcjsAudioPanel.style.display = 'none'; } catch(_){}
+                    });
+                    wcjsAudioList.appendChild(row);
+                }
+            } catch {
+                wcjsAudioList.innerHTML = '<div class="subs-help">Audio list unavailable.</div>';
+            }
         }
 
         function closeCustomPlayer_() {
@@ -3177,20 +3682,159 @@ Your browser does not support the video tag.
             reader.readAsText(file);
         }
 
-        function loadSubtitle(url) {
-            if (subtitleTrack) {
-                subtitleTrack.mode = 'hidden';
-            }
+        async function loadSubtitle(url, opts = {}) {
+            // Remove existing subtitle tracks
+            const existingTracks = Array.from(customVideo.querySelectorAll('track[kind="subtitles"]'));
+            existingTracks.forEach(t => t.remove());
+            subtitleTrack = null;
 
             const track = document.createElement('track');
             track.kind = 'subtitles';
-            track.label = 'External';
-            track.srclang = 'en';
+            track.label = opts.label || 'Subtitles';
+            track.srclang = (opts.lang || 'en');
             track.src = url;
-            track.mode = 'showing';
             track.default = true;
+            track.setAttribute('default', '');
             customVideo.appendChild(track);
+            // Wait for track to load then enable showing
+            track.addEventListener('load', () => {
+                try {
+                    // Hide all other tracks then show current
+                    for (const t of customVideo.textTracks) { t.mode = 'hidden'; }
+                    if (track.track) track.track.mode = 'showing';
+                } catch {}
+            });
             subtitleTrack = track;
+            // Track the served filename so we can delete it when switching
+            try {
+                const u = new URL(url, window.location.origin);
+                const parts = u.pathname.split('/');
+                const fname = parts[parts.length - 1];
+                currentSubtitleFile = decodeURIComponent(fname);
+            } catch {}
+        }
+
+        async function fetchAndRenderHtmlSubs() {
+            htmlSubsList.innerHTML = '<div class="subs-help"><i class="fas fa-spinner" style="animation: spin 1s linear infinite;"></i> Loading...</div>';
+            try {
+                // Always use the selected show's TMDB id and type from UI
+                let tmdbId = currentContent?.id;
+                let type = currentMediaType === 'tv' ? 'tv' : 'movie';
+                const title = currentContent?.title || currentContent?.name || '';
+                const year = (currentContent?.release_date || currentContent?.first_air_date || '').slice(0,4);
+                // For movies, if tmdbId is missing, derive it from the selected torrent filename
+                if (type === 'movie' && (!tmdbId || tmdbId === '')) {
+                    if (currentSelectedVideoName) {
+                        try {
+                            const derived = await getTmdbFromFilename(currentSelectedVideoName);
+                            if (derived?.id) tmdbId = derived.id;
+                        } catch(_) {}
+                    }
+                }
+                const params = new URLSearchParams({ type });
+                if (tmdbId) params.set('tmdbId', String(tmdbId));
+                if (title) params.set('title', title);
+                if (year) params.set('year', year);
+                if (currentSelectedVideoName) {
+                    params.set('filename', currentSelectedVideoName);
+                    // title/year already represent the selected show
+                }
+                if (type === 'tv' && currentSeason) params.set('season', String(currentSeason));
+                const sel = document.querySelector('.episode-card.selected');
+                if (!currentSelectedVideoName && type === 'tv' && sel) {
+                    const titleEl = sel.querySelector('.episode-title');
+                    const m = titleEl?.textContent?.match(/E(\d+)/i);
+                    if (m) params.set('episode', String(parseInt(m[1], 10)));
+                }
+                const res = await fetch(`${API_BASE_URL}/subtitles?${params.toString()}`);
+                const data = await res.json();
+                let items = Array.isArray(data.subtitles) ? data.subtitles : [];
+                // Extra safety: filter client-side for supported formats only
+                items = items.filter(it => {
+                    const ext = (it.ext || it.format || '').toString().toLowerCase();
+                    const u = (it.url || '').toString().toLowerCase();
+                    return ['srt','vtt'].includes(ext) || u.includes('.srt') || u.includes('.vtt') || u.includes('.srt.gz') || it.file_id; // OS entries will be converted server-side
+                });
+                const grouped = {};
+                for (const it of items) {
+                    const key = `${(it.langName || it.lang || 'Unknown').toLowerCase()}|${it.source}`;
+                    if (!grouped[key]) grouped[key] = [];
+                    grouped[key].push(it);
+                }
+                htmlSubsList.innerHTML = '';
+                const entries = Object.entries(grouped);
+                if (!entries.length) htmlSubsList.innerHTML = '<div class="subs-help">No subtitles found.</div>';
+                for (const [key, arr] of entries) {
+                    const [langNameLower, source] = key.split('|');
+                    const langDisplay = langNameLower.charAt(0).toUpperCase() + langNameLower.slice(1);
+                    arr.forEach((sub, idx) => {
+                        const displayName = arr.length > 1 ? `${langDisplay} ${idx + 1}` : langDisplay;
+                        const row = document.createElement('div');
+                        row.className = 'subs-item';
+                        row.innerHTML = `<div>${displayName} <span class="subs-source">(${source})</span></div><div class="subs-badge">Select</div>`;
+                        row.addEventListener('click', async () => {
+                            try {
+                                const payload = sub.source === 'opensubtitles'
+                                    ? { source: 'opensubtitles', fileId: sub.file_id, preferredName: sub.name }
+                                    : { source: 'wyzie', url: sub.url, preferredName: sub.name };
+                                const dl = await fetch(`${API_BASE_URL}/subtitles/download`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                                const dlJson = await dl.json();
+                                if (dl.ok && dlJson.url) {
+                                    // Delete old subtitle temp file (if any)
+                                    if (currentSubtitleFile) {
+                                        try {
+                                            await fetch(`${API_BASE_URL}/subtitles/delete`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ filename: currentSubtitleFile }) });
+                                        } catch {}
+                                    }
+                                    const langCode = (sub.lang || '').toLowerCase();
+                                    await loadSubtitle(dlJson.url, { label: displayName, lang: langCode });
+                                    showNotification(`Loaded: ${displayName}`);
+                                    htmlSubsPanel.style.display = 'none';
+                                } else {
+                                    if (dl.status === 429 || dlJson?.code === 'OS_QUOTA') {
+                                        showNotification('OpenSubtitles is rate-limited. Trying Wyzie automatically...');
+                                        const sameLangWyzie = currentSubtitles.find(s => s.source === 'wyzie' && s.lang && s.lang === (sub.lang || '').toLowerCase());
+                                        const anyWyzie = currentSubtitles.find(s => s.source === 'wyzie');
+                                        const wyziePick = sameLangWyzie || anyWyzie;
+                                        if (wyziePick) {
+                                            try {
+                                                // Delete old subtitle temp file (if any)
+                                                if (currentSubtitleFile) {
+                                                    try {
+                                                        await fetch(`${API_BASE_URL}/subtitles/delete`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ filename: currentSubtitleFile }) });
+                                                    } catch {}
+                                                }
+                                                const wyPayload = { source: 'wyzie', url: wyziePick.url, preferredName: wyziePick.name || wyziePick.langName };
+                                                const wyDl = await fetch(`${API_BASE_URL}/subtitles/download`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(wyPayload) });
+                                                const wyJson = await wyDl.json();
+                                                if (wyDl.ok && wyJson.url) {
+                                                    const langCode = (wyziePick.lang || '').toLowerCase();
+                                                    await loadSubtitle(wyJson.url, { label: wyziePick.name || wyziePick.langName, lang: langCode });
+                                                    showNotification(`Loaded from Wyzie: ${wyziePick.name || wyziePick.langName}`);
+                                                    htmlSubsPanel.style.display = 'none';
+                                                } else {
+                                                    showNotification(wyJson.error || 'Wyzie fallback failed. Please pick a different subtitle.');
+                                                }
+                                            } catch (e) {
+                                                showNotification('Wyzie fallback failed. Please pick a different subtitle.');
+                                            }
+                                        } else {
+                                            showNotification('No Wyzie subtitles available. Please try another source later.');
+                                        }
+                                    } else {
+                                        showNotification(dlJson.error || 'Subtitle download failed');
+                                    }
+                                }
+                            } catch (e) {
+                                showNotification('Subtitle download error');
+                            }
+                        });
+                        htmlSubsList.appendChild(row);
+                    });
+                }
+            } catch {
+                htmlSubsList.innerHTML = '<div class="subs-help">Failed to load subtitles.</div>';
+            }
         }
 
         // Initialize the app on DOMContentLoaded
