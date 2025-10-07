@@ -41,7 +41,10 @@ export function startServer(userDataPath) {
 
     // Temporary subtitles storage
     const SUB_TMP_DIR = path.join(os.tmpdir(), 'playtorrio_subs');
-    try { fs.mkdirSync(SUB_TMP_DIR, { recursive: true }); } catch {}
+    const ensureSubsDir = () => { try { fs.mkdirSync(SUB_TMP_DIR, { recursive: true }); } catch {} };
+    ensureSubsDir();
+    // Guard: recreate folder if it was cleared just before a request
+    app.use('/subtitles', (req, res, next) => { ensureSubsDir(); next(); });
     // Serve temp subtitles under /subtitles/*.ext with explicit content types
     app.use('/subtitles', express.static(SUB_TMP_DIR, {
         fallthrough: true,
@@ -645,6 +648,8 @@ export function startServer(userDataPath) {
     // Download subtitle to temp dir (supports OpenSubtitles and Wyzie direct URL)
     app.post('/api/subtitles/download', async (req, res) => {
         try {
+            // Ensure temp subtitles directory exists before writing
+            ensureSubsDir();
             const { source, fileId, url, preferredName } = req.body || {};
             if (!source) return res.status(400).json({ error: 'Missing source' });
 
@@ -716,15 +721,18 @@ export function startServer(userDataPath) {
             let finalPath = '';
             if (looksLikeVtt || /\.vtt$/i.test(ext)) {
                 finalPath = `${baseOut}.vtt`;
-                fs.writeFileSync(finalPath, looksLikeVtt ? text : `WEBVTT\n\n${text}`);
+                try { fs.writeFileSync(finalPath, looksLikeVtt ? text : `WEBVTT\n\n${text}`); }
+                catch { ensureSubsDir(); fs.writeFileSync(finalPath, looksLikeVtt ? text : `WEBVTT\n\n${text}`); }
             } else if (looksLikeSrt || /\.srt$/i.test(ext)) {
                 const vtt = srtToVtt(text);
                 finalPath = `${baseOut}.vtt`;
-                fs.writeFileSync(finalPath, vtt);
+                try { fs.writeFileSync(finalPath, vtt); }
+                catch { ensureSubsDir(); fs.writeFileSync(finalPath, vtt); }
             } else {
                 // Unknown/ASS format: save as-is with original ext
                 finalPath = `${baseOut}${ext.startsWith('.') ? ext : ('.' + ext)}`;
-                fs.writeFileSync(finalPath, contentBuf);
+                try { fs.writeFileSync(finalPath, contentBuf); }
+                catch { ensureSubsDir(); fs.writeFileSync(finalPath, contentBuf); }
             }
 
             const servedName = path.basename(finalPath);
@@ -738,6 +746,8 @@ export function startServer(userDataPath) {
     // Upload a user-provided subtitle file and return a served URL (converts SRT to VTT)
     app.post('/api/upload-subtitle', upload.single('subtitle'), async (req, res) => {
         try {
+            // Ensure temp subtitles directory exists before writing
+            ensureSubsDir();
             if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
             const original = req.file.originalname || 'subtitle.srt';
             const contentBuf = req.file.buffer;
@@ -749,16 +759,19 @@ export function startServer(userDataPath) {
             let finalPath = '';
             if (looksLikeVtt || /\.vtt$/i.test(original)) {
                 finalPath = path.join(SUB_TMP_DIR, `${filenameBase}.vtt`);
-                fs.writeFileSync(finalPath, looksLikeVtt ? text : `WEBVTT\n\n${text}`);
+                try { fs.writeFileSync(finalPath, looksLikeVtt ? text : `WEBVTT\n\n${text}`); }
+                catch { ensureSubsDir(); fs.writeFileSync(finalPath, looksLikeVtt ? text : `WEBVTT\n\n${text}`); }
             } else if (looksLikeSrt || /\.srt$/i.test(original)) {
                 const vtt = srtToVtt(text);
                 finalPath = path.join(SUB_TMP_DIR, `${filenameBase}.vtt`);
-                fs.writeFileSync(finalPath, vtt);
+                try { fs.writeFileSync(finalPath, vtt); }
+                catch { ensureSubsDir(); fs.writeFileSync(finalPath, vtt); }
             } else {
                 // Keep as-is for other formats
                 const ext = path.extname(original) || '.txt';
                 finalPath = path.join(SUB_TMP_DIR, `${filenameBase}${ext}`);
-                fs.writeFileSync(finalPath, contentBuf);
+                try { fs.writeFileSync(finalPath, contentBuf); }
+                catch { ensureSubsDir(); fs.writeFileSync(finalPath, contentBuf); }
             }
 
             const servedName = path.basename(finalPath);
