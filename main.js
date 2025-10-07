@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, shell, clipboard } from 'electron';
+import { app, BrowserWindow, ipcMain, shell, clipboard, dialog } from 'electron';
 import { spawn } from 'child_process';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -9,6 +9,7 @@ import { startServer } from './server.mjs'; // Import the server
 
 let httpServer;
 let webtorrentClient;
+let mainWindow;
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -24,6 +25,20 @@ async function clearWebtorrentTemp() {
     } catch (error) {
         console.error('Error clearing webtorrent temp folder:', error);
         return { success: false, message: 'Failed to clear webtorrent temp folder: ' + error.message };
+    }
+}
+
+// Function to clear the downloaded subtitles temp folder (cross-user)
+async function clearPlaytorrioSubtitlesTemp() {
+    const subsPath = path.join(os.tmpdir(), 'playtorrio_subs');
+    console.log(`Clearing subtitles temp folder: ${subsPath}`);
+    try {
+        await fs.promises.rm(subsPath, { recursive: true, force: true });
+        console.log('Subtitles temp folder cleared successfully');
+        return { success: true, message: 'Subtitles temp folder cleared' };
+    } catch (error) {
+        console.error('Error clearing subtitles temp folder:', error);
+        return { success: false, message: 'Failed to clear subtitles temp folder: ' + error.message };
     }
 }
 
@@ -63,18 +78,10 @@ function openInMPV(win, streamUrl, infoHash) {
         const mpvProcess = spawn(mpvPath, [streamUrl], { stdio: 'ignore' });
 
         mpvProcess.on('close', async (code) => {
-            console.log(`MPV player closed with code ${code}. Initiating cleanup for ${infoHash}.`);
-            
-            // 1. Tell server to stop the stream
-            const stopStreamUrl = `http://localhost:3000/api/stop-stream?hash=${infoHash}`;
-            http.get(stopStreamUrl, (res) => {
-                console.log(`Stop stream request finished with status: ${res.statusCode}`);
-            }).on('error', (err) => {
-                console.error('Error sending stop-stream request:', err.message);
-            });
-
-            // Notify the frontend that cleanup is done (optional)
-            win.webContents.send('cleanup-done');
+            // By request: do not disconnect torrent or delete temp when MPV closes.
+            console.log(`MPV player closed with code ${code}. Leaving torrent active and temp files intact.`);
+            // Optionally inform renderer that MPV closed (no cleanup performed)
+            try { win.webContents.send('mpv-closed', { infoHash, code }); } catch(_) {}
         });
 
         mpvProcess.on('error', (err) => {
@@ -104,19 +111,34 @@ function createWindow() {
     return win;
 }
 
-app.whenReady().then(() => {
+// Enforce single instance with a friendly error on second run
+const gotLock = app.requestSingleInstanceLock();
+if (!gotLock) {
+    // Show a friendly error instead of port-in-use errors
+    try { dialog.showErrorBox("PlayTorrio", "The app is already running."); } catch(_) {}
+    app.quit();
+} else {
+    app.on('second-instance', () => {
+        // Focus existing window if user tried to open a second instance
+        if (mainWindow) {
+            if (mainWindow.isMinimized()) mainWindow.restore();
+            mainWindow.focus();
+        }
+    });
+
+    app.whenReady().then(() => {
     // Start the integrated server
     const { server, client } = startServer(app.getPath('userData'));
     httpServer = server;
     webtorrentClient = client;
 
-    const win = createWindow();
+        mainWindow = createWindow();
 
     // IPC handler to open MPV from renderer
     ipcMain.handle('open-in-mpv', (event, data) => {
         const { streamUrl, infoHash } = data;
         console.log(`Received MPV open request for hash: ${infoHash}`);
-        return openInMPV(win, streamUrl, infoHash);
+            return openInMPV(mainWindow, streamUrl, infoHash);
     });
 
     // IPC handler for manual temp folder clearing (e.g., from Close Player button)
@@ -126,7 +148,14 @@ app.whenReady().then(() => {
 
     // IPC handler for the new Clear Cache button
     ipcMain.handle('clear-cache', async () => {
-        return await clearWebtorrentTemp();
+            const results = [];
+            const r1 = await clearWebtorrentTemp(); results.push(r1);
+            const r2 = await clearPlaytorrioSubtitlesTemp(); results.push(r2);
+            const success = results.every(r => r.success);
+            const message = success
+                ? 'Cache cleared: webtorrent and downloaded subtitles.'
+                : results.map(r => r.message).join(' | ');
+            return { success, message };
     });
 
     // Removed MPV installer helpers and IPC
@@ -162,7 +191,8 @@ app.whenReady().then(() => {
             return { success: false, message: err?.message || 'Failed to copy' };
         }
     });
-});
+    });
+}
 
 // Graceful shutdown
 app.on('will-quit', () => {
