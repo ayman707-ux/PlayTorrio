@@ -27,11 +27,40 @@ async function clearWebtorrentTemp() {
     }
 }
 
+// Resolve bundled MPV executable path (prefer packaged resources, then local dev folder). Windows-focused.
+function resolveMpvExe() {
+    try {
+        const candidates = [];
+        // In packaged apps, resourcesPath is where extraResources are copied
+        if (process.resourcesPath) {
+            // When using asarUnpack, binaries live under app.asar.unpacked
+            candidates.push(path.join(process.resourcesPath, 'app.asar.unpacked', 'mpv', process.platform === 'win32' ? 'mpv.exe' : 'mpv'));
+            // Some configurations might place directly under resources
+            candidates.push(path.join(process.resourcesPath, 'mpv', process.platform === 'win32' ? 'mpv.exe' : 'mpv'));
+        }
+        // Next to the current file when running unpackaged
+        candidates.push(path.join(__dirname, 'mpv', process.platform === 'win32' ? 'mpv.exe' : 'mpv'));
+        // Next to the executable (some packagers place resources here)
+        candidates.push(path.join(path.dirname(process.execPath), 'mpv', process.platform === 'win32' ? 'mpv.exe' : 'mpv'));
+
+        for (const p of candidates) {
+            try { if (fs.existsSync(p)) return p; } catch {}
+        }
+    } catch {}
+    return null;
+}
+
 // Launch MPV and set up cleanup listeners
 function openInMPV(win, streamUrl, infoHash) {
     try {
         console.log('Attempting to launch MPV with URL:', streamUrl);
-        const mpvProcess = spawn('mpv', [streamUrl], { stdio: 'ignore' });
+        const mpvPath = resolveMpvExe();
+        if (!mpvPath) {
+            const msg = 'Bundled MPV not found. Place portable mpv.exe under the app\mpv folder.';
+            console.error(msg);
+            return { success: false, message: msg };
+        }
+        const mpvProcess = spawn(mpvPath, [streamUrl], { stdio: 'ignore' });
 
         mpvProcess.on('close', async (code) => {
             console.log(`MPV player closed with code ${code}. Initiating cleanup for ${infoHash}.`);
@@ -70,14 +99,8 @@ function createWindow() {
         },
     });
 
-    if (app.isPackaged) {
-        // In production, load the local HTML file
-        win.loadFile(path.join(__dirname, 'public', 'index.html'));
-    } else {
-        // In development, load from the server after a delay
-        // The server needs a moment to start
-        setTimeout(() => win.loadURL('http://localhost:3000'), 2000);
-    }
+    // Always load the local server so all API and subtitle URLs are same-origin HTTP
+    setTimeout(() => win.loadURL('http://localhost:3000'), app.isPackaged ? 500 : 2000);
     return win;
 }
 
@@ -106,110 +129,7 @@ app.whenReady().then(() => {
         return await clearWebtorrentTemp();
     });
 
-    // Helper: check if MPV is installed (global PATH or user-installed folder)
-    function checkMPVInstalled() {
-        return new Promise((resolve) => {
-            try {
-                const proc = spawn('mpv', ['--version']);
-                let detected = false;
-                proc.stdout?.on('data', () => { detected = true; });
-                proc.on('close', (code) => {
-                    if (detected || code === 0) {
-                        resolve({ installed: true, via: 'path' });
-                    } else {
-                        // Fallback: try user-local install path
-                        const base = path.join(os.homedir(), 'mpv');
-                        try {
-                            const entries = fs.readdirSync(base, { withFileTypes: true }).filter(d => d.isDirectory());
-                            if (entries.length > 0) {
-                                const mpvDir = path.join(base, entries[0].name);
-                                const exePath = path.join(mpvDir, 'mpv.exe');
-                                if (fs.existsSync(exePath)) {
-                                    const proc2 = spawn(exePath, ['--version']);
-                                    proc2.on('close', (code2) => {
-                                        resolve({ installed: code2 === 0, via: 'userdir', exePath });
-                                    });
-                                    proc2.on('error', () => resolve({ installed: false }));
-                                    return;
-                                }
-                            }
-                        } catch (e) {}
-                        resolve({ installed: false });
-                    }
-                });
-                proc.on('error', () => {
-                    // Try user dir immediately
-                    const base = path.join(os.homedir(), 'mpv');
-                    try {
-                        const entries = fs.readdirSync(base, { withFileTypes: true }).filter(d => d.isDirectory());
-                        if (entries.length > 0) {
-                            const mpvDir = path.join(base, entries[0].name);
-                            const exePath = path.join(mpvDir, 'mpv.exe');
-                            if (fs.existsSync(exePath)) {
-                                const proc2 = spawn(exePath, ['--version']);
-                                proc2.on('close', (code2) => {
-                                    resolve({ installed: code2 === 0, via: 'userdir', exePath });
-                                });
-                                proc2.on('error', () => resolve({ installed: false }));
-                                return;
-                            }
-                        }
-                    } catch (e) {}
-                    resolve({ installed: false });
-                });
-            } catch (e) {
-                resolve({ installed: false });
-            }
-        });
-    }
-
-    // Helper: install MPV via PowerShell script
-    function installMPV() {
-        return new Promise((resolve) => {
-            const psScript = [
-                '$mpvDir="$env:USERPROFILE\\mpv"',
-                'New-Item -ItemType Directory -Force -Path $mpvDir | Out-Null',
-                'Invoke-WebRequest -Uri "https://github.com/mpv-player/mpv/releases/latest/download/mpv-x86_64-windows.zip" -OutFile "$mpvDir\\mpv.zip"',
-                'Expand-Archive "$mpvDir\\mpv.zip" -DestinationPath $mpvDir -Force',
-                '$mpvExe = Get-ChildItem $mpvDir -Directory | Select-Object -First 1',
-                '[Environment]::SetEnvironmentVariable("Path", $env:Path + ";$($mpvExe.FullName)", "User")'
-            ].join('; ');
-
-            const child = spawn('powershell.exe', ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-Command', psScript], { windowsHide: true });
-            let stderr = '';
-            child.stderr?.on('data', (d) => { stderr += d.toString(); });
-            child.on('close', (code) => {
-                if (code === 0) {
-                    resolve({ success: true });
-                } else {
-                    resolve({ success: false, error: stderr || `Exit code ${code}` });
-                }
-            });
-            child.on('error', (err) => resolve({ success: false, error: err.message }));
-        });
-    }
-
-    // IPC handler: Launch elevated CMD (admin) for manual MPV install flow
-    ipcMain.handle('install-mpv', async () => {
-        return await new Promise((resolve) => {
-            try {
-                // Launch an elevated CMD window maximized
-                const child = spawn('powershell.exe', [
-                    '-NoProfile',
-                    '-ExecutionPolicy', 'Bypass',
-                    '-Command',
-                    'Start-Process cmd -Verb runAs -WindowStyle Maximized'
-                ], { windowsHide: false, detached: true });
-                child.on('error', (err) => {
-                    resolve({ status: 'error', message: err?.message || 'Failed to open elevated PowerShell' });
-                });
-                // We resolve immediately; the UAC prompt/admin shell is independent of our process
-                setTimeout(() => resolve({ status: 'launched' }), 200);
-            } catch (e) {
-                resolve({ status: 'error', message: e?.message || 'Failed to open elevated PowerShell' });
-            }
-        });
-    });
+    // Removed MPV installer helpers and IPC
 
     // IPC handler: Restart app on demand
     ipcMain.handle('restart-app', () => {
