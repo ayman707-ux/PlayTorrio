@@ -29,6 +29,8 @@ PlayTorrio's official [website](https://playtorrio.netlify.app/)
 
 Video Tutorial [here](https://www.youtube.com/watch?v=3igLReZFFzg) 
 
+---
+
 Step 1: Install Jackett
 Go to the official [Jackett](https://github.com/Jackett/Jackett/releases) release page
 Download the latest Windows x64 Installer (Jackett.Installer.Windows.exe)
