@@ -1,7 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
-const { searchUIndex } = require('./src/scraper');
+const { searchUIndex, searchKnaben, extractInfoHash } = require('./src/scraper');
 const { createProxyRouter } = require('./src/proxy');
 
 const app = express();
@@ -66,8 +66,37 @@ app.get('/api/search', apiRateLimiter, async (req, res) => {
     }
     const page = Math.max(1, parseInt(req.query.page, 10) || 1);
 
-    const result = await searchUIndex(q, { page, category: 0 });
-    res.json(result);
+    // Fetch both sources in parallel and merge
+    const [r1, r2] = await Promise.allSettled([
+      searchUIndex(q, { page, category: 0 }),
+      searchKnaben(q, { page }),
+    ]);
+
+    const items1 = r1.status === 'fulfilled' ? (r1.value.items || []) : [];
+    const items2 = r2.status === 'fulfilled' ? (r2.value.items || []) : [];
+
+    // Deduplicate by infohash (from magnet) and then by title as fallback
+    const seen = new Set();
+    const merged = [];
+    function pushUnique(arr) {
+      for (const it of arr) {
+        const ih = extractInfoHash(it.magnet) || it.title.toLowerCase();
+        if (seen.has(ih)) continue;
+        seen.add(ih);
+        merged.push(it);
+      }
+    }
+    pushUnique(items1);
+    pushUnique(items2);
+
+    // Sort by seeds desc, then leechers desc, then size (rough heuristic)
+    merged.sort((a, b) => (b.seeds || 0) - (a.seeds || 0) || (b.leechers || 0) - (a.leechers || 0));
+
+    // Pagination only if both agree there's a next page; otherwise be conservative
+    const hasNext = (r1.status === 'fulfilled' && r1.value.pagination?.hasNext) ||
+                    (r2.status === 'fulfilled' && r2.value.pagination?.hasNext) || false;
+    const out = { query: q, page, items: merged, pagination: { hasNext, nextPage: hasNext ? page + 1 : undefined } };
+    res.json(out);
   } catch (err) {
     console.error('Search error:', err?.message || err);
     const msg = /403/.test(String(err))
