@@ -117,34 +117,114 @@ function createWindow() {
 // Launch the Torrentless scraper server
 function startTorrentless() {
     try {
-        // Resolve script path in both dev and packaged environments
-        const candidates = [
-            path.join(process.resourcesPath || '', 'app.asar.unpacked', 'Torrentless', 'server.js'),
-            path.join(process.resourcesPath || '', 'Torrentless', 'server.js'),
-            path.join(__dirname, 'Torrentless', 'server.js'),
-        ].filter(Boolean);
+        // Resolve script path in both dev and packaged environments (prefer resources/Torrentless/server.js in build)
+        const candidates = [];
+        if (app.isPackaged && process.resourcesPath) {
+            candidates.push(path.join(process.resourcesPath, 'Torrentless', 'server.js'));
+            candidates.push(path.join(process.resourcesPath, 'app.asar.unpacked', 'Torrentless', 'server.js'));
+        }
+        candidates.push(path.join(__dirname, 'Torrentless', 'server.js'));
+        // Back-compat extra candidates
+        if (process.resourcesPath) {
+            candidates.push(path.join(process.resourcesPath, 'Torrentless', 'start.js'));
+            candidates.push(path.join(process.resourcesPath, 'app.asar.unpacked', 'Torrentless', 'start.js'));
+        }
         let entry = null;
         for (const p of candidates) {
-            try { if (fs.existsSync(p)) { entry = p; break; } } catch {}
+            try { if (p && fs.existsSync(p)) { entry = p; break; } } catch {}
         }
         if (!entry) {
             console.warn('Torrentless server entry not found. Ensure the Torrentless folder is packaged.');
             return;
         }
-        // Fork a Node child for the scraper server
-        torrentlessProc = fork(entry, [], {
-            stdio: 'ignore',
-            env: { ...process.env, PORT: '3002' },
+        // Compute NODE_PATH so the child can resolve dependencies from the app's node_modules
+        const nodePathCandidates = [
+            path.join(process.resourcesPath || '', 'app.asar', 'node_modules'),
+            path.join(process.resourcesPath || '', 'node_modules'),
+            path.join(process.resourcesPath || '', 'app.asar.unpacked', 'node_modules'),
+            path.join(__dirname, 'node_modules'),
+            path.join(path.dirname(entry), 'node_modules'),
+        ];
+        const existingNodePaths = nodePathCandidates.filter(p => { try { return fs.existsSync(p); } catch { return false; } });
+        const NODE_PATH_VALUE = existingNodePaths.join(path.delimiter);
+        // Spawn Electron binary in Node mode to run server.js (equivalent to: node server.js)
+        const logPath = path.join(app.getPath('userData'), 'torrentless.log');
+        const logStream = fs.createWriteStream(logPath, { flags: 'a' });
+        const childEnv = { ...process.env, PORT: '3002', ELECTRON_RUN_AS_NODE: '1', NODE_PATH: NODE_PATH_VALUE };
+        torrentlessProc = spawn(process.execPath, [entry], {
+            stdio: ['ignore', 'pipe', 'pipe'],
+            env: childEnv,
             cwd: path.dirname(entry),
         });
 
+        // Pipe logs for diagnostics in packaged builds
+        try {
+            torrentlessProc.stdout.on('data', (d) => { try { logStream.write(d); } catch(_) {} });
+            torrentlessProc.stderr.on('data', (d) => { try { logStream.write(d); } catch(_) {} });
+        } catch (_) {}
+
         torrentlessProc.on('exit', (code, signal) => {
             console.log(`Torrentless exited code=${code} signal=${signal}`);
+            try { logStream.end(); } catch(_) {}
             // On unexpected exit during runtime, attempt a single restart
             if (!app.isQuitting) {
                 setTimeout(() => { try { startTorrentless(); } catch(_) {} }, 1000);
             }
         });
+
+        torrentlessProc.on('error', (err) => {
+            console.error('Failed to start Torrentless server process:', err);
+            try { logStream.write(String(err?.stack || err) + '\n'); } catch(_) {}
+        });
+
+        // Probe /api/health to confirm the service is up; fallback to system Node if needed
+        try {
+            let attempts = 0;
+            let healthy = false;
+            const maxAttempts = 25; // ~10s @ 400ms
+            const timer = setInterval(() => {
+                attempts++;
+                try {
+                    const req = http.get({ hostname: '127.0.0.1', port: 3002, path: '/api/health', timeout: 350 }, (res) => {
+                        if (res.statusCode === 200) {
+                            healthy = true;
+                            console.log('Torrentless is up on http://127.0.0.1:3002');
+                            clearInterval(timer);
+                            try { res.resume(); } catch(_) {}
+                        } else {
+                            try { res.resume(); } catch(_) {}
+                        }
+                    });
+                    req.on('timeout', () => { try { req.destroy(); } catch(_) {} });
+                    req.on('error', () => {});
+                } catch(_) {}
+                if (attempts >= maxAttempts) {
+                    clearInterval(timer);
+                    if (!healthy && !app.isQuitting) {
+                        // Attempt fallback using system Node if available
+                        try {
+                            console.warn('Torrentless did not respond; attempting to start with system Node...');
+                            // Stop previous child if any
+                            try { torrentlessProc && torrentlessProc.kill('SIGTERM'); } catch(_) {}
+                            const nodeCmd = process.platform === 'win32' ? 'node.exe' : 'node';
+                            torrentlessProc = spawn(nodeCmd, [entry], {
+                                stdio: ['ignore', 'pipe', 'pipe'],
+                                env: { ...process.env, PORT: '3002' },
+                                cwd: path.dirname(entry),
+                                shell: false
+                            });
+                            try {
+                                torrentlessProc.stdout.on('data', (d) => { try { logStream.write(d); } catch(_) {} });
+                                torrentlessProc.stderr.on('data', (d) => { try { logStream.write(d); } catch(_) {} });
+                            } catch(_) {}
+                        } catch (e) {
+                            console.error('Fallback start with system Node failed:', e);
+                            try { logStream.write('Fallback failed: ' + String(e?.stack || e) + '\n'); } catch(_) {}
+                        }
+                    }
+                }
+            }, 400);
+        } catch(_) {}
     } catch (e) {
         console.error('Failed to start Torrentless server:', e);
     }
