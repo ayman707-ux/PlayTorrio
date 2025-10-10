@@ -5,6 +5,8 @@ const axios = require('axios');
 const ALLOWED_HOSTS = new Set([
   'uindex.org',
   'www.uindex.org',
+  'knaben.org',
+  'www.knaben.org',
 ]);
 
 function isAllowed(urlStr) {
@@ -24,6 +26,11 @@ function buildUIndexUrl({ q, page, c = 0 }) {
   return u.toString();
 }
 
+function buildKnabenUrl({ q, page }) {
+  const p = Number(page) > 0 ? Number(page) : 1;
+  return `https://knaben.org/search/${encodeURIComponent(q || '')}/0/${p}/seeders`;
+}
+
 // Creates an Express router exposing GET /api/proxy
 function createProxyRouter() {
   const router = express.Router();
@@ -31,9 +38,15 @@ function createProxyRouter() {
   router.get('/proxy', async (req, res) => {
     try {
       // Either accept a full URL, or construct ET URL from q+page
-      const url = req.query.url
-        ? req.query.url.toString()
-        : buildUIndexUrl({ q: (req.query.q || '').toString(), page: req.query.page, c: req.query.c });
+      let url = req.query.url ? req.query.url.toString() : '';
+      if (!url) {
+        const which = (req.query.site || 'uindex').toString();
+        if (which === 'knaben') {
+          url = buildKnabenUrl({ q: (req.query.q || '').toString(), page: req.query.page });
+        } else {
+          url = buildUIndexUrl({ q: (req.query.q || '').toString(), page: req.query.page, c: req.query.c });
+        }
+      }
 
       if (!isAllowed(url)) {
         return res.status(400).json({ error: 'URL not allowed' });
