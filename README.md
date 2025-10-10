@@ -98,3 +98,5 @@ Playtorrio and Jackett are intended for educational and legal use only.
 You are solely responsible for the content you access.
 
 If you enjoy PlayTorrio, please give it a ⭐ on GitHub to show support!
+
+LISENCE INCLUDES THE TORRENT SCRAPER!
