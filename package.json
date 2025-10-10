@@ -17,8 +17,11 @@
   "dependencies": {
     "cors": "^2.8.5",
     "express": "^4.21.2",
+<<<<<<< HEAD
     "axios": "^1.7.4",
     "cheerio": "^1.0.0",
+=======
+>>>>>>> 04b6303e9874e98461f530feb73e55d892ddb75e
     "got": "^14.4.7",
     "multer": "^2.0.1",
     "node-fetch": "^3.3.2",
@@ -42,15 +45,22 @@
       "main.js",
       "preload.js",
       "server.mjs",
+<<<<<<< HEAD
       "Torrentless/**/*",
+=======
+>>>>>>> 04b6303e9874e98461f530feb73e55d892ddb75e
       "jackett_api_key.json",
       "public/**/*",
       "node_modules/**/*",
       "mpv/**"
     ],
     "asarUnpack": [
+<<<<<<< HEAD
       "mpv/**",
       "Torrentless/**"
+=======
+      "mpv/**"
+>>>>>>> 04b6303e9874e98461f530feb73e55d892ddb75e
     ],
     "extraResources": [
       { "from": "mpv", "to": "mpv" }
@@ -76,4 +86,8 @@
       "icon": "icon.png"
     }
   }
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> 04b6303e9874e98461f530feb73e55d892ddb75e

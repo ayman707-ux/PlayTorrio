@@ -1534,6 +1534,7 @@
                 <i class="fas fa-save"></i>
                 Save & Continue
             </button>
+<<<<<<< HEAD
             <div class="api-btn-group-alt" style="display:flex;flex-direction:column;gap:10px;">
                 <button class="api-btn api-btn-secondary" id="skipSetup">
                     <i class="fas fa-forward"></i>
@@ -1543,6 +1544,12 @@
                     Warning: This mode may have slower buffering and fewer seeders. Results are fetched by a local scraper.
                 </div>
             </div>
+=======
+            <button class="api-btn api-btn-secondary" id="skipSetup">
+                <i class="fas fa-times"></i>
+                Skip for Now
+            </button>
+>>>>>>> 04b6303e9874e98461f530feb73e55d892ddb75e
         </div>
     </div>
 </div>
@@ -1580,6 +1587,7 @@
                 <i class="fas fa-save"></i>
                 Save Changes
             </button>
+<<<<<<< HEAD
             <button class="api-btn api-btn-primary" id="openTutorialBtn" style="background:#ef4444;">
                 <i class="fas fa-video"></i>
                 Watch video tutorial
@@ -1594,6 +1602,8 @@
             <div style="font-size:0.9rem;color:#fbbf24;background:rgba(251,191,36,0.12);padding:8px 10px;border-radius:8px;">
                 Warning: Using this mode may lead to slower buffering and lower seeder counts. It uses the bundled local scraper instead of Jackett.
             </div>
+=======
+>>>>>>> 04b6303e9874e98461f530feb73e55d892ddb75e
         </div>
     </div>
 </div>
@@ -1972,8 +1982,12 @@ Your browser does not support the video tag.
 <script>
         // API configuration
         const TMDB_API_KEY = 'b3556f3b206e16f82df4d1f6fd4545e6';
+<<<<<<< HEAD
     const API_BASE_URL = 'http://localhost:3000/api';
     const TORRENTLESS_BASE_URL = 'http://localhost:3002/api';
+=======
+        const API_BASE_URL = 'http://localhost:3000/api';
+>>>>>>> 04b6303e9874e98461f530feb73e55d892ddb75e
         
         // DOM elements - Home
         const moviesGrid = document.getElementById('moviesGrid');
@@ -2031,10 +2045,15 @@ Your browser does not support the video tag.
         const settingsClose = document.getElementById('settingsClose');
         const currentApiKey = document.getElementById('currentApiKey');
         const newApiKey = document.getElementById('newApiKey');
+<<<<<<< HEAD
     const saveSettings = document.getElementById('saveSettings');
     const cancelSettings = document.getElementById('cancelSettings');
     const openTutorialBtn = document.getElementById('openTutorialBtn');
     const toggleWatchWithoutJackett = document.getElementById('toggleWatchWithoutJackett');
+=======
+        const saveSettings = document.getElementById('saveSettings');
+        const cancelSettings = document.getElementById('cancelSettings');
+>>>>>>> 04b6303e9874e98461f530feb73e55d892ddb75e
         
         // MPV Player elements
         const mpvPlayerContainer = document.getElementById('mpvPlayerContainer');
@@ -2119,8 +2138,12 @@ Your browser does not support the video tag.
         let currentSubtitles = [];
     let subtitleTrack = null;
     let currentSubtitleFile = null; // filename served under /subtitles to delete on switch
+<<<<<<< HEAD
     let hasApiKey = false;
     let watchWithoutJackett = false; // persisted in localStorage
+=======
+        let hasApiKey = false;
+>>>>>>> 04b6303e9874e98461f530feb73e55d892ddb75e
         let currentCategory = 'all';
         let allTorrents = [];
         let torrentsPage = 1;
@@ -2199,6 +2222,7 @@ Your browser does not support the video tag.
             await checkApiKeyStatus();
             setupEventListeners();
             handleRoute(); // route-aware initial load
+<<<<<<< HEAD
             try { watchWithoutJackett = localStorage.getItem('watchWithoutJackett') === 'true'; } catch {}
             if (watchWithoutJackett) {
                 try {
@@ -2208,6 +2232,8 @@ Your browser does not support the video tag.
                     showNotification('Watch without Jackett is enabled, but the local scraper is not reachable.');
                 }
             }
+=======
+>>>>>>> 04b6303e9874e98461f530feb73e55d892ddb75e
         }
         
         // Check API key status
@@ -2216,8 +2242,13 @@ Your browser does not support the video tag.
                 const response = await fetch(`${API_BASE_URL}/check-api-key`);
                 const data = await response.json();
                 hasApiKey = data.hasApiKey;
+<<<<<<< HEAD
                 try { watchWithoutJackett = localStorage.getItem('watchWithoutJackett') === 'true'; } catch {}
                 if (!hasApiKey && !watchWithoutJackett) {
+=======
+                
+                if (!hasApiKey) {
+>>>>>>> 04b6303e9874e98461f530feb73e55d892ddb75e
                     showApiSetupModal();
                 } else {
                     await loadCurrentApiKey();
@@ -2226,10 +2257,15 @@ Your browser does not support the video tag.
             } catch (error) {
                 console.error('Error checking API key status:', error);
                 // If server is not up yet, still prompt the user to install Jackett / set API key
+<<<<<<< HEAD
                 if (!watchWithoutJackett) {
                     showApiSetupModal();
                     showNotification('Local server not ready. You can still enter the API key now.');
                 }
+=======
+                showApiSetupModal();
+                showNotification('Local server not ready. You can still enter the API key now.');
+>>>>>>> 04b6303e9874e98461f530feb73e55d892ddb75e
             }
         }
         
@@ -2254,8 +2290,13 @@ Your browser does not support the video tag.
         function showApiSetupModal() {
             apiSetupModal.classList.add('active');
             document.body.style.overflow = 'hidden';
+<<<<<<< HEAD
             // Notify user to install Jackett and provide API key, or use the alternate mode
             showNotification('Enter your Jackett API key, or click "Watch without Jackett" to continue.');
+=======
+            // Notify user to install Jackett and provide API key
+            showNotification('Please install Jackett and enter your API key, or Skip for now.');
+>>>>>>> 04b6303e9874e98461f530feb73e55d892ddb75e
         }
         
         // Hide API setup modal
@@ -2268,8 +2309,11 @@ Your browser does not support the video tag.
         async function showSettingsModal() {
             await loadCurrentApiKey();
             newApiKey.value = '';
+<<<<<<< HEAD
             try { watchWithoutJackett = localStorage.getItem('watchWithoutJackett') === 'true'; } catch {}
             if (toggleWatchWithoutJackett) toggleWatchWithoutJackett.checked = !!watchWithoutJackett;
+=======
+>>>>>>> 04b6303e9874e98461f530feb73e55d892ddb75e
             settingsModal.classList.add('active');
             document.body.style.overflow = 'hidden';
         }
@@ -2316,6 +2360,7 @@ Your browser does not support the video tag.
         
         // Save API key (settings)
         async function saveSettings_() {
+<<<<<<< HEAD
             // persist the toggle
             if (toggleWatchWithoutJackett) {
                 const enabled = !!toggleWatchWithoutJackett.checked;
@@ -2333,6 +2378,13 @@ Your browser does not support the video tag.
             if (!apiKey) {
                 hideSettingsModal();
                 return; // no API update, just saved toggle
+=======
+            const apiKey = newApiKey.value.trim();
+            
+            if (!apiKey) {
+                showNotification('Please enter an API key');
+                return;
+>>>>>>> 04b6303e9874e98461f530feb73e55d892ddb75e
             }
             
             try {
@@ -2363,12 +2415,16 @@ Your browser does not support the video tag.
         function setupEventListeners() {
             // API Setup Modal
             saveFirstTimeApiKey.addEventListener('click', saveFirstTimeApiKey_);
+<<<<<<< HEAD
             skipSetup.addEventListener('click', async () => {
                 try { localStorage.setItem('watchWithoutJackett', 'true'); } catch {}
                 watchWithoutJackett = true;
                 hideApiSetupModal();
                 showNotification('Watch without Jackett enabled. Searches will use the local scraper.');
             });
+=======
+            skipSetup.addEventListener('click', hideApiSetupModal);
+>>>>>>> 04b6303e9874e98461f530feb73e55d892ddb75e
             
             // Settings Modal
             settingsBtn.addEventListener('click', showSettingsModal);
@@ -2398,6 +2454,7 @@ Your browser does not support the video tag.
                     }
                 });
             }
+<<<<<<< HEAD
 
             // Open video tutorial link in default browser
             if (openTutorialBtn) {
@@ -2415,6 +2472,8 @@ Your browser does not support the video tag.
                     }
                 });
             }
+=======
+>>>>>>> 04b6303e9874e98461f530feb73e55d892ddb75e
             
             // Close modals on Escape key
             document.addEventListener('keydown', (e) => {
@@ -3069,8 +3128,12 @@ Your browser does not support the video tag.
 
         // Show torrents for the current content
         function showTorrents(event, season = null, episode = null) {
+<<<<<<< HEAD
             // If Jackett is required but not configured, and alternate mode not enabled, show setup
             if (!hasApiKey && !watchWithoutJackett) {
+=======
+            if (!hasApiKey) {
+>>>>>>> 04b6303e9874e98461f530feb73e55d892ddb75e
                 showApiSetupModal();
                 return;
             }
@@ -3105,15 +3168,20 @@ Your browser does not support the video tag.
             torrentsLoaded = true;
 
             try {
+<<<<<<< HEAD
                 // Build query exactly the same way as above; only change endpoint based on mode
                 const url = watchWithoutJackett
                     ? `${TORRENTLESS_BASE_URL}/search?q=${encodeURIComponent(query)}&page=1`
                     : `${API_BASE_URL}/torrents?q=${encodeURIComponent(query)}`;
                 const response = await fetch(url);
+=======
+                const response = await fetch(`${API_BASE_URL}/torrents?q=${encodeURIComponent(query)}`);
+>>>>>>> 04b6303e9874e98461f530feb73e55d892ddb75e
                 if (!response.ok) {
                     const errorData = await response.json();
                     throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
                 }
+<<<<<<< HEAD
                 const data = await response.json();
                 const toBytes = (s) => {
                     if (!s || typeof s !== 'string') return 0;
@@ -3129,6 +3197,9 @@ Your browser does not support the video tag.
                     : Array.isArray(data.items)
                         ? data.items.map(it => ({ title: it.title, magnet: it.magnet, seeders: Number(it.seeds)||0, size: toBytes(it.size) }))
                         : [];
+=======
+                const torrents = await response.json();
+>>>>>>> 04b6303e9874e98461f530feb73e55d892ddb75e
                 displayTorrents(torrents);
             } catch (error) {
                 console.error('Error fetching torrents:', error);
@@ -3138,7 +3209,11 @@ Your browser does not support the video tag.
 
         // Display torrents
         function displayTorrents(torrents) {
+<<<<<<< HEAD
             allTorrents = (torrents || []).sort((a, b) => (b.seeders||0) - (a.seeders||0));
+=======
+            allTorrents = (torrents || []).sort((a, b) => b.seeders - a.seeders);
+>>>>>>> 04b6303e9874e98461f530feb73e55d892ddb75e
             torrentsPage = 1;
             renderTorrentsPage();
         }
@@ -3293,16 +3368,24 @@ Your browser does not support the video tag.
                     }
                 });
 
+<<<<<<< HEAD
                 item.addEventListener('click', async () => {
+=======
+                item.addEventListener('click', () => {
+>>>>>>> 04b6303e9874e98461f530feb73e55d892ddb75e
                     currentStreamUrl = `${API_BASE_URL}/stream-file?hash=${currentTorrentData.infoHash}&file=${file.index}`;
                     currentSelectedVideoName = file.name;
                     playerTitle.textContent = file.name;
                     mpvControls.style.display = 'flex';
+<<<<<<< HEAD
                     // Ask backend to begin downloading the selected file and subtitles, but don't start playback yet
                     try {
                         await fetch(`${API_BASE_URL}/prepare-file?hash=${currentTorrentData.infoHash}&file=${file.index}`);
                     } catch (_) {}
                     showNotification(`Selected: ${file.name}. Click Play Now or Open in MPV to start.`);
+=======
+                    showNotification(`Selected: ${file.name}`);
+>>>>>>> 04b6303e9874e98461f530feb73e55d892ddb75e
                 });
                 fileList.appendChild(item);
             });
@@ -3795,17 +3878,26 @@ Your browser does not support the video tag.
             }
         }
 
+<<<<<<< HEAD
         async function closeCustomPlayer_() {
             customPlayerContainer.classList.remove('active');
             try { customVideo.pause(); } catch(_) {}
+=======
+        function closeCustomPlayer_() {
+            customPlayerContainer.classList.remove('active');
+            customVideo.pause();
+>>>>>>> 04b6303e9874e98461f530feb73e55d892ddb75e
         }
 
         function togglePlayPause() {
             if (customVideo.paused) {
+<<<<<<< HEAD
                 // Also ensure any textTracks are disabled
                 try {
                     for (const t of customVideo.textTracks || []) { t.mode = 'disabled'; }
                 } catch(_){ }
+=======
+>>>>>>> 04b6303e9874e98461f530feb73e55d892ddb75e
                 customVideo.play();
             } else {
                 customVideo.pause();
@@ -3815,12 +3907,15 @@ Your browser does not support the video tag.
         function skipTime(amount) {
             customVideo.currentTime += amount;
         }
+<<<<<<< HEAD
             // Fully reset video source to clear any residual tracks/cues
             try {
                 customVideo.removeAttribute('src');
                 if (videoSource) videoSource.setAttribute('src', '');
                 customVideo.load();
             } catch(_) {}
+=======
+>>>>>>> 04b6303e9874e98461f530feb73e55d892ddb75e
 
         function toggleFullscreen() {
             if (!document.fullscreenElement) {
@@ -4033,4 +4128,8 @@ Your browser does not support the video tag.
         document.addEventListener('DOMContentLoaded', init);
     </script>
 </body>
+<<<<<<< HEAD
 </html>
+=======
+</html>
+>>>>>>> 04b6303e9874e98461f530feb73e55d892ddb75e

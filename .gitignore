@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Dependencies
 /node_modules
 /Torrentless/node_modules
@@ -13,3 +14,9 @@
 
 # Bat file
 start.bat
+=======
+node_modules/
+dist/
+*.log
+*.lock
+>>>>>>> 04b6303e9874e98461f530feb73e55d892ddb75e

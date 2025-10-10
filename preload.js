@@ -45,4 +45,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
       }
     }
   }
+<<<<<<< HEAD
 });
+=======
+});
+>>>>>>> 04b6303e9874e98461f530feb73e55d892ddb75e

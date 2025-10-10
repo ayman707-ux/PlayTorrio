@@ -10,7 +10,10 @@ import { startServer } from './server.mjs'; // Import the server
 let httpServer;
 let webtorrentClient;
 let mainWindow;
+<<<<<<< HEAD
 let torrentlessProcess; // child process for Torrentless (port 3002)
+=======
+>>>>>>> 04b6303e9874e98461f530feb73e55d892ddb75e
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -133,6 +136,7 @@ if (!gotLock) {
     httpServer = server;
     webtorrentClient = client;
 
+<<<<<<< HEAD
     // Start the Torrentless server (scraper service on http://localhost:3002)
     try {
         // Resolve path to Torrentless/server.js in dev and packaged modes
@@ -160,6 +164,8 @@ if (!gotLock) {
         console.warn('⚠️ Failed to launch Torrentless server:', err?.message || err);
     }
 
+=======
+>>>>>>> 04b6303e9874e98461f530feb73e55d892ddb75e
         mainWindow = createWindow();
 
     // IPC handler to open MPV from renderer
@@ -236,14 +242,21 @@ app.on('will-quit', () => {
             console.log('HTTP server closed.');
         });
     }
+<<<<<<< HEAD
     // Stop Torrentless server
     try {
         if (torrentlessProcess && !torrentlessProcess.killed) {
             torrentlessProcess.kill();
         }
     } catch {}
+=======
+>>>>>>> 04b6303e9874e98461f530feb73e55d892ddb75e
 });
 
 app.on('window-all-closed', () => {
     if (process.platform !== 'darwin') app.quit();
+<<<<<<< HEAD
 });
+=======
+});
+>>>>>>> 04b6303e9874e98461f530feb73e55d892ddb75e
