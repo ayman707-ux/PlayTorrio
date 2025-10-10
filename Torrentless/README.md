@@ -18,7 +18,7 @@ npm start
 3. Open your browser at:
 
 ```
-http://localhost:3000
+http://localhost:3002
 ```
 
 Type a search term (e.g., Batman) and hit Search.
@@ -42,3 +42,6 @@ Type a search term (e.g., Batman) and hit Search.
 
 - If you see no results, check the server logs for errors.
 - If fetches hang or fail, the site may be slow or blocking. You can try increasing the timeout inside `src/scraper.js` or setting a different User-Agent.
+
+
+made by ayman for PlayTorrio! enjoy
