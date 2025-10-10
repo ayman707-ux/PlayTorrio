@@ -60,7 +60,66 @@ async function searchUIndex(query, { page = 1, category = 0 } = {}) {
   return { query, page, items, pagination: { hasNext, nextPage } };
 }
 
-module.exports = { searchUIndex };
+/**
+ * Fetch and parse search results from knaben.org
+ * Example URL: https://knaben.org/search/spiderman/0/1/seeders
+ * @param {string} query
+ * @param {{page?: number}} options
+ * @returns {Promise<{query: string, page: number, items: Array, pagination: { hasNext: boolean, nextPage?: number}}>} 
+ */
+async function searchKnaben(query, { page = 1 } = {}) {
+  const base = 'https://knaben.org';
+  const path = `/search/${encodeURIComponent(query)}/0/${page}/seeders`;
+  const url = base + path;
+
+  const html = await fetchWithRetries(url);
+  const $ = cheerio.load(html);
+
+  const items = [];
+  $('tbody > tr').each((_, el) => {
+    const row = $(el);
+    const tds = row.find('td');
+    if (tds.length < 6) return;
+
+    const category = (tds.eq(0).find('a').first().text() || '').trim();
+
+    // Title and magnet live in the big second column
+    const titleAnchor = tds.eq(1).find('a[title]').first();
+    const magnetAnchor = tds.eq(1).find('a[href^="magnet:"]').first();
+    const title = (titleAnchor.attr('title') || titleAnchor.text() || magnetAnchor.text() || '').trim();
+    const magnet = magnetAnchor.attr('href') || '';
+
+    const size = (tds.eq(2).text() || '').trim();
+    const dateText = (tds.eq(3).text() || '').trim();
+    const seeds = parseInt((tds.eq(4).text() || '0').replace(/[^\d]/g, ''), 10) || 0;
+    const leechers = parseInt((tds.eq(5).text() || '0').replace(/[^\d]/g, ''), 10) || 0;
+
+    // Source page URL (last column often contains origin site link); fall back to the knaben search URL
+    let pageUrl = '';
+    const httpLink = row.find('a[href^="http"]').last().attr('href') || '';
+    pageUrl = httpLink || url;
+
+    if (title && magnet) {
+      items.push({ title, magnet, pageUrl, category, size, seeds, leechers, age: dateText });
+    }
+  });
+
+  // Pagination: look for links pointing to next page index
+  let hasNext = false;
+  let nextPage = undefined;
+  const nextNeedle = `/${page + 1}/seeders`;
+  $('a[href*="/search/"]').each((_, a) => {
+    const href = String($(a).attr('href') || '');
+    if (href.includes(nextNeedle)) {
+      hasNext = true;
+      nextPage = page + 1;
+    }
+  });
+
+  return { query, page, items, pagination: { hasNext, nextPage } };
+}
+
+module.exports = { searchUIndex, searchKnaben };
 
 // Internal: fetch URL with browser-like headers and minimal retry/alternate base strategy
 async function fetchWithRetries(urlStr) {
@@ -100,6 +159,13 @@ async function fetchWithRetries(urlStr) {
 }
 
 function buildRequest(urlStr, { userAgent }) {
+  let origin = undefined;
+  try {
+    const u = new URL(urlStr);
+    origin = u.origin;
+  } catch (_) {
+    origin = undefined;
+  }
   return axios.get(urlStr, {
     timeout: 20000,
     maxRedirects: 5,
@@ -109,8 +175,7 @@ function buildRequest(urlStr, { userAgent }) {
       'Accept-Language': 'en-US,en;q=0.9',
       'Cache-Control': 'no-cache',
       'Pragma': 'no-cache',
-      'Referer': 'https://uindex.org/',
-      'Origin': 'https://uindex.org',
+      ...(origin ? { 'Referer': origin + '/', 'Origin': origin } : {}),
       'Upgrade-Insecure-Requests': '1',
       'Sec-Fetch-Dest': 'document',
       'Sec-Fetch-Mode': 'navigate',
@@ -121,3 +186,15 @@ function buildRequest(urlStr, { userAgent }) {
     validateStatus: (s) => s >= 200 && s < 400,
   });
 }
+
+// Helper: extract infohash from magnet (uppercase)
+function extractInfoHash(magnet) {
+  try {
+    const m = /btih:([A-Za-z0-9]{32,40})/i.exec(magnet);
+    return m ? m[1].toUpperCase() : '';
+  } catch (_) {
+    return '';
+  }
+}
+
+module.exports.extractInfoHash = extractInfoHash;
