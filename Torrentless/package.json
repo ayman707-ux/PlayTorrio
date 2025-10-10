@@ -14,8 +14,8 @@
     "magnet",
     "torrent"
   ],
-  "author": "",
-  "license": "MIT",
+  "author": "Ayman",
+  "license": "GPL (GNU General Public License)",
   "dependencies": {
     "axios": "^1.7.4",
     "cheerio": "^1.0.0",
