@@ -1534,22 +1534,13 @@
                 <i class="fas fa-save"></i>
                 Save & Continue
             </button>
-<<<<<<< HEAD
-            <div class="api-btn-group-alt" style="display:flex;flex-direction:column;gap:10px;">
-                <button class="api-btn api-btn-secondary" id="skipSetup">
-                    <i class="fas fa-forward"></i>
-                    Watch without Jackett
-                </button>
-                <div style="font-size:0.9rem;color:#fbbf24;background:rgba(251,191,36,0.12);padding:8px 10px;border-radius:8px;">
-                    Warning: This mode may have slower buffering and fewer seeders. Results are fetched by a local scraper.
-                </div>
-            </div>
-=======
-            <button class="api-btn api-btn-secondary" id="skipSetup">
-                <i class="fas fa-times"></i>
-                Skip for Now
+            <button class="api-btn api-btn-secondary" id="useTorrentlessSetup">
+                <i class="fas fa-play"></i>
+                Watch without Jackett
             </button>
->>>>>>> 04b6303e9874e98461f530feb73e55d892ddb75e
+            <button class="api-btn" id="videoTutorialFirst" style="background:#0d6efd; color:#fff;">
+                <i class="fas fa-video"></i> Video Tutorial
+            </button>
         </div>
     </div>
 </div>
@@ -1576,6 +1567,20 @@
                 <label for="newApiKey">New API Key:</label>
                 <input type="text" id="newApiKey" class="api-input" placeholder="Enter new Jackett API key..." />
             </div>
+            <div style="margin-top:1rem; padding:1rem; border:1px solid rgba(255,255,255,0.15); border-radius:8px; background: rgba(255,255,255,0.05);">
+                <label style="display:flex; align-items:center; gap:0.6rem; cursor:pointer;">
+                    <input type="checkbox" id="useTorrentlessToggle" />
+                    <span>Watch without Jackett (use built-in sources)</span>
+                </label>
+                <div style="margin-top:0.5rem; color:#ffc107; font-size:0.9rem;">
+                    Warning: may result in fewer sources and slower buffering.
+                </div>
+                <div style="margin-top:0.75rem;">
+                    <button class="api-btn" id="videoTutorialBtn" style="background:#0d6efd; color:#fff;">
+                        <i class="fas fa-video"></i> Video Tutorial
+                    </button>
+                </div>
+            </div>
         </div>
         
         <div class="settings-buttons">
@@ -1587,23 +1592,6 @@
                 <i class="fas fa-save"></i>
                 Save Changes
             </button>
-<<<<<<< HEAD
-            <button class="api-btn api-btn-primary" id="openTutorialBtn" style="background:#ef4444;">
-                <i class="fas fa-video"></i>
-                Watch video tutorial
-            </button>
-        </div>
-        <div class="settings-section">
-            <h3>Watch Without Jackett</h3>
-            <div class="api-input-group" style="display:flex;align-items:center;gap:10px;">
-                <input type="checkbox" id="toggleWatchWithoutJackett" />
-                <label for="toggleWatchWithoutJackett">Enable "Watch without Jackett"</label>
-            </div>
-            <div style="font-size:0.9rem;color:#fbbf24;background:rgba(251,191,36,0.12);padding:8px 10px;border-radius:8px;">
-                Warning: Using this mode may lead to slower buffering and lower seeder counts. It uses the bundled local scraper instead of Jackett.
-            </div>
-=======
->>>>>>> 04b6303e9874e98461f530feb73e55d892ddb75e
         </div>
     </div>
 </div>
@@ -1982,12 +1970,7 @@ Your browser does not support the video tag.
 <script>
         // API configuration
         const TMDB_API_KEY = 'b3556f3b206e16f82df4d1f6fd4545e6';
-<<<<<<< HEAD
-    const API_BASE_URL = 'http://localhost:3000/api';
-    const TORRENTLESS_BASE_URL = 'http://localhost:3002/api';
-=======
         const API_BASE_URL = 'http://localhost:3000/api';
->>>>>>> 04b6303e9874e98461f530feb73e55d892ddb75e
         
         // DOM elements - Home
         const moviesGrid = document.getElementById('moviesGrid');
@@ -2035,7 +2018,6 @@ Your browser does not support the video tag.
         const apiSetupModal = document.getElementById('apiSetupModal');
         const firstTimeApiKey = document.getElementById('firstTimeApiKey');
         const saveFirstTimeApiKey = document.getElementById('saveFirstTimeApiKey');
-        const skipSetup = document.getElementById('skipSetup');
     const openJackettLinkBtn = document.getElementById('openJackettLink');
         
         // Settings Modal elements
@@ -2045,15 +2027,9 @@ Your browser does not support the video tag.
         const settingsClose = document.getElementById('settingsClose');
         const currentApiKey = document.getElementById('currentApiKey');
         const newApiKey = document.getElementById('newApiKey');
-<<<<<<< HEAD
-    const saveSettings = document.getElementById('saveSettings');
-    const cancelSettings = document.getElementById('cancelSettings');
-    const openTutorialBtn = document.getElementById('openTutorialBtn');
-    const toggleWatchWithoutJackett = document.getElementById('toggleWatchWithoutJackett');
-=======
         const saveSettings = document.getElementById('saveSettings');
         const cancelSettings = document.getElementById('cancelSettings');
->>>>>>> 04b6303e9874e98461f530feb73e55d892ddb75e
+        const useTorrentlessToggle = document.getElementById('useTorrentlessToggle');
         
         // MPV Player elements
         const mpvPlayerContainer = document.getElementById('mpvPlayerContainer');
@@ -2125,7 +2101,7 @@ Your browser does not support the video tag.
     const wcjsAudioClose = document.getElementById('wcjsAudioClose');
         
         // Global variables
-        let currentPage = 1; // home page pagination
+    let currentPage = 1; // home page pagination
         let isLoading = false; // route-scoped loading flag
         let currentContent = null;
         let currentMediaType = 'movie';
@@ -2138,12 +2114,8 @@ Your browser does not support the video tag.
         let currentSubtitles = [];
     let subtitleTrack = null;
     let currentSubtitleFile = null; // filename served under /subtitles to delete on switch
-<<<<<<< HEAD
     let hasApiKey = false;
-    let watchWithoutJackett = false; // persisted in localStorage
-=======
-        let hasApiKey = false;
->>>>>>> 04b6303e9874e98461f530feb73e55d892ddb75e
+    let useTorrentless = false; // global toggle for Torrentless mode
         let currentCategory = 'all';
         let allTorrents = [];
         let torrentsPage = 1;
@@ -2222,18 +2194,6 @@ Your browser does not support the video tag.
             await checkApiKeyStatus();
             setupEventListeners();
             handleRoute(); // route-aware initial load
-<<<<<<< HEAD
-            try { watchWithoutJackett = localStorage.getItem('watchWithoutJackett') === 'true'; } catch {}
-            if (watchWithoutJackett) {
-                try {
-                    const h = await fetch(`${TORRENTLESS_BASE_URL}/health`, { cache: 'no-store' });
-                    if (!h.ok) throw new Error('not ok');
-                } catch {
-                    showNotification('Watch without Jackett is enabled, but the local scraper is not reachable.');
-                }
-            }
-=======
->>>>>>> 04b6303e9874e98461f530feb73e55d892ddb75e
         }
         
         // Check API key status
@@ -2242,13 +2202,8 @@ Your browser does not support the video tag.
                 const response = await fetch(`${API_BASE_URL}/check-api-key`);
                 const data = await response.json();
                 hasApiKey = data.hasApiKey;
-<<<<<<< HEAD
-                try { watchWithoutJackett = localStorage.getItem('watchWithoutJackett') === 'true'; } catch {}
-                if (!hasApiKey && !watchWithoutJackett) {
-=======
-                
-                if (!hasApiKey) {
->>>>>>> 04b6303e9874e98461f530feb73e55d892ddb75e
+                useTorrentless = !!data.useTorrentless;
+                if (!hasApiKey && !useTorrentless) {
                     showApiSetupModal();
                 } else {
                     await loadCurrentApiKey();
@@ -2257,15 +2212,8 @@ Your browser does not support the video tag.
             } catch (error) {
                 console.error('Error checking API key status:', error);
                 // If server is not up yet, still prompt the user to install Jackett / set API key
-<<<<<<< HEAD
-                if (!watchWithoutJackett) {
-                    showApiSetupModal();
-                    showNotification('Local server not ready. You can still enter the API key now.');
-                }
-=======
                 showApiSetupModal();
-                showNotification('Local server not ready. You can still enter the API key now.');
->>>>>>> 04b6303e9874e98461f530feb73e55d892ddb75e
+                showNotification('Local server not ready. Enter Jackett key or choose Watch without Jackett.');
             }
         }
         
@@ -2290,13 +2238,8 @@ Your browser does not support the video tag.
         function showApiSetupModal() {
             apiSetupModal.classList.add('active');
             document.body.style.overflow = 'hidden';
-<<<<<<< HEAD
-            // Notify user to install Jackett and provide API key, or use the alternate mode
-            showNotification('Enter your Jackett API key, or click "Watch without Jackett" to continue.');
-=======
-            // Notify user to install Jackett and provide API key
-            showNotification('Please install Jackett and enter your API key, or Skip for now.');
->>>>>>> 04b6303e9874e98461f530feb73e55d892ddb75e
+            // Notify user to install Jackett and provide API key, or use Torrentless
+            showNotification('Enter Jackett API key or choose Watch without Jackett (fewer sources, slower buffering).');
         }
         
         // Hide API setup modal
@@ -2309,13 +2252,17 @@ Your browser does not support the video tag.
         async function showSettingsModal() {
             await loadCurrentApiKey();
             newApiKey.value = '';
-<<<<<<< HEAD
-            try { watchWithoutJackett = localStorage.getItem('watchWithoutJackett') === 'true'; } catch {}
-            if (toggleWatchWithoutJackett) toggleWatchWithoutJackett.checked = !!watchWithoutJackett;
-=======
->>>>>>> 04b6303e9874e98461f530feb73e55d892ddb75e
             settingsModal.classList.add('active');
             document.body.style.overflow = 'hidden';
+            // Load useTorrentless setting state
+            try {
+                const res = await fetch(`${API_BASE_URL}/settings`);
+                if (res.ok) {
+                    const s = await res.json();
+                    useTorrentless = !!s.useTorrentless;
+                    if (useTorrentlessToggle) useTorrentlessToggle.checked = useTorrentless;
+                }
+            } catch(_) {}
         }
         
         // Hide settings modal
@@ -2358,73 +2305,68 @@ Your browser does not support the video tag.
             }
         }
         
-        // Save API key (settings)
+        // Save Settings: persist useTorrentless and optionally API key, then close modal
         async function saveSettings_() {
-<<<<<<< HEAD
-            // persist the toggle
-            if (toggleWatchWithoutJackett) {
-                const enabled = !!toggleWatchWithoutJackett.checked;
-                watchWithoutJackett = enabled;
-                try { localStorage.setItem('watchWithoutJackett', String(enabled)); } catch {}
-                if (enabled) {
-                    showNotification('Watch without Jackett enabled. Searches will use the local scraper and may buffer slowly.');
-                } else {
-                    showNotification('Watch without Jackett disabled. Jackett will be used for searches.');
-                }
-            }
+            const apiKey = newApiKey.value.trim();
+            const toggleEl = document.getElementById('useTorrentlessToggle');
+            const desiredTorrentless = toggleEl ? !!toggleEl.checked : useTorrentless;
 
-            const apiKey = newApiKey.value.trim();
-            
-            if (!apiKey) {
-                hideSettingsModal();
-                return; // no API update, just saved toggle
-=======
-            const apiKey = newApiKey.value.trim();
-            
-            if (!apiKey) {
-                showNotification('Please enter an API key');
-                return;
->>>>>>> 04b6303e9874e98461f530feb73e55d892ddb75e
-            }
-            
+            let apiResult = null;
             try {
-                const response = await fetch(`${API_BASE_URL}/set-api-key`, {
+                // Persist Torrentless toggle first so UI/search respects it immediately
+                await fetch(`${API_BASE_URL}/settings`, {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ apiKey })
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ useTorrentless: desiredTorrentless })
                 });
-                
-                const data = await response.json();
-                
-                if (response.ok) {
-                    hasApiKey = true;
-                    hideSettingsModal();
-                    showNotification('API key updated successfully!');
-                    await loadCurrentApiKey();
+                useTorrentless = desiredTorrentless;
+
+                // If an API key was provided, attempt to save it; otherwise skip quietly
+                if (apiKey) {
+                    const response = await fetch(`${API_BASE_URL}/set-api-key`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ apiKey })
+                    });
+                    apiResult = await response.json();
+                    if (response.ok) {
+                        hasApiKey = true;
+                        await loadCurrentApiKey();
+                        showNotification('Settings saved. API key updated.');
+                    } else {
+                        showNotification(apiResult.error || 'Failed to update API key');
+                    }
                 } else {
-                    showNotification(data.error || 'Failed to update API key');
+                    showNotification('Settings saved.');
                 }
             } catch (error) {
-                console.error('Error updating API key:', error);
-                showNotification('Error updating API key');
+                console.error('Error saving settings:', error);
+                // Even if API key call fails, close the modal when toggling Torrentless is desired
+            } finally {
+                hideSettingsModal();
             }
         }
         
-        function setupEventListeners() {
+    function setupEventListeners() {
             // API Setup Modal
             saveFirstTimeApiKey.addEventListener('click', saveFirstTimeApiKey_);
-<<<<<<< HEAD
-            skipSetup.addEventListener('click', async () => {
-                try { localStorage.setItem('watchWithoutJackett', 'true'); } catch {}
-                watchWithoutJackett = true;
-                hideApiSetupModal();
-                showNotification('Watch without Jackett enabled. Searches will use the local scraper.');
-            });
-=======
-            skipSetup.addEventListener('click', hideApiSetupModal);
->>>>>>> 04b6303e9874e98461f530feb73e55d892ddb75e
+            const useTorrentlessSetupBtn = document.getElementById('useTorrentlessSetup');
+            if (useTorrentlessSetupBtn) {
+                useTorrentlessSetupBtn.addEventListener('click', async () => {
+                    try {
+                        await fetch(`${API_BASE_URL}/settings`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ useTorrentless: true }) });
+                        hideApiSetupModal();
+                        showNotification('Watch without Jackett enabled.');
+                    } catch { showNotification('Failed to enable Watch without Jackett'); }
+                });
+            }
+            const videoTutorialFirstBtn = document.getElementById('videoTutorialFirst');
+            if (videoTutorialFirstBtn) {
+                videoTutorialFirstBtn.addEventListener('click', async () => {
+                    const url = 'https://www.youtube.com/watch?v=3igLReZFFzg';
+                    if (window.electronAPI?.openExternal) await window.electronAPI.openExternal(url);
+                });
+            }
             
             // Settings Modal
             settingsBtn.addEventListener('click', showSettingsModal);
@@ -2436,6 +2378,36 @@ Your browser does not support the video tag.
             settingsClose.addEventListener('click', hideSettingsModal);
             saveSettings.addEventListener('click', saveSettings_);
             cancelSettings.addEventListener('click', hideSettingsModal);
+            const videoTutorialBtnEl = document.getElementById('videoTutorialBtn');
+            if (videoTutorialBtnEl) {
+                videoTutorialBtnEl.addEventListener('click', async () => {
+                    const url = 'https://www.youtube.com/watch?v=3igLReZFFzg';
+                    if (window.electronAPI?.openExternal) await window.electronAPI.openExternal(url);
+                });
+            }
+            // Watch without Jackett toggle
+            if (useTorrentlessToggle) {
+                useTorrentlessToggle.addEventListener('change', async (e) => {
+                    const enabled = !!e.target.checked;
+                    try {
+                        const res = await fetch(`${API_BASE_URL}/settings`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ useTorrentless: enabled })
+                        });
+                        if (res.ok) {
+                            useTorrentless = enabled;
+                            showNotification(enabled ? 'Watch without Jackett enabled.' : 'Watch without Jackett disabled.');
+                        } else {
+                            e.target.checked = !enabled;
+                            showNotification('Failed to update setting.');
+                        }
+                    } catch {
+                        e.target.checked = !enabled;
+                        showNotification('Failed to update setting.');
+                    }
+                });
+            }
 
             // Open Jackett installer link in default browser
             if (openJackettLinkBtn) {
@@ -2454,26 +2426,6 @@ Your browser does not support the video tag.
                     }
                 });
             }
-<<<<<<< HEAD
-
-            // Open video tutorial link in default browser
-            if (openTutorialBtn) {
-                openTutorialBtn.addEventListener('click', async () => {
-                    const url = 'https://www.youtube.com/watch?v=3igLReZFFzg';
-                    if (window.electronAPI?.openExternal) {
-                        const res = await window.electronAPI.openExternal(url);
-                        if (!res?.success) {
-                            showNotification('Failed to open browser. Copying link to clipboard.');
-                            try { await navigator.clipboard.writeText(url); } catch {}
-                        }
-                    } else {
-                        showNotification('Copying link to clipboard. Open it in your browser.');
-                        try { await navigator.clipboard.writeText(url); } catch {}
-                    }
-                });
-            }
-=======
->>>>>>> 04b6303e9874e98461f530feb73e55d892ddb75e
             
             // Close modals on Escape key
             document.addEventListener('keydown', (e) => {
@@ -3128,12 +3080,7 @@ Your browser does not support the video tag.
 
         // Show torrents for the current content
         function showTorrents(event, season = null, episode = null) {
-<<<<<<< HEAD
-            // If Jackett is required but not configured, and alternate mode not enabled, show setup
-            if (!hasApiKey && !watchWithoutJackett) {
-=======
-            if (!hasApiKey) {
->>>>>>> 04b6303e9874e98461f530feb73e55d892ddb75e
+            if (!hasApiKey && !useTorrentless) {
                 showApiSetupModal();
                 return;
             }
@@ -3168,38 +3115,12 @@ Your browser does not support the video tag.
             torrentsLoaded = true;
 
             try {
-<<<<<<< HEAD
-                // Build query exactly the same way as above; only change endpoint based on mode
-                const url = watchWithoutJackett
-                    ? `${TORRENTLESS_BASE_URL}/search?q=${encodeURIComponent(query)}&page=1`
-                    : `${API_BASE_URL}/torrents?q=${encodeURIComponent(query)}`;
-                const response = await fetch(url);
-=======
                 const response = await fetch(`${API_BASE_URL}/torrents?q=${encodeURIComponent(query)}`);
->>>>>>> 04b6303e9874e98461f530feb73e55d892ddb75e
                 if (!response.ok) {
                     const errorData = await response.json();
                     throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
                 }
-<<<<<<< HEAD
-                const data = await response.json();
-                const toBytes = (s) => {
-                    if (!s || typeof s !== 'string') return 0;
-                    const m = s.trim().match(/([0-9]+(?:\.[0-9]+)?)\s*(KB|MB|GB|TB)/i);
-                    if (!m) return 0;
-                    const val = parseFloat(m[1]);
-                    const unit = m[2].toUpperCase();
-                    const mult = unit === 'KB' ? 1024 : unit === 'MB' ? 1024**2 : unit === 'GB' ? 1024**3 : 1024**4;
-                    return Math.max(0, Math.floor(val * mult));
-                };
-                const torrents = Array.isArray(data)
-                    ? data
-                    : Array.isArray(data.items)
-                        ? data.items.map(it => ({ title: it.title, magnet: it.magnet, seeders: Number(it.seeds)||0, size: toBytes(it.size) }))
-                        : [];
-=======
                 const torrents = await response.json();
->>>>>>> 04b6303e9874e98461f530feb73e55d892ddb75e
                 displayTorrents(torrents);
             } catch (error) {
                 console.error('Error fetching torrents:', error);
@@ -3209,11 +3130,7 @@ Your browser does not support the video tag.
 
         // Display torrents
         function displayTorrents(torrents) {
-<<<<<<< HEAD
-            allTorrents = (torrents || []).sort((a, b) => (b.seeders||0) - (a.seeders||0));
-=======
             allTorrents = (torrents || []).sort((a, b) => b.seeders - a.seeders);
->>>>>>> 04b6303e9874e98461f530feb73e55d892ddb75e
             torrentsPage = 1;
             renderTorrentsPage();
         }
@@ -3368,24 +3285,16 @@ Your browser does not support the video tag.
                     }
                 });
 
-<<<<<<< HEAD
                 item.addEventListener('click', async () => {
-=======
-                item.addEventListener('click', () => {
->>>>>>> 04b6303e9874e98461f530feb73e55d892ddb75e
                     currentStreamUrl = `${API_BASE_URL}/stream-file?hash=${currentTorrentData.infoHash}&file=${file.index}`;
                     currentSelectedVideoName = file.name;
                     playerTitle.textContent = file.name;
                     mpvControls.style.display = 'flex';
-<<<<<<< HEAD
                     // Ask backend to begin downloading the selected file and subtitles, but don't start playback yet
                     try {
                         await fetch(`${API_BASE_URL}/prepare-file?hash=${currentTorrentData.infoHash}&file=${file.index}`);
                     } catch (_) {}
                     showNotification(`Selected: ${file.name}. Click Play Now or Open in MPV to start.`);
-=======
-                    showNotification(`Selected: ${file.name}`);
->>>>>>> 04b6303e9874e98461f530feb73e55d892ddb75e
                 });
                 fileList.appendChild(item);
             });
@@ -3878,26 +3787,17 @@ Your browser does not support the video tag.
             }
         }
 
-<<<<<<< HEAD
         async function closeCustomPlayer_() {
             customPlayerContainer.classList.remove('active');
             try { customVideo.pause(); } catch(_) {}
-=======
-        function closeCustomPlayer_() {
-            customPlayerContainer.classList.remove('active');
-            customVideo.pause();
->>>>>>> 04b6303e9874e98461f530feb73e55d892ddb75e
         }
 
         function togglePlayPause() {
             if (customVideo.paused) {
-<<<<<<< HEAD
                 // Also ensure any textTracks are disabled
                 try {
                     for (const t of customVideo.textTracks || []) { t.mode = 'disabled'; }
                 } catch(_){ }
-=======
->>>>>>> 04b6303e9874e98461f530feb73e55d892ddb75e
                 customVideo.play();
             } else {
                 customVideo.pause();
@@ -3907,15 +3807,12 @@ Your browser does not support the video tag.
         function skipTime(amount) {
             customVideo.currentTime += amount;
         }
-<<<<<<< HEAD
             // Fully reset video source to clear any residual tracks/cues
             try {
                 customVideo.removeAttribute('src');
                 if (videoSource) videoSource.setAttribute('src', '');
                 customVideo.load();
             } catch(_) {}
-=======
->>>>>>> 04b6303e9874e98461f530feb73e55d892ddb75e
 
         function toggleFullscreen() {
             if (!document.fullscreenElement) {
@@ -4128,8 +4025,4 @@ Your browser does not support the video tag.
         document.addEventListener('DOMContentLoaded', init);
     </script>
 </body>
-<<<<<<< HEAD
 </html>
-=======
-</html>
->>>>>>> 04b6303e9874e98461f530feb73e55d892ddb75e
