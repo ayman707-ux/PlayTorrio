@@ -1,0 +1,15 @@
+# Dependencies
+/node_modules
+/Torrentless/node_modules
+
+# Build output
+/dist
+
+# VSCode
+.vscode
+
+# MPV
+/mpv
+
+# Bat file
+start.bat

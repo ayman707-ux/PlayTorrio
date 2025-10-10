@@ -1,0 +1,79 @@
+{
+  "name": "playtorrio",
+  "version": "1.0.0",
+  "description": "A sophisticated application designed to seamlessly interface with Jackett for fetching torrents and provide high-performance streaming directly through an integrated API.",
+  "author": {
+    "name": "ayman",
+    "email": "aymanisthedude1@gmail.com"
+  },
+  "type": "module",
+  "main": "main.js",
+  "homepage": "./",
+  "scripts": {
+    "start": "electron .",
+    "serve": "node server.mjs",
+    "build": "electron-builder"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.21.2",
+    "axios": "^1.7.4",
+    "cheerio": "^1.0.0",
+    "got": "^14.4.7",
+    "multer": "^2.0.1",
+    "node-fetch": "^3.3.2",
+    "parse-torrent": "^9.0.3",
+    "webtorrent": "^2.6.8",
+    "xml2js": "^0.6.2"
+  },
+  "devDependencies": {
+    "electron": "^37.2.5",
+    "electron-builder": "^24.13.3"
+  },
+  "optionalDependencies": {
+    "wcjs-prebuilt": "^3.0.0",
+    "wcjs-renderer": "^1.0.2"
+  },
+  "build": {
+    "appId": "com.ayman.PlayTorrio",
+    "productName": "PlayTorrio",
+    "artifactName": "${productName}-Setup-${version}.${ext}",
+    "files": [
+      "main.js",
+      "preload.js",
+      "server.mjs",
+      "Torrentless/**/*",
+      "jackett_api_key.json",
+      "public/**/*",
+      "node_modules/**/*",
+      "mpv/**"
+    ],
+    "asarUnpack": [
+      "mpv/**",
+      "Torrentless/**"
+    ],
+    "extraResources": [
+      { "from": "mpv", "to": "mpv" }
+    ],
+    "win": {
+      "icon": "icon.ico",
+      "target": ["nsis"]
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowElevation": true,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "PlayTorrio",
+      "runAfterFinish": true
+    },
+    "mac": {
+      "icon": "icon.icns"
+    },
+    "linux": {
+      "icon": "icon.png"
+    }
+  }
+}

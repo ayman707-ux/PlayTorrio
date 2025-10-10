@@ -1,0 +1,4036 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Ayman's PlayTorrio</title>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"/>
+<style>
+        :root {
+            /* Purple theme */
+            --primary: #2a1847;    /* header/cards */
+            --secondary: #8b5cf6;  /* subtle accents */
+            --tertiary: #c084fc;   /* highlights/pills */
+            --dark: #120a1f;       /* page background */
+            --light: #f8f9fa;      /* text */
+            --gray: #6c757d;       /* muted text */
+            --danger: #dc3545;
+            --success: #28a745;
+            /* Accent (kept var name for minimal changes) */
+            --vlc-orange: #a855f7; /* accent purple */
+            --vlc-dark: #2d2d2d;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: var(--dark);
+            color: var(--light);
+            overflow-x: hidden;
+        }
+        
+        header {
+            background-color: var(--primary);
+            padding: 1rem 2rem;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+        
+        .header-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--light);
+            text-decoration: none;
+        }
+        
+        .logo span {
+            color: var(--vlc-orange);
+        }
+        
+        .search-container {
+            flex: 1;
+            max-width: 600px;
+            margin: 0 2rem;
+            position: relative;
+        }
+        
+        .search-container input {
+            width: 100%;
+            padding: 0.8rem 1.2rem;
+            padding-left: 3rem;
+            border-radius: 30px;
+            border: none;
+            background-color: rgba(255, 255, 255, 0.1);
+            color: var(--light);
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+        
+        .search-container input:focus {
+            outline: none;
+            background-color: rgba(255, 255, 255, 0.15);
+            box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.3);
+        }
+        
+        .search-icon {
+            position: absolute;
+            left: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--gray);
+        }
+        
+        .user-actions {
+            display: flex;
+            gap: 1rem;
+        }
+        
+        .btn {
+            padding: 0.6rem 1.2rem;
+            border-radius: 30px;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .btn-primary {
+            background-color: var(--vlc-orange);
+            color: white;
+        }
+        
+        .btn-outline {
+            background-color: transparent;
+            border: 2px solid var(--vlc-orange);
+            color: var(--vlc-orange);
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        
+        .btn-primary:hover {
+            background-color: #9333ea;
+        }
+        
+        .btn-outline:hover {
+            background-color: rgba(168, 85, 247, 0.1);
+        }
+        
+        main {
+            max-width: 1400px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+        
+        .section-title {
+            font-size: 1.8rem;
+            margin-bottom: 1.5rem;
+            padding-left: 1rem;
+            border-left: 4px solid var(--vlc-orange);
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        .section-title i {
+            color: var(--tertiary);
+        }
+        
+        .categories {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            overflow-x: auto;
+            padding: 0.5rem 0;
+        }
+        
+        .category {
+            padding: 0.8rem 1.5rem;
+            background-color: rgba(255, 255, 255, 0.08);
+            border-radius: 30px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+            font-weight: 600;
+        }
+        
+        .category:hover, .category.active {
+            background-color: var(--vlc-orange);
+            color: white;
+        }
+        
+        .movies-grid, .genre-grid, .genre-results-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 3rem;
+        }
+        
+        .movie-card, .genre-card {
+            background-color: var(--primary);
+            border-radius: 10px;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            position: relative;
+            cursor: pointer;
+        }
+        
+        .movie-card:hover, .genre-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 12px 16px rgba(0, 0, 0, 0.3);
+        }
+        
+        .movie-poster {
+            width: 100%;
+            height: 300px;
+            object-fit: cover;
+            display: block;
+        }
+        
+        .movie-info, .genre-info {
+            padding: 1rem;
+        }
+        
+        .movie-title, .genre-title {
+            font-size: 1.1rem;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .movie-year {
+            color: var(--tertiary);
+            font-size: 0.9rem;
+        }
+        
+        .movie-rating {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background-color: var(--tertiary);
+            color: #1f1140;
+            padding: 0.3rem 0.6rem;
+            border-radius: 30px;
+            font-weight: 700;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 2rem;
+            font-size: 1.2rem;
+            color: var(--gray);
+        }
+        
+        .loading i {
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.9);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+        
+        .modal.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+        
+        .modal-content {
+            background-color: var(--primary);
+            border-radius: 10px;
+            overflow: hidden;
+            width: 90%;
+            max-width: 1000px;
+            max-height: 90vh;
+            overflow-y: auto;
+            position: relative;
+        }
+        
+        .modal-close {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: rgba(0, 0, 0, 0.5);
+            color: white;
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            font-size: 1.2rem;
+            cursor: pointer;
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .modal-header {
+            position: relative;
+            height: 400px;
+            overflow: hidden;
+        }
+        
+        .modal-backdrop {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            filter: brightness(0.4);
+        }
+        
+        .modal-header-content {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            padding: 2rem;
+            display: flex;
+            gap: 2rem;
+        }
+        
+        .modal-poster {
+            width: 200px;
+            height: 300px;
+            border-radius: 10px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.5);
+        }
+        
+        .modal-title {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+        }
+        
+        .modal-info {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+            align-items: center;
+        }
+        
+        .modal-rating {
+            background-color: var(--tertiary);
+            color: #1f1140;
+            padding: 0.3rem 0.8rem;
+            border-radius: 30px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+        
+        .modal-year {
+            font-size: 1.2rem;
+            color: var(--gray);
+        }
+        
+        .modal-tagline {
+            font-style: italic;
+            margin-bottom: 1rem;
+            color: var(--tertiary);
+        }
+        
+        .modal-body {
+            padding: 2rem;
+        }
+        
+        .modal-section-title {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            color: var(--vlc-orange);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .modal-overview {
+            margin-bottom: 2rem;
+            line-height: 1.6;
+        }
+        
+        .cast-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        
+        .cast-card {
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+        
+        .cast-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .cast-img {
+            width: 100%;
+            height: 160px;
+            object-fit: cover;
+            border-radius: 10px;
+            margin-bottom: 0.5rem;
+        }
+        
+        .cast-name {
+            font-weight: 600;
+            margin-bottom: 0.2rem;
+            font-size: 0.9rem;
+        }
+        
+        .cast-character {
+            font-size: 0.8rem;
+            color: var(--gray);
+        }
+        
+        .similar-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 1rem;
+        }
+        
+        .seasons-container {
+            margin-bottom: 2rem;
+        }
+        
+        .season-selector {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }
+        
+        .season-btn {
+            padding: 0.5rem 1rem;
+            background-color: rgba(255, 255, 255, 0.1);
+            border: none;
+            border-radius: 30px;
+            color: var(--light);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .season-btn.active {
+            background-color: var(--vlc-orange);
+            color: white;
+        }
+        
+        .episodes-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+        
+        .episode-card {
+            background-color: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+
+        .episode-card:hover {
+            border-color: var(--secondary);
+        }
+
+        .episode-card.selected {
+            border-color: var(--vlc-orange);
+            background-color: rgba(255, 105, 0, 0.1);
+        }
+        
+        .episode-img {
+            width: 100%;
+            height: 120px;
+            object-fit: cover;
+        }
+        
+        .episode-info {
+            padding: 0.8rem;
+        }
+        
+        .episode-title {
+            font-weight: 600;
+            margin-bottom: 0.3rem;
+            font-size: 0.9rem;
+        }
+        
+        .episode-date {
+            font-size: 0.8rem;
+            color: var(--gray);
+        }
+        
+        .torrents-container {
+            background-color: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            padding: 1.5rem;
+            margin-top: 2rem;
+        }
+        
+        .torrents-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+        
+        .torrents-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        
+        .torrent-item {
+            background-color: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            padding: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .torrent-info {
+            flex: 1;
+        }
+        
+        .torrent-name {
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+        
+        .torrent-details {
+            display: flex;
+            gap: 1rem;
+            font-size: 0.9rem;
+            color: var(--gray);
+        }
+        
+        .torrent-quality {
+            background-color: var(--tertiary);
+            color: var(--dark);
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            font-weight: 600;
+            font-size: 0.8rem;
+        }
+        
+        .torrent-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .torrent-pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-top: 1rem;
+        }
+
+        .torrent-pagination button {
+            background: none;
+            border: none;
+            color: var(--light);
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+
+        .torrent-pagination button:disabled {
+            color: var(--gray);
+            cursor: not-allowed;
+        }
+
+        .torrent-pagination span {
+            margin: 0 1rem;
+        }
+        
+        .torrent-btn {
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .btn-play {
+            background-color: var(--vlc-orange);
+            color: white;
+        }
+        
+        .btn-copy {
+            background-color: var(--secondary);
+            color: white;
+        }
+
+        .btn-play-now {
+            background-color: var(--success);
+            color: white;
+        }
+
+        /* API Key Setup Modal */
+        .api-setup-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.95);
+            z-index: 5000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+        
+        .api-setup-modal.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+        
+        .api-setup-content {
+            background: linear-gradient(135deg, var(--primary), var(--dark));
+            border-radius: 15px;
+            padding: 3rem;
+            max-width: 500px;
+            width: 90%;
+            text-align: center;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+            border: 2px solid var(--vlc-orange);
+        }
+        
+        .api-setup-title {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+            color: var(--vlc-orange);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+        
+        .api-setup-description {
+            color: var(--light);
+            margin-bottom: 2rem;
+            line-height: 1.6;
+        }
+        
+        .api-input-group {
+            margin-bottom: 2rem;
+        }
+        
+        .api-input-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: var(--tertiary);
+            font-weight: 600;
+        }
+        
+        .api-input {
+            width: 100%;
+            padding: 1rem;
+            border-radius: 8px;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            background-color: rgba(255, 255, 255, 0.1);
+            color: var(--light);
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+        
+        .api-input:focus {
+            outline: none;
+            border-color: var(--vlc-orange);
+            background-color: rgba(255, 255, 255, 0.15);
+        }
+        
+        .api-setup-buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+        }
+        
+        .api-btn {
+            padding: 1rem 2rem;
+            border-radius: 8px;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 1rem;
+        }
+        
+        .api-btn-primary {
+            background-color: var(--vlc-orange);
+            color: white;
+        }
+        
+        .api-btn-primary:hover {
+            background-color: #e55a00;
+            transform: translateY(-2px);
+        }
+        
+        .api-btn-secondary {
+            background-color: transparent;
+            color: var(--gray);
+            border: 2px solid var(--gray);
+        }
+        
+        .api-btn-secondary:hover {
+            color: var(--light);
+            border-color: var(--light);
+        }
+
+        /* Settings Modal */
+        .settings-modal {
+            position: fixed;
+            inset: 0;
+            background-color: rgba(0, 0, 0, 0.9);
+            z-index: 4000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+        
+        .settings-modal.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+        
+        .settings-content {
+            background: linear-gradient(135deg, var(--primary), var(--dark));
+            border-radius: 15px;
+            padding: 2rem;
+            max-width: 800px;
+            width: min(92%, 800px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+            border: 2px solid var(--vlc-orange);
+            max-height: 85vh;
+            overflow: auto;
+        }
+        
+        .settings-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+        
+        .settings-title {
+            font-size: 1.8rem;
+            color: var(--vlc-orange);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .settings-close {
+            background: transparent;
+            border: none;
+            color: var(--gray);
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: color 0.3s ease;
+            padding: 0.5rem;
+        }
+        
+        .settings-close:hover {
+            color: var(--light);
+        }
+        
+        .settings-section {
+            margin-bottom: 2rem;
+        }
+        
+        .settings-section h3 {
+            color: var(--tertiary);
+            margin-bottom: 1rem;
+            font-size: 1.2rem;
+        }
+        
+        .current-api-key {
+            background-color: rgba(255, 255, 255, 0.05);
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            color: var(--gray);
+            font-family: monospace;
+        }
+        
+        .settings-buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: flex-end;
+        }
+
+        /* VLC Player Styles */
+        .vlc-player-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: var(--vlc-dark);
+            z-index: 2000;
+            display: flex;
+            flex-direction: column;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+            /* Prevent any child from increasing the viewport height */
+            overflow: hidden;
+        }
+        
+        .vlc-player-container.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+        
+        .vlc-player-header {
+            background-color: rgba(0, 0, 0, 0.8);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid var(--vlc-orange);
+        }
+        
+        .vlc-player-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: white;
+        }
+        
+        .vlc-player-close {
+            background: var(--vlc-orange);
+            border: none;
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            font-size: 1rem;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        
+        .vlc-player-close:hover {
+            background: #e55a00;
+        }
+        
+        .vlc-player-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: var(--vlc-dark);
+            /* Allow inner flex children to shrink within viewport */
+            min-height: 0;
+            min-width: 0;
+        }
+        
+        .file-selector {
+            background: rgba(0, 0, 0, 0.5);
+            padding: 1rem 2rem;
+            border-bottom: 1px solid #444;
+        }
+        
+        .file-selector h3 {
+            color: var(--vlc-orange);
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .file-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1rem;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        /* Center and space the MPV controls buttons */
+        #mpvControls {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem 0 1.5rem;
+        }
+
+        #mpvControls .vlc-btn { width: auto; }
+        
+        .file-item {
+            position: relative;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+        
+        .file-item:hover {
+            background: rgba(255, 105, 0, 0.2);
+            border-color: var(--vlc-orange);
+        }
+        
+        .file-name {
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: white;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            font-size: 0.9rem;
+        }
+
+        .file-name-tooltip {
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: var(--dark);
+            color: var(--light);
+            padding: 0.5rem;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            white-space: normal;
+            width: max-content;
+            max-width: 300px;
+            text-align: center;
+            z-index: 10;
+            pointer-events: none;
+        }
+        
+        .file-size {
+            color: var(--gray);
+            font-size: 0.9rem;
+        }
+        
+        .vlc-player-area {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #000;
+            position: relative;
+            /* Ensure contained media never pushes layout */
+            min-height: 0;
+            min-width: 0;
+            overflow: hidden;
+        }
+        
+        .vlc-loading {
+            color: var(--vlc-orange);
+            font-size: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        .vlc-loading i {
+            animation: spin 1s linear infinite;
+        }
+        
+        /* Base button styles for MPV/WCJS action buttons */
+        .vlc-btn {
+            background: var(--vlc-orange);
+            border: none;
+            color: white;
+            padding: 0.8rem 1.5rem;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 1rem;
+        }
+
+        .video-controls {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(transparent, rgba(0, 0, 0, 0.8));
+            padding: 2rem 2rem 1rem;
+            transition: transform 0.25s ease, opacity 0.25s ease;
+            z-index: 3;
+        }
+        
+        .vlc-btn:hover {
+            background: #e55a00;
+            transform: translateY(-2px);
+        }
+        
+        .vlc-btn.secondary {
+            background: var(--secondary);
+        }
+        
+        .vlc-btn.secondary:hover {
+            background: #0199c7;
+        }
+        
+        .subtitle-controls {
+            background: rgba(0, 0, 0, 0.5);
+            padding: 1rem 2rem;
+            flex-direction: column;
+        }
+        
+        .subtitle-controls h4 {
+            color: var(--vlc-orange);
+            margin-bottom: 1rem;
+        }
+        
+        .subtitle-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 1rem;
+            max-height: 200px;
+            overflow-y: auto;
+            padding-right: 1rem; /* For scrollbar */
+        }
+        
+        .subtitle-item {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+        }
+        
+        .subtitle-item:hover {
+            background: rgba(255, 105, 0, 0.2);
+            border-color: var(--vlc-orange);
+        }
+
+        .subtitle-item.selected {
+            border-color: var(--success);
+            background-color: rgba(40, 167, 69, 0.2);
+        }
+        
+        .subtitle-lang {
+            font-weight: 600;
+            color: white;
+            flex-grow: 1;
+        }
+
+        /* Custom Video Player Styles */
+        .custom-player-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #000;
+            z-index: 3000;
+            display: flex;
+            flex-direction: column;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+            /* Lock overlay to viewport */
+            overflow: hidden;
+        }
+
+        .custom-player-container.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .player-header {
+            background: linear-gradient(135deg, var(--primary), var(--vlc-orange));
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .player-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .player-actions {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .subtitle-upload {
+            position: relative;
+            overflow: hidden;
+            display: inline-block;
+        }
+
+        .subtitle-upload input[type="file"] {
+            position: absolute;
+            left: -9999px;
+        }
+
+        .upload-btn {
+            background: var(--secondary);
+            border: none;
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        .upload-btn:hover {
+            background: #0199c7;
+            transform: translateY(-1px);
+        }
+
+        .close-player-btn {
+            background: var(--danger);
+            border: none;
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .close-player-btn:hover {
+            background: #c82333;
+            transform: translateY(-1px);
+        }
+
+        .video-container {
+            flex: 1;
+            position: relative;
+            background: #000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            /* Critical for flex children so they don't overflow the viewport */
+            min-height: 0;
+            min-width: 0;
+            overflow: hidden;
+        }
+
+        .custom-video {
+            width: 100%;
+            height: 100%;
+            object-fit: contain; /* Always fit inside container */
+            /* Ensure the video stays beneath overlays */
+            z-index: 1;
+        }
+
+        .video-controls {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(transparent, rgba(0, 0, 0, 0.8));
+            padding: 2rem 2rem 1rem;
+            /* Always visible to avoid being pushed off-screen */
+            transform: translateY(0);
+            transition: transform 0.3s ease;
+            z-index: 2;
+        }
+
+        /* Auto-hide behavior scoped to custom player only */
+        .custom-player-container .video-controls { transform: translateY(100%); opacity: 0; pointer-events: none; }
+        .custom-player-container .video-container.show-controls .video-controls,
+        .custom-player-container .video-controls.force-visible {
+            transform: translateY(0);
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .progress-container {
+            margin-bottom: 1rem;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 3px;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .progress-filled {
+            height: 100%;
+            background: var(--vlc-orange);
+            border-radius: 3px;
+            width: 0%;
+            transition: width 0.1s ease;
+        }
+
+        .progress-time {
+            display: flex;
+            justify-content: space-between;
+            color: white;
+            font-size: 0.9rem;
+            margin-top: 0.5rem;
+        }
+
+        .control-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+        }
+        .control-left,
+        .control-right { display:flex; align-items:center; gap:1rem; }
+
+        .control-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            padding: 0.8rem;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            width: 50px;
+            height: 50px;
+        }
+
+        .control-btn:hover {
+            background: var(--vlc-orange);
+            transform: scale(1.1);
+        }
+
+        .control-btn.play-pause {
+            background: var(--vlc-orange);
+            font-size: 1.5rem;
+            width: 60px;
+            height: 60px;
+        }
+
+        .control-btn.play-pause:hover {
+            background: #e55a00;
+        }
+
+        .fullscreen-btn {
+            position: absolute;
+            right: 1rem;
+            bottom: 1rem;
+        }
+
+        .loading-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--vlc-orange);
+            font-size: 1.5rem;
+            z-index: 2; /* below controls, above video */
+        }
+
+        .subtitle-display {
+            position: absolute;
+            bottom: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            font-size: 1.1rem;
+            font-weight: 500;
+            text-align: center;
+            max-width: 80%;
+            display: none;
+        }
+        
+        .notification {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background-color: var(--vlc-orange);
+            color: white;
+            padding: 1rem 2rem;
+            border-radius: 8px;
+            font-weight: 600;
+            transform: translateY(100px);
+            opacity: 0;
+            transition: all 0.3s ease;
+            z-index: 3000;
+        }
+
+        /* Subtitles menu panel */
+        .subs-panel {
+            position: absolute;
+            right: 1rem;
+            bottom: 6rem;
+            width: 340px;
+            max-height: 40vh;
+            overflow: auto;
+            background: rgba(0,0,0,0.9);
+            border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 8px;
+            padding: 0.5rem;
+            display: none;
+            z-index: 10;
+        }
+        .subs-item { display:flex; align-items:center; justify-content:space-between; background: rgba(255,255,255,0.06); color:#fff; padding:0.5rem 0.6rem; border-radius:6px; margin:0.35rem 0; cursor:pointer; }
+        .subs-item:hover { background: rgba(168,85,247,0.25); }
+        .subs-badge { font-size: 0.75rem; color:#ccc; }
+        .subs-source { font-size: 0.75rem; opacity: 0.8; margin-left: 0.4rem; }
+        .row-spread { display:flex; align-items:center; justify-content:space-between; gap:0.5rem; }
+        .subs-header { display:flex; align-items:center; justify-content:space-between; color:#fff; margin-bottom:0.25rem; }
+        .subs-help { color:#bbb; font-size:0.8rem; margin-bottom:0.25rem; }
+        .menu-actions { display:flex; align-items:center; gap:0.5rem; }
+        .menu-refresh { background: rgba(255,255,255,0.15); border:none; color:#fff; padding:0.2rem 0.5rem; border-radius:4px; cursor:pointer; }
+        
+        .notification.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        .error-message {
+            background-color: var(--danger);
+            color: white;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        /* Genres pages styles */
+        .genre-card {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 120px;
+            text-align: center;
+        }
+        .genre-title {
+            color: var(--light);
+            font-size: 1.2rem;
+        }
+        .genre-chip {
+            display: inline-block;
+            margin-top: 0.5rem;
+            padding: 0.2rem 0.6rem;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            background: rgba(255,255,255,0.1);
+            color: var(--tertiary);
+            border: 1px solid rgba(255,255,255,0.15);
+        }
+        .genre-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }
+        .genre-controls {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+        .toggle-btn {
+            padding: 0.5rem 1rem;
+            border-radius: 30px;
+            border: 2px solid var(--vlc-orange);
+            background: transparent;
+            color: var(--vlc-orange);
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .toggle-btn.active {
+            background: var(--vlc-orange);
+            color: #fff;
+        }
+        
+        @media (max-width: 768px) {
+            .header-container {
+                flex-direction: column;
+                gap: 1rem;
+            }
+            
+            .search-container {
+                margin: 1rem 0;
+                width: 100%;
+            }
+            
+            .modal-header-content {
+                flex-direction: column;
+                align-items: center;
+                text-align: center;
+            }
+            
+            .modal-poster {
+                width: 150px;
+                height: 225px;
+            }
+            
+            .modal-title {
+                font-size: 1.8rem;
+            }
+            
+            .file-list {
+                grid-template-columns: 1fr;
+            }
+            
+            .video-controls {
+                flex-wrap: wrap;
+                gap: 0.5rem;
+            }
+            
+            .vlc-btn { /* mobile sizing override only */
+                padding: 0.6rem 1rem;
+                font-size: 0.9rem;
+            }
+            .player-header {
+                z-index: 3;
+                padding: 0.5rem 1rem;
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            .player-actions {
+                flex-wrap: wrap;
+                gap: 0.5rem;
+            }
+
+            .control-buttons {
+                gap: 0.5rem;
+            }
+
+            .control-btn {
+                width: 40px;
+                height: 40px;
+                font-size: 1rem;
+            }
+
+            .control-btn.play-pause {
+                width: 50px;
+                height: 50px;
+                font-size: 1.3rem;
+            }
+
+            .api-setup-content {
+                padding: 2rem;
+            }
+
+            .api-setup-buttons {
+                flex-direction: column;
+            }
+
+            .settings-content {
+                padding: 1.5rem;
+            }
+
+            .settings-buttons {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+<!-- API Setup Modal -->
+<div class="api-setup-modal" id="apiSetupModal">
+    <div class="api-setup-content">
+        <h2 class="api-setup-title">
+            <i class="fas fa-key"></i>
+            Setup Required
+        </h2>
+        <p class="api-setup-description">
+            Welcome to PlayTorrio Streamer! To search for torrents, you need to provide your Jackett API key.
+            Please install Jackett, add the indexers you'd like to search torrents from, and paste the API key below.
+            You can download the installer by clicking
+            <button type="button" id="openJackettLink" style="background:#0d6efd;color:#fff;border:none;border-radius:6px;padding:0.25rem 0.6rem;cursor:pointer;font-weight:600;">Here</button>.
+            This will be saved locally and used to access your Jackett server.
+        </p>
+        <div class="api-input-group">
+            <label for="firstTimeApiKey">Jackett API Key:</label>
+            <input type="text" id="firstTimeApiKey" class="api-input" placeholder="Enter your Jackett API key..." />
+        </div>
+        <div class="api-setup-buttons">
+            <button class="api-btn api-btn-primary" id="saveFirstTimeApiKey">
+                <i class="fas fa-save"></i>
+                Save & Continue
+            </button>
+            <div class="api-btn-group-alt" style="display:flex;flex-direction:column;gap:10px;">
+                <button class="api-btn api-btn-secondary" id="skipSetup">
+                    <i class="fas fa-forward"></i>
+                    Watch without Jackett
+                </button>
+                <div style="font-size:0.9rem;color:#fbbf24;background:rgba(251,191,36,0.12);padding:8px 10px;border-radius:8px;">
+                    Warning: This mode may have slower buffering and fewer seeders. Results are fetched by a local scraper.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Settings Modal -->
+<div class="settings-modal" id="settingsModal">
+    <div class="settings-content">
+        <div class="settings-header">
+            <h2 class="settings-title">
+                <i class="fas fa-cog"></i>
+                Settings
+            </h2>
+            <button class="settings-close" id="settingsClose">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        
+        <div class="settings-section">
+            <h3>Jackett API Configuration</h3>
+            <div class="current-api-key" id="currentApiKey">
+                No API key configured
+            </div>
+            <div class="api-input-group">
+                <label for="newApiKey">New API Key:</label>
+                <input type="text" id="newApiKey" class="api-input" placeholder="Enter new Jackett API key..." />
+            </div>
+        </div>
+        
+        <div class="settings-buttons">
+            <button class="api-btn api-btn-secondary" id="cancelSettings">
+                <i class="fas fa-times"></i>
+                Cancel
+            </button>
+            <button class="api-btn api-btn-primary" id="saveSettings">
+                <i class="fas fa-save"></i>
+                Save Changes
+            </button>
+            <button class="api-btn api-btn-primary" id="openTutorialBtn" style="background:#ef4444;">
+                <i class="fas fa-video"></i>
+                Watch video tutorial
+            </button>
+        </div>
+        <div class="settings-section">
+            <h3>Watch Without Jackett</h3>
+            <div class="api-input-group" style="display:flex;align-items:center;gap:10px;">
+                <input type="checkbox" id="toggleWatchWithoutJackett" />
+                <label for="toggleWatchWithoutJackett">Enable "Watch without Jackett"</label>
+            </div>
+            <div style="font-size:0.9rem;color:#fbbf24;background:rgba(251,191,36,0.12);padding:8px 10px;border-radius:8px;">
+                Warning: Using this mode may lead to slower buffering and lower seeder counts. It uses the bundled local scraper instead of Jackett.
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MPV Install Helper Modal removed -->
+
+<!-- Header -->
+<header>
+<div class="header-container">
+<a class="logo" href="http://localhost:3000">
+<i class="fas fa-play-circle"></i>
+<span>Play</span> Torrio
+            </a>
+<div class="search-container">
+<i class="fas fa-search search-icon"></i>
+<input id="searchInput" placeholder="Search for movies, shows, actors..." type="text"/>
+</div>
+<div class="user-actions">
+<button class="btn btn-outline" id="genresBtn">
+<i class="fas fa-layer-group"></i> Genres
+                </button>
+<button class="btn btn-outline" id="clearCacheBtn">
+<i class="fas fa-trash"></i> Clear Cache
+                </button>
+<!-- Install MPV button removed -->
+<button class="btn btn-primary" id="settingsBtn">
+<i class="fas fa-cog"></i> Settings
+                </button>
+</div>
+</div>
+</header>
+
+<!-- Main Content -->
+<main>
+    <!-- Home Page -->
+    <div id="homePage">
+        <h2 class="section-title">
+            <i class="fas fa-fire"></i> Trending Now
+        </h2>
+        <div class="categories">
+            <div class="category active" data-category="all">All</div>
+            <div class="category" data-category="movie">Movies</div>
+            <div class="category" data-category="tv">TV Shows</div>
+        </div>
+        <div class="movies-grid" id="moviesGrid">
+            <!-- Movie cards will be loaded here -->
+        </div>
+        <div class="loading" id="loadingIndicator">
+            <i class="fas fa-spinner"></i> Loading more content...
+        </div>
+    </div>
+
+    <!-- Genres Page -->
+    <div id="genresPage" style="display: none;">
+        <h2 class="section-title">
+            <i class="fas fa-layer-group"></i> Genres
+        </h2>
+        <div class="genre-grid" id="genresGrid">
+            <!-- Genre boxes will be loaded here -->
+        </div>
+        <div class="loading" id="genresLoading" style="display:none;">
+            <i class="fas fa-spinner"></i> Loading genres...
+        </div>
+    </div>
+
+    <!-- Genre Details Page -->
+    <div id="genreDetailsPage" style="display: none;">
+        <div class="genre-header">
+            <h2 class="section-title" id="genreHeaderTitle">
+                <i class="fas fa-tags"></i> <span id="genreTitle">Genre</span>
+            </h2>
+            <div class="genre-controls">
+                <button class="toggle-btn" id="toggleMovies">Movies</button>
+                <button class="toggle-btn" id="toggleTV">TV Shows</button>
+            </div>
+        </div>
+        <div class="genre-results-grid" id="genreResultsGrid">
+            <!-- Genre media items will be loaded here -->
+        </div>
+        <div class="loading" id="genreLoadingIndicator" style="display:none;">
+            <i class="fas fa-spinner"></i> Loading more...
+        </div>
+        <div class="loading" id="genreEmptyMessage" style="display:none;">
+            <i class="fas fa-info-circle"></i> No results found for this selection.
+        </div>
+    </div>
+</main>
+
+<!-- Movie/Show Details Modal -->
+<div class="modal" id="detailsModal">
+<div class="modal-content">
+<button class="modal-close" id="modalClose">
+<i class="fas fa-times"></i>
+</button>
+<div class="modal-header">
+<img alt="Backdrop" class="modal-backdrop" id="modalBackdrop" src=""/>
+<div class="modal-header-content">
+<img alt="Poster" class="modal-poster" id="modalPoster" src=""/>
+<div>
+<h1 class="modal-title" id="modalTitle">Movie Title</h1>
+<div class="modal-info">
+<div class="modal-rating">
+<i class="fas fa-star"></i> <span id="modalRating">0.0</span>
+</div>
+<div class="modal-year" id="modalYear">2023</div>
+<div class="modal-runtime" id="modalRuntime">120 min</div>
+</div>
+<p class="modal-tagline" id="modalTagline">Tagline goes here</p>
+<button class="btn btn-primary" id="watchNowBtn">
+<i class="fas fa-play"></i> Find Torrents
+                        </button>
+</div>
+</div>
+</div>
+<div class="modal-body">
+<h3 class="modal-section-title">
+<i class="fas fa-book-open"></i> Overview
+                </h3>
+<p class="modal-overview" id="modalOverview">Overview goes here...</p>
+
+<!-- Seasons selector for TV shows -->
+<div class="seasons-container" id="seasonsContainer" style="display: none;">
+<h3 class="modal-section-title">
+<i class="fas fa-tv"></i> Seasons
+                    </h3>
+<div class="season-selector" id="seasonSelector">
+<!-- Seasons buttons will be loaded here -->
+</div>
+<h3 class="modal-section-title">
+<i class="fas fa-list"></i> Episodes
+                    </h3>
+<div class="episodes-grid" id="episodesGrid">
+<!-- Episodes will be loaded here -->
+</div>
+</div>
+
+<h3 class="modal-section-title">
+<i class="fas fa-users"></i> Cast
+                </h3>
+<div class="cast-grid" id="castGrid">
+<!-- Cast members will be loaded here -->
+</div>
+
+<h3 class="modal-section-title">
+<i class="fas fa-thumbs-up"></i> Similar Content
+                </h3>
+<div class="similar-grid" id="similarGrid">
+<!-- Similar movies/shows will be loaded here -->
+</div>
+
+<!-- Torrents section -->
+<div class="torrents-container" id="torrentsContainer">
+<div class="torrents-header">
+<h3 class="modal-section-title">
+<i class="fas fa-magnet"></i> Available Torrents
+                        </h3>
+<div class="torrent-actions">
+<button class="btn btn-outline" id="refreshTorrents">
+<i class="fas fa-sync"></i> Refresh
+                            </button>
+</div>
+</div>
+<div class="torrents-list" id="torrentsList">
+<!-- Torrents will be loaded here -->
+</div>
+</div>
+</div>
+</div>
+</div>
+
+<!-- MPV Player -->
+<div class="vlc-player-container" id="mpvPlayerContainer">
+<div class="vlc-player-header">
+<div class="vlc-player-title" id="mpvPlayerTitle">MPV Torrent Player</div>
+<button class="vlc-player-close" id="closePlayerBtn">
+<i class="fas fa-times"></i> Close Player
+            </button>
+</div>
+<div class="vlc-player-content">
+<div class="file-selector" id="fileSelector">
+<h3><i class="fas fa-folder-open"></i> Select File to Play</h3>
+<div class="file-list" id="fileList">
+<!-- Files will be loaded here -->
+</div>
+</div>
+
+<div class="subtitle-controls" id="subtitleControls" style="display: none;">
+<h4><i class="fas fa-closed-captioning"></i> Available Subtitles:</h4>
+<div id="subtitleList">
+<!-- Subtitle files will be loaded here -->
+</div>
+</div>
+
+<div class="vlc-player-area" id="mpvPlayerArea">
+<div class="vlc-loading" id="mpvLoading">
+<i class="fas fa-spinner"></i>
+<span>Loading MPV Player...</span>
+</div>
+</div>
+
+<div class="vlc-controls" id="mpvControls" style="display: none;">
+<button class="vlc-btn secondary" id="copyStreamBtn">
+<i class="fas fa-copy"></i> Copy Stream URL
+                </button>
+<button class="vlc-btn" id="playNowBtn">
+<i class="fas fa-play"></i> Play Now! (Could have audio issues)
+                </button>
+<button class="vlc-btn" id="openMPVBtn">
+<i class="fas fa-external-link-alt"></i> Open in MPV (Recommended)
+                </button>
+                
+                
+</div>
+</div>
+</div>
+
+<!-- Custom Video Player -->
+<div class="custom-player-container" id="customPlayerContainer">
+<div class="player-header">
+<div class="player-title" id="customPlayerTitle">
+<i class="fas fa-play-circle"></i>
+<span>Custom Player</span>
+</div>
+<div class="player-actions">
+<div class="subtitle-upload">
+<input type="file" id="subtitleFile" accept=".srt,.vtt,.ass,.ssa" />
+<label for="subtitleFile" class="upload-btn">
+<i class="fas fa-upload"></i> Upload Subtitles
+</label>
+</div>
+<button class="close-player-btn" id="closeCustomPlayer">
+<i class="fas fa-times"></i> Close
+</button>
+</div>
+</div>
+
+<div class="video-container" id="videoContainer">
+<video class="custom-video" id="customVideo" preload="metadata">
+<source id="videoSource" src="" type="video/mp4">
+Your browser does not support the video tag.
+</video>
+
+<div class="loading-overlay" id="loadingOverlay">
+<i class="fas fa-spinner"></i>
+<span>Loading video...</span>
+</div>
+
+<div class="subtitle-display" id="subtitleDisplay"></div>
+
+<div class="video-controls" id="videoControls">
+<div class="progress-container">
+<div class="progress-bar" id="progressBar">
+<div class="progress-filled" id="progressFilled"></div>
+</div>
+<div class="progress-time">
+<span id="currentTime">0:00</span>
+<span id="totalTime">0:00</span>
+</div>
+</div>
+
+<div class="control-bar">
+    <div class="control-left">
+        <button class="control-btn" id="rewindBtn" title="Rewind 10s"><i class="fas fa-backward"></i></button>
+        <button class="control-btn play-pause" id="playPauseBtn" title="Play/Pause"><i class="fas fa-play"></i></button>
+        <button class="control-btn" id="forwardBtn" title="Forward 10s"><i class="fas fa-forward"></i></button>
+    </div>
+    <div class="control-right">
+        <div class="volume-group">
+                <button class="control-btn" id="htmlMuteBtn" title="Mute/Unmute"><i class="fas fa-volume-up"></i></button>
+                <input type="range" id="htmlVolume" class="volume-slider" min="0" max="100" value="80" />
+        </div>
+        <button class="control-btn" id="htmlSubsBtn" title="Subtitles"><i class="fas fa-closed-captioning"></i></button>
+        <button class="control-btn" id="fullscreenBtn" title="Fullscreen"><i class="fas fa-expand"></i></button>
+    </div>
+</div>
+</div>
+</div>
+<div class="subs-panel" id="htmlSubsPanel" style="right: 1rem; bottom: 6rem;">
+    <div class="subs-header">
+        <div>Subtitles</div>
+        <div class="menu-actions">
+            <button class="menu-refresh" id="htmlSubsRefresh">Refresh</button>
+            <button class="menu-refresh" id="htmlSubsClose">Close</button>
+        </div>
+    </div>
+    <div class="subs-help">Choose a subtitle. Sources: OpenSubtitles, Wyzie</div>
+    <div id="htmlSubsList"></div>
+</div>
+</div>
+
+<!-- WCJS (WebChimera) Player -->
+<div class="wcjs-player-container" id="wcjsPlayerContainer" style="opacity:0;pointer-events:none;">
+    <div class="player-header">
+        <div class="player-title" id="wcjsPlayerTitle">
+            <i class="fas fa-vial"></i>
+            <span>WebChimera Player</span>
+        </div>
+        <div class="player-actions">
+            <div class="subtitle-upload">
+                <input type="file" id="wcjsSubtitleFile" accept=".srt,.vtt,.ass,.ssa" />
+                <label for="wcjsSubtitleFile" class="upload-btn">
+                    <i class="fas fa-upload"></i> Upload Subtitles
+                </label>
+            </div>
+            <button class="close-player-btn" id="closeWcjsPlayer">
+                <i class="fas fa-times"></i> Close
+            </button>
+        </div>
+    </div>
+
+    <style>
+        .wcjs-player-container { position: fixed; inset: 0; background:#000; z-index: 3500; display:flex; flex-direction:column; overflow: hidden; }
+        .wcjs-canvas-container { flex: 1; position: relative; background:#000; display:flex; align-items:center; justify-content:center; min-height: 0; min-width: 0; overflow: hidden; }
+        #wcjsCanvas { width: 100%; height: 100%; display:block; }
+        .wcjs-loading { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; color: var(--vlc-orange); background: rgba(0,0,0,0.8); font-size:1.2rem; }
+        .volume-group { display:flex; align-items:center; gap:0.5rem; margin-left: 1rem; }
+        .volume-slider { width: 120px; }
+    </style>
+
+    <div class="wcjs-canvas-container">
+        <canvas id="wcjsCanvas"></canvas>
+        <div class="wcjs-loading" id="wcjsLoading" style="display:none;">
+            <i class="fas fa-spinner" style="animation: spin 1s linear infinite;"></i>
+            <span style="margin-left:0.75rem;">Loading stream...</span>
+        </div>
+        <div class="video-controls" id="wcjsControls" style="display:block;">
+            <div class="progress-container">
+                <div class="progress-bar" id="wcjsProgressBar">
+                    <div class="progress-filled" id="wcjsProgressFilled"></div>
+                </div>
+                <div class="progress-time">
+                    <span id="wcjsCurrentTime">0:00</span>
+                    <span id="wcjsTotalTime">0:00</span>
+                </div>
+            </div>
+
+            <div class="control-buttons">
+                <button class="control-btn" id="wcjsRewindBtn" title="Rewind 10s"><i class="fas fa-backward"></i></button>
+                <button class="control-btn play-pause" id="wcjsPlayPauseBtn" title="Play/Pause"><i class="fas fa-play"></i></button>
+                <button class="control-btn" id="wcjsForwardBtn" title="Forward 10s"><i class="fas fa-forward"></i></button>
+                <div class="volume-group">
+                    <button class="control-btn" id="wcjsMuteBtn" title="Mute/Unmute"><i class="fas fa-volume-up"></i></button>
+                    <input type="range" id="wcjsVolume" class="volume-slider" min="0" max="100" value="80" />
+                </div>
+                <button class="control-btn" id="wcjsSubsBtn" title="Subtitles"><i class="fas fa-closed-captioning"></i></button>
+                <button class="control-btn" id="wcjsAudioBtn" title="Audio Tracks"><i class="fas fa-headphones"></i></button>
+                <button class="control-btn fullscreen-btn" id="wcjsFullscreenBtn" title="Fullscreen"><i class="fas fa-expand"></i></button>
+            </div>
+        </div>
+    </div>
+    <div class="subs-panel" id="wcjsSubsPanel">
+        <div class="subs-header">
+            <div>Subtitles</div>
+            <div class="menu-actions">
+                <button class="menu-refresh" id="wcjsSubsRefresh">Refresh</button>
+                <button class="menu-refresh" id="wcjsSubsClose">Close</button>
+            </div>
+        </div>
+        <div class="subs-help">Choose a subtitle. Sources: OpenSubtitles, Wyzie</div>
+        <div id="wcjsSubsList"></div>
+    </div>
+    <div class="subs-panel" id="wcjsAudioPanel" style="right: 360px;">
+        <div class="subs-header">
+            <div>Audio Tracks</div>
+            <div class="menu-actions">
+                <button class="menu-refresh" id="wcjsAudioClose">Close</button>
+            </div>
+        </div>
+        <div id="wcjsAudioList"></div>
+    </div>
+</div>
+
+<!-- Notification -->
+<div class="notification" id="notification">Action completed!</div>
+
+<script>
+        // API configuration
+        const TMDB_API_KEY = 'b3556f3b206e16f82df4d1f6fd4545e6';
+    const API_BASE_URL = 'http://localhost:3000/api';
+    const TORRENTLESS_BASE_URL = 'http://localhost:3002/api';
+        
+        // DOM elements - Home
+        const moviesGrid = document.getElementById('moviesGrid');
+        const loadingIndicator = document.getElementById('loadingIndicator');
+        const homePageEl = document.getElementById('homePage');
+
+        // DOM elements - Genres
+        const genresBtn = document.getElementById('genresBtn');
+        const genresPageEl = document.getElementById('genresPage');
+        const genresGrid = document.getElementById('genresGrid');
+        const genresLoading = document.getElementById('genresLoading');
+
+        // DOM elements - Genre Details
+        const genreDetailsPageEl = document.getElementById('genreDetailsPage');
+        const genreTitleEl = document.getElementById('genreTitle');
+        const toggleMoviesBtn = document.getElementById('toggleMovies');
+        const toggleTVBtn = document.getElementById('toggleTV');
+        const genreResultsGrid = document.getElementById('genreResultsGrid');
+        const genreLoadingIndicator = document.getElementById('genreLoadingIndicator');
+        const genreEmptyMessage = document.getElementById('genreEmptyMessage');
+
+        // DOM elements - Modal and others
+        const detailsModal = document.getElementById('detailsModal');
+        const modalClose = document.getElementById('modalClose');
+        const modalBackdrop = document.getElementById('modalBackdrop');
+        const modalPoster = document.getElementById('modalPoster');
+        const modalTitle = document.getElementById('modalTitle');
+        const modalRating = document.getElementById('modalRating');
+        const modalYear = document.getElementById('modalYear');
+        const modalRuntime = document.getElementById('modalRuntime');
+        const modalTagline = document.getElementById('modalTagline');
+        const modalOverview = document.getElementById('modalOverview');
+        const castGrid = document.getElementById('castGrid');
+        const similarGrid = document.getElementById('similarGrid');
+        const torrentsList = document.getElementById('torrentsList');
+        const notification = document.getElementById('notification');
+        const watchNowBtn = document.getElementById('watchNowBtn');
+        const seasonsContainer = document.getElementById('seasonsContainer');
+        const seasonSelector = document.getElementById('seasonSelector');
+        const episodesGrid = document.getElementById('episodesGrid');
+        const refreshTorrents = document.getElementById('refreshTorrents');
+        const torrentsContainer = document.getElementById('torrentsContainer');
+        
+        // API Setup Modal elements
+        const apiSetupModal = document.getElementById('apiSetupModal');
+        const firstTimeApiKey = document.getElementById('firstTimeApiKey');
+        const saveFirstTimeApiKey = document.getElementById('saveFirstTimeApiKey');
+        const skipSetup = document.getElementById('skipSetup');
+    const openJackettLinkBtn = document.getElementById('openJackettLink');
+        
+        // Settings Modal elements
+        const settingsModal = document.getElementById('settingsModal');
+    const settingsBtn = document.getElementById('settingsBtn');
+    const clearCacheBtn = document.getElementById('clearCacheBtn');
+        const settingsClose = document.getElementById('settingsClose');
+        const currentApiKey = document.getElementById('currentApiKey');
+        const newApiKey = document.getElementById('newApiKey');
+    const saveSettings = document.getElementById('saveSettings');
+    const cancelSettings = document.getElementById('cancelSettings');
+    const openTutorialBtn = document.getElementById('openTutorialBtn');
+    const toggleWatchWithoutJackett = document.getElementById('toggleWatchWithoutJackett');
+        
+        // MPV Player elements
+        const mpvPlayerContainer = document.getElementById('mpvPlayerContainer');
+        const playerTitle = document.getElementById('mpvPlayerTitle');
+        const closePlayerBtn = document.getElementById('closePlayerBtn');
+        const fileSelector = document.getElementById('fileSelector');
+        const fileList = document.getElementById('fileList');
+        const subtitleControls = document.getElementById('subtitleControls');
+        const subtitleList = document.getElementById('subtitleList');
+        const mpvPlayerArea = document.getElementById('mpvPlayerArea');
+        const mpvLoading = document.getElementById('mpvLoading');
+        const mpvControls = document.getElementById('mpvControls');
+        const openMPVBtn = document.getElementById('openMPVBtn');
+        const copyStreamBtn = document.getElementById('copyStreamBtn');
+    const playNowBtn = document.getElementById('playNowBtn');
+
+        // Custom Player elements
+        const customPlayerContainer = document.getElementById('customPlayerContainer');
+        const customPlayerTitle = document.getElementById('customPlayerTitle');
+        const closeCustomPlayer = document.getElementById('closeCustomPlayer');
+        const customVideo = document.getElementById('customVideo');
+        const videoSource = document.getElementById('videoSource');
+        const loadingOverlay = document.getElementById('loadingOverlay');
+        const subtitleDisplay = document.getElementById('subtitleDisplay');
+        const videoControls = document.getElementById('videoControls');
+        const progressBar = document.getElementById('progressBar');
+        const progressFilled = document.getElementById('progressFilled');
+        const currentTime = document.getElementById('currentTime');
+        const totalTime = document.getElementById('totalTime');
+        const playPauseBtn = document.getElementById('playPauseBtn');
+        const rewindBtn = document.getElementById('rewindBtn');
+        const forwardBtn = document.getElementById('forwardBtn');
+        const fullscreenBtn = document.getElementById('fullscreenBtn');
+        const subtitleFile = document.getElementById('subtitleFile');
+    const htmlMuteBtn = document.getElementById('htmlMuteBtn');
+    const htmlVolume = document.getElementById('htmlVolume');
+    const htmlSubsBtn = document.getElementById('htmlSubsBtn');
+    const htmlSubsPanel = document.getElementById('htmlSubsPanel');
+    const htmlSubsList = document.getElementById('htmlSubsList');
+    const htmlSubsRefresh = document.getElementById('htmlSubsRefresh');
+    const htmlSubsClose = document.getElementById('htmlSubsClose');
+
+    // WCJS Player elements
+    const wcjsPlayerContainer = document.getElementById('wcjsPlayerContainer');
+    const wcjsPlayerTitle = document.getElementById('wcjsPlayerTitle');
+    const wcjsCanvas = document.getElementById('wcjsCanvas');
+    const wcjsLoading = document.getElementById('wcjsLoading');
+    const closeWcjsPlayer = document.getElementById('closeWcjsPlayer');
+    const wcjsControls = document.getElementById('wcjsControls');
+    const wcjsProgressBar = document.getElementById('wcjsProgressBar');
+    const wcjsProgressFilled = document.getElementById('wcjsProgressFilled');
+    const wcjsCurrentTime = document.getElementById('wcjsCurrentTime');
+    const wcjsTotalTime = document.getElementById('wcjsTotalTime');
+    const wcjsPlayPauseBtn = document.getElementById('wcjsPlayPauseBtn');
+    const wcjsRewindBtn = document.getElementById('wcjsRewindBtn');
+    const wcjsForwardBtn = document.getElementById('wcjsForwardBtn');
+    const wcjsFullscreenBtn = document.getElementById('wcjsFullscreenBtn');
+    const wcjsMuteBtn = document.getElementById('wcjsMuteBtn');
+    const wcjsVolume = document.getElementById('wcjsVolume');
+    const wcjsSubtitleFile = document.getElementById('wcjsSubtitleFile');
+    const wcjsSubsBtn = document.getElementById('wcjsSubsBtn');
+    const wcjsAudioBtn = document.getElementById('wcjsAudioBtn');
+    const wcjsSubsPanel = document.getElementById('wcjsSubsPanel');
+    const wcjsAudioPanel = document.getElementById('wcjsAudioPanel');
+    const wcjsSubsList = document.getElementById('wcjsSubsList');
+    const wcjsAudioList = document.getElementById('wcjsAudioList');
+    const wcjsSubsRefresh = document.getElementById('wcjsSubsRefresh');
+    const wcjsSubsClose = document.getElementById('wcjsSubsClose');
+    const wcjsAudioClose = document.getElementById('wcjsAudioClose');
+        
+        // Global variables
+        let currentPage = 1; // home page pagination
+        let isLoading = false; // route-scoped loading flag
+        let currentContent = null;
+        let currentMediaType = 'movie';
+        let currentSeason = 1;
+        let torrentsLoaded = false;
+        let currentTorrentData = null;
+        let currentStreamUrl = null;
+    let currentSelectedVideoName = null; // track selected torrent file name
+        let currentSubtitleUrl = null;
+        let currentSubtitles = [];
+    let subtitleTrack = null;
+    let currentSubtitleFile = null; // filename served under /subtitles to delete on switch
+    let hasApiKey = false;
+    let watchWithoutJackett = false; // persisted in localStorage
+        let currentCategory = 'all';
+        let allTorrents = [];
+        let torrentsPage = 1;
+        const torrentsPerPage = 20;
+
+        // Cache for filename -> TMDB lookup
+        const filenameTmdbCache = new Map();
+
+        // Parse title/season/episode from a torrent filename
+        function parseFromFilename(name = '') {
+            try {
+                const base = String(name).replace(/\.[^.]+$/,'');
+                const cleaned = base
+                    .replace(/[\[\(].*?[\)\]]/g, ' ')
+                    .replace(/[_]+/g,' ')
+                    .replace(/\s{2,}/g,' ')
+                    .trim();
+                const patterns = [
+                    { re: /(s)(\d{1,2})[ ._-]*e(\d{1,3})/i, season: 2, episode: 3 },
+                    { re: /\b(\d{1,2})[xX](\d{1,3})\b/, season: 1, episode: 2 },
+                    { re: /\b(\d{1,2})[ ._-]+(\d{1,2})\b/, season: 1, episode: 2 },
+                ];
+                let season = null, episode = null, title = cleaned, m = null, idx = -1;
+                for (const p of patterns) {
+                    const mm = cleaned.match(p.re);
+                    if (mm) {
+                        const sVal = parseInt(mm[p.season], 10);
+                        const eVal = parseInt(mm[p.episode], 10);
+                        if (!isNaN(sVal) && !isNaN(eVal) && sVal <= 99 && eVal <= 999) {
+                            season = sVal; episode = eVal; m = mm; idx = mm.index; break;
+                        }
+                    }
+                }
+                if (m && idx >= 0) title = cleaned.slice(0, idx).replace(/[-_.]+$/,'').trim();
+                title = title
+                    .replace(/\b(\d{3,4}p|4k|bluray|web[- ]?dl|webrip|bdrip|hdr|dv|x264|x265|hevc|h264)\b/ig, '')
+                    .replace(/\s{2,}/g,' ')
+                    .trim();
+                const type = season && episode ? 'tv' : 'movie';
+                return { title, season, episode, type };
+            } catch { return { title: '', season: null, episode: null, type: 'movie' }; }
+        }
+
+        async function getTmdbFromFilename(filename) {
+            if (!filename) return null;
+            if (filenameTmdbCache.has(filename)) return filenameTmdbCache.get(filename);
+            const parsed = parseFromFilename(filename);
+            const result = { id: null, type: parsed.type, season: parsed.season, episode: parsed.episode, title: parsed.title };
+            if (!parsed.title) { filenameTmdbCache.set(filename, result); return result; }
+            try {
+                const endpoint = parsed.type === 'tv' ? 'search/tv' : 'search/movie';
+                const url = `https://api.themoviedb.org/3/${endpoint}?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(parsed.title)}`;
+                const resp = await fetch(url);
+                if (resp.ok) {
+                    const data = await resp.json();
+                    const items = Array.isArray(data.results) ? data.results : [];
+                    if (items.length) {
+                        result.id = items[0].id;
+                    }
+                }
+            } catch {}
+            filenameTmdbCache.set(filename, result);
+            return result;
+        }
+
+        // Routing and genres state
+        let activeRoute = 'home';
+        let genresMap = new Map(); // nameLower -> { name, movieId?, tvId? }
+        let genresLoaded = false;
+        let currentGenre = null; // {name, movieId?, tvId?}
+        let currentGenreType = 'movie'; // 'movie' | 'tv'
+        let genreCurrentPage = 1;
+
+        // Initialize the app
+        async function init() {
+            await checkApiKeyStatus();
+            setupEventListeners();
+            handleRoute(); // route-aware initial load
+            try { watchWithoutJackett = localStorage.getItem('watchWithoutJackett') === 'true'; } catch {}
+            if (watchWithoutJackett) {
+                try {
+                    const h = await fetch(`${TORRENTLESS_BASE_URL}/health`, { cache: 'no-store' });
+                    if (!h.ok) throw new Error('not ok');
+                } catch {
+                    showNotification('Watch without Jackett is enabled, but the local scraper is not reachable.');
+                }
+            }
+        }
+        
+        // Check API key status
+        async function checkApiKeyStatus() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/check-api-key`);
+                const data = await response.json();
+                hasApiKey = data.hasApiKey;
+                try { watchWithoutJackett = localStorage.getItem('watchWithoutJackett') === 'true'; } catch {}
+                if (!hasApiKey && !watchWithoutJackett) {
+                    showApiSetupModal();
+                } else {
+                    await loadCurrentApiKey();
+                    hideApiSetupModal();
+                }
+            } catch (error) {
+                console.error('Error checking API key status:', error);
+                // If server is not up yet, still prompt the user to install Jackett / set API key
+                if (!watchWithoutJackett) {
+                    showApiSetupModal();
+                    showNotification('Local server not ready. You can still enter the API key now.');
+                }
+            }
+        }
+        
+        // Load current API key for display
+        async function loadCurrentApiKey() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/get-api-key`);
+                const data = await response.json();
+                
+                if (data.hasApiKey) {
+                    currentApiKey.textContent = `Current: ${data.apiKey}`;
+                } else {
+                    currentApiKey.textContent = 'No API key configured';
+                }
+            } catch (error) {
+                console.error('Error loading current API key:', error);
+                currentApiKey.textContent = 'Error loading API key';
+            }
+        }
+        
+        // Show API setup modal
+        function showApiSetupModal() {
+            apiSetupModal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+            // Notify user to install Jackett and provide API key, or use the alternate mode
+            showNotification('Enter your Jackett API key, or click "Watch without Jackett" to continue.');
+        }
+        
+        // Hide API setup modal
+        function hideApiSetupModal() {
+            apiSetupModal.classList.remove('active');
+            document.body.style.overflow = 'auto';
+        }
+        
+        // Show settings modal
+        async function showSettingsModal() {
+            await loadCurrentApiKey();
+            newApiKey.value = '';
+            try { watchWithoutJackett = localStorage.getItem('watchWithoutJackett') === 'true'; } catch {}
+            if (toggleWatchWithoutJackett) toggleWatchWithoutJackett.checked = !!watchWithoutJackett;
+            settingsModal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+        
+        // Hide settings modal
+        function hideSettingsModal() {
+            settingsModal.classList.remove('active');
+            document.body.style.overflow = 'auto';
+        }
+        
+        // Save API key (first time setup)
+        async function saveFirstTimeApiKey_() {
+            const apiKey = firstTimeApiKey.value.trim();
+            
+            if (!apiKey) {
+                showNotification('Please enter an API key');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/set-api-key`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ apiKey })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    hasApiKey = true;
+                    hideApiSetupModal();
+                    showNotification('API key saved successfully!');
+                    await loadCurrentApiKey();
+                } else {
+                    showNotification(data.error || 'Failed to save API key');
+                }
+            } catch (error) {
+                console.error('Error saving API key:', error);
+                showNotification('Error saving API key');
+            }
+        }
+        
+        // Save API key (settings)
+        async function saveSettings_() {
+            // persist the toggle
+            if (toggleWatchWithoutJackett) {
+                const enabled = !!toggleWatchWithoutJackett.checked;
+                watchWithoutJackett = enabled;
+                try { localStorage.setItem('watchWithoutJackett', String(enabled)); } catch {}
+                if (enabled) {
+                    showNotification('Watch without Jackett enabled. Searches will use the local scraper and may buffer slowly.');
+                } else {
+                    showNotification('Watch without Jackett disabled. Jackett will be used for searches.');
+                }
+            }
+
+            const apiKey = newApiKey.value.trim();
+            
+            if (!apiKey) {
+                hideSettingsModal();
+                return; // no API update, just saved toggle
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/set-api-key`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ apiKey })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    hasApiKey = true;
+                    hideSettingsModal();
+                    showNotification('API key updated successfully!');
+                    await loadCurrentApiKey();
+                } else {
+                    showNotification(data.error || 'Failed to update API key');
+                }
+            } catch (error) {
+                console.error('Error updating API key:', error);
+                showNotification('Error updating API key');
+            }
+        }
+        
+        function setupEventListeners() {
+            // API Setup Modal
+            saveFirstTimeApiKey.addEventListener('click', saveFirstTimeApiKey_);
+            skipSetup.addEventListener('click', async () => {
+                try { localStorage.setItem('watchWithoutJackett', 'true'); } catch {}
+                watchWithoutJackett = true;
+                hideApiSetupModal();
+                showNotification('Watch without Jackett enabled. Searches will use the local scraper.');
+            });
+            
+            // Settings Modal
+            settingsBtn.addEventListener('click', showSettingsModal);
+            clearCacheBtn.addEventListener('click', async () => {
+                const result = await window.electronAPI.clearCache();
+                showNotification(result.message, !result.success);
+            });
+            // MPV install helpers removed
+            settingsClose.addEventListener('click', hideSettingsModal);
+            saveSettings.addEventListener('click', saveSettings_);
+            cancelSettings.addEventListener('click', hideSettingsModal);
+
+            // Open Jackett installer link in default browser
+            if (openJackettLinkBtn) {
+                openJackettLinkBtn.addEventListener('click', async () => {
+                    const url = 'https://github.com/Jackett/Jackett/releases/download/v0.24.82/Jackett.Installer.Windows.exe';
+                    if (window.electronAPI?.openExternal) {
+                        const res = await window.electronAPI.openExternal(url);
+                        if (!res?.success) {
+                            showNotification('Failed to open browser. Copying link to clipboard.');
+                            try { await navigator.clipboard.writeText(url); } catch {}
+                        }
+                    } else {
+                        // Fallback: copy link if preload is unavailable
+                        showNotification('Copying link to clipboard. Open it in your browser.');
+                        try { await navigator.clipboard.writeText(url); } catch {}
+                    }
+                });
+            }
+
+            // Open video tutorial link in default browser
+            if (openTutorialBtn) {
+                openTutorialBtn.addEventListener('click', async () => {
+                    const url = 'https://www.youtube.com/watch?v=3igLReZFFzg';
+                    if (window.electronAPI?.openExternal) {
+                        const res = await window.electronAPI.openExternal(url);
+                        if (!res?.success) {
+                            showNotification('Failed to open browser. Copying link to clipboard.');
+                            try { await navigator.clipboard.writeText(url); } catch {}
+                        }
+                    } else {
+                        showNotification('Copying link to clipboard. Open it in your browser.');
+                        try { await navigator.clipboard.writeText(url); } catch {}
+                    }
+                });
+            }
+            
+            // Close modals on Escape key
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') {
+                    if (settingsModal.classList.contains('active')) {
+                        hideSettingsModal();
+                    }
+                    else if (apiSetupModal.classList.contains('active') && hasApiKey) {
+                        hideApiSetupModal();
+                    }
+                }
+            });
+            
+            // Enter key for API inputs
+            firstTimeApiKey.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    saveFirstTimeApiKey_();
+                }
+            });
+            
+            newApiKey.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    saveSettings_();
+                }
+            });
+
+            // Search input
+            const searchInput = document.getElementById('searchInput');
+            searchInput.addEventListener('keypress', async (e) => {
+                if (e.key === 'Enter' && searchInput.value.trim() !== '') {
+                    e.preventDefault();
+                    const query = searchInput.value.trim();
+                    // Navigate to home for search to display results clearly
+                    if (activeRoute !== 'home') {
+                        window.location.hash = '#/';
+                    }
+                    await searchMovies(query);
+                }
+            });
+
+            // Genres navigation
+            genresBtn.addEventListener('click', () => {
+                window.location.hash = '#/genres';
+            });
+
+            // Router: hash change
+            window.addEventListener('hashchange', handleRoute);
+
+            // Infinite scroll
+            window.addEventListener('scroll', handleScroll);
+            
+            // Modal close
+            modalClose.addEventListener('click', closeModal);
+            
+            // Player close
+            closePlayerBtn.addEventListener('click', closePlayer);
+            
+            // Custom Player close
+            closeCustomPlayer.addEventListener('click', closeCustomPlayer_);
+            
+            // Watch now button
+            watchNowBtn.addEventListener('click', (e) => showTorrents(e));
+            
+            // Refresh torrents
+            refreshTorrents.addEventListener('click', () => fetchTorrents());
+            
+            // MPV Controls
+            openMPVBtn.addEventListener('click', openInMPV);
+            copyStreamBtn.addEventListener('click', copyStreamUrl);
+            playNowBtn.addEventListener('click', () => openCustomPlayer());
+            
+            // Custom Player Controls
+            playPauseBtn.addEventListener('click', togglePlayPause);
+            rewindBtn.addEventListener('click', () => skipTime(-10));
+            forwardBtn.addEventListener('click', () => skipTime(10));
+            fullscreenBtn.addEventListener('click', toggleFullscreen);
+            progressBar.addEventListener('click', seekVideo);
+            subtitleFile.addEventListener('change', handleSubtitleUpload);
+            // HTML5 audio controls
+            htmlVolume.addEventListener('input', () => { customVideo.volume = Math.max(0, Math.min(1, Number(htmlVolume.value) / 100)); });
+            htmlMuteBtn.addEventListener('click', () => { customVideo.muted = !customVideo.muted; htmlMuteBtn.innerHTML = customVideo.muted ? '<i class="fas fa-volume-mute"></i>' : '<i class="fas fa-volume-up"></i>'; });
+            // HTML5 Subtitles menu
+            htmlSubsBtn.addEventListener('click', () => {
+                if (htmlSubsPanel.style.display === 'block') htmlSubsPanel.style.display = 'none';
+                else { htmlSubsPanel.style.display = 'block'; fetchAndRenderHtmlSubs(); }
+            });
+            htmlSubsRefresh.addEventListener('click', fetchAndRenderHtmlSubs);
+            htmlSubsClose.addEventListener('click', () => htmlSubsPanel.style.display = 'none');
+            // WCJS Controls
+            closeWcjsPlayer.addEventListener('click', closeWCJSPlayer);
+            wcjsPlayPauseBtn.addEventListener('click', wcjsTogglePlayPause);
+            wcjsRewindBtn.addEventListener('click', () => wcjsSkipTime(-10));
+            wcjsForwardBtn.addEventListener('click', () => wcjsSkipTime(10));
+            wcjsFullscreenBtn.addEventListener('click', wcjsToggleFullscreen);
+            wcjsProgressBar.addEventListener('click', wcjsSeek);
+            wcjsMuteBtn.addEventListener('click', wcjsToggleMute);
+            wcjsVolume.addEventListener('input', wcjsSetVolume);
+            wcjsSubtitleFile.addEventListener('change', wcjsHandleSubtitleUpload);
+            wcjsSubsBtn.addEventListener('click', () => {
+                if (wcjsSubsPanel.style.display === 'block') wcjsSubsPanel.style.display = 'none';
+                else { wcjsSubsPanel.style.display = 'block'; wcjsAudioPanel.style.display = 'none'; fetchAndRenderSubtitles(); }
+            });
+            wcjsAudioBtn.addEventListener('click', () => {
+                if (wcjsAudioPanel.style.display === 'block') wcjsAudioPanel.style.display = 'none';
+                else { wcjsAudioPanel.style.display = 'block'; wcjsSubsPanel.style.display = 'none'; renderAudioTracks(); }
+            });
+            wcjsSubsRefresh.addEventListener('click', fetchAndRenderSubtitles);
+            wcjsSubsClose.addEventListener('click', () => wcjsSubsPanel.style.display = 'none');
+            wcjsAudioClose.addEventListener('click', () => wcjsAudioPanel.style.display = 'none');
+            
+          
+            customVideo.addEventListener('loadstart', () => {
+                loadingOverlay.style.display = 'flex';
+            });
+            
+            customVideo.addEventListener('canplay', () => {
+                loadingOverlay.style.display = 'none';
+            });
+            
+            customVideo.addEventListener('timeupdate', updateProgress);
+            customVideo.addEventListener('loadedmetadata', updateDuration);
+            customVideo.addEventListener('play', () => {
+                playPauseBtn.innerHTML = '<i class="fas fa-pause"></i>';
+            });
+            customVideo.addEventListener('pause', () => {
+                playPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
+            });
+            
+           
+            detailsModal.addEventListener('click', (e) => {
+                if (e.target === detailsModal) {
+                    closeModal();
+                }
+            });
+            
+ 
+
+            customPlayerContainer.addEventListener('click', (e) => {
+                if (e.target === customPlayerContainer) {
+                    closeCustomPlayer_();
+                }
+            });
+
+          
+            wcjsPlayerContainer.addEventListener('click', (e) => {
+                if (e.target === wcjsPlayerContainer) {
+                    closeWCJSPlayer();
+                }
+            });
+
+            // Close settings modal when clicking outside
+            settingsModal.addEventListener('click', (e) => {
+                if (e.target === settingsModal) {
+                    hideSettingsModal();
+                }
+            });
+
+            // Category filtering (home)
+            document.querySelectorAll('.category').forEach(category => {
+                category.addEventListener('click', () => {
+                    document.querySelectorAll('.category').forEach(c => c.classList.remove('active'));
+                    category.classList.add('active');
+                    currentCategory = category.dataset.category;
+                    moviesGrid.innerHTML = '';
+                    currentPage = 1;
+                    loadMovies(currentCategory);
+                });
+            });
+
+            // Toggle buttons on genre details
+            toggleMoviesBtn.addEventListener('click', () => {
+                if (currentGenreType !== 'movie') {
+                    setGenreType('movie');
+                }
+            });
+            toggleTVBtn.addEventListener('click', () => {
+                if (currentGenreType !== 'tv') {
+                    setGenreType('tv');
+                }
+            });
+
+            // Keyboard shortcuts for custom player
+            document.addEventListener('keydown', (e) => {
+                if (customPlayerContainer.classList.contains('active')) {
+                    switch(e.code) {
+                        case 'Space':
+                            e.preventDefault();
+                            togglePlayPause();
+                            break;
+                        case 'ArrowRight':
+                            skipTime(10);
+                            break;
+                        case 'ArrowLeft':
+                            skipTime(-10);
+                            break;
+                        case 'KeyF':
+                            toggleFullscreen();
+                            break;
+                        case 'Escape':
+                            closeCustomPlayer_();
+                            break;
+                    }
+                } else if (wcjsPlayerContainer.classList.contains('active')) {
+                    switch(e.code) {
+                        case 'Space':
+                            e.preventDefault();
+                            wcjsTogglePlayPause();
+                            break;
+                        case 'ArrowRight':
+                            wcjsSkipTime(10);
+                            break;
+                        case 'ArrowLeft':
+                            wcjsSkipTime(-10);
+                            break;
+                        case 'KeyF':
+                            wcjsToggleFullscreen();
+                            break;
+                        case 'Escape':
+                            closeWCJSPlayer();
+                            break;
+                    }
+                }
+            });
+        }
+
+        // Router handler
+        async function handleRoute() {
+            const hash = window.location.hash || '#/';
+            // Default route
+            if (hash === '#/' || hash === '#') {
+                activeRoute = 'home';
+                showSection('home');
+                // Load home content if first time or if grid empty
+                if (moviesGrid.children.length === 0) {
+                    currentPage = 1;
+                    moviesGrid.innerHTML = '';
+                    await loadMovies(currentCategory);
+                }
+                return;
+            }
+
+            if (hash.startsWith('#/genre/')) {
+    const genreName = decodeURIComponent(hash.slice('#/genre/'.length)).trim();
+    activeRoute = 'genreDetails';
+    showSection('genreDetails');
+    await ensureGenresLoaded();
+    await openGenreDetails(genreName);
+    return;
+} else if (hash === '#/genres') {
+    activeRoute = 'genres';
+    showSection('genres');
+    await ensureGenresLoaded();
+    renderGenres();
+    return;
+}
+
+            // Fallback
+            activeRoute = 'home';
+            showSection('home');
+        }
+
+        function showSection(section) {
+            // Reset basic visibility
+            homePageEl.style.display = section === 'home' ? '' : 'none';
+            genresPageEl.style.display = section === 'genres' ? '' : 'none';
+            genreDetailsPageEl.style.display = section === 'genreDetails' ? '' : 'none';
+            // Reset loading flag for new route
+            isLoading = false;
+            // Scroll to top on route change
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        async function ensureGenresLoaded() {
+            if (genresLoaded) return;
+            try {
+                genresLoading.style.display = 'block';
+                // Fetch movie and tv genres
+                const [movieRes, tvRes] = await Promise.all([
+                    fetch(`https://api.themoviedb.org/3/genre/movie/list?api_key=${TMDB_API_KEY}`),
+                    fetch(`https://api.themoviedb.org/3/genre/tv/list?api_key=${TMDB_API_KEY}`)
+                ]);
+                const [movieData, tvData] = await Promise.all([movieRes.json(), tvRes.json()]);
+                const map = new Map();
+                (movieData.genres || []).forEach(g => {
+                    const key = g.name.toLowerCase();
+                    map.set(key, { name: g.name, movieId: g.id, tvId: null });
+                });
+                (tvData.genres || []).forEach(g => {
+                    const key = g.name.toLowerCase();
+                    if (map.has(key)) {
+                        map.get(key).tvId = g.id;
+                    } else {
+                        map.set(key, { name: g.name, movieId: null, tvId: g.id });
+                    }
+                });
+                genresMap = map;
+                genresLoaded = true;
+            } catch (e) {
+                console.error('Error loading genres:', e);
+            } finally {
+                genresLoading.style.display = 'none';
+            }
+        }
+
+        function renderGenres() {
+            genresGrid.innerHTML = '';
+            const entries = Array.from(genresMap.values()).sort((a, b) => a.name.localeCompare(b.name));
+            entries.forEach(g => {
+                const card = document.createElement('div');
+                card.className = 'genre-card';
+                card.innerHTML = `
+                    <div class="genre-info">
+                        <div class="genre-title">${g.name}</div>
+                        <div class="genre-availability">
+                            ${g.movieId ? '<span class="genre-chip"><i class="fas fa-film"></i> Movie</span>' : ''}
+                            ${g.tvId ? '<span class="genre-chip"><i class="fas fa-tv"></i> TV</span>' : ''}
+                        </div>
+                    </div>
+                `;
+                card.addEventListener('click', () => {
+                    window.location.hash = `#/genre/${encodeURIComponent(g.name)}`;
+                });
+                genresGrid.appendChild(card);
+            });
+        }
+
+        function setGenreToggleActive() {
+            toggleMoviesBtn.classList.toggle('active', currentGenreType === 'movie');
+            toggleTVBtn.classList.toggle('active', currentGenreType === 'tv');
+        }
+
+        async function openGenreDetails(genreName) {
+            const key = genreName.toLowerCase();
+            currentGenre = genresMap.get(key);
+            if (!currentGenre) {
+                // If genre map not found (edge case), reload genres and try again
+                await ensureGenresLoaded();
+                currentGenre = genresMap.get(key);
+            }
+            if (!currentGenre) {
+                genreTitleEl.textContent = genreName;
+                genreResultsGrid.innerHTML = '';
+                genreEmptyMessage.style.display = 'block';
+                return;
+            }
+
+            genreTitleEl.textContent = currentGenre.name;
+
+            // Default type preference: movie if available, else tv
+            currentGenreType = currentGenre.movieId ? 'movie' : 'tv';
+            setGenreToggleActive();
+
+            // Reset results grid
+            genreResultsGrid.innerHTML = '';
+            genreEmptyMessage.style.display = 'none';
+            genreCurrentPage = 1;
+
+            await loadGenreItems();
+        }
+
+        function setGenreType(type) {
+            currentGenreType = type;
+            setGenreToggleActive();
+            // Reset and reload
+            genreResultsGrid.innerHTML = '';
+            genreEmptyMessage.style.display = 'none';
+            genreCurrentPage = 1;
+            isLoading = false;
+            loadGenreItems();
+        }
+
+        async function loadGenreItems() {
+            if (isLoading) return;
+            const genreId = currentGenreType === 'movie' ? currentGenre.movieId : currentGenre.tvId;
+            if (!genreId) {
+                genreEmptyMessage.style.display = 'block';
+                return;
+            }
+            isLoading = true;
+            genreLoadingIndicator.style.display = 'block';
+            try {
+                const url = `https://api.themoviedb.org/3/discover/${currentGenreType}?api_key=${TMDB_API_KEY}&with_genres=${genreId}&sort_by=popularity.desc&page=${genreCurrentPage}`;
+                const res = await fetch(url);
+                const data = await res.json();
+                const items = data.results || [];
+                if (genreCurrentPage === 1 && items.length === 0) {
+                    genreEmptyMessage.style.display = 'block';
+                } else {
+                    displayGenreItems(items, currentGenreType);
+                    genreCurrentPage++;
+                }
+            } catch (e) {
+                console.error('Error loading genre items:', e);
+            } finally {
+                isLoading = false;
+                genreLoadingIndicator.style.display = 'none';
+            }
+        }
+
+        function displayGenreItems(items, mediaType) {
+            items.forEach(item => {
+                if (!item.poster_path) return;
+                const card = document.createElement('div');
+                card.className = 'movie-card';
+                const title = item.title || item.name || 'Untitled';
+                const year = (item.release_date || item.first_air_date || '').substring(0, 4);
+                const rating = (item.vote_average || 0).toFixed(1);
+                card.innerHTML = `
+                    <img src="https://image.tmdb.org/t/p/w500${item.poster_path}" alt="${title}" class="movie-poster">
+                    <div class="movie-info">
+                        <h3 class="movie-title">${title}</h3>
+                        <p class="movie-year">${year}</p>
+                    </div>
+                    <div class="movie-rating">
+                        <i class="fas fa-star"></i> ${rating}
+                    </div>
+                `;
+                card.addEventListener('click', () => openDetailsModal(item, mediaType));
+                genreResultsGrid.appendChild(card);
+            });
+        }
+
+        // Load movies from TMDB (home)
+        async function loadMovies(category = 'all') {
+            if (isLoading) return;
+            isLoading = true;
+            loadingIndicator.style.display = 'block';
+
+            try {
+                let url;
+                if (category === 'all') {
+                    url = `https://api.themoviedb.org/3/trending/all/week?api_key=${TMDB_API_KEY}&page=${currentPage}`;
+                } else {
+                    url = `https://api.themoviedb.org/3/trending/${category}/week?api_key=${TMDB_API_KEY}&page=${currentPage}`;
+                }
+                const response = await fetch(url);
+                const data = await response.json();
+                displayMovies(data.results);
+                currentPage++;
+            } catch (error) {
+                console.error('Error fetching movies:', error);
+            }
+
+            isLoading = false;
+            loadingIndicator.style.display = 'none';
+        }
+
+        // Search for movies and shows
+        async function searchMovies(query) {
+            if (isLoading) return;
+            isLoading = true;
+            moviesGrid.innerHTML = '';
+            loadingIndicator.style.display = 'block';
+
+            try {
+                const response = await fetch(`https://api.themoviedb.org/3/search/multi?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(query)}&page=1`);
+                const data = await response.json();
+                displayMovies(data.results);
+            } catch (error) {
+                console.error('Error searching movies:', error);
+            }
+
+            isLoading = false;
+            loadingIndicator.style.display = 'none';
+        }
+
+        // Display movies in the grid
+        function displayMovies(movies) {
+            movies.forEach(movie => {
+                if (!movie.poster_path) return;
+
+                const card = document.createElement('div');
+                card.className = 'movie-card';
+                card.innerHTML = `
+                    <img src="https://image.tmdb.org/t/p/w500${movie.poster_path}" alt="${movie.title || movie.name}" class="movie-poster">
+                    <div class="movie-info">
+                        <h3 class="movie-title">${movie.title || movie.name}</h3>
+                        <p class="movie-year">${(movie.release_date || movie.first_air_date || '').substring(0, 4)}</p>
+                    </div>
+                    <div class="movie-rating">
+                        <i class="fas fa-star"></i> ${Number(movie.vote_average || 0).toFixed(1)}
+                    </div>
+                `;
+                card.addEventListener('click', () => openDetailsModal(movie, movie.media_type || null));
+                moviesGrid.appendChild(card);
+            });
+        }
+
+        // Handle infinite scroll - route aware
+        function handleScroll() {
+            if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 500 && !isLoading) {
+                if (activeRoute === 'home') {
+                    loadMovies(currentCategory);
+                } else if (activeRoute === 'genreDetails') {
+                    loadGenreItems();
+                }
+            }
+        }
+
+        // Open details modal (accept optional forced type)
+        async function openDetailsModal(movie, forcedType = null) {
+            currentContent = movie;
+            // Determine media type
+            if (forcedType) {
+                currentMediaType = forcedType === 'tv' ? 'tv' : 'movie';
+            } else {
+                if (movie.media_type) {
+                    currentMediaType = movie.media_type === 'tv' ? 'tv' : 'movie';
+                } else {
+                    // Infer by presence of 'name' vs 'title'
+                    currentMediaType = movie.name && !movie.title ? 'tv' : 'movie';
+                }
+            }
+            torrentsLoaded = false;
+            torrentsContainer.style.display = 'none';
+            torrentsList.innerHTML = '';
+
+            modalBackdrop.src = `https://image.tmdb.org/t/p/w1280${movie.backdrop_path || movie.poster_path || ''}`;
+            modalPoster.src = `https://image.tmdb.org/t/p/w500${movie.poster_path || movie.backdrop_path || ''}`;
+            modalTitle.textContent = movie.title || movie.name || 'Untitled';
+            modalRating.textContent = Number(movie.vote_average || 0).toFixed(1);
+            modalYear.textContent = (movie.release_date || movie.first_air_date || '').substring(0, 4);
+            modalOverview.textContent = movie.overview || '';
+
+            // Fetch additional details
+            const detailsUrl = `https://api.themoviedb.org/3/${currentMediaType}/${movie.id}?api_key=${TMDB_API_KEY}&append_to_response=credits,similar`;
+            try {
+                const response = await fetch(detailsUrl);
+                const details = await response.json();
+                modalRuntime.textContent = details.runtime ? `${details.runtime} min` : (details.episode_run_time && details.episode_run_time.length ? `${details.episode_run_time[0]} min` : '');
+                modalTagline.textContent = details.tagline || '';
+                displayCast(details.credits?.cast || []);
+                displaySimilar(details.similar?.results || [], currentMediaType);
+
+                if (currentMediaType === 'tv') {
+                    seasonsContainer.style.display = 'block';
+                    displaySeasons(details.seasons || []);
+                    // Load episodes for the first usable season by default
+                    const firstSeason = (details.seasons || []).find(s => s.season_number !== 0);
+                    if (firstSeason) {
+                        currentSeason = firstSeason.season_number;
+                        loadEpisodes(firstSeason.season_number);
+                    }
+                } else {
+                    seasonsContainer.style.display = 'none';
+                }
+
+            } catch (error) {
+                console.error('Error fetching details:', error);
+            }
+
+            detailsModal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        // Close details modal
+        function closeModal() {
+            detailsModal.classList.remove('active');
+            document.body.style.overflow = 'auto';
+        }
+
+        // Display cast
+        function displayCast(cast) {
+            castGrid.innerHTML = '';
+            (cast || []).slice(0, 10).forEach(member => {
+                const card = document.createElement('div');
+                card.className = 'cast-card';
+                card.innerHTML = `
+                    <img src="${member.profile_path ? `https://image.tmdb.org/t/p/w185${member.profile_path}` : 'https://via.placeholder.com/185x278'}" alt="${member.name}" class="cast-img">
+                    <p class="cast-name">${member.name}</p>
+                    <p class="cast-character">${member.character || ''}</p>
+                `;
+                castGrid.appendChild(card);
+            });
+        }
+
+        // Display similar content (force the same media type for correct behavior)
+        function displaySimilar(similar, mediaType) {
+            similarGrid.innerHTML = '';
+            (similar || []).slice(0, 6).forEach(item => {
+                if (!item.poster_path) return;
+                const card = document.createElement('div');
+                card.className = 'movie-card';
+                card.innerHTML = `
+                    <img src="https://image.tmdb.org/t/p/w300${item.poster_path}" alt="${item.title || item.name}" class="movie-poster" style="height: 225px;">
+                    <div class="movie-info">
+                        <h3 class="movie-title">${item.title || item.name}</h3>
+                    </div>
+                `;
+                card.addEventListener('click', () => openDetailsModal(item, mediaType));
+                similarGrid.appendChild(card);
+            });
+        }
+
+        // Display seasons for TV shows
+        function displaySeasons(seasons) {
+            seasonSelector.innerHTML = '';
+            seasons.forEach(season => {
+                if (season.season_number === 0) return; // Skip specials
+                const btn = document.createElement('button');
+                btn.className = 'season-btn';
+                btn.textContent = season.name;
+                btn.dataset.seasonNumber = season.season_number;
+                if (season.season_number === currentSeason) {
+                    btn.classList.add('active');
+                }
+                btn.addEventListener('click', () => {
+                    currentSeason = season.season_number;
+                    document.querySelectorAll('.season-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    loadEpisodes(currentSeason);
+                    torrentsContainer.style.display = 'block'; // Make torrents visible
+                    fetchTorrents(currentSeason);
+                });
+                seasonSelector.appendChild(btn);
+            });
+        }
+
+        // Load episodes for a season
+        async function loadEpisodes(seasonNumber) {
+            episodesGrid.innerHTML = '<div class="loading"><i class="fas fa-spinner"></i></div>';
+            try {
+                const response = await fetch(`https://api.themoviedb.org/3/tv/${currentContent.id}/season/${seasonNumber}?api_key=${TMDB_API_KEY}`);
+                const data = await response.json();
+                displayEpisodes(data.episodes || []);
+            } catch (error) {
+                console.error(`Error fetching episodes for season ${seasonNumber}:`, error);
+            }
+        }
+
+        // Display episodes
+        function displayEpisodes(episodes) {
+            episodesGrid.innerHTML = '';
+            episodes.forEach(episode => {
+                const card = document.createElement('div');
+                card.className = 'episode-card';
+                card.innerHTML = `
+                    <img src="${episode.still_path ? `https://image.tmdb.org/t/p/w300${episode.still_path}` : 'https://via.placeholder.com/300x169'}" alt="${episode.name}" class="episode-img">
+                    <div class="episode-info">
+                        <h4 class="episode-title">E${episode.episode_number}: ${episode.name}</h4>
+                        <p class="episode-date">${episode.air_date || ''}</p>
+                    </div>
+                `;
+                card.addEventListener('click', (e) => {
+                    document.querySelectorAll('.episode-card').forEach(c => c.classList.remove('selected'));
+                    card.classList.add('selected');
+                    showTorrents(e, currentSeason, episode.episode_number);
+                });
+                episodesGrid.appendChild(card);
+            });
+        }
+
+        // Show torrents for the current content
+        function showTorrents(event, season = null, episode = null) {
+            // If Jackett is required but not configured, and alternate mode not enabled, show setup
+            if (!hasApiKey && !watchWithoutJackett) {
+                showApiSetupModal();
+                return;
+            }
+            torrentsContainer.style.display = 'block';
+            // Reset loaded state for new searches
+            torrentsLoaded = false;
+            fetchTorrents(season, episode);
+        }
+
+        // Fetch torrents from the backend
+        async function fetchTorrents(season = null, episode = null) {
+            if (!currentContent) return;
+
+            let query = currentContent.title || currentContent.name;
+            if (currentMediaType === 'movie') {
+                const year = (currentContent.release_date || '').substring(0, 4);
+                if (year) {
+                    query = `${query} ${year}`;
+                }
+            } else if (currentMediaType === 'tv') {
+                if (season && episode) {
+                    const seasonStr = String(season).padStart(2, '0');
+                    const episodeStr = String(episode).padStart(2, '0');
+                    query = `${query} S${seasonStr}.E${episodeStr}`;
+                } else if (season) {
+                    const seasonStr = String(season).padStart(2, '0');
+                    query = `${query} S${seasonStr}`;
+                }
+            }
+
+            torrentsList.innerHTML = '<div class="loading"><i class="fas fa-spinner"></i> Searching...</div>';
+            torrentsLoaded = true;
+
+            try {
+                // Build query exactly the same way as above; only change endpoint based on mode
+                const url = watchWithoutJackett
+                    ? `${TORRENTLESS_BASE_URL}/search?q=${encodeURIComponent(query)}&page=1`
+                    : `${API_BASE_URL}/torrents?q=${encodeURIComponent(query)}`;
+                const response = await fetch(url);
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+                }
+                const data = await response.json();
+                const toBytes = (s) => {
+                    if (!s || typeof s !== 'string') return 0;
+                    const m = s.trim().match(/([0-9]+(?:\.[0-9]+)?)\s*(KB|MB|GB|TB)/i);
+                    if (!m) return 0;
+                    const val = parseFloat(m[1]);
+                    const unit = m[2].toUpperCase();
+                    const mult = unit === 'KB' ? 1024 : unit === 'MB' ? 1024**2 : unit === 'GB' ? 1024**3 : 1024**4;
+                    return Math.max(0, Math.floor(val * mult));
+                };
+                const torrents = Array.isArray(data)
+                    ? data
+                    : Array.isArray(data.items)
+                        ? data.items.map(it => ({ title: it.title, magnet: it.magnet, seeders: Number(it.seeds)||0, size: toBytes(it.size) }))
+                        : [];
+                displayTorrents(torrents);
+            } catch (error) {
+                console.error('Error fetching torrents:', error);
+                torrentsList.innerHTML = `<div class="error-message"><i class="fas fa-exclamation-triangle"></i> ${error.message}</div>`;
+            }
+        }
+
+        // Display torrents
+        function displayTorrents(torrents) {
+            allTorrents = (torrents || []).sort((a, b) => (b.seeders||0) - (a.seeders||0));
+            torrentsPage = 1;
+            renderTorrentsPage();
+        }
+
+        function renderTorrentsPage() {
+            torrentsList.innerHTML = '';
+            if (allTorrents.length === 0) {
+                torrentsList.innerHTML = '<p>No torrents found.</p>';
+                return;
+            }
+
+            const start = (torrentsPage - 1) * torrentsPerPage;
+            const end = start + torrentsPerPage;
+            const paginatedTorrents = allTorrents.slice(start, end);
+
+            paginatedTorrents.forEach(torrent => {
+                const item = document.createElement('div');
+                item.className = 'torrent-item';
+                item.innerHTML = `
+                    <div class="torrent-info">
+                        <p class="torrent-name">${torrent.title}</p>
+                        <div class="torrent-details">
+                            <span><i class="fas fa-arrow-up"></i> ${torrent.seeders}</span>
+                            <span><i class="fas fa-database"></i> ${((torrent.size || 0) / 1024 / 1024 / 1024).toFixed(2)} GB</span>
+                        </div>
+                    </div>
+                    <div class="torrent-actions">
+                        <button class="btn-play torrent-btn"><i class="fas fa-play"></i> Play</button>
+                        <button class="btn-copy torrent-btn"><i class="fas fa-copy"></i> Copy</button>
+                    </div>
+                `;
+
+                item.querySelector('.btn-play').addEventListener('click', () => startStream(torrent.magnet));
+                item.querySelector('.btn-copy').addEventListener('click', () => copyMagnet(torrent.magnet));
+                torrentsList.appendChild(item);
+            });
+
+            renderTorrentPagination();
+        }
+
+        function renderTorrentPagination() {
+            const totalPages = Math.ceil(allTorrents.length / torrentsPerPage);
+            if (totalPages <= 1) {
+                return;
+            }
+
+            const paginationContainer = document.createElement('div');
+            paginationContainer.className = 'torrent-pagination';
+
+            const prevBtn = document.createElement('button');
+            prevBtn.innerHTML = '<i class="fas fa-arrow-left"></i>';
+            prevBtn.disabled = torrentsPage === 1;
+            prevBtn.addEventListener('click', () => {
+                if (torrentsPage > 1) {
+                    torrentsPage--;
+                    renderTorrentsPage();
+                }
+            });
+
+            const nextBtn = document.createElement('button');
+            nextBtn.innerHTML = '<i class="fas fa-arrow-right"></i>';
+            nextBtn.disabled = torrentsPage === totalPages;
+            nextBtn.addEventListener('click', () => {
+                if (torrentsPage < totalPages) {
+                    torrentsPage++;
+                    renderTorrentsPage();
+                }
+            });
+
+            const pageInfo = document.createElement('span');
+            pageInfo.textContent = `Page ${torrentsPage} of ${totalPages}`;
+
+            paginationContainer.appendChild(prevBtn);
+            paginationContainer.appendChild(pageInfo);
+            paginationContainer.appendChild(nextBtn);
+
+            torrentsList.appendChild(paginationContainer);
+        }
+
+        // Start streaming a torrent
+        async function startStream(magnet) {
+            showPlayer();
+            mpvLoading.style.display = 'flex';
+            mpvControls.style.display = 'none';
+            fileList.innerHTML = '';
+            subtitleList.innerHTML = '';
+            subtitleControls.style.display = 'none';
+            playerTitle.textContent = 'Loading torrent info...';
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/torrent-files?magnet=${encodeURIComponent(magnet)}`);
+                const data = await response.json();
+                currentTorrentData = data;
+                playerTitle.textContent = data.name || 'Selected Torrent'; // Update title with torrent name
+                displayFiles(data.videoFiles || [], data.subtitleFiles || []);
+            } catch (error) {
+                console.error('Error getting torrent files:', error);
+                
+            }
+        }
+
+        // Display files for selection
+        function displayFiles(videos, subtitles) {
+            mpvLoading.style.display = 'none';
+            fileList.innerHTML = '';
+
+            // Sort videos by season and episode
+            videos.sort((a, b) => {
+                const regex = /(S|s)(\d+)(E|e)(\d+)|(\d+)x(\d+)|(\d+)-(\d+)/;
+
+                const aMatch = a.name.match(regex);
+                const bMatch = b.name.match(regex);
+
+                if (aMatch && bMatch) {
+                    const aSeason = parseInt(aMatch[2] || aMatch[5] || aMatch[7], 10);
+                    const aEpisode = parseInt(aMatch[4] || aMatch[6] || aMatch[8], 10);
+                    const bSeason = parseInt(bMatch[2] || bMatch[5] || bMatch[7], 10);
+                    const bEpisode = parseInt(bMatch[4] || bMatch[6] || bMatch[8], 10);
+
+                    if (aSeason !== bSeason) {
+                        return aSeason - bSeason;
+                    }
+                    return aEpisode - bEpisode;
+                }
+                // If no match, sort alphabetically
+                return a.name.localeCompare(b.name);
+            });
+
+            videos.forEach(file => {
+                const item = document.createElement('div');
+                item.className = 'file-item';
+                item.innerHTML = `
+                    <p class="file-name">${file.name}</p>
+                    <p class="file-size">(${(file.size / 1024 / 1024).toFixed(2)} MB)</p>
+                `;
+
+                let hoverTimer;
+                item.addEventListener('mouseenter', () => {
+                    hoverTimer = setTimeout(() => {
+                        const tooltip = document.createElement('div');
+                        tooltip.className = 'file-name-tooltip';
+                        tooltip.textContent = file.name;
+                        item.appendChild(tooltip);
+                    }, 3000);
+                });
+
+                item.addEventListener('mouseleave', () => {
+                    clearTimeout(hoverTimer);
+                    const tooltip = item.querySelector('.file-name-tooltip');
+                    if (tooltip) {
+                        tooltip.remove();
+                    }
+                });
+
+                item.addEventListener('click', async () => {
+                    currentStreamUrl = `${API_BASE_URL}/stream-file?hash=${currentTorrentData.infoHash}&file=${file.index}`;
+                    currentSelectedVideoName = file.name;
+                    playerTitle.textContent = file.name;
+                    mpvControls.style.display = 'flex';
+                    // Ask backend to begin downloading the selected file and subtitles, but don't start playback yet
+                    try {
+                        await fetch(`${API_BASE_URL}/prepare-file?hash=${currentTorrentData.infoHash}&file=${file.index}`);
+                    } catch (_) {}
+                    showNotification(`Selected: ${file.name}. Click Play Now or Open in MPV to start.`);
+                });
+                fileList.appendChild(item);
+            });
+
+            if (subtitles.length > 0) {
+                subtitleControls.style.display = 'flex';
+                subtitleList.innerHTML = '';
+                subtitleList.classList.add('subtitle-list');
+                currentSubtitles = subtitles;
+                subtitles.forEach(sub => {
+                    const subItem = document.createElement('div');
+                    subItem.className = 'subtitle-item';
+                    
+                    const langDiv = document.createElement('div');
+                    langDiv.className = 'subtitle-lang';
+                    langDiv.textContent = sub.name;
+                    subItem.appendChild(langDiv);
+
+                    subItem.addEventListener('click', async () => {
+                        document.querySelectorAll('.subtitle-item').forEach(item => {
+                            item.classList.remove('selected');
+                        });
+                        subItem.classList.add('selected');
+
+                        currentSubtitleUrl = `${API_BASE_URL}/subtitle-file?hash=${currentTorrentData.infoHash}&file=${sub.index}`;
+                        showNotification(`Selected subtitle: ${sub.name}`);
+                    });
+                    subtitleList.appendChild(subItem);
+                });
+            }
+        }
+
+        // Show the MPV player
+        function showPlayer() {
+            mpvPlayerContainer.classList.add('active');
+        }
+
+        // Close the MPV player
+        async function closePlayer() {
+            mpvPlayerContainer.classList.remove('active');
+            if (currentTorrentData) {
+                try {
+                    await fetch(`${API_BASE_URL}/stop-stream?hash=${currentTorrentData.infoHash}`);
+                } catch (e) {}
+                if (window.electronAPI) {
+                    try {
+                        const result = await window.electronAPI.clearWebtorrentTemp();
+                        if (result.success) {
+                            showNotification('Player closed and temp files cleared.');
+                        } else {
+                            showNotification(`Error clearing temp files: ${result.message}`);
+                        }
+                    } catch (e) {}
+                }
+            }
+        }
+
+        // Open stream in MPV
+        async function openInMPV() {
+            if (!currentStreamUrl || !currentTorrentData) {
+                showNotification('No file selected to play');
+                return;
+            }
+            if (!window.electronAPI || !window.electronAPI.openInMPV) {
+                showNotification('MPV integration not available in this environment');
+                return;
+            }
+            const data = {
+                streamUrl: currentStreamUrl,
+                infoHash: currentTorrentData.infoHash
+            };
+            const result = await window.electronAPI.openInMPV(data);
+            if (result.success) {
+                showNotification('MPV launched Please Wait Watch out for a new tab!');
+            } else {
+                showNotification(`Error: ${result.message}`);
+            }
+        }
+
+        // Copy stream URL to clipboard
+        function copyStreamUrl() {
+            if (!currentStreamUrl) {
+                showNotification('No file selected to play');
+                return;
+            }
+            navigator.clipboard.writeText(currentStreamUrl).then(() => {
+                showNotification('Stream URL copied to clipboard');
+            });
+        }
+
+        // Download subtitles
+        function downloadSubtitles() {
+            if (!currentSubtitleUrl) {
+                showNotification('No subtitle selected');
+                return;
+            }
+            window.open(currentSubtitleUrl);
+        }
+
+        // Copy magnet link to clipboard
+        function copyMagnet(magnet) {
+            navigator.clipboard.writeText(magnet).then(() => {
+                showNotification('Magnet link copied to clipboard');
+            });
+        }
+
+        // Show notification
+        function showNotification(message) {
+            notification.textContent = message;
+            notification.classList.add('show');
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 3000);
+        }
+
+        // --- Custom Player Logic ---
+
+        function openCustomPlayer() {
+            if (!currentStreamUrl) {
+                showNotification('No file selected to play');
+                return;
+            }
+            customPlayerContainer.classList.add('active');
+            videoSource.setAttribute('src', currentStreamUrl);
+            customVideo.load();
+            customPlayerTitle.textContent = playerTitle.textContent;
+
+            // Reset subtitles
+            if (subtitleTrack) {
+                subtitleTrack.mode = 'hidden';
+            }
+            subtitleDisplay.style.display = 'none';
+            htmlSubsPanel.style.display = 'none';
+            try {
+                customVideo.muted = false;
+                const vol = Number(htmlVolume?.value || 80);
+                customVideo.volume = Math.max(0, Math.min(1, vol / 100));
+                htmlMuteBtn.innerHTML = '<i class="fas fa-volume-up"></i>';
+            } catch(_) {}
+
+            // Show controls initially
+            videoContainer.classList.add('show-controls');
+            resetControlsAutoHide();
+        }
+
+        // Auto-hide controls when idle in custom player
+        let controlsHideTimer = null;
+        const CONTROLS_HIDE_DELAY = 1500; // ms
+        const videoContainer = document.getElementById('videoContainer');
+
+        function showControls() {
+            videoContainer.classList.add('show-controls');
+        }
+
+        function hideControls() {
+            // Do not hide if subtitles panel is open
+            if (htmlSubsPanel && htmlSubsPanel.style.display === 'block') return;
+            videoContainer.classList.remove('show-controls');
+        }
+
+        function clearControlsTimer() { if (controlsHideTimer) { clearTimeout(controlsHideTimer); controlsHideTimer = null; } }
+
+        function resetControlsAutoHide() {
+            clearControlsTimer();
+            showControls();
+            controlsHideTimer = setTimeout(hideControls, CONTROLS_HIDE_DELAY);
+        }
+
+        // Reveal/hide on mouse activity inside video container
+        videoContainer.addEventListener('mousemove', resetControlsAutoHide);
+        videoContainer.addEventListener('mouseenter', resetControlsAutoHide);
+        videoContainer.addEventListener('mouseleave', hideControls);
+        // Keep visible while interacting with the controls bar
+        videoControls.addEventListener('mouseenter', () => { clearControlsTimer(); showControls(); });
+        videoControls.addEventListener('mousemove', () => { clearControlsTimer(); showControls(); });
+        videoControls.addEventListener('mouseleave', resetControlsAutoHide);
+
+        // When opening and closing the subtitles panel, force controls visibility appropriately
+        if (htmlSubsBtn) {
+            htmlSubsBtn.addEventListener('click', () => {
+                // After toggling, ensure state is correct
+                setTimeout(() => {
+                    if (htmlSubsPanel.style.display === 'block') {
+                        clearControlsTimer();
+                        showControls();
+                    } else {
+                        resetControlsAutoHide();
+                    }
+                }, 0);
+            });
+        }
+        if (htmlSubsClose) {
+            htmlSubsClose.addEventListener('click', () => {
+                resetControlsAutoHide();
+            });
+        }
+
+        // ---- WCJS Player Logic ----
+        let wcjsPlayer = null;
+        let wcjsTimer = null;
+        function openWCJSPlayer() {
+            if (!currentStreamUrl) {
+                showNotification('No file selected to play');
+                return;
+            }
+            try {
+                const wc = window.electronAPI?.wcjs;
+                if (!wc || !wc.available) {
+                    openCustomPlayer();
+                    return;
+                }
+                // Show container
+                wcjsPlayerContainer.style.opacity = '1';
+                wcjsPlayerContainer.style.pointerEvents = 'all';
+                wcjsLoading.style.display = 'flex';
+                wcjsPlayerTitle.textContent = playerTitle.textContent || 'WebChimera Player';
+
+                // Init player and bind to canvas
+                const ctx = wc.init('#wcjsCanvas', ["--no-video-title-show"]);
+                if (!ctx || !ctx.player) {
+                    showNotification('WebChimera failed to initialize, falling back to built-in player.');
+                    closeWCJSPlayer();
+                    openCustomPlayer();
+                    return;
+                }
+                wcjsPlayer = ctx.player;
+                // Start playback
+                wcjsPlayer.play(currentStreamUrl);
+
+                // Setup events and UI updates
+                wcjsAttachEvents();
+            } catch (e) {
+                console.error('WCJS init error:', e);
+                showNotification('WebChimera init error, using built-in player.');
+                closeWCJSPlayer();
+                openCustomPlayer();
+            }
+        }
+
+        function wcjsAttachEvents() {
+            if (!wcjsPlayer) return;
+            // Length/time change handlers if available
+            try { wcjsPlayer.onLengthChanged = (len) => { wcjsTotalTime.textContent = formatTime((len||0)/1000); }; } catch(_){}
+            try { wcjsPlayer.onPlaying = () => { wcjsLoading.style.display = 'none'; wcjsPlayPauseBtn.innerHTML = '<i class="fas fa-pause"></i>'; }; } catch(_){}
+            try { wcjsPlayer.onPaused = () => { wcjsPlayPauseBtn.innerHTML = '<i class="fas fa-play"></i>'; }; } catch(_){}
+            try { wcjsPlayer.onEndReached = () => { wcjsPlayPauseBtn.innerHTML = '<i class="fas fa-play"></i>'; }; } catch(_){}
+
+            // Poll time/length as a reliable way across versions
+            clearInterval(wcjsTimer);
+            wcjsTimer = setInterval(() => {
+                if (!wcjsPlayer) return;
+                let len = 0, t = 0;
+                try { len = Number(wcjsPlayer.length || wcjsPlayer.input?.length || 0); } catch(_){}
+                try { t = Number(wcjsPlayer.time || wcjsPlayer.input?.time || 0); } catch(_){}
+                if (len > 0) wcjsTotalTime.textContent = formatTime(len/1000);
+                wcjsCurrentTime.textContent = formatTime(t/1000);
+                if (len > 0) {
+                    const pct = Math.max(0, Math.min(100, (t/len) * 100));
+                    wcjsProgressFilled.style.width = pct + '%';
+                }
+            }, 200);
+            // Refresh audio list on play
+            setTimeout(renderAudioTracks, 400);
+        }
+
+        async function closeWCJSPlayer() {
+            wcjsPlayerContainer.style.opacity = '0';
+            wcjsPlayerContainer.style.pointerEvents = 'none';
+            wcjsLoading.style.display = 'none';
+            clearInterval(wcjsTimer);
+            wcjsTimer = null;
+            if (wcjsPlayer) {
+                try { wcjsPlayer.stop(); } catch(_){}
+                try { wcjsPlayer.close && wcjsPlayer.close(); } catch(_){}
+            }
+            wcjsPlayer = null;
+            // Stop torrent stream on server and clean temp (same as MPV close)
+            if (currentTorrentData) {
+                try { await fetch(`${API_BASE_URL}/stop-stream?hash=${currentTorrentData.infoHash}`); } catch(e) {}
+                if (window.electronAPI) {
+                    try { await window.electronAPI.clearWebtorrentTemp(); } catch(e) {}
+                }
+            }
+            // Cleanup downloaded temporary subtitles
+            try { await fetch(`${API_BASE_URL}/subtitles/cleanup`, { method: 'POST' }); } catch(e) {}
+        }
+
+        function wcjsTogglePlayPause() {
+            if (!wcjsPlayer) return;
+            try { wcjsPlayer.togglePause(); } catch(_){}
+        }
+
+        function wcjsSkipTime(seconds) {
+            if (!wcjsPlayer) return;
+            try {
+                const cur = Number(wcjsPlayer.time || 0);
+                wcjsPlayer.time = Math.max(0, cur + seconds * 1000);
+            } catch(_){}
+        }
+
+        function wcjsToggleFullscreen() {
+            if (!document.fullscreenElement) {
+                wcjsPlayerContainer.requestFullscreen?.();
+            } else {
+                document.exitFullscreen?.();
+            }
+        }
+
+        function wcjsSeek(e) {
+            if (!wcjsPlayer) return;
+            const rect = wcjsProgressBar.getBoundingClientRect();
+            const offsetX = e.clientX - rect.left;
+            const pct = offsetX / rect.width;
+            try {
+                const len = Number(wcjsPlayer.length || 0);
+                if (len > 0) wcjsPlayer.time = Math.floor(len * pct);
+            } catch(_){}
+        }
+
+        function wcjsToggleMute() {
+            if (!wcjsPlayer) return;
+            try {
+                if (typeof wcjsPlayer.toggleMute === 'function') wcjsPlayer.toggleMute();
+                else wcjsPlayer.mute = !wcjsPlayer.mute;
+                // Update icon
+                const muted = !!wcjsPlayer.mute;
+                wcjsMuteBtn.innerHTML = muted ? '<i class="fas fa-volume-mute"></i>' : '<i class="fas fa-volume-up"></i>';
+            } catch(_){}
+        }
+
+        function wcjsSetVolume() {
+            if (!wcjsPlayer) return;
+            // wcjs volume is 0..200
+            const v = Number(wcjsVolume.value || 0);
+            try { wcjsPlayer.volume = Math.round(v * 2); } catch(_){}
+        }
+
+        async function wcjsHandleSubtitleUpload(event) {
+            const file = event.target.files[0];
+            if (!file || !wcjsPlayer) return;
+            try {
+                const text = await file.text();
+                const formData = new FormData();
+                formData.append('subtitle', new Blob([text]), file.name);
+                const response = await fetch(`${API_BASE_URL}/upload-subtitle`, { method: 'POST', body: formData });
+                const data = await response.json();
+                if (data?.url) {
+                    try { wcjsPlayer.subtitles && wcjsPlayer.subtitles.load && wcjsPlayer.subtitles.load(data.url); } catch(_){}
+                    showNotification('Subtitles loaded');
+                }
+            } catch (e) {
+                showNotification('Failed to load subtitles');
+            }
+        }
+
+        // Fetch and display subtitles from backend
+        async function fetchAndRenderSubtitles() {
+            wcjsSubsList.innerHTML = '<div class="subs-help"><i class="fas fa-spinner" style="animation: spin 1s linear infinite;"></i> Loading...</div>';
+            try {
+                // Always prefer the selected show's TMDB id and media type
+                let tmdbId = currentContent?.id;
+                let type = currentMediaType === 'tv' ? 'tv' : 'movie';
+                // For movies, if tmdbId is missing, derive it from the selected torrent filename
+                if (type === 'movie' && (!tmdbId || tmdbId === '')) {
+                    if (currentSelectedVideoName) {
+                        try {
+                            const derived = await getTmdbFromFilename(currentSelectedVideoName);
+                            if (derived?.id) tmdbId = derived.id;
+                        } catch(_) {}
+                    }
+                }
+                const params = new URLSearchParams({ type });
+                if (tmdbId) params.set('tmdbId', String(tmdbId));
+                if (currentSelectedVideoName) {
+                    params.set('filename', currentSelectedVideoName);
+                    // Provide show title/year for better matching
+                    const showTitle = currentContent?.title || currentContent?.name || '';
+                    const showYear = (currentContent?.release_date || currentContent?.first_air_date || '').slice(0,4);
+                    if (showTitle) params.set('title', showTitle);
+                    if (showYear) params.set('year', showYear);
+                } else if (type === 'tv' && currentSeason) {
+                    params.set('season', String(currentSeason));
+                }
+                // Try to detect selected episode from episodesGrid selection
+                const sel = document.querySelector('.episode-card.selected');
+                if (!currentSelectedVideoName && type === 'tv' && sel) {
+                    const titleEl = sel.querySelector('.episode-title');
+                    const m = titleEl?.textContent?.match(/E(\d+)/i);
+                    if (m) params.set('episode', String(parseInt(m[1], 10)));
+                }
+                const res = await fetch(`${API_BASE_URL}/subtitles?${params.toString()}`);
+                const data = await res.json();
+                const items = Array.isArray(data.subtitles) ? data.subtitles : [];
+                // Group by language and index duplicates
+                const grouped = {};
+                for (const it of items) {
+                    const key = `${(it.langName || it.lang || 'Unknown').toLowerCase()}|${it.source}`;
+                    if (!grouped[key]) grouped[key] = [];
+                    grouped[key].push(it);
+                }
+                wcjsSubsList.innerHTML = '';
+                const entries = Object.entries(grouped);
+                if (!entries.length) wcjsSubsList.innerHTML = '<div class="subs-help">No subtitles found.</div>';
+                for (const [key, arr] of entries) {
+                    const [langNameLower, source] = key.split('|');
+                    const langDisplay = langNameLower.charAt(0).toUpperCase() + langNameLower.slice(1);
+                    arr.forEach((sub, idx) => {
+                        const displayName = arr.length > 1 ? `${langDisplay} ${idx + 1}` : langDisplay;
+                        const row = document.createElement('div');
+                        row.className = 'subs-item';
+                        row.innerHTML = `<div>${displayName} <span class="subs-source">(${source})</span></div><div class="subs-badge">Select</div>`;
+                        row.addEventListener('click', async () => {
+                            try {
+                                // Download via backend to temp, then load into WCJS
+                                const payload = sub.source === 'opensubtitles'
+                                    ? { source: 'opensubtitles', fileId: sub.file_id, preferredName: sub.name }
+                                    : { source: 'wyzie', url: sub.url, preferredName: sub.name };
+                                const dl = await fetch(`${API_BASE_URL}/subtitles/download`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                                const dlJson = await dl.json();
+                                if (dl.ok && dlJson.url) {
+                                    try { wcjsPlayer.subtitles && wcjsPlayer.subtitles.load && wcjsPlayer.subtitles.load(dlJson.url); } catch(_){}
+                                    showNotification(`Loaded: ${displayName}`);
+                                    wcjsSubsPanel.style.display = 'none';
+                                } else {
+                                    if (dl.status === 429 || dlJson?.code === 'OS_QUOTA') {
+                                        showNotification('OpenSubtitles is rate-limited. Trying Wyzie automatically...');
+                                        // Try fallback to Wyzie: prefer same language, else any Wyzie
+                                        const sameLangWyzie = currentSubtitles.find(s => s.source === 'wyzie' && s.lang && s.lang === (sub.lang || '').toLowerCase());
+                                        const anyWyzie = currentSubtitles.find(s => s.source === 'wyzie');
+                                        const wyziePick = sameLangWyzie || anyWyzie;
+                                        if (wyziePick) {
+                                            try {
+                                                const wyPayload = { source: 'wyzie', url: wyziePick.url, preferredName: wyziePick.name || wyziePick.langName };
+                                                const wyDl = await fetch(`${API_BASE_URL}/subtitles/download`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(wyPayload) });
+                                                const wyJson = await wyDl.json();
+                                                if (wyDl.ok && wyJson.url) {
+                                                    try { wcjsPlayer.subtitles && wcjsPlayer.subtitles.load && wcjsPlayer.subtitles.load(wyJson.url); } catch(_){}
+                                                    showNotification(`Loaded from Wyzie: ${wyziePick.name || wyziePick.langName}`);
+                                                    wcjsSubsPanel.style.display = 'none';
+                                                } else {
+                                                    showNotification(wyJson.error || 'Wyzie fallback failed. Please pick a different subtitle.');
+                                                }
+                                            } catch (e) {
+                                                showNotification('Wyzie fallback failed. Please pick a different subtitle.');
+                                            }
+                                        } else {
+                                            showNotification('No Wyzie subtitles available. Please try another source later.');
+                                        }
+                                    } else {
+                                        showNotification(dlJson.error || 'Subtitle download failed');
+                                    }
+                                }
+                            } catch (e) {
+                                showNotification('Subtitle download error');
+                            }
+                        });
+                        wcjsSubsList.appendChild(row);
+                    });
+                }
+            } catch {
+                wcjsSubsList.innerHTML = '<div class="subs-help">Failed to load subtitles.</div>';
+            }
+        }
+
+        // Render audio tracks and allow switching
+        function renderAudioTracks() {
+            wcjsAudioList.innerHTML = '';
+            if (!wcjsPlayer || !wcjsPlayer.audio) {
+                wcjsAudioList.innerHTML = '<div class="subs-help">Audio track info not available.</div>';
+                return;
+            }
+            try {
+                const count = Number(wcjsPlayer.audio.count || 0);
+                if (!count) {
+                    wcjsAudioList.innerHTML = '<div class="subs-help">No alternate audio tracks.</div>';
+                    return;
+                }
+                for (let i = 1; i <= count; i++) {
+                    const name = wcjsPlayer.audio[i] || `Track ${i}`;
+                    const row = document.createElement('div');
+                    row.className = 'subs-item';
+                    row.innerHTML = `<div>${name}</div><div class="subs-badge">Select</div>`;
+                    row.addEventListener('click', () => {
+                        try { wcjsPlayer.audio.track = i; showNotification(`Audio: ${name}`); wcjsAudioPanel.style.display = 'none'; } catch(_){}
+                    });
+                    wcjsAudioList.appendChild(row);
+                }
+            } catch {
+                wcjsAudioList.innerHTML = '<div class="subs-help">Audio list unavailable.</div>';
+            }
+        }
+
+        async function closeCustomPlayer_() {
+            customPlayerContainer.classList.remove('active');
+            try { customVideo.pause(); } catch(_) {}
+        }
+
+        function togglePlayPause() {
+            if (customVideo.paused) {
+                // Also ensure any textTracks are disabled
+                try {
+                    for (const t of customVideo.textTracks || []) { t.mode = 'disabled'; }
+                } catch(_){ }
+                customVideo.play();
+            } else {
+                customVideo.pause();
+            }
+        }
+
+        function skipTime(amount) {
+            customVideo.currentTime += amount;
+        }
+            // Fully reset video source to clear any residual tracks/cues
+            try {
+                customVideo.removeAttribute('src');
+                if (videoSource) videoSource.setAttribute('src', '');
+                customVideo.load();
+            } catch(_) {}
+
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                customPlayerContainer.requestFullscreen();
+            } else {
+                document.exitFullscreen();
+            }
+        }
+
+        function updateProgress() {
+            const percent = (customVideo.currentTime / customVideo.duration) * 100;
+            progressFilled.style.width = `${percent}%`;
+            currentTime.textContent = formatTime(customVideo.currentTime);
+        }
+
+        function updateDuration() {
+            totalTime.textContent = formatTime(customVideo.duration);
+        }
+
+        function seekVideo(e) {
+            const rect = progressBar.getBoundingClientRect();
+            const offsetX = e.clientX - rect.left;
+            const seekTime = (offsetX / progressBar.offsetWidth) * customVideo.duration;
+            customVideo.currentTime = seekTime;
+        }
+
+        function formatTime(seconds) {
+            if (!isFinite(seconds)) return '0:00';
+            const minutes = Math.floor(seconds / 60);
+            const secs = Math.floor(seconds % 60);
+            return `${minutes}:${String(secs).padStart(2, '0')}`;
+        }
+
+        function handleSubtitleUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                const text = e.target.result;
+                // Upload to server to get a URL
+                const formData = new FormData();
+                formData.append('subtitle', new Blob([text]), file.name);
+                const response = await fetch(`${API_BASE_URL}/upload-subtitle`, {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await response.json();
+                loadSubtitle(data.url);
+            };
+            reader.readAsText(file);
+        }
+
+        async function loadSubtitle(url, opts = {}) {
+            // Remove existing subtitle tracks
+            const existingTracks = Array.from(customVideo.querySelectorAll('track[kind="subtitles"]'));
+            existingTracks.forEach(t => t.remove());
+            subtitleTrack = null;
+
+            const track = document.createElement('track');
+            track.kind = 'subtitles';
+            track.label = opts.label || 'Subtitles';
+            track.srclang = (opts.lang || 'en');
+            track.src = url;
+            track.default = true;
+            track.setAttribute('default', '');
+            customVideo.appendChild(track);
+            // Wait for track to load then enable showing
+            track.addEventListener('load', () => {
+                try {
+                    // Hide all other tracks then show current
+                    for (const t of customVideo.textTracks) { t.mode = 'hidden'; }
+                    if (track.track) track.track.mode = 'showing';
+                } catch {}
+            });
+            subtitleTrack = track;
+            // Track the served filename so we can delete it when switching
+            try {
+                const u = new URL(url, window.location.origin);
+                const parts = u.pathname.split('/');
+                const fname = parts[parts.length - 1];
+                currentSubtitleFile = decodeURIComponent(fname);
+            } catch {}
+        }
+
+        async function fetchAndRenderHtmlSubs() {
+            htmlSubsList.innerHTML = '<div class="subs-help"><i class="fas fa-spinner" style="animation: spin 1s linear infinite;"></i> Loading...</div>';
+            try {
+                // Always use the selected show's TMDB id and type from UI
+                let tmdbId = currentContent?.id;
+                let type = currentMediaType === 'tv' ? 'tv' : 'movie';
+                const title = currentContent?.title || currentContent?.name || '';
+                const year = (currentContent?.release_date || currentContent?.first_air_date || '').slice(0,4);
+                // For movies, if tmdbId is missing, derive it from the selected torrent filename
+                if (type === 'movie' && (!tmdbId || tmdbId === '')) {
+                    if (currentSelectedVideoName) {
+                        try {
+                            const derived = await getTmdbFromFilename(currentSelectedVideoName);
+                            if (derived?.id) tmdbId = derived.id;
+                        } catch(_) {}
+                    }
+                }
+                const params = new URLSearchParams({ type });
+                if (tmdbId) params.set('tmdbId', String(tmdbId));
+                if (title) params.set('title', title);
+                if (year) params.set('year', year);
+                if (currentSelectedVideoName) {
+                    params.set('filename', currentSelectedVideoName);
+                    // title/year already represent the selected show
+                }
+                if (type === 'tv' && currentSeason) params.set('season', String(currentSeason));
+                const sel = document.querySelector('.episode-card.selected');
+                if (!currentSelectedVideoName && type === 'tv' && sel) {
+                    const titleEl = sel.querySelector('.episode-title');
+                    const m = titleEl?.textContent?.match(/E(\d+)/i);
+                    if (m) params.set('episode', String(parseInt(m[1], 10)));
+                }
+                const res = await fetch(`${API_BASE_URL}/subtitles?${params.toString()}`);
+                const data = await res.json();
+                let items = Array.isArray(data.subtitles) ? data.subtitles : [];
+                // Extra safety: filter client-side for supported formats only
+                items = items.filter(it => {
+                    const ext = (it.ext || it.format || '').toString().toLowerCase();
+                    const u = (it.url || '').toString().toLowerCase();
+                    return ['srt','vtt'].includes(ext) || u.includes('.srt') || u.includes('.vtt') || u.includes('.srt.gz') || it.file_id; // OS entries will be converted server-side
+                });
+                const grouped = {};
+                for (const it of items) {
+                    const key = `${(it.langName || it.lang || 'Unknown').toLowerCase()}|${it.source}`;
+                    if (!grouped[key]) grouped[key] = [];
+                    grouped[key].push(it);
+                }
+                htmlSubsList.innerHTML = '';
+                const entries = Object.entries(grouped);
+                if (!entries.length) htmlSubsList.innerHTML = '<div class="subs-help">No subtitles found.</div>';
+                for (const [key, arr] of entries) {
+                    const [langNameLower, source] = key.split('|');
+                    const langDisplay = langNameLower.charAt(0).toUpperCase() + langNameLower.slice(1);
+                    arr.forEach((sub, idx) => {
+                        const displayName = arr.length > 1 ? `${langDisplay} ${idx + 1}` : langDisplay;
+                        const row = document.createElement('div');
+                        row.className = 'subs-item';
+                        row.innerHTML = `<div>${displayName} <span class="subs-source">(${source})</span></div><div class="subs-badge">Select</div>`;
+                        row.addEventListener('click', async () => {
+                            try {
+                                const payload = sub.source === 'opensubtitles'
+                                    ? { source: 'opensubtitles', fileId: sub.file_id, preferredName: sub.name }
+                                    : { source: 'wyzie', url: sub.url, preferredName: sub.name };
+                                const dl = await fetch(`${API_BASE_URL}/subtitles/download`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                                const dlJson = await dl.json();
+                                if (dl.ok && dlJson.url) {
+                                    // Delete old subtitle temp file (if any)
+                                    if (currentSubtitleFile) {
+                                        try {
+                                            await fetch(`${API_BASE_URL}/subtitles/delete`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ filename: currentSubtitleFile }) });
+                                        } catch {}
+                                    }
+                                    const langCode = (sub.lang || '').toLowerCase();
+                                    await loadSubtitle(dlJson.url, { label: displayName, lang: langCode });
+                                    showNotification(`Loaded: ${displayName}`);
+                                    htmlSubsPanel.style.display = 'none';
+                                } else {
+                                    if (dl.status === 429 || dlJson?.code === 'OS_QUOTA') {
+                                        showNotification('OpenSubtitles is rate-limited. Trying Wyzie automatically...');
+                                        const sameLangWyzie = currentSubtitles.find(s => s.source === 'wyzie' && s.lang && s.lang === (sub.lang || '').toLowerCase());
+                                        const anyWyzie = currentSubtitles.find(s => s.source === 'wyzie');
+                                        const wyziePick = sameLangWyzie || anyWyzie;
+                                        if (wyziePick) {
+                                            try {
+                                                // Delete old subtitle temp file (if any)
+                                                if (currentSubtitleFile) {
+                                                    try {
+                                                        await fetch(`${API_BASE_URL}/subtitles/delete`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ filename: currentSubtitleFile }) });
+                                                    } catch {}
+                                                }
+                                                const wyPayload = { source: 'wyzie', url: wyziePick.url, preferredName: wyziePick.name || wyziePick.langName };
+                                                const wyDl = await fetch(`${API_BASE_URL}/subtitles/download`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(wyPayload) });
+                                                const wyJson = await wyDl.json();
+                                                if (wyDl.ok && wyJson.url) {
+                                                    const langCode = (wyziePick.lang || '').toLowerCase();
+                                                    await loadSubtitle(wyJson.url, { label: wyziePick.name || wyziePick.langName, lang: langCode });
+                                                    showNotification(`Loaded from Wyzie: ${wyziePick.name || wyziePick.langName}`);
+                                                    htmlSubsPanel.style.display = 'none';
+                                                } else {
+                                                    showNotification(wyJson.error || 'Wyzie fallback failed. Please pick a different subtitle.');
+                                                }
+                                            } catch (e) {
+                                                showNotification('Wyzie fallback failed. Please pick a different subtitle.');
+                                            }
+                                        } else {
+                                            showNotification('No Wyzie subtitles available. Please try another source later.');
+                                        }
+                                    } else {
+                                        showNotification(dlJson.error || 'Subtitle download failed');
+                                    }
+                                }
+                            } catch (e) {
+                                showNotification('Subtitle download error');
+                            }
+                        });
+                        htmlSubsList.appendChild(row);
+                    });
+                }
+            } catch {
+                htmlSubsList.innerHTML = '<div class="subs-help">Failed to load subtitles.</div>';
+            }
+        }
+
+        // Initialize the app on DOMContentLoaded
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>
