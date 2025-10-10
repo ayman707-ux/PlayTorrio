@@ -5,10 +5,7 @@ import xml2js from 'xml2js';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import WebTorrent from 'webtorrent';
-<<<<<<< HEAD
 import mime from 'mime-types';
-=======
->>>>>>> 04b6303e9874e98461f530feb73e55d892ddb75e
 import multer from 'multer';
 import fs from 'fs';
 import os from 'os';
@@ -42,6 +39,26 @@ export function startServer(userDataPath) {
     app.use(cors());
     app.use(express.static(path.join(__dirname, 'public')));
     app.use(express.json());
+    // Simple settings storage in userData
+    const SETTINGS_PATH = path.join(userDataPath, 'settings.json');
+    function readSettings() {
+        try { return JSON.parse(fs.readFileSync(SETTINGS_PATH, 'utf8')); } catch { return { useTorrentless: false }; }
+    }
+    function writeSettings(obj) {
+        try { fs.mkdirSync(path.dirname(SETTINGS_PATH), { recursive: true }); fs.writeFileSync(SETTINGS_PATH, JSON.stringify(obj, null, 2)); return true; } catch { return false; }
+    }
+
+    app.get('/api/settings', (req, res) => {
+        const s = readSettings();
+        res.json({ useTorrentless: !!s.useTorrentless });
+    });
+    app.post('/api/settings', (req, res) => {
+        const s = readSettings();
+        const next = { ...s, useTorrentless: !!req.body.useTorrentless };
+        const ok = writeSettings(next);
+        if (ok) return res.json({ success: true, settings: next });
+        return res.status(500).json({ success: false, error: 'Failed to save settings' });
+    });
 
     // Temporary subtitles storage
     const SUB_TMP_DIR = path.join(os.tmpdir(), 'playtorrio_subs');
@@ -213,7 +230,8 @@ export function startServer(userDataPath) {
         // Re-read on demand so external edits to any file are reflected
         loadAPIKey();
         // For UI: report whether a root-level file exists (user wants modal if not present)
-        res.json({ hasApiKey: rootKeyExists() });
+        const s = readSettings();
+        res.json({ hasApiKey: rootKeyExists(), useTorrentless: !!s.useTorrentless });
     });
 
     app.post('/api/set-api-key', (req, res) => {
@@ -253,7 +271,6 @@ export function startServer(userDataPath) {
         const torrent = client.add(magnet, torrentOptions);
         activeTorrents.set(infoHash, torrent);
 
-<<<<<<< HEAD
         // As soon as metadata is available, deselect everything to prevent auto-download
         torrent.on('metadata', () => {
             try { torrent.files.forEach(f => f.deselect()); } catch {}
@@ -276,19 +293,6 @@ export function startServer(userDataPath) {
         };
 
     torrent.once('ready', () => handleReady(torrent));
-=======
-        const handleReady = (t) => {
-            const files = t.files.map((file, index) => ({ index, name: file.name, size: file.length }));
-            res.json({
-                infoHash,
-                name: t.name,
-                videoFiles: files.filter(f => f.name.match(/\.(mp4|mkv|avi|mov)$/i)).sort((a, b) => b.size - a.size),
-                subtitleFiles: files.filter(f => f.name.match(/\.(srt|vtt|ass)$/i)),
-            });
-        };
-
-        torrent.once('ready', () => handleReady(torrent));
->>>>>>> 04b6303e9874e98461f530feb73e55d892ddb75e
 
         torrent.once('error', (err) => {
             console.error(`Torrent error for ${infoHash}:`, err);
@@ -310,7 +314,6 @@ export function startServer(userDataPath) {
             const file = torrent.files[fileIndex];
             if (!file) return res.status(404).send('File not found');
 
-<<<<<<< HEAD
             // Ensure only the selected video file and all subtitle files are downloaded
             try {
                 // Deselect everything first
@@ -332,8 +335,6 @@ export function startServer(userDataPath) {
                 });
             } catch {}
 
-=======
->>>>>>> 04b6303e9874e98461f530feb73e55d892ddb75e
             res.setHeader('Accept-Ranges', 'bytes');
             const range = req.headers.range;
             const fileSize = file.length;
@@ -344,18 +345,11 @@ export function startServer(userDataPath) {
                 const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
                 const chunkSize = (end - start) + 1;
 
-<<<<<<< HEAD
                 const contentType = mime.lookup(file.name) || 'application/octet-stream';
                 res.writeHead(206, {
                     'Content-Range': `bytes ${start}-${end}/${fileSize}`,
                     'Content-Length': chunkSize,
                     'Content-Type': contentType,
-=======
-                res.writeHead(206, {
-                    'Content-Range': `bytes ${start}-${end}/${fileSize}`,
-                    'Content-Length': chunkSize,
-                    'Content-Type': 'video/mp4',
->>>>>>> 04b6303e9874e98461f530feb73e55d892ddb75e
                 });
 
                 const fileStream = file.createReadStream({ start, end });
@@ -367,16 +361,10 @@ export function startServer(userDataPath) {
                 fileStream.pipe(res);
 
             } else {
-<<<<<<< HEAD
                 const contentType = mime.lookup(file.name) || 'application/octet-stream';
                 res.writeHead(200, { 
                     'Content-Length': fileSize, 
                     'Content-Type': contentType 
-=======
-                res.writeHead(200, { 
-                    'Content-Length': fileSize, 
-                    'Content-Type': 'video/mp4' 
->>>>>>> 04b6303e9874e98461f530feb73e55d892ddb75e
                 });
                 const fileStream = file.createReadStream();
                 fileStream.on('error', (err) => {
@@ -392,7 +380,6 @@ export function startServer(userDataPath) {
         else torrent.once('ready', stream);
     });
 
-<<<<<<< HEAD
     // Prepare a specific file for streaming: select the file and start downloading its pieces (and all subtitles), but do not stream yet
     app.get('/api/prepare-file', (req, res) => {
         const { hash, file: fileIndex } = req.query;
@@ -434,8 +421,6 @@ export function startServer(userDataPath) {
         torrent.once('ready', prepare);
     });
 
-=======
->>>>>>> 04b6303e9874e98461f530feb73e55d892ddb75e
     app.get('/api/stop-stream', (req, res) => {
         const { hash } = req.query;
         if (!hash) return res.status(400).send('Missing hash');
@@ -463,12 +448,54 @@ export function startServer(userDataPath) {
     });
 
     app.get('/api/torrents', async (req, res) => {
-        const { q: query } = req.query;
-    if (!query) return res.status(400).json({ error: 'Missing query' });
-    // Ensure key is loaded from disk whenever we need Jackett
-    if (!API_KEY) loadAPIKey();
-    if (!API_KEY) return res.status(400).json({ error: 'API key not configured' });
+        const { q: query, page } = req.query;
+        if (!query) return res.status(400).json({ error: 'Missing query' });
+        const s = readSettings();
+        const useTorrentless = !!s.useTorrentless;
+        // If Torrentless is enabled, prefer it
+        if (useTorrentless) {
+            try {
+                const p = Math.max(1, parseInt(page, 10) || 1);
+                const url = `http://127.0.0.1:3002/api/search?q=${encodeURIComponent(query)}&page=${p}`;
+                const response = await fetch(url);
+                // If Torrentless rate-limits or errors, proxy the JSON body to the client instead of throwing
+                let data;
+                try { data = await response.json(); } catch { data = null; }
+                if (!response.ok) {
+                    // Ensure a friendly structured error instead of ECONNREFUSED noise
+                    const fallback = data && typeof data === 'object' ? data : { error: `Torrentless error: ${response.status} ${response.statusText}` };
+                    return res.status(response.status).json(fallback);
+                }
+                const items = Array.isArray(data.items) ? data.items : [];
+                const torrents = items.map(it => ({
+                    title: it.title,
+                    magnet: it.magnet,
+                    seeders: Number(it.seeds || it.seeders || 0),
+                    size: (() => {
+                        // Try to convert "2.54 GB" style strings to bytes; else 0
+                        const m = String(it.size || '').match(/([0-9.]+)\s*(KB|MB|GB|TB)/i);
+                        if (!m) return 0;
+                        const n = parseFloat(m[1]);
+                        const unit = m[2].toUpperCase();
+                        const mult = unit === 'KB' ? 1024 : unit === 'MB' ? 1024**2 : unit === 'GB' ? 1024**3 : 1024**4;
+                        return Math.round(n * mult);
+                    })(),
+                }));
+                return res.json(torrents);
+            } catch (error) {
+                // If Torrentless is unreachable or throws, return a friendly JSON error and do NOT fall back to Jackett
+                const msg = (error && error.message || '').toLowerCase();
+                if (msg.includes('ecconnrefused') || msg.includes('connect')) {
+                    return res.status(503).json({ error: 'Torrentless service is unavailable. Try again shortly.' });
+                }
+                return res.status(500).json({ error: 'Failed to fetch from Torrentless.' });
+            }
+        }
 
+        // Jackett fallback/default
+        // Ensure key is loaded from disk whenever we need Jackett
+        if (!API_KEY) loadAPIKey();
+    if (!API_KEY) return res.status(400).json({ error: 'API key not configured' });
         try {
             const url = `${JACKETT_URL}?apikey=${API_KEY}&t=search&q=${encodeURIComponent(query)}`;
             const response = await fetch(url);
@@ -929,8 +956,4 @@ export function startServer(userDataPath) {
     });
 
     return { server, client };
-<<<<<<< HEAD
 }
-=======
-}
->>>>>>> 04b6303e9874e98461f530feb73e55d892ddb75e
