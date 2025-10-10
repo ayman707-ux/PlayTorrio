@@ -1,5 +1,5 @@
-import { app, BrowserWindow, ipcMain, shell, clipboard, dialog } from 'electron';
-import { spawn } from 'child_process';
+import { app, BrowserWindow, ipcMain, shell, clipboard, dialog, Menu } from 'electron';
+import { spawn, fork } from 'child_process';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
@@ -10,10 +10,7 @@ import { startServer } from './server.mjs'; // Import the server
 let httpServer;
 let webtorrentClient;
 let mainWindow;
-<<<<<<< HEAD
-let torrentlessProcess; // child process for Torrentless (port 3002)
-=======
->>>>>>> 04b6303e9874e98461f530feb73e55d892ddb75e
+let torrentlessProc = null;
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -109,10 +106,48 @@ function createWindow() {
             contextIsolation: true,
         },
     });
+    // Remove default application menu (File/Edit/View/Help)
+    try { Menu.setApplicationMenu(null); } catch(_) {}
 
     // Always load the local server so all API and subtitle URLs are same-origin HTTP
     setTimeout(() => win.loadURL('http://localhost:3000'), app.isPackaged ? 500 : 2000);
     return win;
+}
+
+// Launch the Torrentless scraper server
+function startTorrentless() {
+    try {
+        // Resolve script path in both dev and packaged environments
+        const candidates = [
+            path.join(process.resourcesPath || '', 'app.asar.unpacked', 'Torrentless', 'server.js'),
+            path.join(process.resourcesPath || '', 'Torrentless', 'server.js'),
+            path.join(__dirname, 'Torrentless', 'server.js'),
+        ].filter(Boolean);
+        let entry = null;
+        for (const p of candidates) {
+            try { if (fs.existsSync(p)) { entry = p; break; } } catch {}
+        }
+        if (!entry) {
+            console.warn('Torrentless server entry not found. Ensure the Torrentless folder is packaged.');
+            return;
+        }
+        // Fork a Node child for the scraper server
+        torrentlessProc = fork(entry, [], {
+            stdio: 'ignore',
+            env: { ...process.env, PORT: '3002' },
+            cwd: path.dirname(entry),
+        });
+
+        torrentlessProc.on('exit', (code, signal) => {
+            console.log(`Torrentless exited code=${code} signal=${signal}`);
+            // On unexpected exit during runtime, attempt a single restart
+            if (!app.isQuitting) {
+                setTimeout(() => { try { startTorrentless(); } catch(_) {} }, 1000);
+            }
+        });
+    } catch (e) {
+        console.error('Failed to start Torrentless server:', e);
+    }
 }
 
 // Enforce single instance with a friendly error on second run
@@ -131,41 +166,14 @@ if (!gotLock) {
     });
 
     app.whenReady().then(() => {
-    // Start the integrated server
+    // Start the integrated streaming server (port 3000)
     const { server, client } = startServer(app.getPath('userData'));
     httpServer = server;
     webtorrentClient = client;
 
-<<<<<<< HEAD
-    // Start the Torrentless server (scraper service on http://localhost:3002)
-    try {
-        // Resolve path to Torrentless/server.js in dev and packaged modes
-        const candidates = [
-            path.join(__dirname, 'Torrentless', 'server.js'),
-            path.join(process.resourcesPath || '', 'app.asar.unpacked', 'Torrentless', 'server.js'),
-            path.join(process.resourcesPath || '', 'app.asar', 'Torrentless', 'server.js'),
-            path.join(path.dirname(process.execPath), 'resources', 'app.asar', 'Torrentless', 'server.js'),
-        ].filter(Boolean);
-        let torrentlessEntry = null;
-        for (const p of candidates) {
-            try { if (p && fs.existsSync(p)) { torrentlessEntry = p; break; } } catch {}
-        }
-        if (torrentlessEntry) {
-            // Use Electron binary as Node by setting ELECTRON_RUN_AS_NODE
-            const env = { ...process.env, ELECTRON_RUN_AS_NODE: '1', PORT: '3002' };
-            torrentlessProcess = spawn(process.execPath, [torrentlessEntry], { env, stdio: 'ignore', windowsHide: true });
-            torrentlessProcess.on('error', (e) => console.error('Torrentless failed to start:', e));
-            torrentlessProcess.on('exit', (code) => console.log('Torrentless exited with code', code));
-            console.log('🔧 Torrentless server starting...');
-        } else {
-            console.warn('⚠️ Could not locate Torrentless/server.js. Torrentless mode will be unavailable.');
-        }
-    } catch (err) {
-        console.warn('⚠️ Failed to launch Torrentless server:', err?.message || err);
-    }
+    // Start the Torrentless scraper server (port 3002)
+    startTorrentless();
 
-=======
->>>>>>> 04b6303e9874e98461f530feb73e55d892ddb75e
         mainWindow = createWindow();
 
     // IPC handler to open MPV from renderer
@@ -230,6 +238,7 @@ if (!gotLock) {
 
 // Graceful shutdown
 app.on('will-quit', () => {
+    app.isQuitting = true;
     // Shut down the webtorrent client
     if (webtorrentClient) {
         webtorrentClient.destroy(() => {
@@ -242,21 +251,13 @@ app.on('will-quit', () => {
             console.log('HTTP server closed.');
         });
     }
-<<<<<<< HEAD
-    // Stop Torrentless server
-    try {
-        if (torrentlessProcess && !torrentlessProcess.killed) {
-            torrentlessProcess.kill();
-        }
-    } catch {}
-=======
->>>>>>> 04b6303e9874e98461f530feb73e55d892ddb75e
+    // Stop Torrentless child process
+    if (torrentlessProc) {
+        try { torrentlessProc.kill('SIGTERM'); } catch(_) {}
+        torrentlessProc = null;
+    }
 });
 
 app.on('window-all-closed', () => {
     if (process.platform !== 'darwin') app.quit();
-<<<<<<< HEAD
 });
-=======
-});
->>>>>>> 04b6303e9874e98461f530feb73e55d892ddb75e
