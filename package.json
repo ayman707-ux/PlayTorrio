@@ -12,9 +12,12 @@
   "scripts": {
     "start": "electron .",
     "serve": "node server.mjs",
+    "prebuild": "node -e \"const cp=require('child_process');cp.spawnSync(process.platform==='win32'?'npm.cmd':'npm',['install','--production'],{stdio:'inherit',cwd:'./Torrentless'});\"",
     "build": "electron-builder"
   },
   "dependencies": {
+    "axios": "^1.7.4",
+    "cheerio": "^1.0.0",
     "cors": "^2.8.5",
     "express": "^4.21.2",
     "got": "^14.4.7",
