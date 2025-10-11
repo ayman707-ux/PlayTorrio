@@ -799,6 +799,9 @@
             margin-bottom: 1rem;
             font-size: 1.2rem;
         }
+        .source-badge { display:inline-block; padding:2px 8px; border-radius: 12px; font-size: 0.75rem; font-weight:700; margin-left: 8px; background: #6c757d; color: #fff; }
+        .source-badge.debrid { background:#198754; }
+        .source-badge.webtorrent { background:#0d6efd; }
         
         .current-api-key {
             background-color: rgba(255, 255, 255, 0.05);
@@ -1582,6 +1585,91 @@
                 </div>
             </div>
         </div>
+
+        <div class="settings-section" id="debridSection" style="margin-top:1.25rem;">
+            <h3>Debrid (Cloud Cache) </h3>
+            <div style="margin-top:0.5rem; padding:1rem; border:1px solid rgba(255,255,255,0.15); border-radius:8px; background: rgba(255,255,255,0.05); display:flex; flex-direction: column; gap:0.75rem;">
+                <label style="display:flex; align-items:center; gap:0.6rem; cursor:pointer;">
+                    <input type="checkbox" id="useDebridToggle" />
+                    <span>Use Debrid</span>
+                </label>
+                <div style="display:flex; gap:0.75rem; align-items:center; flex-wrap: wrap;">
+                    <label for="debridProvider">Provider:</label>
+                    <select id="debridProvider" class="api-input" style="max-width:220px;">
+                        <option value="realdebrid">Real‑Debrid</option>
+                        <option value="alldebrid">AllDebrid</option>
+                    </select>
+                    <span id="debridStatus" style="font-size:0.9rem; opacity:0.85;">Not logged in</span>
+                </div>
+                <div class="api-input-group" id="rdClientIdGroup">
+                    <label for="rdClientId">Real‑Debrid Client ID (device flow):</label>
+                    <input type="text" id="rdClientId" class="api-input" placeholder="Enter your RD Client ID (e.g., XXXXXXXXXXXXX)" />
+                </div>
+                <div id="rdButtons" style="display:flex; gap:0.5rem; flex-wrap: wrap; align-items:center;">
+                    <button class="api-btn" id="rdDeviceLogin" style="background:#198754; color:#fff;">
+                        <i class="fas fa-sign-in-alt"></i> Login with Real‑Debrid
+                    </button>
+                    <small style="opacity:0.85;">No password needed. Authenticate on real‑debrid.com using a short code.</small>
+                </div>
+                <div id="rdCodePanel" style="display:none; margin-top:0.5rem; padding:0.75rem; background:rgba(0,0,0,0.35); border:1px solid rgba(255,255,255,0.1); border-radius:8px;">
+                    <div style="display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap;">
+                        <div>Code:</div>
+                        <div id="rdUserCode" style="font-family:monospace; font-weight:800; background:rgba(255,255,255,0.1); padding:0.25rem 0.5rem; border-radius:6px;">----</div>
+                        <button class="api-btn" id="rdCopyCode" style="padding:0.4rem 0.6rem; background:#0d6efd; color:#fff;"><i class="fas fa-copy"></i> Copy</button>
+                    </div>
+                    <div style="margin-top:0.5rem; display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap;">
+                        <div>Verify at:</div>
+                        <a id="rdVerifyUrl" href="#" target="_blank" style="color:#0d6efd; text-decoration:underline;">https://real-debrid.com/device</a>
+                        <button class="api-btn" id="rdOpenVerify" style="padding:0.4rem 0.6rem; background:#0d6efd; color:#fff;"><i class="fas fa-external-link-alt"></i> Open</button>
+                        <span id="rdLoginStatus" style="margin-left:auto; font-size:0.9rem; opacity:0.9;">Waiting for approval…</span>
+                        <button class="api-btn api-btn-secondary" id="rdCancelLogin"><i class="fas fa-times"></i> Cancel</button>
+                    </div>
+                </div>
+                <div class="api-input-group" id="rdTokenGroup">
+                    <label for="debridToken">Real‑Debrid Token (temporary MVP):</label>
+                    <input type="password" id="debridToken" class="api-input" placeholder="Paste RD token..." />
+                </div>
+                <div id="rdTokenButtons" style="display:flex; gap:0.5rem; flex-wrap: wrap;">
+                    <button class="api-btn" id="saveDebridToken" style="background:#0d6efd; color:#fff;">
+                        <i class="fas fa-key"></i> Save Token
+                    </button>
+                    <button class="api-btn api-btn-secondary" id="clearDebridToken">
+                        <i class="fas fa-sign-out-alt"></i> Logout
+                    </button>
+                </div>
+                <div style="margin-top:0.25rem; color:#ffc107; font-size:0.9rem;">Your token is stored locally and never exposed to websites.</div>
+
+                <!-- AllDebrid PIN Login UI -->
+                <div id="adSection" style="display:none; margin-top:1rem; padding:1rem; border:1px solid rgba(255,255,255,0.15); border-radius:8px; background: rgba(255,255,255,0.05);">
+                    <div style="display:flex; gap:0.5rem; align-items:center; flex-wrap:wrap;">
+                        <button class="api-btn" id="adStartPin" style="background:#198754; color:#fff;"><i class="fas fa-sign-in-alt"></i> Login with AllDebrid (PIN)</button>
+                        <small style="opacity:0.85;">Authenticate on alldebrid.com/pin with the code shown.</small>
+                    </div>
+                    <div id="adPinPanel" style="display:none; margin-top:0.5rem; padding:0.75rem; background:rgba(0,0,0,0.35); border:1px solid rgba(255,255,255,0.1); border-radius:8px;">
+                        <div style="display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap;">
+                            <div>PIN:</div>
+                            <div id="adPinCode" style="font-family:monospace; font-weight:800; background:rgba(255,255,255,0.1); padding:0.25rem 0.5rem; border-radius:6px;">----</div>
+                            <button class="api-btn" id="adCopyPin" style="padding:0.4rem 0.6rem; background:#0d6efd; color:#fff;"><i class="fas fa-copy"></i> Copy</button>
+                        </div>
+                        <div style="margin-top:0.5rem; display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap;">
+                            <div>Open:</div>
+                            <a id="adUserUrl" href="https://alldebrid.com/pin/" target="_blank" style="color:#0d6efd; text-decoration:underline;">https://alldebrid.com/pin/</a>
+                            <button class="api-btn" id="adOpenUserUrl" style="padding:0.4rem 0.6rem; background:#0d6efd; color:#fff;"><i class="fas fa-external-link-alt"></i> Open</button>
+                            <span id="adLoginStatus" style="margin-left:auto; font-size:0.9rem; opacity:0.9;">Waiting…</span>
+                            <button class="api-btn api-btn-secondary" id="adCancelPin"><i class="fas fa-times"></i> Cancel</button>
+                        </div>
+                    </div>
+                    <div class="api-input-group" style="margin-top:0.75rem;">
+                        <label for="adApiKey">AllDebrid API Key (optional/manual):</label>
+                        <input type="password" id="adApiKey" class="api-input" placeholder="Paste AD API key..." />
+                    </div>
+                    <div style="display:flex; gap:0.5rem; flex-wrap: wrap;">
+                        <button class="api-btn" id="adSaveApiKey" style="background:#0d6efd; color:#fff;"><i class="fas fa-key"></i> Save API Key</button>
+                        <button class="api-btn api-btn-secondary" id="adClearApiKey"><i class="fas fa-sign-out-alt"></i> Logout</button>
+                    </div>
+                </div>
+            </div>
+        </div>
         
         <div class="settings-buttons">
             <button class="api-btn api-btn-secondary" id="cancelSettings">
@@ -1765,7 +1853,7 @@
 <!-- MPV Player -->
 <div class="vlc-player-container" id="mpvPlayerContainer">
 <div class="vlc-player-header">
-<div class="vlc-player-title" id="mpvPlayerTitle">MPV Torrent Player</div>
+<div class="vlc-player-title" id="mpvPlayerTitle">MPV Torrent Player <span class="source-badge webtorrent" id="streamSourceBadge" title="Streaming source">WebTorrent</span></div>
 <button class="vlc-player-close" id="closePlayerBtn">
 <i class="fas fa-times"></i> Close Player
             </button>
@@ -1813,7 +1901,7 @@
 <div class="player-header">
 <div class="player-title" id="customPlayerTitle">
 <i class="fas fa-play-circle"></i>
-<span>Custom Player</span>
+<span>Custom Player</span> <span class="source-badge webtorrent" id="customSourceBadge" title="Streaming source">WebTorrent</span>
 </div>
 <div class="player-actions">
 <div class="subtitle-upload">
@@ -2030,6 +2118,39 @@ Your browser does not support the video tag.
         const saveSettings = document.getElementById('saveSettings');
         const cancelSettings = document.getElementById('cancelSettings');
         const useTorrentlessToggle = document.getElementById('useTorrentlessToggle');
+    // Debrid controls
+    const useDebridToggle = document.getElementById('useDebridToggle');
+    const debridProviderSel = document.getElementById('debridProvider');
+    const debridStatus = document.getElementById('debridStatus');
+    const debridTokenInput = document.getElementById('debridToken');
+    const saveDebridTokenBtn = document.getElementById('saveDebridToken');
+    const clearDebridTokenBtn = document.getElementById('clearDebridToken');
+    const rdClientIdInput = document.getElementById('rdClientId');
+    const rdDeviceLoginBtn = document.getElementById('rdDeviceLogin');
+    const rdClientIdGroup = document.getElementById('rdClientIdGroup');
+    const rdButtons = document.getElementById('rdButtons');
+    const rdTokenGroup = document.getElementById('rdTokenGroup');
+    const rdTokenButtons = document.getElementById('rdTokenButtons');
+    const rdCodePanel = document.getElementById('rdCodePanel');
+    const rdUserCodeEl = document.getElementById('rdUserCode');
+    const rdVerifyUrlEl = document.getElementById('rdVerifyUrl');
+    const rdOpenVerifyBtn = document.getElementById('rdOpenVerify');
+    const rdCopyCodeBtn = document.getElementById('rdCopyCode');
+    const rdCancelLoginBtn = document.getElementById('rdCancelLogin');
+    const rdLoginStatusEl = document.getElementById('rdLoginStatus');
+    // AllDebrid controls
+    const adSection = document.getElementById('adSection');
+    const adStartPinBtn = document.getElementById('adStartPin');
+    const adPinPanel = document.getElementById('adPinPanel');
+    const adPinCodeEl = document.getElementById('adPinCode');
+    const adUserUrlEl = document.getElementById('adUserUrl');
+    const adOpenUserUrlBtn = document.getElementById('adOpenUserUrl');
+    const adCopyPinBtn = document.getElementById('adCopyPin');
+    const adCancelPinBtn = document.getElementById('adCancelPin');
+    const adLoginStatusEl = document.getElementById('adLoginStatus');
+    const adApiKeyInput = document.getElementById('adApiKey');
+    const adSaveApiKeyBtn = document.getElementById('adSaveApiKey');
+    const adClearApiKeyBtn = document.getElementById('adClearApiKey');
         
         // MPV Player elements
         const mpvPlayerContainer = document.getElementById('mpvPlayerContainer');
@@ -2045,10 +2166,12 @@ Your browser does not support the video tag.
         const openMPVBtn = document.getElementById('openMPVBtn');
         const copyStreamBtn = document.getElementById('copyStreamBtn');
     const playNowBtn = document.getElementById('playNowBtn');
+    const streamSourceBadge = document.getElementById('streamSourceBadge');
 
         // Custom Player elements
         const customPlayerContainer = document.getElementById('customPlayerContainer');
         const customPlayerTitle = document.getElementById('customPlayerTitle');
+    const customSourceBadge = document.getElementById('customSourceBadge');
         const closeCustomPlayer = document.getElementById('closeCustomPlayer');
         const customVideo = document.getElementById('customVideo');
         const videoSource = document.getElementById('videoSource');
@@ -2116,6 +2239,9 @@ Your browser does not support the video tag.
     let currentSubtitleFile = null; // filename served under /subtitles to delete on switch
     let hasApiKey = false;
     let useTorrentless = false; // global toggle for Torrentless mode
+    let useDebrid = false; // global toggle for Debrid
+    let debridAuth = false; // token presence depending on provider
+    let debridProvider = 'realdebrid';
         let currentCategory = 'all';
         let allTorrents = [];
         let torrentsPage = 1;
@@ -2192,8 +2318,23 @@ Your browser does not support the video tag.
         // Initialize the app
         async function init() {
             await checkApiKeyStatus();
+            await ensureDebridState();
             setupEventListeners();
             handleRoute(); // route-aware initial load
+        }
+
+        // Ensure debrid flags are loaded at startup and before streaming
+        async function ensureDebridState() {
+            try {
+                const r = await fetch(`${API_BASE_URL}/settings`);
+                if (r.ok) {
+                    const s = await r.json();
+                    useDebrid = !!s.useDebrid;
+                    debridAuth = !!s.debridAuth;
+                    debridProvider = s.debridProvider || 'realdebrid';
+                    console.log('[UI][Debrid] state', { useDebrid, debridAuth, debridProvider });
+                }
+            } catch (e) { console.warn('[UI][Debrid] state load failed', e?.message); }
         }
         
         // Check API key status
@@ -2230,6 +2371,15 @@ Your browser does not support the video tag.
                 }
             } catch (error) {
                 console.error('Error loading current API key:', error);
+                // Also fetch debrid settings for global flags
+                try {
+                    const sres = await fetch(`${API_BASE_URL}/settings`);
+                    if (sres.ok) {
+                        const s = await sres.json();
+                        useDebrid = !!s.useDebrid;
+                        debridAuth = !!s.debridAuth;
+                    }
+                } catch(_) {}
                 currentApiKey.textContent = 'Error loading API key';
             }
         }
@@ -2261,6 +2411,22 @@ Your browser does not support the video tag.
                     const s = await res.json();
                     useTorrentless = !!s.useTorrentless;
                     if (useTorrentlessToggle) useTorrentlessToggle.checked = useTorrentless;
+                    // Debrid: populate form
+                    if (useDebridToggle) useDebridToggle.checked = !!s.useDebrid;
+                    const prov = s.debridProvider || 'realdebrid';
+                    if (debridProviderSel) debridProviderSel.value = prov;
+                    if (debridStatus) debridStatus.textContent = s.debridAuth ? 'Logged in' : 'Not logged in';
+                    if (rdClientIdInput) rdClientIdInput.value = s.rdClientId || '';
+                    useDebrid = !!s.useDebrid; debridAuth = !!s.debridAuth;
+                    // Toggle provider-specific UI
+                    const isRD = prov === 'realdebrid';
+                    const isAD = prov === 'alldebrid';
+                    if (rdClientIdGroup) rdClientIdGroup.style.display = isRD ? '' : 'none';
+                    if (rdButtons) rdButtons.style.display = isRD ? '' : 'none';
+                    if (rdTokenGroup) rdTokenGroup.style.display = isRD ? '' : 'none';
+                    if (rdTokenButtons) rdTokenButtons.style.display = isRD ? '' : 'none';
+                    if (rdCodePanel) rdCodePanel.style.display = 'none';
+                    if (adSection) adSection.style.display = isAD ? '' : 'none';
                 }
             } catch(_) {}
         }
@@ -2355,8 +2521,16 @@ Your browser does not support the video tag.
                 useTorrentlessSetupBtn.addEventListener('click', async () => {
                     try {
                         await fetch(`${API_BASE_URL}/settings`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ useTorrentless: true }) });
+                        // Also update local state so searches work immediately without reopening Settings
+                        useTorrentless = true;
                         hideApiSetupModal();
                         showNotification('Watch without Jackett enabled.');
+                        // If user was in the middle of searching, retry now
+                        try {
+                            const qEl = document.getElementById('searchInput');
+                            const q = qEl && qEl.value ? qEl.value.trim() : '';
+                            if (q) await searchMovies(q);
+                        } catch(_) {}
                     } catch { showNotification('Failed to enable Watch without Jackett'); }
                 });
             }
@@ -2408,6 +2582,211 @@ Your browser does not support the video tag.
                     }
                 });
             }
+
+            // Debrid settings
+            if (useDebridToggle || debridProviderSel) {
+                const onDebridChange = async () => {
+                    const enabled = useDebridToggle ? !!useDebridToggle.checked : false;
+                    const provider = debridProviderSel ? debridProviderSel.value : 'realdebrid';
+                    const rdClientId = (rdClientIdInput?.value || '').trim();
+                    try {
+                        const res = await fetch(`${API_BASE_URL}/settings`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ useDebrid: enabled, debridProvider: provider, rdClientId })
+                        });
+                        if (!res.ok) throw new Error('save failed');
+                        await res.json();
+                        useDebrid = enabled;
+                        debridProvider = provider;
+                        // Toggle provider-specific UI blocks
+                        const isRD = provider === 'realdebrid';
+                        const isAD = provider === 'alldebrid';
+                        if (rdClientIdGroup) rdClientIdGroup.style.display = isRD ? '' : 'none';
+                        if (rdButtons) rdButtons.style.display = isRD ? '' : 'none';
+                        if (rdTokenGroup) rdTokenGroup.style.display = isRD ? '' : 'none';
+                        if (rdTokenButtons) rdTokenButtons.style.display = isRD ? '' : 'none';
+                        if (rdCodePanel) rdCodePanel.style.display = 'none';
+                        if (adSection) adSection.style.display = isAD ? '' : 'none';
+                        showNotification('Debrid settings saved.');
+                    } catch {
+                        showNotification('Failed to save debrid settings');
+                    }
+                };
+                if (useDebridToggle) useDebridToggle.addEventListener('change', onDebridChange);
+                if (debridProviderSel) debridProviderSel.addEventListener('change', onDebridChange);
+                if (rdClientIdInput) rdClientIdInput.addEventListener('change', onDebridChange);
+            }
+
+            if (saveDebridTokenBtn) {
+                saveDebridTokenBtn.addEventListener('click', async () => {
+                    const token = (debridTokenInput?.value || '').trim();
+                    if (!token) { showNotification('Enter a token first'); return; }
+                    try {
+                        const res = await fetch(`${API_BASE_URL}/debrid/token`, {
+                            method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token })
+                        });
+                        if (res.ok) {
+                            if (debridStatus) debridStatus.textContent = 'Logged in';
+                            debridTokenInput.value = '';
+                            showNotification('Debrid token saved.');
+                        } else {
+                            showNotification('Failed to save token');
+                        }
+                    } catch { showNotification('Failed to save token'); }
+                });
+            }
+            if (clearDebridTokenBtn) {
+                clearDebridTokenBtn.addEventListener('click', async () => {
+                    try {
+                        const res = await fetch(`${API_BASE_URL}/debrid/token`, {
+                            method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token: '' })
+                        });
+                        if (res.ok) {
+                            if (debridStatus) debridStatus.textContent = 'Not logged in';
+                            showNotification('Logged out of Debrid.');
+                        } else {
+                            showNotification('Failed to logout');
+                        }
+                    } catch { showNotification('Failed to logout'); }
+                });
+            }
+
+            // RD Device-code login handlers
+            let rdPollTimer = null;
+            function stopRdPolling() { if (rdPollTimer) { clearInterval(rdPollTimer); rdPollTimer = null; } }
+            async function beginRdDeviceLogin() {
+                try {
+                    const clientId = (rdClientIdInput?.value || '').trim();
+                    if (!clientId) { showNotification('Enter your Real‑Debrid Client ID first'); return; }
+                    const url = `${API_BASE_URL}/debrid/rd/device-code${clientId ? `?client_id=${encodeURIComponent(clientId)}` : ''}`;
+                    const r = await fetch(url);
+                    if (!r.ok) {
+                        let msg = 'RD device-code start failed';
+                        try { const t = await r.json(); if (t?.error) msg = t.error; } catch { try { msg = await r.text(); } catch {} }
+                        rdLoginStatusEl.textContent = 'Error starting login';
+                        showNotification(msg);
+                        return;
+                    }
+                    const j = await r.json();
+                    rdCodePanel.style.display = 'block';
+                    rdUserCodeEl.textContent = j.user_code || '----';
+                    rdVerifyUrlEl.textContent = j.verification_url || 'https://real-debrid.com/device';
+                    rdVerifyUrlEl.href = j.verification_url || 'https://real-debrid.com/device';
+                    rdLoginStatusEl.textContent = 'Waiting for approval…';
+                    const intervalMs = Math.max(3, Number(j.interval || 5)) * 1000;
+                    const deviceCode = j.device_code;
+                    // Start polling
+                    stopRdPolling();
+                    rdPollTimer = setInterval(async () => {
+                        try {
+                            const pr = await fetch(`${API_BASE_URL}/debrid/rd/poll`, {
+                                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ device_code: deviceCode, client_id: clientId || undefined })
+                            });
+                            if (pr.ok) {
+                                stopRdPolling();
+                                rdLoginStatusEl.textContent = 'Logged in!';
+                                if (debridStatus) debridStatus.textContent = 'Logged in';
+                                debridAuth = true;
+                                showNotification('Real‑Debrid connected');
+                                setTimeout(() => { rdCodePanel.style.display = 'none'; }, 800);
+                            } else {
+                                const txt = await pr.text();
+                                if (/expired|invalid/i.test(txt)) {
+                                    stopRdPolling();
+                                    rdLoginStatusEl.textContent = 'Code expired. Try again.';
+                                }
+                            }
+                        } catch (_) {}
+                    }, intervalMs);
+                } catch (_) {
+                    showNotification('Failed to start device login');
+                }
+            }
+            if (rdDeviceLoginBtn) rdDeviceLoginBtn.addEventListener('click', beginRdDeviceLogin);
+            if (rdOpenVerifyBtn) rdOpenVerifyBtn.addEventListener('click', async () => {
+                const href = rdVerifyUrlEl?.href || 'https://real-debrid.com/device';
+                if (window.electronAPI?.openExternal) await window.electronAPI.openExternal(href);
+                else window.open(href, '_blank');
+            });
+            if (rdCopyCodeBtn) rdCopyCodeBtn.addEventListener('click', async () => {
+                try { await navigator.clipboard.writeText(rdUserCodeEl?.textContent || ''); showNotification('Code copied'); } catch(_) {}
+            });
+            if (rdCancelLoginBtn) rdCancelLoginBtn.addEventListener('click', async () => {
+                stopRdPolling(); rdCodePanel.style.display = 'none';
+            });
+
+            // AllDebrid PIN login handlers
+            let adPollTimer = null, adPin = '', adCheck = '';
+            function stopAdPolling() { if (adPollTimer) { clearInterval(adPollTimer); adPollTimer = null; } }
+            async function beginAdPinLogin() {
+                // If already authenticated with AllDebrid, avoid creating a new API key via PIN
+                try {
+                    await ensureDebridState();
+                } catch {}
+                if (useDebrid && debridProvider === 'alldebrid' && debridAuth) {
+                    showNotification('Already logged in to AllDebrid');
+                    return;
+                }
+                try {
+                    const r = await fetch(`${API_BASE_URL}/debrid/ad/pin`);
+                    const j = await r.json();
+                    if (r.ok && j.pin && j.check) {
+                        adPin = j.pin; adCheck = j.check;
+                        if (adPinPanel) adPinPanel.style.display = 'block';
+                        if (adPinCodeEl) adPinCodeEl.textContent = adPin;
+                        if (adUserUrlEl) adUserUrlEl.href = j.user_url || 'https://alldebrid.com/pin/';
+                        if (adLoginStatusEl) adLoginStatusEl.textContent = 'Waiting…';
+                        stopAdPolling();
+                        adPollTimer = setInterval(async () => {
+                            try {
+                                const pr = await fetch(`${API_BASE_URL}/debrid/ad/check`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ pin: adPin, check: adCheck }) });
+                                const pj = await pr.json();
+                                if (pr.ok && pj.success) {
+                                    stopAdPolling();
+                                    if (debridStatus) debridStatus.textContent = 'Logged in';
+                                    debridAuth = true;
+                                    if (adLoginStatusEl) adLoginStatusEl.textContent = 'Logged in!';
+                                    showNotification('AllDebrid connected');
+                                    setTimeout(() => { if (adPinPanel) adPinPanel.style.display = 'none'; }, 800);
+                                } else if (pr.ok) {
+                                    // keep waiting
+                                } else {
+                                    stopAdPolling();
+                                    if (adLoginStatusEl) adLoginStatusEl.textContent = pj?.error || 'PIN expired';
+                                }
+                            } catch (_) {}
+                        }, 5000);
+                    } else {
+                        showNotification(j?.error || 'Failed to start AllDebrid PIN');
+                    }
+                } catch (_) {
+                    showNotification('Failed to start AllDebrid PIN');
+                }
+            }
+            if (adStartPinBtn) adStartPinBtn.addEventListener('click', beginAdPinLogin);
+            if (adOpenUserUrlBtn) adOpenUserUrlBtn.addEventListener('click', async () => {
+                const href = adUserUrlEl?.href || 'https://alldebrid.com/pin/';
+                if (window.electronAPI?.openExternal) await window.electronAPI.openExternal(href); else window.open(href, '_blank');
+            });
+            if (adCopyPinBtn) adCopyPinBtn.addEventListener('click', async () => { try { await navigator.clipboard.writeText(adPinCodeEl?.textContent || ''); showNotification('PIN copied'); } catch(_) {} });
+            if (adCancelPinBtn) adCancelPinBtn.addEventListener('click', () => { stopAdPolling(); if (adPinPanel) adPinPanel.style.display = 'none'; });
+            if (adSaveApiKeyBtn) adSaveApiKeyBtn.addEventListener('click', async () => {
+                const apikey = (adApiKeyInput?.value || '').trim();
+                if (!apikey) { showNotification('Enter an AllDebrid API key'); return; }
+                try {
+                    const r = await fetch(`${API_BASE_URL}/debrid/ad/apikey`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ apikey }) });
+                    if (r.ok) { if (debridStatus) debridStatus.textContent = 'Logged in'; showNotification('AllDebrid API key saved'); adApiKeyInput.value=''; }
+                    else { const t = await r.text(); showNotification(t || 'Failed to save'); }
+                } catch { showNotification('Failed to save'); }
+            });
+            if (adClearApiKeyBtn) adClearApiKeyBtn.addEventListener('click', async () => {
+                try {
+                    const r = await fetch(`${API_BASE_URL}/debrid/ad/apikey`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ apikey: '' }) });
+                    if (r.ok) { if (debridStatus) debridStatus.textContent = 'Not logged in'; showNotification('Logged out of AllDebrid'); }
+                } catch {}
+            });
 
             // Open Jackett installer link in default browser
             if (openJackettLinkBtn) {
@@ -3146,6 +3525,8 @@ Your browser does not support the video tag.
             const end = start + torrentsPerPage;
             const paginatedTorrents = allTorrents.slice(start, end);
 
+            let rdAvailChecked = 0;
+            const rdAvailBudget = 12; // cap RD availability checks per render
             paginatedTorrents.forEach(torrent => {
                 const item = document.createElement('div');
                 item.className = 'torrent-item';
@@ -3155,6 +3536,7 @@ Your browser does not support the video tag.
                         <div class="torrent-details">
                             <span><i class="fas fa-arrow-up"></i> ${torrent.seeders}</span>
                             <span><i class="fas fa-database"></i> ${((torrent.size || 0) / 1024 / 1024 / 1024).toFixed(2)} GB</span>
+                            <span class="cached-badge" style="display:none; background:#198754; color:#fff; padding:2px 6px; border-radius:4px; font-size: 0.8rem; margin-left:8px;">Cached</span>
                         </div>
                     </div>
                     <div class="torrent-actions">
@@ -3166,6 +3548,37 @@ Your browser does not support the video tag.
                 item.querySelector('.btn-play').addEventListener('click', () => startStream(torrent.magnet));
                 item.querySelector('.btn-copy').addEventListener('click', () => copyMagnet(torrent.magnet));
                 torrentsList.appendChild(item);
+
+                // Debrid availability badge (RD only)
+                if (useDebrid && debridAuth && debridProvider === 'realdebrid' && torrent.magnet && rdAvailChecked < rdAvailBudget) {
+                    const btih = extractInfoHashFromMagnet(torrent.magnet);
+                    if (btih) {
+                        (async () => {
+                            try {
+                                const r = await fetch(`${API_BASE_URL}/debrid/availability?btih=${btih}`);
+                                if (r.ok) {
+                                    const j = await r.json();
+                                    if (j && j.available) {
+                                        const b = item.querySelector('.cached-badge');
+                                        if (b) b.style.display = 'inline-block';
+                                    }
+                                } else {
+                                    // If RD rate limits or endpoint disabled, stop further checks on this page render
+                                    try {
+                                        const txt = await r.text();
+                                        if (/RD_RATE_LIMIT|too_many_requests/i.test(txt)) {
+                                            console.warn('[UI][Debrid] availability paused due to rate limit');
+                                        }
+                                        if (/RD_FEATURE_UNAVAILABLE|disabled_endpoint/i.test(txt)) {
+                                            console.warn('[UI][Debrid] availability disabled for this account');
+                                        }
+                                    } catch {}
+                                }
+                            } catch(_) {}
+                        })();
+                        rdAvailChecked++;
+                    }
+                }
             });
 
             renderTorrentPagination();
@@ -3212,7 +3625,227 @@ Your browser does not support the video tag.
 
         // Start streaming a torrent
         async function startStream(magnet) {
+            // Refresh debrid flags before deciding path
+            await ensureDebridState();
+            const providerLabel = (debridProvider === 'alldebrid') ? 'AllDebrid' : 'Real‑Debrid';
+            // If Debrid is enabled but not authenticated, block fallback and prompt login
+            if (useDebrid && !debridAuth) {
+                console.warn('[UI][Debrid] blocked: enabled but not logged in');
+                showNotification(`${providerLabel} is enabled but you are not logged in. Please log in to continue.`);
+                promptDebridLogin();
+                return;
+            }
+            // Debrid-exclusive flow when enabled: skip WebTorrent entirely
+            if (useDebrid && debridAuth && magnet && magnet.startsWith('magnet:')) {
+                try {
+                    // Open our player UI first
+                    showPlayer();
+                    mpvLoading.style.display = 'flex';
+                    mpvControls.style.display = 'none';
+                    fileList.innerHTML = '';
+                    subtitleList.innerHTML = '';
+                    subtitleControls.style.display = 'none';
+                    playerTitle.textContent = `Preparing ${providerLabel}…`;
+
+                    // Add magnet to RD and select all
+                    console.log('[UI][Debrid] prepare addMagnet');
+                    const prep = await fetch(`${API_BASE_URL}/debrid/prepare`, {
+                        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ magnet })
+                    });
+                    if (!prep.ok) {
+                        let notif = 'Debrid prepare failed';
+                        try {
+                            const txt = await prep.text();
+                            console.error('[UI][Debrid] prepare failed', txt);
+                            try {
+                                const ej = JSON.parse(txt);
+                                if (ej && ej.code === 'RD_PREMIUM_REQUIRED') {
+                                    notif = `${providerLabel} premium is required to add torrents. Disable Debrid in Settings to use WebTorrent instead.`;
+                                } else if (ej && ej.code === 'DEBRID_UNAUTH') {
+                                    notif = `${providerLabel} authentication invalid. Please login again.`;
+                                    if (debridStatus) debridStatus.textContent = 'Not logged in';
+                                    promptDebridLogin();
+                                } else if (ej && ej.error) {
+                                    notif = ej.error;
+                                }
+                            } catch { /* not json */ }
+                        } catch { /* ignore */ }
+                        showNotification(notif);
+                        return;
+                    }
+                    const prepj = await prep.json();
+                    const rdId = prepj.id;
+                    let info = prepj.info || null;
+                    if (!info || !Array.isArray(info.files) || !info.files.length) {
+                        await new Promise(r => setTimeout(r, 900));
+                        const fres = await fetch(`${API_BASE_URL}/debrid/files?id=${encodeURIComponent(rdId)}`);
+                        if (fres.ok) info = await fres.json();
+                    }
+
+                    const files = (info && info.files) || [];
+                    // Render RD files for explicit selection, like our torrent file list
+                    mpvLoading.style.display = 'none';
+                    fileList.innerHTML = '';
+                    playerTitle.textContent = info?.filename || providerLabel;
+                    const rdVideos = files.filter(f => /\.(mp4|mkv|avi|mov)$/i.test(f.path || f.filename || ''));
+                    const rdSubs = files.filter(f => /\.(srt|vtt)$/i.test(f.path || f.filename || ''));
+
+                    const displayName = (f) => (f.path || f.filename || 'file');
+                    const displaySize = (f) => ((f.bytes || f.size || 0) / 1024 / 1024).toFixed(2) + ' MB';
+
+                    // Helper to render a small cached status badge
+                    const statusBadgeHtml = (file) => {
+                        const cached = Array.isArray(file.links) && file.links.length > 0;
+                        const label = cached ? 'Cached' : 'Not cached';
+                        const bg = cached ? 'background:#198754;' : 'background:#6c757d;';
+                        return `<span class="source-badge rd-cache-badge" style="${bg} margin-left:6px;">${label}</span>`;
+                    };
+
+                    // Poll Debrid files info until the specific file has links (cached) or timeout
+                    async function waitForRdLinks(id, fileId, { timeoutMs = 30000, intervalMs = 1500 } = {}) {
+                        const start = Date.now();
+                        while (Date.now() - start < timeoutMs) {
+                            try {
+                                const fres = await fetch(`${API_BASE_URL}/debrid/files?id=${encodeURIComponent(id)}`);
+                                if (!fres.ok) {
+                                    // If rate limited or disabled endpoint reported, stop trying
+                                    try {
+                                        const t = await fres.text();
+                                        if (/RD_RATE_LIMIT|RD_FEATURE_UNAVAILABLE/i.test(t)) return null;
+                                    } catch {}
+                                    await new Promise(r => setTimeout(r, intervalMs));
+                                    continue;
+                                }
+                                const info = await fres.json();
+                                const list = Array.isArray(info?.files) ? info.files : [];
+                                const found = list.find(x => String(x.id || x.file) === String(fileId));
+                                if (found && Array.isArray(found.links) && found.links.length) {
+                                    return found.links[0];
+                                }
+                            } catch {}
+                            await new Promise(r => setTimeout(r, intervalMs));
+                        }
+                        return null; // timed out
+                    }
+
+                    rdVideos.forEach((f) => {
+                        const item = document.createElement('div');
+                        item.className = 'file-item';
+                        item.innerHTML = `<p class="file-name">${displayName(f)} ${statusBadgeHtml(f)}</p><p class="file-size">(${displaySize(f)})</p>`;
+                        item.addEventListener('click', async () => {
+                            try {
+                                // Ensure only this file is selected for RD to process
+                                try {
+                                    console.log('[UI][Debrid] select-files', { id: rdId, file: String(f.id || f.file) });
+                                    await fetch(`${API_BASE_URL}/debrid/select-files`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: rdId, files: String(f.id || f.file) }) });
+                                } catch(e) { console.warn('[UI][Debrid] select-files failed', e?.message); }
+                                // Find current link if already cached, else wait for caching
+                                let link = Array.isArray(f.links) && f.links.length ? f.links[0] : null;
+                                if (!link) {
+                                    showNotification(`Not cached yet on ${providerLabel}. Waiting to cache…`);
+                                    // Show loading indicator while waiting
+                                    mpvLoading.style.display = 'flex';
+                                    const waited = await waitForRdLinks(rdId, (f.id || f.file));
+                                    link = waited;
+                                    // Update badge to Cached if now available
+                                    if (link) {
+                                        try {
+                                            const badge = item.querySelector('.rd-cache-badge');
+                                            if (badge) { badge.textContent = 'Cached'; badge.style.background = '#198754'; }
+                                        } catch {}
+                                    }
+                                }
+                                if (!link) {
+                                    showNotification('Still not cached. Try again later or disable Debrid in Settings to use WebTorrent.');
+                                    mpvLoading.style.display = 'none';
+                                    return;
+                                }
+                                // Unrestrict the resolved link
+                                const unres = await fetch(`${API_BASE_URL}/debrid/link`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ link }) });
+                                if (!unres.ok) { console.error('[UI][Debrid] unrestrict failed', await unres.text()); showNotification('Failed to unrestrict'); mpvLoading.style.display = 'none'; return; }
+                                const uj = await unres.json();
+                                if (!uj?.url) { console.error('[UI][Debrid] unrestrict response missing url', uj); showNotification('Invalid Debrid URL'); mpvLoading.style.display = 'none'; return; }
+                                currentStreamUrl = `${API_BASE_URL}/stream/debrid?url=${encodeURIComponent(uj.url)}`;
+                                currentSelectedVideoName = displayName(f);
+                                playerTitle.textContent = displayName(f);
+                                // Source badges -> Debrid
+                                if (streamSourceBadge) { streamSourceBadge.textContent = 'Debrid'; streamSourceBadge.classList.remove('webtorrent'); streamSourceBadge.classList.add('debrid'); }
+                                if (customSourceBadge) { customSourceBadge.textContent = 'Debrid'; customSourceBadge.classList.remove('webtorrent'); customSourceBadge.classList.add('debrid'); }
+                                mpvControls.style.display = 'flex';
+                                mpvLoading.style.display = 'none';
+                                showNotification(`Ready via ${providerLabel}`);
+
+                                // Auto-attach subtitle: prefer same folder subtitle
+                                const sub = rdSubs[0];
+                                if (sub && Array.isArray(sub.links) && sub.links.length) {
+                                    try {
+                                        const su = await fetch(`${API_BASE_URL}/debrid/link`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ link: sub.links[0] }) });
+                                        if (su.ok) {
+                                            const suj = await su.json();
+                                            if (suj?.url) {
+                                                const dl = await fetch(`${API_BASE_URL}/subtitles/download-direct`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url: suj.url, preferredName: displayName(sub) }) });
+                                                const dlj = await dl.json();
+                                                if (dl.ok && dlj.url) currentSubtitleUrl = dlj.url;
+                                            }
+                                        } else { console.warn('[UI][Debrid] sub unrestrict failed', await su.text()); }
+                                    } catch(e) { console.warn('[UI][Debrid] sub attach failed', e?.message); }
+                                }
+                            } catch (_) {
+                                console.error('[UI][Debrid] file play failed');
+                                showNotification('Failed to prepare Debrid file');
+                            }
+                        });
+                        fileList.appendChild(item);
+                    });
+
+                    // Subtitle sidebar for visibility
+                    if (rdSubs.length) {
+                        subtitleControls.style.display = 'flex';
+                        subtitleList.innerHTML = '';
+                        subtitleList.classList.add('subtitle-list');
+                        currentSubtitles = rdSubs.map(s => ({ name: displayName(s), index: -1 }));
+                        rdSubs.forEach((s) => {
+                            const subItem = document.createElement('div');
+                            subItem.className = 'subtitle-item';
+                            const langDiv = document.createElement('div');
+                            langDiv.className = 'subtitle-lang';
+                            langDiv.textContent = displayName(s);
+                            subItem.appendChild(langDiv);
+                            subItem.addEventListener('click', async () => {
+                                try {
+                                    const l = Array.isArray(s.links) && s.links.length ? s.links[0] : null;
+                                    if (!l) return;
+                                    const su = await fetch(`${API_BASE_URL}/debrid/link`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ link: l }) });
+                                    if (!su.ok) { console.warn('[UI][Debrid] sub unrestrict failed', await su.text()); return; }
+                                    const suj = await su.json();
+                                    if (!suj?.url) return;
+                                    const dl = await fetch(`${API_BASE_URL}/subtitles/download-direct`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url: suj.url, preferredName: displayName(s) }) });
+                                    const dlj = await dl.json();
+                                    if (dl.ok && dlj.url) {
+                                        currentSubtitleUrl = dlj.url;
+                                        showNotification('Subtitle ready');
+                                    }
+                                } catch(e) { console.warn('[UI][Debrid] sub attach failed', e?.message); }
+                            });
+                            subtitleList.appendChild(subItem);
+                        });
+                    }
+                    return; // Debrid path handled fully
+                } catch (e) {
+                    console.error('[UI][Debrid] flow failed', e?.message);
+                    showNotification('Debrid path failed');
+                    return;
+                }
+            }
+
+            // Fallback only if Debrid is not enabled
             showPlayer();
+            mpvLoading.style.display = 'flex';
+            mpvControls.style.display = 'none';
+            fileList.innerHTML = '';
+            subtitleList.innerHTML = '';
+            subtitleControls.style.display = 'none';
+            playerTitle.textContent = 'Loading torrent info...';
             mpvLoading.style.display = 'flex';
             mpvControls.style.display = 'none';
             fileList.innerHTML = '';
@@ -3226,10 +3859,55 @@ Your browser does not support the video tag.
                 currentTorrentData = data;
                 playerTitle.textContent = data.name || 'Selected Torrent'; // Update title with torrent name
                 displayFiles(data.videoFiles || [], data.subtitleFiles || []);
+                // Set source badges to WebTorrent for this path
+                if (streamSourceBadge) { streamSourceBadge.textContent = 'WebTorrent'; streamSourceBadge.classList.remove('debrid'); streamSourceBadge.classList.add('webtorrent'); }
+                if (customSourceBadge) { customSourceBadge.textContent = 'WebTorrent'; customSourceBadge.classList.remove('debrid'); customSourceBadge.classList.add('webtorrent'); }
             } catch (error) {
                 console.error('Error getting torrent files:', error);
                 
             }
+        }
+
+        function promptDebridLogin() {
+            try {
+                showSettingsModal().then(() => {
+                    setTimeout(() => {
+                        try {
+                            const sec = document.getElementById('debridSection');
+                            if (sec && typeof sec.scrollIntoView === 'function') {
+                                sec.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                            }
+                            // Focus appropriate control by provider
+                            if (debridProvider === 'alldebrid') {
+                                if (adSection) adSection.style.display = '';
+                                if (adStartPinBtn) adStartPinBtn.focus();
+                            } else {
+                                const input = document.getElementById('rdClientId');
+                                if (input) input.focus();
+                            }
+                        } catch(_) {}
+                    }, 50);
+                });
+            } catch(_) {
+                // As a fallback, open settings without smooth behaviors
+                showSettingsModal();
+            }
+        }
+
+        // Helpers: parse BTIH from magnet and pick best file from RD
+        function extractInfoHashFromMagnet(magnet) {
+            try {
+                const m = /btih:([A-Za-z0-9]{32,40})/i.exec(magnet);
+                return m ? encodeURIComponent(m[1].toUpperCase()) : '';
+            } catch { return ''; }
+        }
+        function pickBestVideoFile(files) {
+            try {
+                const vids = (files || []).filter(f => /\.(mp4|mkv|avi|mov)$/i.test(f.path || f.filename || ''));
+                if (!vids.length) return null;
+                vids.sort((a,b) => (b.bytes || b.size || 0) - (a.bytes || a.size || 0));
+                return vids[0];
+            } catch { return null; }
         }
 
         // Display files for selection
@@ -3350,11 +4028,13 @@ Your browser does not support the video tag.
                     } catch (e) {}
                 }
             }
+            // Cleanup RD auto-downloaded subtitle if present
+            try { if (currentSubtitleFile) await fetch(`${API_BASE_URL}/subtitles/delete`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ filename: currentSubtitleFile }) }); } catch {}
         }
 
         // Open stream in MPV
         async function openInMPV() {
-            if (!currentStreamUrl || !currentTorrentData) {
+            if (!currentStreamUrl) {
                 showNotification('No file selected to play');
                 return;
             }
@@ -3364,7 +4044,7 @@ Your browser does not support the video tag.
             }
             const data = {
                 streamUrl: currentStreamUrl,
-                infoHash: currentTorrentData.infoHash
+                infoHash: (currentTorrentData && currentTorrentData.infoHash) ? currentTorrentData.infoHash : null
             };
             const result = await window.electronAPI.openInMPV(data);
             if (result.success) {
@@ -3421,6 +4101,10 @@ Your browser does not support the video tag.
             videoSource.setAttribute('src', currentStreamUrl);
             customVideo.load();
             customPlayerTitle.textContent = playerTitle.textContent;
+            // If we prefetched a RD subtitle, attach it now
+            if (currentSubtitleUrl) {
+                try { loadSubtitle(currentSubtitleUrl, { label: 'Auto', lang: 'en' }); } catch(_) {}
+            }
 
             // Reset subtitles
             if (subtitleTrack) {
@@ -3438,6 +4122,33 @@ Your browser does not support the video tag.
             // Show controls initially
             videoContainer.classList.add('show-controls');
             resetControlsAutoHide();
+
+            // If streaming via RD proxy, add a one-time retry to re-unrestrict on error
+            try {
+                const u = new URL(videoSource.getAttribute('src'), window.location.origin);
+                if (u.pathname.startsWith('/stream/debrid')) {
+                    const origDirect = u.searchParams.get('url');
+                    let retried = false;
+                    customVideo.addEventListener('error', async () => {
+                        if (retried) return;
+                        retried = true;
+                        try {
+                            const base = new URL(origDirect);
+                            const baseLink = `${base.origin}${base.pathname}`;
+                            const rr = await fetch(`${API_BASE_URL}/debrid/link`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ link: baseLink }) });
+                            if (rr.ok) {
+                                const rj = await rr.json();
+                                if (rj?.url) {
+                                    const proxied = `${API_BASE_URL}/stream/debrid?url=${encodeURIComponent(rj.url)}`;
+                                    videoSource.setAttribute('src', proxied);
+                                    customVideo.load();
+                                    await customVideo.play();
+                                }
+                            }
+                        } catch(_) {}
+                    }, { once: false });
+                }
+            } catch(_) {}
         }
 
         // Auto-hide controls when idle in custom player
@@ -3523,6 +4234,12 @@ Your browser does not support the video tag.
                 wcjsPlayer = ctx.player;
                 // Start playback
                 wcjsPlayer.play(currentStreamUrl);
+                // Load pre-downloaded subtitle if available (from RD auto fetch)
+                try {
+                    if (currentSubtitleUrl && wcjsPlayer && wcjsPlayer.subtitles && wcjsPlayer.subtitles.load) {
+                        wcjsPlayer.subtitles.load(currentSubtitleUrl);
+                    }
+                } catch(_) {}
 
                 // Setup events and UI updates
                 wcjsAttachEvents();
@@ -3790,6 +4507,11 @@ Your browser does not support the video tag.
         async function closeCustomPlayer_() {
             customPlayerContainer.classList.remove('active');
             try { customVideo.pause(); } catch(_) {}
+            // Cleanup temp subtitle file for HTML5 if any
+            if (currentSubtitleFile) {
+                try { await fetch(`${API_BASE_URL}/subtitles/delete`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ filename: currentSubtitleFile }) }); } catch {}
+                currentSubtitleFile = null;
+            }
         }
 
         function togglePlayPause() {
