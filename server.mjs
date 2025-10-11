@@ -42,22 +42,725 @@ export function startServer(userDataPath) {
     // Simple settings storage in userData
     const SETTINGS_PATH = path.join(userDataPath, 'settings.json');
     function readSettings() {
-        try { return JSON.parse(fs.readFileSync(SETTINGS_PATH, 'utf8')); } catch { return { useTorrentless: false }; }
+        try {
+            const s = JSON.parse(fs.readFileSync(SETTINGS_PATH, 'utf8'));
+            return {
+                useTorrentless: false,
+                useDebrid: false,
+                debridProvider: 'realdebrid',
+                rdToken: null,
+                rdRefresh: null,
+                rdClientId: null,
+                rdCredId: null,
+                rdCredSecret: null,
+                adApiKey: null,
+                ...s,
+            };
+        } catch {
+            return { useTorrentless: false, useDebrid: false, debridProvider: 'realdebrid', rdToken: null, rdRefresh: null, rdClientId: null, rdCredId: null, rdCredSecret: null, adApiKey: null };
+        }
     }
     function writeSettings(obj) {
         try { fs.mkdirSync(path.dirname(SETTINGS_PATH), { recursive: true }); fs.writeFileSync(SETTINGS_PATH, JSON.stringify(obj, null, 2)); return true; } catch { return false; }
     }
 
+    // Diagnostics helpers for logging
+    function mask(value, visible = 4) {
+        if (!value) return null;
+        const s = String(value);
+        if (s.length <= visible) return '*'.repeat(Math.max(2, s.length));
+        return s.slice(0, visible) + '***';
+    }
+    function truncate(s, n = 300) {
+        try { const v = String(s || ''); return v.length > n ? v.slice(0, n) + '…' : v; } catch { return ''; }
+    }
+
     app.get('/api/settings', (req, res) => {
         const s = readSettings();
-        res.json({ useTorrentless: !!s.useTorrentless });
+        // Determine auth state for the selected provider
+        const provider = s.debridProvider || 'realdebrid';
+        const debridAuth = provider === 'alldebrid' ? !!s.adApiKey : !!s.rdToken;
+        res.json({
+            useTorrentless: !!s.useTorrentless,
+            useDebrid: !!s.useDebrid,
+            debridProvider: provider,
+            debridAuth,
+            rdClientId: s.rdClientId || null
+        });
     });
     app.post('/api/settings', (req, res) => {
         const s = readSettings();
-        const next = { ...s, useTorrentless: !!req.body.useTorrentless };
+        const next = {
+            ...s,
+            useTorrentless: req.body.useTorrentless != null ? !!req.body.useTorrentless : !!s.useTorrentless,
+            useDebrid: req.body.useDebrid != null ? !!req.body.useDebrid : !!s.useDebrid,
+            debridProvider: req.body.debridProvider || s.debridProvider || 'realdebrid',
+            rdClientId: typeof req.body.rdClientId === 'string' ? req.body.rdClientId.trim() || null : (s.rdClientId || null),
+        };
         const ok = writeSettings(next);
-        if (ok) return res.json({ success: true, settings: next });
+        if (ok) return res.json({ success: true, settings: { ...next, rdToken: next.rdToken ? '***' : null } });
         return res.status(500).json({ success: false, error: 'Failed to save settings' });
+    });
+
+    // Debrid: token storage for Real-Debrid (server-side only)
+    app.post('/api/debrid/token', (req, res) => {
+        const { token } = req.body || {};
+        const s = readSettings();
+        const next = { ...s, rdToken: typeof token === 'string' && token.trim() ? token.trim() : null };
+        const ok = writeSettings(next);
+        if (ok) return res.json({ success: true });
+        return res.status(500).json({ success: false, error: 'Failed to save token' });
+    });
+
+    // --- AllDebrid minimal adapter & auth (PIN flow) ---
+    const AD_BASE = 'https://api.alldebrid.com/v4';
+    async function adFetch(endpoint, opts = {}) {
+        const s = readSettings();
+        if (!s.adApiKey) throw new Error('Not authenticated with AllDebrid');
+        const url = `${AD_BASE}${endpoint}`;
+        console.log('[AD][call]', { endpoint, method: (opts.method || 'GET').toUpperCase() });
+        const resp = await fetch(url, { ...opts, headers: { Authorization: `Bearer ${s.adApiKey}`, ...(opts.headers || {}) } });
+        let bodyText = '';
+        try { bodyText = await resp.text(); } catch {}
+        // AllDebrid returns 200 with status success/error in JSON
+        try {
+            const j = bodyText ? JSON.parse(bodyText) : {};
+            if (j && j.status === 'success') return j.data || j; // prefer data
+            // map common errors
+            const rawCode = j?.error?.code;
+            const code = rawCode || `${resp.status}`;
+            const msg = j?.error?.message || resp.statusText || 'AD error';
+            const err = new Error(`AD ${endpoint} failed: ${code} ${msg}`);
+            // normalize auth errors
+            if (rawCode === 'AUTH_BAD_APIKEY' || rawCode === 'AUTH_MISSING') {
+                err.code = 'AD_AUTH_INVALID';
+                err.rawCode = rawCode;
+            } else if (rawCode === 'AUTH_BLOCKED') {
+                err.code = 'AD_AUTH_BLOCKED';
+                err.rawCode = rawCode;
+            } else {
+                err.code = code;
+            }
+            throw err;
+        } catch (e) {
+            if (e instanceof SyntaxError) {
+                if (!resp.ok) throw new Error(`AD ${endpoint} http ${resp.status}`);
+                return bodyText;
+            }
+            throw e;
+        }
+    }
+
+    // Save/clear AllDebrid API key manually (optional)
+    app.post('/api/debrid/ad/apikey', (req, res) => {
+        try {
+            const s = readSettings();
+            const key = (req.body?.apikey || '').toString().trim();
+            const next = { ...s, adApiKey: key || null };
+            const ok = writeSettings(next);
+            if (!ok) return res.status(500).json({ success: false, error: 'Failed to save apikey' });
+            res.json({ success: true });
+        } catch (e) {
+            res.status(500).json({ success: false, error: e?.message || 'Failed' });
+        }
+    });
+
+    // AllDebrid PIN start
+    app.get('/api/debrid/ad/pin', async (req, res) => {
+        try {
+            const r = await fetch('https://api.alldebrid.com/v4.1/pin/get');
+            const j = await r.json();
+            if (j?.status !== 'success') return res.status(502).json({ error: j?.error?.message || 'Failed to start PIN' });
+            res.json(j.data || {});
+        } catch (e) {
+            res.status(502).json({ error: e?.message || 'Failed to start AD pin' });
+        }
+    });
+
+    // AllDebrid PIN check (poll until apikey)
+    app.post('/api/debrid/ad/check', async (req, res) => {
+        try {
+            const { pin, check } = req.body || {};
+            if (!pin || !check) return res.status(400).json({ error: 'Missing pin/check' });
+            const r = await fetch('https://api.alldebrid.com/v4/pin/check', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'Accept': 'application/json' },
+                body: new URLSearchParams({ pin, check })
+            });
+            const j = await r.json();
+            if (j?.status !== 'success') return res.status(400).json({ error: j?.error?.message || 'PIN invalid or expired' });
+            const data = j.data || {};
+            if (data.activated && data.apikey) {
+                const s = readSettings();
+                writeSettings({ ...s, adApiKey: data.apikey });
+                return res.json({ success: true });
+            }
+            res.json({ success: false, activated: !!data.activated, expires_in: data.expires_in || 0 });
+        } catch (e) {
+            res.status(502).json({ error: e?.message || 'AD check failed' });
+        }
+    });
+
+    // RD device-code: start flow (requires rdClientId provided in settings or param)
+    app.get('/api/debrid/rd/device-code', async (req, res) => {
+        try {
+            const s = readSettings();
+            const clientId = (req.query.client_id || s.rdClientId || '').toString();
+            if (!clientId) return res.status(400).json({ error: 'Missing Real-Debrid client_id' });
+            console.log('[RD][device-code] start', { clientId: mask(clientId) });
+            const body = new URLSearchParams({ client_id: clientId, new_credentials: 'yes' });
+            const r = await fetch('https://api.real-debrid.com/oauth/v2/device/code', {
+                method: 'POST',
+                headers: { 'Accept': 'application/json', 'Content-Type': 'application/x-www-form-urlencoded' },
+                body
+            });
+            if (!r.ok) return res.status(r.status).json({ error: await r.text() });
+            const j = await r.json();
+            console.log('[RD][device-code] response', { verification_url: j?.verification_url, interval: j?.interval, expires_in: j?.expires_in });
+            res.json(j); // { device_code, user_code, interval, expires_in, verification_url }
+        } catch (e) {
+            console.error('[RD][device-code] error', e?.message);
+            res.status(502).json({ error: e?.message || 'Device code start failed' });
+        }
+    });
+
+    // RD device-code: poll for token
+    app.post('/api/debrid/rd/poll', async (req, res) => {
+        try {
+            const s = readSettings();
+            const clientId = (req.body?.client_id || s.rdClientId || '').toString();
+            const deviceCode = (req.body?.device_code || '').toString();
+            if (!clientId || !deviceCode) return res.status(400).json({ error: 'Missing client_id or device_code' });
+            console.log('[RD][poll] begin', { clientId: mask(clientId), deviceCode: mask(deviceCode) });
+
+            // Step 1: obtain client credentials
+            const credsBody = new URLSearchParams({ client_id: clientId, code: deviceCode });
+            const credsRes = await fetch('https://api.real-debrid.com/oauth/v2/device/credentials', {
+                method: 'POST',
+                headers: { 'Accept': 'application/json', 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: credsBody
+            });
+            if (!credsRes.ok) return res.status(credsRes.status).json({ error: await credsRes.text() });
+            const creds = await credsRes.json(); // { client_id, client_secret }
+            if (!creds.client_id || !creds.client_secret) return res.status(500).json({ error: 'Invalid credentials response' });
+            console.log('[RD][poll] creds ok');
+
+            // Step 2: exchange for access token
+            const tokenBody = new URLSearchParams({
+                client_id: creds.client_id,
+                client_secret: creds.client_secret,
+                code: deviceCode,
+                grant_type: 'http://oauth.net/grant_type/device/1.0.0'
+            });
+            const tokenRes = await fetch('https://api.real-debrid.com/oauth/v2/token', {
+                method: 'POST',
+                headers: { 'Accept': 'application/json', 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: tokenBody
+            });
+            if (!tokenRes.ok) return res.status(tokenRes.status).json({ error: await tokenRes.text() });
+            const token = await tokenRes.json();
+            if (!token.access_token) return res.status(500).json({ error: 'No access_token returned' });
+            const next = { ...s, rdToken: token.access_token, rdRefresh: token.refresh_token || null, rdCredId: creds.client_id, rdCredSecret: creds.client_secret };
+            writeSettings(next);
+            console.log('[RD][poll] token saved', { hasRefresh: !!token.refresh_token });
+            res.json({ success: true });
+        } catch (e) {
+            console.error('[RD][poll] error', e?.message);
+            res.status(502).json({ error: e?.message || 'Device code poll failed' });
+        }
+    });
+
+    // Download any subtitle by direct URL and serve as .vtt (when possible)
+    app.post('/api/subtitles/download-direct', async (req, res) => {
+        try {
+            ensureSubsDir();
+            const { url, preferredName } = req.body || {};
+            if (!url || typeof url !== 'string' || !/^https?:\/\//i.test(url)) {
+                return res.status(400).json({ error: 'Invalid url' });
+            }
+            const r = await fetch(url);
+            if (!r.ok) return res.status(500).json({ error: `Failed to fetch subtitle (${r.status})` });
+            const buf = Buffer.from(await r.arrayBuffer());
+            const ct = r.headers.get('content-type') || '';
+            const cd = r.headers.get('content-disposition') || '';
+            let base = preferredName || 'subtitle';
+            let ext = '.srt';
+            const m = cd.match(/filename="?([^";]+)"?/i);
+            if (m) {
+                base = m[1].replace(/\.[^.]+$/,'');
+            }
+            if (/vtt/i.test(ct)) ext = '.vtt';
+            else if (/srt/i.test(ct)) ext = '.srt';
+            // Convert to VTT when SRT detected
+            let text = buf.toString('utf8');
+            let finalPath = '';
+            if (ext === '.vtt' || /^\s*WEBVTT/i.test(text)) {
+                finalPath = path.join(SUB_TMP_DIR, `${base}.vtt`);
+                fs.writeFileSync(finalPath, /^\s*WEBVTT/i.test(text) ? text : `WEBVTT\n\n${text}`);
+            } else if (ext === '.srt' || /(\d{2}:\d{2}:\d{2}),\d{3}\s*-->/m.test(text)) {
+                const vtt = srtToVtt(text);
+                finalPath = path.join(SUB_TMP_DIR, `${base}.vtt`);
+                fs.writeFileSync(finalPath, vtt);
+            } else {
+                finalPath = path.join(SUB_TMP_DIR, `${base}.vtt`);
+                fs.writeFileSync(finalPath, `WEBVTT\n\n${text}`);
+            }
+            const servedName = path.basename(finalPath);
+            const baseUrl = `${req.protocol}://${req.get('host')}`;
+            res.json({ url: `${baseUrl}/subtitles/${encodeURIComponent(servedName)}`, filename: servedName });
+        } catch (e) {
+            res.status(500).json({ error: e?.message || 'Failed to download direct subtitle' });
+        }
+    });
+
+    // --- Real-Debrid minimal adapter ---
+    const RD_BASE = 'https://api.real-debrid.com/rest/1.0';
+    let rdRefreshing = false;
+    async function rdFetch(endpoint, opts = {}) {
+        const started = Date.now();
+        const attempt = async (token) => {
+            const url = `${RD_BASE}${endpoint}`;
+            console.log('[RD][call]', { endpoint, method: (opts.method || 'GET').toUpperCase() });
+            const response = await fetch(url, {
+                ...opts,
+                headers: { Authorization: `Bearer ${token}`, ...(opts.headers || {}) },
+            });
+            return response;
+        };
+        let s = readSettings();
+        if (!s.rdToken) throw new Error('Not authenticated with Real-Debrid');
+        let resp = await attempt(s.rdToken);
+        if (resp.status === 401 || resp.status === 403) {
+            // Try token refresh if possible
+            if (!rdRefreshing && s.rdRefresh && s.rdCredId && s.rdCredSecret) {
+                try {
+                    rdRefreshing = true;
+                    console.warn('[RD][refresh] attempting refresh_token flow');
+                    const tb = new URLSearchParams({
+                        client_id: s.rdCredId,
+                        client_secret: s.rdCredSecret,
+                        code: s.rdRefresh,
+                        grant_type: 'refresh_token'
+                    });
+                    const tr = await fetch('https://api.real-debrid.com/oauth/v2/token', {
+                        method: 'POST', headers: { 'Accept': 'application/json', 'Content-Type': 'application/x-www-form-urlencoded' }, body: tb
+                    });
+                    if (tr.ok) {
+                        const tj = await tr.json();
+                        const next = { ...s, rdToken: tj.access_token || s.rdToken, rdRefresh: tj.refresh_token || s.rdRefresh };
+                        writeSettings(next);
+                        s = next;
+                        console.log('[RD][refresh] success, token rotated');
+                    }
+                } catch {}
+                finally { rdRefreshing = false; }
+                // Retry once
+                resp = await attempt(s.rdToken);
+            }
+        }
+        if (!resp.ok) {
+            let msg = resp.statusText;
+            try { msg = await resp.text(); } catch {}
+            // Decide whether this is an auth issue that requires clearing tokens
+            const lowerMsg = (msg || '').toLowerCase();
+            const isAuthInvalid = resp.status === 401 || (resp.status === 403 && (lowerMsg.includes('bad_token') || lowerMsg.includes('invalid_token')));
+            if (isAuthInvalid) {
+                try {
+                    const cleared = { ...s, rdToken: null, rdRefresh: null };
+                    writeSettings(cleared);
+                    console.warn('[RD] cleared invalid token (logged out)');
+                } catch {}
+            }
+            console.error('[RD][call] error', { endpoint, status: resp.status, msg: truncate(msg) });
+            throw new Error(`RD ${endpoint} failed: ${resp.status} ${msg}`);
+        }
+        const ct = resp.headers.get('content-type') || '';
+        const elapsed = Date.now() - started;
+        console.log('[RD][call] ok', { endpoint, status: resp.status, ms: elapsed });
+        return /json/i.test(ct) ? resp.json() : resp.text();
+    }
+
+    // Debrid availability by info hash (RD only; AD has no instant availability)
+    app.get('/api/debrid/availability', async (req, res) => {
+        try {
+            const s = readSettings();
+            if (!s.useDebrid || (s.debridProvider || 'realdebrid') !== 'realdebrid') {
+                return res.status(400).json({ error: 'Debrid disabled' });
+            }
+            const btih = String(req.query.btih || '').trim().toUpperCase();
+            if (!btih || btih.length < 32) return res.status(400).json({ error: 'Invalid btih' });
+            console.log('[RD][availability]', { btih });
+            const data = await rdFetch(`/torrents/instantAvailability/${btih}`);
+            // RD returns an object keyed by hash: { HASH: { ... } } or an array; consider truthy presence
+            const available = !!(data && (data[btih] || data[btih.toLowerCase()]));
+            res.json({ provider: 'realdebrid', available, raw: data });
+        } catch (e) {
+            const msg = e?.message || '';
+            console.error('[RD][availability] error', msg);
+            if (/\s429\s/i.test(msg) || /too_many_requests/i.test(msg)) {
+                return res.status(429).json({ error: 'Real‑Debrid rate limit. Try again shortly.', code: 'RD_RATE_LIMIT' });
+            }
+            if (/disabled_endpoint/i.test(msg)) {
+                return res.status(403).json({ error: 'Real‑Debrid availability endpoint disabled for this account.', code: 'RD_FEATURE_UNAVAILABLE' });
+            }
+            res.status(502).json({ error: msg || 'Debrid availability failed' });
+        }
+    });
+
+    // Add magnet to Debrid provider. Returns torrent id and current info.
+    app.post('/api/debrid/prepare', async (req, res) => {
+        try {
+            const s = readSettings();
+            if (!s.useDebrid) return res.status(400).json({ error: 'Debrid disabled' });
+            const magnet = (req.body?.magnet || '').toString();
+            if (!magnet.startsWith('magnet:')) return res.status(400).json({ error: 'Missing magnet' });
+            const provider = (s.debridProvider || 'realdebrid').toLowerCase();
+            if (provider === 'realdebrid') {
+                console.log('[RD][prepare] addMagnet');
+                const addRes = await rdFetch('/torrents/addMagnet', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: new URLSearchParams({ magnet })
+                });
+                const id = addRes?.id;
+                if (!id) return res.status(500).json({ error: 'Failed to add magnet' });
+                console.log('[RD][prepare] added', { id });
+                const info = await rdFetch(`/torrents/info/${id}`);
+                return res.json({ id, info });
+            } else if (provider === 'alldebrid') {
+                console.log('[AD][prepare] magnet/upload');
+                // Upload magnet
+                let data;
+                try {
+                    data = await adFetch('/magnet/upload', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                        body: new URLSearchParams([['magnets[]', magnet]])
+                    });
+                } catch (e) {
+                    const msg = e?.message || '';
+                    if (e?.code === 'AD_AUTH_INVALID' || /AUTH_BAD_APIKEY|Not authenticated with AllDebrid/i.test(msg)) {
+                        // Clear invalid key so UI reflects logged-out state
+                        const cur = readSettings();
+                        writeSettings({ ...cur, adApiKey: null });
+                        return res.status(401).json({ error: 'AllDebrid authentication invalid. Please login again.', code: 'DEBRID_UNAUTH' });
+                    }
+                    if (e?.code === 'AD_AUTH_BLOCKED' || /AUTH_BLOCKED/i.test(msg)) {
+                        return res.status(403).json({ error: 'AllDebrid security check: verify the authorization email, then retry.', code: 'AD_AUTH_BLOCKED' });
+                    }
+                    if (e?.code === 'MAGNET_MUST_BE_PREMIUM' || /MUST_BE_PREMIUM/i.test(msg)) {
+                        return res.status(403).json({ error: 'AllDebrid premium is required to add torrents.', code: 'RD_PREMIUM_REQUIRED' });
+                    }
+                    throw e;
+                }
+                const first = Array.isArray(data?.magnets) ? data.magnets.find(m => m?.id) : null;
+                const id = first?.id?.toString();
+                if (!id) return res.status(500).json({ error: 'Failed to add magnet' });
+                // Gather status and files
+                let filename = null;
+                try {
+                    const st2 = await fetch('https://api.alldebrid.com/v4.1/magnet/status', { method: 'POST', headers: { 'Authorization': `Bearer ${readSettings().adApiKey}`, 'Content-Type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams({ id }) });
+                    if (st2.ok) {
+                        const j = await st2.json();
+                        if (j?.status === 'success' && Array.isArray(j?.data?.magnets) && j.data.magnets[0]?.filename) filename = j.data.magnets[0].filename;
+                    }
+                } catch {}
+                // Get files tree
+                const filesData = await adFetch('/magnet/files', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: new URLSearchParams([['id[]', id]])
+                });
+                const record = Array.isArray(filesData?.magnets) ? filesData.magnets.find(m => String(m?.id) === String(id)) : null;
+                const outFiles = [];
+                let counter = 1;
+                const walk = (nodes, base = '') => {
+                    if (!Array.isArray(nodes)) return;
+                    for (const n of nodes) {
+                        if (n.e) {
+                            walk(n.e, base ? `${base}/${n.n}` : n.n);
+                        } else {
+                            const full = base ? `${base}/${n.n}` : n.n;
+                            outFiles.push({ id: counter++, path: full, filename: full, bytes: Number(n.s || 0), size: Number(n.s || 0), links: n.l ? [n.l] : [] });
+                        }
+                    }
+                };
+                if (record?.files) walk(record.files, '');
+                const info = { id, filename: filename || (first?.name || 'Magnet'), files: outFiles };
+                return res.json({ id, info });
+            } else {
+                return res.status(400).json({ error: 'Debrid provider not supported' });
+            }
+        } catch (e) {
+            const msg = e?.message || '';
+            console.error('[DEBRID][prepare] error', msg);
+            // Map premium-required case to a clearer response
+            if (/403\s+\{[^}]*permission_denied/i.test(msg)) {
+                return res.status(403).json({
+                    error: 'Real-Debrid premium is required to add torrents.',
+                    code: 'RD_PREMIUM_REQUIRED'
+                });
+            }
+            if (/MAGNET_MUST_BE_PREMIUM|MUST_BE_PREMIUM/i.test(msg)) {
+                return res.status(403).json({ error: 'Debrid premium is required to add torrents.', code: 'RD_PREMIUM_REQUIRED' });
+            }
+            res.status(502).json({ error: msg || 'Debrid prepare failed' });
+        }
+    });
+
+    // Debrid select files by id list or 'all' (RD supports, AD no-op)
+    app.post('/api/debrid/select-files', async (req, res) => {
+        try {
+            const s = readSettings();
+            const provider = (s.debridProvider || 'realdebrid').toLowerCase();
+            if (provider === 'alldebrid') {
+                // No-op for AllDebrid
+                return res.json({ success: true });
+            }
+            const id = (req.body?.id || '').toString();
+            const files = Array.isArray(req.body?.files) ? req.body.files.join(',') : (req.body?.files || 'all').toString();
+            if (!id) return res.status(400).json({ error: 'Missing id' });
+            console.log('[RD][select-files]', { id, files: files.split(',').slice(0,5) });
+            const out = await rdFetch(`/torrents/selectFiles/${id}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: new URLSearchParams({ files })
+            });
+            res.json({ success: true, out });
+        } catch (e) {
+            const msg = e?.message || '';
+            console.error('[RD][select-files] error', msg);
+            if (/403\s+\{[^}]*permission_denied/i.test(msg)) {
+                return res.status(403).json({ success: false, error: 'Real-Debrid premium is required to select files.', code: 'RD_PREMIUM_REQUIRED' });
+            }
+            res.status(502).json({ success: false, error: msg || 'Debrid select files failed' });
+        }
+    });
+
+    // List Debrid torrent info/files
+    app.get('/api/debrid/files', async (req, res) => {
+        try {
+            const s = readSettings();
+            const provider = (s.debridProvider || 'realdebrid').toLowerCase();
+            const id = (req.query?.id || '').toString();
+            if (!id) return res.status(400).json({ error: 'Missing id' });
+            if (provider === 'realdebrid') {
+                console.log('[RD][files]', { id });
+                const info = await rdFetch(`/torrents/info/${id}`);
+                return res.json(info);
+            }
+            if (provider === 'alldebrid') {
+                console.log('[AD][files]', { id });
+                let filesData;
+                try {
+                    filesData = await adFetch('/magnet/files', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams([['id[]', id]]) });
+                } catch (e) {
+                    const msg = e?.message || '';
+                    if (e?.code === 'AD_AUTH_INVALID' || /AUTH_BAD_APIKEY|Not authenticated with AllDebrid/i.test(msg)) {
+                        const cur = readSettings();
+                        writeSettings({ ...cur, adApiKey: null });
+                        return res.status(401).json({ error: 'AllDebrid authentication invalid. Please login again.', code: 'DEBRID_UNAUTH' });
+                    }
+                    if (e?.code === 'AD_AUTH_BLOCKED' || /AUTH_BLOCKED/i.test(msg)) {
+                        return res.status(403).json({ error: 'AllDebrid security check: verify the authorization email, then retry.', code: 'AD_AUTH_BLOCKED' });
+                    }
+                    throw e;
+                }
+                const record = Array.isArray(filesData?.magnets) ? filesData.magnets.find(m => String(m?.id) === String(id)) : null;
+                const outFiles = [];
+                let counter = 1;
+                const walk = (nodes, base = '') => {
+                    if (!Array.isArray(nodes)) return;
+                    for (const n of nodes) {
+                        if (n.e) walk(n.e, base ? `${base}/${n.n}` : n.n);
+                        else outFiles.push({ id: counter++, path: base ? `${base}/${n.n}` : n.n, filename: n.n, bytes: Number(n.s || 0), size: Number(n.s || 0), links: n.l ? [n.l] : [] });
+                    }
+                };
+                if (record?.files) walk(record.files, '');
+                // Try to fetch filename via status (best-effort)
+                let filename = null;
+                try {
+                    const r = await fetch('https://api.alldebrid.com/v4.1/magnet/status', { method: 'POST', headers: { 'Authorization': `Bearer ${readSettings().adApiKey}`, 'Content-Type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams({ id }) });
+                    if (r.ok) {
+                        const j = await r.json();
+                        if (j?.status === 'success' && Array.isArray(j?.data?.magnets) && j.data.magnets[0]?.filename) filename = j.data.magnets[0].filename;
+                    }
+                } catch {}
+                return res.json({ id, filename: filename || null, files: outFiles });
+            }
+            return res.status(400).json({ error: 'Debrid provider not supported' });
+        } catch (e) {
+            const msg = e?.message || '';
+            console.error('[RD][files] error', msg);
+            if (/403\s+\{[^}]*permission_denied/i.test(msg)) {
+                return res.status(403).json({ error: 'Real-Debrid premium is required to view torrent info.', code: 'RD_PREMIUM_REQUIRED' });
+            }
+            res.status(502).json({ error: msg || 'Debrid files failed' });
+        }
+    });
+
+    // Unrestrict a Debrid link into direct CDN URL
+    app.post('/api/debrid/link', async (req, res) => {
+        try {
+            const s = readSettings();
+            const provider = (s.debridProvider || 'realdebrid').toLowerCase();
+            const link = (req.body?.link || '').toString();
+            if (!link) return res.status(400).json({ error: 'Missing link' });
+            if (provider === 'realdebrid') {
+                console.log('[RD][unrestrict] start');
+                const out = await rdFetch('/unrestrict/link', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: new URLSearchParams({ link })
+                });
+                console.log('[RD][unrestrict] ok', { hasDownload: !!out?.download });
+                return res.json({ url: out?.download || null, raw: out });
+            }
+            if (provider === 'alldebrid') {
+                console.log('[AD][unlock] start');
+                let data;
+                try {
+                    data = await adFetch('/link/unlock', {
+                        method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams({ link })
+                    });
+                } catch (e) {
+                    const msg = e?.message || '';
+                    if (e?.code === 'AD_AUTH_INVALID' || /AUTH_BAD_APIKEY|Not authenticated with AllDebrid/i.test(msg)) {
+                        const cur = readSettings();
+                        writeSettings({ ...cur, adApiKey: null });
+                        return res.status(401).json({ error: 'AllDebrid authentication invalid. Please login again.', code: 'DEBRID_UNAUTH' });
+                    }
+                    if (e?.code === 'AD_AUTH_BLOCKED' || /AUTH_BLOCKED/i.test(msg)) {
+                        return res.status(403).json({ error: 'AllDebrid security check: verify the authorization email, then retry.', code: 'AD_AUTH_BLOCKED' });
+                    }
+                    if (e?.code === 'MUST_BE_PREMIUM' || /MUST_BE_PREMIUM/i.test(msg)) {
+                        return res.status(403).json({ error: 'AllDebrid premium is required for this link.', code: 'RD_PREMIUM_REQUIRED' });
+                    }
+                    throw e;
+                }
+                let direct = data?.link || '';
+                // Handle delayed links
+                if (!direct && data?.delayed) {
+                    const delayedId = data.delayed;
+                    for (let i = 0; i < 15; i++) {
+                        try {
+                            const dd = await adFetch('/link/delayed', {
+                                method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams({ id: String(delayedId) })
+                            });
+                            if (dd?.status === 2 && dd?.link) { direct = dd.link; break; }
+                            await new Promise(r => setTimeout(r, 1000));
+                        } catch { await new Promise(r => setTimeout(r, 1000)); }
+                    }
+                }
+                if (!direct) return res.status(502).json({ error: 'Failed to unlock link' });
+                return res.json({ url: direct, raw: data });
+            }
+            return res.status(400).json({ error: 'Debrid provider not supported' });
+        } catch (e) {
+            console.error('[RD][unrestrict] error', e?.message);
+            res.status(502).json({ error: e?.message || 'Debrid unrestrict failed' });
+        }
+    });
+
+    // Delete a Debrid torrent by id (optional cleanup)
+    app.delete('/api/debrid/torrent', async (req, res) => {
+        try {
+            const s = readSettings();
+            const provider = (s.debridProvider || 'realdebrid').toLowerCase();
+            const id = (req.query?.id || req.body?.id || '').toString();
+            if (!id) return res.status(400).json({ error: 'Missing id' });
+            if (provider === 'realdebrid') {
+                console.log('[RD][delete]', { id });
+                await rdFetch(`/torrents/delete/${id}`, { method: 'DELETE' });
+                return res.json({ success: true });
+            }
+            if (provider === 'alldebrid') {
+                console.log('[AD][delete]', { id });
+                try {
+                    await adFetch('/magnet/delete', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams({ id }) });
+                } catch (e) {
+                    const msg = e?.message || '';
+                    if (e?.code === 'AD_AUTH_INVALID' || /AUTH_BAD_APIKEY|Not authenticated with AllDebrid/i.test(msg)) {
+                        const cur = readSettings();
+                        writeSettings({ ...cur, adApiKey: null });
+                        return res.status(401).json({ success: false, error: 'AllDebrid authentication invalid. Please login again.', code: 'DEBRID_UNAUTH' });
+                    }
+                    if (e?.code === 'AD_AUTH_BLOCKED' || /AUTH_BLOCKED/i.test(msg)) {
+                        return res.status(403).json({ success: false, error: 'AllDebrid security check: verify the authorization email, then retry.', code: 'AD_AUTH_BLOCKED' });
+                    }
+                    throw e;
+                }
+                return res.json({ success: true });
+            }
+            return res.status(400).json({ success: false, error: 'Debrid provider not supported' });
+        } catch (e) {
+            console.error('[RD][delete] error', e?.message);
+            res.status(502).json({ success: false, error: e?.message || 'Failed to delete RD torrent' });
+        }
+    });
+
+    // Range-capable proxy for debrid direct URLs
+    app.get('/stream/debrid', async (req, res) => {
+        try {
+            const directUrl = (req.query?.url || '').toString();
+            if (!directUrl.startsWith('http')) return res.status(400).end('Bad URL');
+            const range = req.headers.range;
+            const headers = range ? { Range: range } : {};
+            const upstream = await fetch(directUrl, { headers });
+            // Pass important headers
+            const status = upstream.status;
+            res.status(status);
+            const passthrough = ['content-length','content-range','accept-ranges','content-type'];
+            passthrough.forEach((h) => {
+                const v = upstream.headers.get(h);
+                if (v) res.setHeader(h, v);
+            });
+            // Fallback content-type by extension
+            if (!res.getHeader('content-type')) {
+                try {
+                    const u = new URL(directUrl);
+                    const ct = mime.lookup(u.pathname) || 'application/octet-stream';
+                    res.setHeader('Content-Type', ct);
+                } catch {}
+            }
+            const body = upstream.body;
+            body.on('error', () => { try { res.end(); } catch {} });
+            req.on('close', () => { try { body.destroy(); } catch {} });
+            body.pipe(res);
+        } catch (e) {
+            res.status(502).end('debrid proxy error');
+        }
+    });
+
+    // Alias with /api prefix for clients that use API_BASE_URL for streaming
+    app.get('/api/stream/debrid', async (req, res) => {
+        try {
+            const directUrl = (req.query?.url || '').toString();
+            if (!directUrl.startsWith('http')) return res.status(400).end('Bad URL');
+            const range = req.headers.range;
+            const headers = range ? { Range: range } : {};
+            const upstream = await fetch(directUrl, { headers });
+            const status = upstream.status;
+            res.status(status);
+            const passthrough = ['content-length','content-range','accept-ranges','content-type'];
+            passthrough.forEach((h) => {
+                const v = upstream.headers.get(h);
+                if (v) res.setHeader(h, v);
+            });
+            if (!res.getHeader('content-type')) {
+                try {
+                    const u = new URL(directUrl);
+                    const ct = mime.lookup(u.pathname) || 'application/octet-stream';
+                    res.setHeader('Content-Type', ct);
+                } catch {}
+            }
+            const body = upstream.body;
+            body.on('error', () => { try { res.end(); } catch {} });
+            req.on('close', () => { try { body.destroy(); } catch {} });
+            body.pipe(res);
+        } catch (e) {
+            res.status(502).end('debrid proxy error');
+        }
     });
 
     // Temporary subtitles storage
