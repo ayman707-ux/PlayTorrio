@@ -39,6 +39,26 @@ export function startServer(userDataPath) {
     app.use(cors());
     app.use(express.static(path.join(__dirname, 'public')));
     app.use(express.json());
+    // Simple playback resume storage in userData
+    const RESUME_PATH = path.join(userDataPath, 'playback_positions.json');
+    function readResumeMap() {
+        try {
+            if (fs.existsSync(RESUME_PATH)) {
+                const j = JSON.parse(fs.readFileSync(RESUME_PATH, 'utf8'));
+                if (j && typeof j === 'object') return j;
+            }
+        } catch {}
+        return {};
+    }
+    function writeResumeMap(obj) {
+        try {
+            fs.mkdirSync(path.dirname(RESUME_PATH), { recursive: true });
+            fs.writeFileSync(RESUME_PATH, JSON.stringify(obj, null, 2));
+            return true;
+        } catch {
+            return false;
+        }
+    }
     // Simple settings storage in userData
     const SETTINGS_PATH = path.join(userDataPath, 'settings.json');
     function readSettings() {
@@ -54,10 +74,11 @@ export function startServer(userDataPath) {
                 rdCredId: null,
                 rdCredSecret: null,
                 adApiKey: null,
+                tbApiKey: null,
                 ...s,
             };
         } catch {
-            return { useTorrentless: false, useDebrid: false, debridProvider: 'realdebrid', rdToken: null, rdRefresh: null, rdClientId: null, rdCredId: null, rdCredSecret: null, adApiKey: null };
+            return { useTorrentless: false, useDebrid: false, debridProvider: 'realdebrid', rdToken: null, rdRefresh: null, rdClientId: null, rdCredId: null, rdCredSecret: null, adApiKey: null, tbApiKey: null };
         }
     }
     function writeSettings(obj) {
@@ -79,7 +100,7 @@ export function startServer(userDataPath) {
         const s = readSettings();
         // Determine auth state for the selected provider
         const provider = s.debridProvider || 'realdebrid';
-        const debridAuth = provider === 'alldebrid' ? !!s.adApiKey : !!s.rdToken;
+        const debridAuth = provider === 'alldebrid' ? !!s.adApiKey : provider === 'torbox' ? !!s.tbApiKey : !!s.rdToken;
         res.json({
             useTorrentless: !!s.useTorrentless,
             useDebrid: !!s.useDebrid,
@@ -110,6 +131,66 @@ export function startServer(userDataPath) {
         const ok = writeSettings(next);
         if (ok) return res.json({ success: true });
         return res.status(500).json({ success: false, error: 'Failed to save token' });
+    });
+
+    // --- Playback resume endpoints ---
+    // Get a saved resume position by key
+    app.get('/api/resume', (req, res) => {
+        try {
+            const key = (req.query?.key || '').toString();
+            if (!key) return res.status(400).json({ error: 'Missing key' });
+            const map = readResumeMap();
+            const rec = map[key];
+            if (!rec) return res.status(404).json({});
+            return res.json(rec);
+        } catch (e) {
+            return res.status(500).json({ error: e?.message || 'Failed to read resume' });
+        }
+    });
+    // Save/update a resume position
+    app.post('/api/resume', (req, res) => {
+        try {
+            const { key, position, duration, title } = req.body || {};
+            const k = (key || '').toString();
+            const pos = Number(position || 0);
+            const dur = Number(duration || 0);
+            if (!k) return res.status(400).json({ error: 'Missing key' });
+            if (pos < 0) return res.status(400).json({ error: 'Bad position' });
+            const map = readResumeMap();
+            // If watched almost to end, clear entry instead of saving
+            if (dur > 0 && pos / dur >= 0.95) {
+                delete map[k];
+                writeResumeMap(map);
+                return res.json({ success: true, cleared: true });
+            }
+            const rec = { position: pos, duration: dur, updatedAt: new Date().toISOString() };
+            if (title) rec.title = String(title);
+            map[k] = rec;
+            // Cap entries to avoid unbounded growth (keep latest 500)
+            const entries = Object.entries(map).sort((a, b) => new Date(b[1]?.updatedAt || 0) - new Date(a[1]?.updatedAt || 0));
+            if (entries.length > 500) {
+                const trimmed = Object.fromEntries(entries.slice(0, 500));
+                writeResumeMap(trimmed);
+                return res.json({ success: true });
+            }
+            writeResumeMap(map);
+            return res.json({ success: true });
+        } catch (e) {
+            return res.status(500).json({ error: e?.message || 'Failed to save resume' });
+        }
+    });
+    // Delete a resume record
+    app.delete('/api/resume', (req, res) => {
+        try {
+            const key = (req.query?.key || req.body?.key || '').toString();
+            if (!key) return res.status(400).json({ error: 'Missing key' });
+            const map = readResumeMap();
+            if (map[key]) delete map[key];
+            writeResumeMap(map);
+            return res.json({ success: true });
+        } catch (e) {
+            return res.status(500).json({ error: e?.message || 'Failed to delete resume' });
+        }
     });
 
     // --- AllDebrid minimal adapter & auth (PIN flow) ---
@@ -151,6 +232,243 @@ export function startServer(userDataPath) {
         }
     }
 
+    // --- TorBox minimal adapter ---
+    const TB_BASE = 'https://api.torbox.app/v1';
+    async function tbFetch(endpoint, opts = {}) {
+        const s = readSettings();
+        if (!s.tbApiKey) throw new Error('Not authenticated with TorBox');
+        const url = `${TB_BASE}${endpoint}`;
+        console.log('[TB][call]', { endpoint, method: (opts.method || 'GET').toUpperCase() });
+        const resp = await fetch(url, { ...opts, headers: { Authorization: `Bearer ${s.tbApiKey}`, Accept: 'application/json', ...(opts.headers || {}) } });
+        const ct = resp.headers.get('content-type') || '';
+        let bodyText = '';
+        try { bodyText = await resp.text(); } catch {}
+        let data = null;
+        if (/json/i.test(ct)) {
+            try { data = bodyText ? JSON.parse(bodyText) : null; } catch {}
+        }
+        if (!resp.ok) {
+            const lower = (bodyText || '').toLowerCase();
+            // Clear token on auth errors
+            if (resp.status === 401 || lower.includes('unauthorized') || lower.includes('invalid token')) {
+                try { const cur = readSettings(); writeSettings({ ...cur, tbApiKey: null }); } catch {}
+                const err = new Error('TorBox authentication invalid'); err.code = 'TB_AUTH_INVALID'; throw err;
+            }
+            if (resp.status === 429 || lower.includes('rate')) { const err = new Error('TorBox rate limited'); err.code = 'TB_RATE_LIMIT'; throw err; }
+            if (resp.status === 402 || lower.includes('premium')) { const err = new Error('TorBox premium required'); err.code = 'RD_PREMIUM_REQUIRED'; throw err; }
+            const err = new Error(`TB ${endpoint} failed: ${resp.status} ${truncate(bodyText, 300)}`);
+            throw err;
+        }
+        return data != null ? data : bodyText;
+    }
+
+    // Robust TorBox: try multiple payloads/endpoints for creating a torrent from a magnet
+    async function tbCreateTorrentFromMagnet(magnet) {
+        const attempts = [
+            { ep: '/api/torrents/createtorrent', type: 'form', body: { link: magnet } },
+            { ep: '/api/torrents/createtorrent', type: 'form', body: { magnet: magnet } },
+            { ep: '/api/torrents/createtorrent', type: 'json', body: { link: magnet } },
+            { ep: '/api/torrents/createtorrent', type: 'json', body: { magnet_link: magnet } },
+            { ep: '/api/torrents/addmagnet',     type: 'form', body: { link: magnet } },
+            { ep: '/api/torrents/addmagnet',     type: 'form', body: { magnet: magnet } },
+        ];
+        let lastErr = null;
+        for (const a of attempts) {
+            try {
+                const headers = a.type === 'json'
+                    ? { 'Content-Type': 'application/json' }
+                    : { 'Content-Type': 'application/x-www-form-urlencoded' };
+                const body = a.type === 'json'
+                    ? JSON.stringify(a.body)
+                    : new URLSearchParams(a.body);
+                const r = await tbFetch(a.ep, { method: 'POST', headers, body });
+                // Normalize id from different shapes
+                const id = r?.id || r?.torrent_id || r?.data?.id || r?.data?.torrent_id;
+                if (id) return { ok: true, id: String(id), raw: r };
+                // Some APIs wrap under data.torrent
+                const did = r?.data?.torrent?.id || r?.data?.torrent_id;
+                if (did) return { ok: true, id: String(did), raw: r };
+                lastErr = new Error('TorBox create returned no id');
+            } catch (e) {
+                lastErr = e;
+                // If missing required option, try next shape
+                const msg = (e?.message || '').toLowerCase();
+                if (/missing_required_option|missing|required/.test(msg)) continue;
+                // Auth/rate handled by caller via codes thrown in tbFetch
+            }
+        }
+        if (lastErr) throw lastErr;
+        throw new Error('Failed to create TorBox torrent');
+    }
+
+    // Get a TorBox direct link for streaming for a specific torrent/file id
+    async function tbRequestDirectLink(torrentId, fileId) {
+        const s = readSettings();
+        const authHeader = { Authorization: `Bearer ${s.tbApiKey}` };
+        const candidates = [
+            // Preferred: POST form, stream=true, redirect=false -> JSON
+            { method: 'POST', type: 'form', ep: '/api/torrents/requestdl', qs: {}, body: { torrent_id: String(torrentId), file_id: String(fileId), stream: 'true', redirect: 'false' } },
+            // Alt: POST form, no stream flag
+            { method: 'POST', type: 'form', ep: '/api/torrents/requestdl', qs: {}, body: { torrent_id: String(torrentId), file_id: String(fileId), redirect: 'false' } },
+            // Alt keys: id instead of torrent_id
+            { method: 'POST', type: 'form', ep: '/api/torrents/requestdl', qs: {}, body: { id: String(torrentId), file_id: String(fileId), stream: 'true', redirect: 'false' } },
+            // GET with query params
+            { method: 'GET', type: 'query', ep: '/api/torrents/requestdl', qs: { torrent_id: String(torrentId), file_id: String(fileId), stream: 'true', redirect: 'false' } },
+            { method: 'GET', type: 'query', ep: '/api/torrents/requestdl', qs: { id: String(torrentId), file_id: String(fileId), redirect: 'false' } },
+            // Redirect flow: let server 302, capture Location
+            { method: 'POST', type: 'form-redirect', ep: '/api/torrents/requestdl', qs: {}, body: { torrent_id: String(torrentId), file_id: String(fileId), stream: 'true', redirect: 'true' } },
+            { method: 'GET', type: 'redirect', ep: '/api/torrents/requestdl', qs: { torrent_id: String(torrentId), file_id: String(fileId), stream: 'true', redirect: 'true' } },
+        ];
+        let lastErr;
+        for (const c of candidates) {
+            try {
+                if (c.type === 'form' || c.type === 'query') {
+                    const headers = c.type === 'form' ? { ...authHeader, 'Content-Type': 'application/x-www-form-urlencoded', Accept: 'application/json' } : { ...authHeader, Accept: 'application/json' };
+                    const qs = new URLSearchParams(c.qs || {});
+                    const url = `${TB_BASE}${c.ep}${qs.toString() ? `?${qs}` : ''}`;
+                    const body = c.type === 'form' ? new URLSearchParams(c.body || {}) : undefined;
+                    const r = await fetch(url, { method: c.method, headers, body });
+                    const ct = r.headers.get('content-type') || '';
+                    let data = null;
+                    if (/json/i.test(ct)) { try { data = await r.json(); } catch {} }
+                    else { try { const t = await r.text(); if (t && /^https?:\/\//i.test(t.trim())) return t.trim(); } catch {} }
+                    const urlField = data?.url || data?.link || data?.data?.url || data?.data?.link;
+                    if (urlField && /^https?:\/\//i.test(urlField)) return urlField;
+                    lastErr = new Error('No direct URL in response');
+                } else if (c.type === 'form-redirect' || c.type === 'redirect') {
+                    const headers = c.type.startsWith('form') ? { ...authHeader, 'Content-Type': 'application/x-www-form-urlencoded' } : { ...authHeader };
+                    const qs = new URLSearchParams(c.qs || {});
+                    const url = `${TB_BASE}${c.ep}${qs.toString() ? `?${qs}` : ''}`;
+                    const body = c.type.startsWith('form') ? new URLSearchParams(c.body || {}) : undefined;
+                    const r = await fetch(url, { method: c.method, headers, body, redirect: 'manual' });
+                    const loc = r.headers.get('location');
+                    if (loc && /^https?:\/\//i.test(loc)) return loc;
+                    lastErr = new Error(`Unexpected status ${r.status}`);
+                }
+            } catch (e) {
+                lastErr = e;
+                // Try next variant on parameter mismatch or unsupported option
+                continue;
+            }
+        }
+        if (lastErr) throw lastErr;
+        throw new Error('Failed to resolve TorBox direct link');
+    }
+
+    // TorBox Stream API per docs: /api/stream/createstream then /api/stream/getstreamdata
+    async function tbCreateStream({ id, file_id, type = 'torrent', chosen_subtitle_index = null, chosen_audio_index = 0 }) {
+        const s = readSettings();
+        const makeQs = (subIdx) => {
+            const qs = new URLSearchParams();
+            qs.set('id', String(id));
+            qs.set('file_id', String(file_id));
+            qs.set('type', String(type));
+            qs.set('chosen_audio_index', String(chosen_audio_index || 0));
+            // Handle subtitle index - null means no subtitle
+            if (subIdx === null || subIdx === undefined) {
+                // Don't set the parameter at all for null
+            } else {
+                qs.set('chosen_subtitle_index', String(subIdx));
+            }
+            return qs;
+        };
+        
+        // Call TorBox API directly, not through tbFetch to see raw response
+        const url = `${TB_BASE}/api/stream/createstream?${makeQs(chosen_subtitle_index).toString()}`;
+        console.log('[TB][createstream] calling:', url);
+        const resp = await fetch(url, {
+            headers: {
+                'Authorization': `Bearer ${s.tbApiKey}`,
+                'Accept': 'application/json'
+            }
+        });
+        
+        if (!resp.ok) {
+            const text = await resp.text();
+            console.error('[TB][createstream] HTTP error:', resp.status, text);
+            throw new Error(`TorBox createstream failed: ${resp.status} ${text}`);
+        }
+        
+        const data = await resp.json();
+        console.log('[TB][createstream] raw response:', JSON.stringify(data, null, 2));
+        return data;
+    }
+    
+    async function tbGetStreamData({ presigned_token, token, chosen_subtitle_index = null, chosen_audio_index = 0 }) {
+        const s = readSettings();
+        const qs = new URLSearchParams();
+        if (presigned_token) qs.set('presigned_token', presigned_token);
+        if (token) qs.set('token', token);
+        else if (s.tbApiKey) qs.set('token', s.tbApiKey);
+        if (chosen_subtitle_index === null || chosen_subtitle_index === undefined) {
+            // Don't set parameter for null
+        } else {
+            qs.set('chosen_subtitle_index', String(chosen_subtitle_index));
+        }
+        qs.set('chosen_audio_index', String(chosen_audio_index || 0));
+        
+        const url = `${TB_BASE}/api/stream/getstreamdata?${qs.toString()}`;
+        console.log('[TB][getstreamdata] calling:', url);
+        const resp = await fetch(url, {
+            headers: {
+                'Authorization': `Bearer ${s.tbApiKey}`,
+                'Accept': 'application/json'
+            }
+        });
+        
+        if (!resp.ok) {
+            const text = await resp.text();
+            console.error('[TB][getstreamdata] HTTP error:', resp.status, text);
+            throw new Error(`TorBox getstreamdata failed: ${resp.status} ${text}`);
+        }
+        
+        const data = await resp.json();
+        console.log('[TB][getstreamdata] raw response:', JSON.stringify(data, null, 2));
+        return data;
+    }
+
+    function extractHttpUrls(obj, out = []) {
+        if (!obj) return out;
+        if (typeof obj === 'string') {
+            if (/^https?:\/\//i.test(obj)) out.push(obj);
+            return out;
+        }
+        if (Array.isArray(obj)) {
+            for (const v of obj) extractHttpUrls(v, out);
+            return out;
+        }
+        if (typeof obj === 'object') {
+            for (const [k, v] of Object.entries(obj)) {
+                if (typeof v === 'string') {
+                    if (/^https?:\/\//i.test(v)) out.push(v);
+                } else if (v && (typeof v === 'object' || Array.isArray(v))) {
+                    extractHttpUrls(v, out);
+                }
+            }
+        }
+        return out;
+    }
+
+    function extractNamedStringDeep(obj, names = []) {
+        if (!obj) return null;
+        const seen = new Set();
+        const stack = [obj];
+        while (stack.length) {
+            const cur = stack.pop();
+            if (!cur || typeof cur !== 'object') continue;
+            if (seen.has(cur)) continue;
+            seen.add(cur);
+            for (const [k, v] of Object.entries(cur)) {
+                if (v && typeof v === 'object') stack.push(v);
+                if (typeof v === 'string') {
+                    const lowerK = k.toLowerCase();
+                    if (names.some(n => lowerK === n.toLowerCase())) return v;
+                }
+            }
+        }
+        return null;
+    }
+
     // Save/clear AllDebrid API key manually (optional)
     app.post('/api/debrid/ad/apikey', (req, res) => {
         try {
@@ -159,6 +477,20 @@ export function startServer(userDataPath) {
             const next = { ...s, adApiKey: key || null };
             const ok = writeSettings(next);
             if (!ok) return res.status(500).json({ success: false, error: 'Failed to save apikey' });
+            res.json({ success: true });
+        } catch (e) {
+            res.status(500).json({ success: false, error: e?.message || 'Failed' });
+        }
+    });
+
+    // TorBox token save/clear (placeholder auth storage)
+    app.post('/api/debrid/tb/token', (req, res) => {
+        try {
+            const s = readSettings();
+            const token = (req.body?.token || '').toString().trim();
+            const next = { ...s, tbApiKey: token || null };
+            const ok = writeSettings(next);
+            if (!ok) return res.status(500).json({ success: false, error: 'Failed to save TorBox token' });
             res.json({ success: true });
         } catch (e) {
             res.status(500).json({ success: false, error: e?.message || 'Failed' });
@@ -380,20 +712,36 @@ export function startServer(userDataPath) {
         return /json/i.test(ct) ? resp.json() : resp.text();
     }
 
-    // Debrid availability by info hash (RD only; AD has no instant availability)
+    // Debrid availability by info hash (RD instant availability; TorBox cached availability)
     app.get('/api/debrid/availability', async (req, res) => {
         try {
             const s = readSettings();
-            if (!s.useDebrid || (s.debridProvider || 'realdebrid') !== 'realdebrid') {
-                return res.status(400).json({ error: 'Debrid disabled' });
-            }
+            if (!s.useDebrid) return res.status(400).json({ error: 'Debrid disabled' });
             const btih = String(req.query.btih || '').trim().toUpperCase();
             if (!btih || btih.length < 32) return res.status(400).json({ error: 'Invalid btih' });
-            console.log('[RD][availability]', { btih });
-            const data = await rdFetch(`/torrents/instantAvailability/${btih}`);
-            // RD returns an object keyed by hash: { HASH: { ... } } or an array; consider truthy presence
-            const available = !!(data && (data[btih] || data[btih.toLowerCase()]));
-            res.json({ provider: 'realdebrid', available, raw: data });
+            const provider = (s.debridProvider || 'realdebrid').toLowerCase();
+            if (provider === 'realdebrid') {
+                console.log('[RD][availability]', { btih });
+                const data = await rdFetch(`/torrents/instantAvailability/${btih}`);
+                const available = !!(data && (data[btih] || data[btih.toLowerCase()]));
+                return res.json({ provider: 'realdebrid', available, raw: data });
+            }
+            if (provider === 'torbox') {
+                console.log('[TB][availability]', { btih });
+                try {
+                    const data = await tbFetch(`/api/torrents/checkcached?hash=${encodeURIComponent(btih)}&format=object`);
+                    // Heuristic: available if object contains the hash key or indicates truthy cached/list
+                    const lower = btih.toLowerCase();
+                    const available = !!(data && (data[btih] || data[lower] || data?.cached || (Array.isArray(data?.list) && data.list.length)));
+                    return res.json({ provider: 'torbox', available, raw: data });
+                } catch (e) {
+                    const msg = e?.message || '';
+                    if (e?.code === 'TB_AUTH_INVALID') return res.status(401).json({ error: 'TorBox authentication invalid.', code: 'DEBRID_UNAUTH' });
+                    if (e?.code === 'TB_RATE_LIMIT' || /429/.test(msg)) return res.status(429).json({ error: 'TorBox rate limit. Try again shortly.', code: 'TB_RATE_LIMIT' });
+                    return res.status(502).json({ error: 'TorBox availability failed' });
+                }
+            }
+            return res.status(400).json({ error: 'Availability not supported for this provider' });
         } catch (e) {
             const msg = e?.message || '';
             console.error('[RD][availability] error', msg);
@@ -488,6 +836,58 @@ export function startServer(userDataPath) {
                 if (record?.files) walk(record.files, '');
                 const info = { id, filename: filename || (first?.name || 'Magnet'), files: outFiles };
                 return res.json({ id, info });
+            } else if (provider === 'torbox') {
+                console.log('[TB][prepare] createtorrent');
+                let createdId;
+                try {
+                    const out = await tbCreateTorrentFromMagnet(magnet);
+                    createdId = out?.id;
+                } catch (e) {
+                    const code = e?.code || '';
+                    const msg = e?.message || '';
+                    if (code === 'TB_AUTH_INVALID') return res.status(401).json({ error: 'TorBox authentication invalid. Please login again.', code: 'DEBRID_UNAUTH' });
+                    if (code === 'TB_RATE_LIMIT') return res.status(429).json({ error: 'TorBox rate limit. Try again shortly.', code: 'TB_RATE_LIMIT' });
+                    if (code === 'RD_PREMIUM_REQUIRED') return res.status(403).json({ error: 'TorBox premium is required to add torrents.', code: 'RD_PREMIUM_REQUIRED' });
+                    if (/missing_required_option/i.test(msg)) return res.status(400).json({ error: 'TorBox rejected the magnet payload.', code: 'TB_BAD_PAYLOAD' });
+                    throw e;
+                }
+                const id = createdId;
+                if (!id) return res.status(500).json({ error: 'Failed to add magnet (TorBox)' });
+                // Fetch files info; may need a short wait for metadata
+                let infoObj = null;
+                for (let i = 0; i < 10; i++) {
+                    try {
+                        const details = await tbFetch(`/api/torrents/mylist?id=${encodeURIComponent(String(id))}&bypassCache=true`);
+                        console.log('[TB][mylist] response:', JSON.stringify(details, null, 2));
+                        // Normalize into our shape
+                        const tor = Array.isArray(details?.data) ? details.data[0] : (details?.data || details || null);
+                        if (tor) {
+                            const files = [];
+                            const rawFiles = tor.files || tor.file_list || [];
+                            const stateRaw = (tor.download_state || tor.downloadState || tor.state || tor.status || '').toString().toLowerCase();
+                            const isCached = stateRaw.includes('cached');
+                            console.log('[TB][files] found', rawFiles.length, 'files, state:', stateRaw, 'cached:', isCached);
+                            let counter = 1;
+                            for (const f of rawFiles) {
+                                // Use the actual file ID from TorBox - they use f.id starting from 0
+                                const fid = f.id !== undefined ? f.id : (f.file_id !== undefined ? f.file_id : (f.index !== undefined ? f.index : counter));
+                                const fname = f.name || f.filename || f.path || `file_${fid}`;
+                                const fsize = Number(f.size || f.bytes || f.length || 0);
+                                console.log('[TB][file]', { originalId: f.id, fileId: f.file_id, index: f.index, mappedId: fid, name: fname });
+                                // Provide a virtual torbox link only when cached; else keep links empty to trigger polling UX
+                                const vlink = `torbox://${id}/${fid}`;
+                                const links = isCached ? [vlink] : [];
+                                files.push({ id: fid, path: fname, filename: fname, bytes: fsize, size: fsize, links });
+                                counter++;
+                            }
+                            infoObj = { id: String(tor.id || id), filename: tor.name || tor.filename || 'TorBox Torrent', files };
+                        }
+                        if (infoObj && infoObj.files && infoObj.files.length) break;
+                    } catch {}
+                    await new Promise(r => setTimeout(r, 800));
+                }
+                if (!infoObj) infoObj = { id: String(id), filename: 'TorBox Torrent', files: [] };
+                return res.json({ id: String(id), info: infoObj });
             } else {
                 return res.status(400).json({ error: 'Debrid provider not supported' });
             }
@@ -515,6 +915,10 @@ export function startServer(userDataPath) {
             const provider = (s.debridProvider || 'realdebrid').toLowerCase();
             if (provider === 'alldebrid') {
                 // No-op for AllDebrid
+                return res.json({ success: true });
+            }
+            if (provider === 'torbox') {
+                // No-op for TorBox (files unlocked per-file when requested)
                 return res.json({ success: true });
             }
             const id = (req.body?.id || '').toString();
@@ -588,6 +992,35 @@ export function startServer(userDataPath) {
                 } catch {}
                 return res.json({ id, filename: filename || null, files: outFiles });
             }
+            if (provider === 'torbox') {
+                console.log('[TB][files]', { id });
+                try {
+                    const details = await tbFetch(`/api/torrents/mylist?id=${encodeURIComponent(String(id))}&bypassCache=true`);
+                    const tor = Array.isArray(details?.data) ? details.data[0] : (details?.data || details || null);
+                    const outFiles = [];
+                    if (tor) {
+                        const rawFiles = tor.files || tor.file_list || [];
+                        const stateRaw = (tor.download_state || tor.downloadState || tor.state || tor.status || '').toString().toLowerCase();
+                        const isCached = stateRaw.includes('cached');
+                        let counter = 1;
+                        for (const f of rawFiles) {
+                            const fid = f.id || f.file_id || counter;
+                            const fname = f.name || f.filename || f.path || `file_${fid}`;
+                            const fsize = Number(f.size || f.bytes || f.length || 0);
+                            const vlink = `torbox://${id}/${fid}`;
+                            const links = isCached ? [vlink] : [];
+                            outFiles.push({ id: fid, path: fname, filename: fname, bytes: fsize, size: fsize, links });
+                            counter++;
+                        }
+                    }
+                    return res.json({ id: String(id), filename: tor?.name || tor?.filename || null, files: outFiles });
+                } catch (e) {
+                    const code = e?.code || '';
+                    if (code === 'TB_AUTH_INVALID') return res.status(401).json({ error: 'TorBox authentication invalid. Please login again.', code: 'DEBRID_UNAUTH' });
+                    if (code === 'TB_RATE_LIMIT') return res.status(429).json({ error: 'TorBox rate limit. Try again shortly.', code: 'TB_RATE_LIMIT' });
+                    throw e;
+                }
+            }
             return res.status(400).json({ error: 'Debrid provider not supported' });
         } catch (e) {
             const msg = e?.message || '';
@@ -607,16 +1040,51 @@ export function startServer(userDataPath) {
             const link = (req.body?.link || '').toString();
             if (!link) return res.status(400).json({ error: 'Missing link' });
             if (provider === 'realdebrid') {
-                console.log('[RD][unrestrict] start');
-                const out = await rdFetch('/unrestrict/link', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                    body: new URLSearchParams({ link })
-                });
-                console.log('[RD][unrestrict] ok', { hasDownload: !!out?.download });
-                return res.json({ url: out?.download || null, raw: out });
+                // RD torrent file links are already direct CDN links; check if streaming is available
+                if (/^https?:\/\//i.test(link)) {
+                    console.log('[RD][link] direct link:', link);
+                    
+                    // Try to get transcoding/streaming URL if available
+                    try {
+                        // Extract file ID from RD download link (format: https://domain/dl/ID/filename)
+                        const match = link.match(/\/dl\/([^\/]+)\//);
+                        if (match && match[1]) {
+                            const fileId = match[1];
+                            console.log('[RD][streaming] checking transcode for ID:', fileId);
+                            try {
+                                const transcodeInfo = await rdFetch(`/streaming/transcode/${fileId}`);
+                                if (transcodeInfo && Array.isArray(transcodeInfo) && transcodeInfo.length > 0) {
+                                    // Use the highest quality transcoded stream if available
+                                    const bestStream = transcodeInfo.sort((a, b) => (b.filesize || 0) - (a.filesize || 0))[0];
+                                    if (bestStream?.download) {
+                                        console.log('[RD][streaming] using transcoded stream:', bestStream.download);
+                                        return res.json({ url: bestStream.download, raw: transcodeInfo });
+                                    }
+                                }
+                            } catch (transcodeError) {
+                                console.log('[RD][streaming] transcode not available:', transcodeError.message);
+                                // Fall back to direct link
+                            }
+                        }
+                    } catch (e) {
+                        console.log('[RD][streaming] streaming check failed:', e.message);
+                    }
+                    
+                    return res.json({ url: link });
+                }
+                // Fallback: if some non-http value slipped through, try unrestrict
+                try {
+                    const out = await rdFetch('/unrestrict/link', {
+                        method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams({ link })
+                    });
+                    return res.json({ url: out?.download || null, raw: out });
+                } catch (e) {
+                    return res.status(502).json({ error: 'Failed to unrestrict RD link' });
+                }
             }
             if (provider === 'alldebrid') {
+                // AD magnet/file links need to be unlocked through /link/unlock API
+                console.log('[AD][unlock] link:', link);
                 console.log('[AD][unlock] start');
                 let data;
                 try {
@@ -655,6 +1123,73 @@ export function startServer(userDataPath) {
                 if (!direct) return res.status(502).json({ error: 'Failed to unlock link' });
                 return res.json({ url: direct, raw: data });
             }
+            if (provider === 'torbox') {
+                // Expect a virtual torbox link: torbox://{torrentId}/{fileId}
+                try {
+                    const m = /^torbox:\/\/([^\/]+)\/(.+)$/i.exec(link || '');
+                    if (!m) return res.status(400).json({ error: 'Invalid TorBox link' });
+                    const torrentId = m[1];
+                    const fileId = m[2];
+                    // Preferred: use official stream creation to get a streamable URL
+                    try {
+                        const created = await tbCreateStream({ id: torrentId, file_id: fileId, type: 'torrent', chosen_subtitle_index: null, chosen_audio_index: 0 });
+                        
+                        // Check if createstream already provided the HLS URL (most common case)
+                        const directUrl = created?.data?.hls_url || created?.hls_url;
+                        if (directUrl && /^https?:\/\//i.test(directUrl)) {
+                            console.log('[TB][stream] using direct HLS URL from createstream:', directUrl);
+                            return res.json({ url: directUrl });
+                        }
+                        
+                        // Fallback: try getstreamdata flow if no direct URL
+                        let presigned = null;
+                        let userToken = null;
+                        
+                        // Check common response structures for tokens
+                        if (created?.success && created?.data) {
+                            presigned = created.data.presigned_token || created.data.presignedToken;
+                            userToken = created.data.token || created.data.user_token;
+                        } else if (created?.presigned_token || created?.token) {
+                            presigned = created.presigned_token || created.presignedToken;
+                            userToken = created.token;
+                        }
+                        
+                        // Fallback to deep search if not found
+                        if (!presigned) presigned = extractNamedStringDeep(created, ['presigned_token','presignedToken']);
+                        if (!userToken) userToken = extractNamedStringDeep(created, ['token', 'user_token']) || readSettings().tbApiKey;
+                        
+                        if (presigned && userToken) {
+                            console.log('[TB][stream] trying getstreamdata fallback');
+                            const sd = await tbGetStreamData({ presigned_token: presigned, token: userToken, chosen_subtitle_index: null, chosen_audio_index: 0 });
+                            // Try all possible URL fields from TorBox response
+                            const candidates = [
+                                sd?.playlist_url, sd?.hls_url, sd?.m3u8_url, sd?.stream_url, sd?.url,
+                                sd?.data?.playlist_url, sd?.data?.hls_url, sd?.data?.m3u8_url, sd?.data?.stream_url, sd?.data?.url,
+                                ...extractHttpUrls(sd)
+                            ].filter(u => u && /^https?:\/\//i.test(u));
+                            if (candidates.length) {
+                                console.log('[TB][stream] using URL from getstreamdata:', candidates[0]);
+                                return res.json({ url: candidates[0] });
+                            }
+                        }
+                        console.log('[TB][stream] no URL found in either response');
+                    } catch (e) {
+                        const msg = e?.message || '';
+                        if (/auth|unauthorized|token/i.test(msg)) return res.status(401).json({ error: 'TorBox authentication invalid. Please login again.', code: 'DEBRID_UNAUTH' });
+                        // Fall through to requestdl fallback
+                    }
+                    // Fallback: request a direct link if stream API path didn’t yield a URL
+                    try {
+                        const direct = await tbRequestDirectLink(torrentId, fileId);
+                        if (direct) return res.json({ url: direct });
+                    } catch {}
+                    return res.status(502).json({ error: 'Failed to request TorBox link' });
+                } catch (e) {
+                    const msg = e?.message || '';
+                    if (/authentication invalid/i.test(msg)) return res.status(401).json({ error: 'TorBox authentication invalid. Please login again.', code: 'DEBRID_UNAUTH' });
+                    return res.status(502).json({ error: 'TorBox link request failed' });
+                }
+            }
             return res.status(400).json({ error: 'Debrid provider not supported' });
         } catch (e) {
             console.error('[RD][unrestrict] error', e?.message);
@@ -692,6 +1227,19 @@ export function startServer(userDataPath) {
                 }
                 return res.json({ success: true });
             }
+            if (provider === 'torbox') {
+                console.log('[TB][delete]', { id });
+                try {
+                    await tbFetch('/api/torrents/controltorrent', {
+                        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ torrent_id: String(id), operation: 'delete' })
+                    });
+                    return res.json({ success: true });
+                } catch (e) {
+                    const code = e?.code || '';
+                    if (code === 'TB_AUTH_INVALID') return res.status(401).json({ success: false, error: 'TorBox authentication invalid. Please login again.', code: 'DEBRID_UNAUTH' });
+                    throw e;
+                }
+            }
             return res.status(400).json({ success: false, error: 'Debrid provider not supported' });
         } catch (e) {
             console.error('[RD][delete] error', e?.message);
@@ -699,35 +1247,83 @@ export function startServer(userDataPath) {
         }
     });
 
-    // Range-capable proxy for debrid direct URLs
+    // Range-capable proxy for debrid direct URLs with HLS support
     app.get('/stream/debrid', async (req, res) => {
         try {
             const directUrl = (req.query?.url || '').toString();
             if (!directUrl.startsWith('http')) return res.status(400).end('Bad URL');
-            const range = req.headers.range;
-            const headers = range ? { Range: range } : {};
-            const upstream = await fetch(directUrl, { headers });
-            // Pass important headers
-            const status = upstream.status;
-            res.status(status);
-            const passthrough = ['content-length','content-range','accept-ranges','content-type'];
-            passthrough.forEach((h) => {
-                const v = upstream.headers.get(h);
-                if (v) res.setHeader(h, v);
-            });
-            // Fallback content-type by extension
-            if (!res.getHeader('content-type')) {
-                try {
-                    const u = new URL(directUrl);
-                    const ct = mime.lookup(u.pathname) || 'application/octet-stream';
-                    res.setHeader('Content-Type', ct);
-                } catch {}
+            
+            // Check if this is an HLS playlist
+            const isHLS = directUrl.includes('.m3u8');
+            
+            let range = req.headers.range;
+            const startSec = Number(req.query?.start || 0);
+            let headers = {};
+            if (range && !isHLS) headers.Range = range;
+            else if (!isNaN(startSec) && startSec > 0 && !isHLS) {
+                headers = {};
             }
-            const body = upstream.body;
-            body.on('error', () => { try { res.end(); } catch {} });
-            req.on('close', () => { try { body.destroy(); } catch {} });
-            body.pipe(res);
+            
+            // Add proper headers for AllDebrid links
+            if (directUrl.includes('alldebrid.com')) {
+                headers['User-Agent'] = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36';
+                headers['Referer'] = 'https://alldebrid.com/';
+                headers['Accept'] = '*/*';
+                headers['Accept-Encoding'] = 'identity';
+                headers['Connection'] = 'keep-alive';
+            }
+            
+            console.log('[STREAM] requesting:', directUrl, 'headers:', headers);
+            const upstream = await fetch(directUrl, { headers });
+            const status = upstream.status;
+            console.log('[STREAM] response status:', status);
+            console.log('[STREAM] response headers:', Object.fromEntries([...upstream.headers.entries()]));
+            
+            if (!upstream.ok) {
+                console.error('[STREAM] upstream error:', status, await upstream.text());
+                return res.status(status).end('upstream error');
+            }
+            
+            res.status(status);
+            
+            if (isHLS) {
+                // For HLS streams, set proper content type and handle as text
+                res.setHeader('Content-Type', 'application/vnd.apple.mpegurl');
+                res.setHeader('Cache-Control', 'no-cache');
+                const body = await upstream.text();
+                
+                // Rewrite relative URLs in the playlist to go through our proxy
+                const baseUrl = directUrl.substring(0, directUrl.lastIndexOf('/') + 1);
+                const rewrittenBody = body.replace(/^([^#\n\r]+\.ts)/gm, (match, segment) => {
+                    const segmentUrl = segment.startsWith('http') ? segment : baseUrl + segment;
+                    return `${req.protocol}://${req.get('host')}/stream/debrid?url=${encodeURIComponent(segmentUrl)}`;
+                });
+                
+                res.send(rewrittenBody);
+            } else {
+                // Regular file streaming with range support
+                const passthrough = ['content-length','content-range','accept-ranges','content-type'];
+                passthrough.forEach((h) => {
+                    const v = upstream.headers.get(h);
+                    if (v) res.setHeader(h, v);
+                });
+                
+                // Fallback content-type by extension
+                if (!res.getHeader('content-type')) {
+                    try {
+                        const u = new URL(directUrl);
+                        const ct = mime.lookup(u.pathname) || 'application/octet-stream';
+                        res.setHeader('Content-Type', ct);
+                    } catch {}
+                }
+                
+                const body = upstream.body;
+                body.on('error', () => { try { res.end(); } catch {} });
+                req.on('close', () => { try { body.destroy(); } catch {} });
+                body.pipe(res);
+            }
         } catch (e) {
+            console.error('[STREAM] proxy error:', e.message);
             res.status(502).end('debrid proxy error');
         }
     });
@@ -737,28 +1333,73 @@ export function startServer(userDataPath) {
         try {
             const directUrl = (req.query?.url || '').toString();
             if (!directUrl.startsWith('http')) return res.status(400).end('Bad URL');
+            
+            // Check if this is an HLS playlist
+            const isHLS = directUrl.includes('.m3u8');
+            
             const range = req.headers.range;
-            const headers = range ? { Range: range } : {};
+            let headers = {};
+            if (range && !isHLS) headers.Range = range;
+            
+            // Add proper headers for AllDebrid links
+            if (directUrl.includes('alldebrid.com')) {
+                headers['User-Agent'] = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36';
+                headers['Referer'] = 'https://alldebrid.com/';
+                headers['Accept'] = '*/*';
+                headers['Accept-Encoding'] = 'identity';
+                headers['Connection'] = 'keep-alive';
+            }
+            
+            console.log('[STREAM] API requesting:', directUrl, 'headers:', headers);
             const upstream = await fetch(directUrl, { headers });
             const status = upstream.status;
-            res.status(status);
-            const passthrough = ['content-length','content-range','accept-ranges','content-type'];
-            passthrough.forEach((h) => {
-                const v = upstream.headers.get(h);
-                if (v) res.setHeader(h, v);
-            });
-            if (!res.getHeader('content-type')) {
-                try {
-                    const u = new URL(directUrl);
-                    const ct = mime.lookup(u.pathname) || 'application/octet-stream';
-                    res.setHeader('Content-Type', ct);
-                } catch {}
+            console.log('[STREAM] API response status:', status);
+            console.log('[STREAM] API response headers:', Object.fromEntries([...upstream.headers.entries()]));
+            
+            if (!upstream.ok) {
+                console.error('[STREAM] API upstream error:', status, await upstream.text());
+                return res.status(status).end('upstream error');
             }
-            const body = upstream.body;
-            body.on('error', () => { try { res.end(); } catch {} });
-            req.on('close', () => { try { body.destroy(); } catch {} });
-            body.pipe(res);
+            
+            res.status(status);
+            
+            if (isHLS) {
+                // For HLS streams, set proper content type and handle as text
+                res.setHeader('Content-Type', 'application/vnd.apple.mpegurl');
+                res.setHeader('Cache-Control', 'no-cache');
+                const body = await upstream.text();
+                
+                // Rewrite relative URLs in the playlist to go through our proxy
+                const baseUrl = directUrl.substring(0, directUrl.lastIndexOf('/') + 1);
+                const rewrittenBody = body.replace(/^([^#\n\r]+\.ts)/gm, (match, segment) => {
+                    const segmentUrl = segment.startsWith('http') ? segment : baseUrl + segment;
+                    return `${req.protocol}://${req.get('host')}/api/stream/debrid?url=${encodeURIComponent(segmentUrl)}`;
+                });
+                
+                res.send(rewrittenBody);
+            } else {
+                // Regular file streaming
+                const passthrough = ['content-length','content-range','accept-ranges','content-type'];
+                passthrough.forEach((h) => {
+                    const v = upstream.headers.get(h);
+                    if (v) res.setHeader(h, v);
+                });
+                
+                if (!res.getHeader('content-type')) {
+                    try {
+                        const u = new URL(directUrl);
+                        const ct = mime.lookup(u.pathname) || 'application/octet-stream';
+                        res.setHeader('Content-Type', ct);
+                    } catch {}
+                }
+                
+                const body = upstream.body;
+                body.on('error', () => { try { res.end(); } catch {} });
+                req.on('close', () => { try { body.destroy(); } catch {} });
+                body.pipe(res);
+            }
         } catch (e) {
+            console.error('[STREAM] proxy error:', e.message);
             res.status(502).end('debrid proxy error');
         }
     });
