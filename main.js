@@ -67,7 +67,7 @@ function resolveMpvExe() {
 }
 
 // Launch MPV and set up cleanup listeners
-function openInMPV(win, streamUrl, infoHash) {
+function openInMPV(win, streamUrl, infoHash, startSeconds) {
     try {
         console.log('Attempting to launch MPV with URL:', streamUrl);
         const mpvPath = resolveMpvExe();
@@ -76,7 +76,13 @@ function openInMPV(win, streamUrl, infoHash) {
             console.error(msg);
             return { success: false, message: msg };
         }
-        const mpvProcess = spawn(mpvPath, [streamUrl], { stdio: 'ignore' });
+        const args = [];
+        const start = Number(startSeconds || 0);
+        if (!isNaN(start) && start > 10) {
+            args.push(`--start=${Math.floor(start)}`);
+        }
+        args.push(streamUrl);
+        const mpvProcess = spawn(mpvPath, args, { stdio: 'ignore' });
 
         mpvProcess.on('close', async (code) => {
             // By request: do not disconnect torrent or delete temp when MPV closes.
@@ -258,9 +264,9 @@ if (!gotLock) {
 
     // IPC handler to open MPV from renderer
     ipcMain.handle('open-in-mpv', (event, data) => {
-        const { streamUrl, infoHash } = data;
+        const { streamUrl, infoHash, startSeconds } = data || {};
         console.log(`Received MPV open request for hash: ${infoHash}`);
-            return openInMPV(mainWindow, streamUrl, infoHash);
+            return openInMPV(mainWindow, streamUrl, infoHash, startSeconds);
     });
 
     // IPC handler for manual temp folder clearing (e.g., from Close Player button)
