@@ -280,6 +280,9 @@
             opacity: 1;
             pointer-events: all;
         }
+
+        /* Ensure resume modal is above all other overlays */
+        #resumeModal { z-index: 6000; }
         
         .modal-content {
             background-color: var(--primary);
@@ -718,6 +721,42 @@
             background-color: #e55a00;
             transform: translateY(-2px);
         }
+
+        /* Debrid provider select styling */
+        #debridProvider {
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            min-width: 240px;
+            max-width: 320px;
+            background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.03));
+            border: 1px solid rgba(255,255,255,0.18);
+            border-radius: 10px;
+            padding: 0.55rem 2.25rem 0.55rem 0.85rem;
+            color: #e9ecef;
+            font-weight: 600;
+            letter-spacing: 0.2px;
+            cursor: pointer;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 20 20' fill='none'%3E%3Cpath d='M5 7l5 6 5-6' stroke='%23cfd4da' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 0.6rem center;
+            background-size: 12px;
+        }
+        #debridProvider:hover {
+            border-color: rgba(255,255,255,0.28);
+            background: linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.05));
+        }
+        #debridProvider:focus {
+            outline: none;
+            border-color: var(--vlc-orange);
+            box-shadow: 0 0 0 2px rgba(255,117,24,0.25);
+        }
+        /* Attempt to style dropdown menu items (supported in Chromium) */
+        #debridProvider option {
+            background-color: #151a20;
+            color: #e9ecef;
+        }
         
         .api-btn-secondary {
             background-color: transparent;
@@ -903,13 +942,15 @@
             overflow-y: auto;
         }
 
-        /* Center and space the MPV controls buttons */
+        /* MPV controls layout and spacing */
         #mpvControls {
             display: flex;
-            flex-direction: column;
+            flex-direction: row;
+            flex-wrap: wrap;
+            justify-content: center;
             align-items: center;
-            gap: 1rem;
-            padding: 1rem 0 1.5rem;
+            gap: 0.75rem;
+            padding: 1rem 0 1.25rem;
         }
 
         #mpvControls .vlc-btn { width: auto; }
@@ -1595,9 +1636,10 @@
                 </label>
                 <div style="display:flex; gap:0.75rem; align-items:center; flex-wrap: wrap;">
                     <label for="debridProvider">Provider:</label>
-                    <select id="debridProvider" class="api-input" style="max-width:220px;">
+                    <select id="debridProvider" class="api-input" style="min-width:220px; max-width:260px;">
                         <option value="realdebrid">Real‑Debrid</option>
                         <option value="alldebrid">AllDebrid</option>
+                        <option value="torbox">TorBox</option>
                     </select>
                     <span id="debridStatus" style="font-size:0.9rem; opacity:0.85;">Not logged in</span>
                 </div>
@@ -1667,6 +1709,19 @@
                         <button class="api-btn" id="adSaveApiKey" style="background:#0d6efd; color:#fff;"><i class="fas fa-key"></i> Save API Key</button>
                         <button class="api-btn api-btn-secondary" id="adClearApiKey"><i class="fas fa-sign-out-alt"></i> Logout</button>
                     </div>
+                </div>
+
+                <!-- TorBox Auth (token) -->
+                <div id="tbSection" style="display:none; margin-top:1rem; padding:1rem; border:1px solid rgba(255,255,255,0.15); border-radius:8px; background: rgba(255,255,255,0.05);">
+                    <div class="api-input-group">
+                        <label for="tbToken">TorBox Token (temporary):</label>
+                        <input type="password" id="tbToken" class="api-input" placeholder="Paste TorBox token..." />
+                    </div>
+                    <div style="display:flex; gap:0.5rem; flex-wrap: wrap;">
+                        <button class="api-btn" id="tbSaveToken" style="background:#0d6efd; color:#fff;"><i class="fas fa-key"></i> Save Token</button>
+                        <button class="api-btn api-btn-secondary" id="tbClearToken"><i class="fas fa-sign-out-alt"></i> Logout</button>
+                    </div>
+                    <div style="margin-top:0.25rem; color:#ffc107; font-size:0.9rem;">Token stored locally. Full TorBox integration coming soon.</div>
                 </div>
             </div>
         </div>
@@ -1876,22 +1931,20 @@
 <div class="vlc-player-area" id="mpvPlayerArea">
 <div class="vlc-loading" id="mpvLoading">
 <i class="fas fa-spinner"></i>
-<span>Loading MPV Player...</span>
+<span>Loading</span>
 </div>
 </div>
 
 <div class="vlc-controls" id="mpvControls" style="display: none;">
-<button class="vlc-btn secondary" id="copyStreamBtn">
-<i class="fas fa-copy"></i> Copy Stream URL
-                </button>
-<button class="vlc-btn" id="playNowBtn">
-<i class="fas fa-play"></i> Play Now! (Could have audio issues)
-                </button>
-<button class="vlc-btn" id="openMPVBtn">
-<i class="fas fa-external-link-alt"></i> Open in MPV (Recommended)
-                </button>
-                
-                
+    <button class="vlc-btn secondary" id="copyStreamBtn">
+        <i class="fas fa-copy"></i> Copy Link
+    </button>
+    <button class="vlc-btn" id="playNowBtn">
+        <i class="fas fa-play"></i> Play Now
+    </button>
+    <button class="vlc-btn" id="openMPVBtn">
+        <i class="fas fa-external-link-alt"></i> Open in MPV
+    </button>
 </div>
 </div>
 </div>
@@ -1915,6 +1968,7 @@
 </button>
 </div>
 </div>
+
 
 <div class="video-container" id="videoContainer">
 <video class="custom-video" id="customVideo" preload="metadata">
@@ -2055,6 +2109,7 @@ Your browser does not support the video tag.
 <!-- Notification -->
 <div class="notification" id="notification">Action completed!</div>
 
+<script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
 <script>
         // API configuration
         const TMDB_API_KEY = 'b3556f3b206e16f82df4d1f6fd4545e6';
@@ -2151,6 +2206,11 @@ Your browser does not support the video tag.
     const adApiKeyInput = document.getElementById('adApiKey');
     const adSaveApiKeyBtn = document.getElementById('adSaveApiKey');
     const adClearApiKeyBtn = document.getElementById('adClearApiKey');
+    // TorBox controls
+    const tbSection = document.getElementById('tbSection');
+    const tbTokenInput = document.getElementById('tbToken');
+    const tbSaveTokenBtn = document.getElementById('tbSaveToken');
+    const tbClearTokenBtn = document.getElementById('tbClearToken');
         
         // MPV Player elements
         const mpvPlayerContainer = document.getElementById('mpvPlayerContainer');
@@ -2162,7 +2222,11 @@ Your browser does not support the video tag.
         const subtitleList = document.getElementById('subtitleList');
         const mpvPlayerArea = document.getElementById('mpvPlayerArea');
         const mpvLoading = document.getElementById('mpvLoading');
-        const mpvControls = document.getElementById('mpvControls');
+    const mpvControls = document.getElementById('mpvControls');
+        // Helper: get base filename from a path
+        function baseName(p) {
+            try { return String(p || '').split(/[\\\/]/).pop(); } catch(_) { return p || ''; }
+        }
         const openMPVBtn = document.getElementById('openMPVBtn');
         const copyStreamBtn = document.getElementById('copyStreamBtn');
     const playNowBtn = document.getElementById('playNowBtn');
@@ -2237,6 +2301,11 @@ Your browser does not support the video tag.
         let currentSubtitles = [];
     let subtitleTrack = null;
     let currentSubtitleFile = null; // filename served under /subtitles to delete on switch
+    // Resume state
+    let resumeKey = null; // stable key per item (provider/hash/file or direct link)
+    let resumeInfo = null; // { position, duration, updatedAt }
+    let resumeTimer = null;
+    let lastResumeSend = 0;
     let hasApiKey = false;
     let useTorrentless = false; // global toggle for Torrentless mode
     let useDebrid = false; // global toggle for Debrid
@@ -2421,12 +2490,14 @@ Your browser does not support the video tag.
                     // Toggle provider-specific UI
                     const isRD = prov === 'realdebrid';
                     const isAD = prov === 'alldebrid';
+                    const isTB = prov === 'torbox';
                     if (rdClientIdGroup) rdClientIdGroup.style.display = isRD ? '' : 'none';
                     if (rdButtons) rdButtons.style.display = isRD ? '' : 'none';
                     if (rdTokenGroup) rdTokenGroup.style.display = isRD ? '' : 'none';
                     if (rdTokenButtons) rdTokenButtons.style.display = isRD ? '' : 'none';
                     if (rdCodePanel) rdCodePanel.style.display = 'none';
                     if (adSection) adSection.style.display = isAD ? '' : 'none';
+                    if (tbSection) tbSection.style.display = isTB ? '' : 'none';
                 }
             } catch(_) {}
         }
@@ -2602,12 +2673,14 @@ Your browser does not support the video tag.
                         // Toggle provider-specific UI blocks
                         const isRD = provider === 'realdebrid';
                         const isAD = provider === 'alldebrid';
+                        const isTB = provider === 'torbox';
                         if (rdClientIdGroup) rdClientIdGroup.style.display = isRD ? '' : 'none';
                         if (rdButtons) rdButtons.style.display = isRD ? '' : 'none';
                         if (rdTokenGroup) rdTokenGroup.style.display = isRD ? '' : 'none';
                         if (rdTokenButtons) rdTokenButtons.style.display = isRD ? '' : 'none';
                         if (rdCodePanel) rdCodePanel.style.display = 'none';
                         if (adSection) adSection.style.display = isAD ? '' : 'none';
+                        if (tbSection) tbSection.style.display = isTB ? '' : 'none';
                         showNotification('Debrid settings saved.');
                     } catch {
                         showNotification('Failed to save debrid settings');
@@ -2788,6 +2861,23 @@ Your browser does not support the video tag.
                 } catch {}
             });
 
+            // TorBox: save/clear token
+            if (tbSaveTokenBtn) tbSaveTokenBtn.addEventListener('click', async () => {
+                const token = (tbTokenInput?.value || '').trim();
+                if (!token) { showNotification('Enter a TorBox token'); return; }
+                try {
+                    const r = await fetch(`${API_BASE_URL}/debrid/tb/token`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token }) });
+                    if (r.ok) { if (debridStatus) debridStatus.textContent = 'Logged in'; tbTokenInput.value = ''; showNotification('TorBox token saved'); }
+                    else { const t = await r.text(); showNotification(t || 'Failed to save'); }
+                } catch { showNotification('Failed to save'); }
+            });
+            if (tbClearTokenBtn) tbClearTokenBtn.addEventListener('click', async () => {
+                try {
+                    const r = await fetch(`${API_BASE_URL}/debrid/tb/token`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token: '' }) });
+                    if (r.ok) { if (debridStatus) debridStatus.textContent = 'Not logged in'; showNotification('Logged out of TorBox'); }
+                } catch {}
+            });
+
             // Open Jackett installer link in default browser
             if (openJackettLinkBtn) {
                 openJackettLinkBtn.addEventListener('click', async () => {
@@ -2872,9 +2962,131 @@ Your browser does not support the video tag.
             refreshTorrents.addEventListener('click', () => fetchTorrents());
             
             // MPV Controls
-            openMPVBtn.addEventListener('click', openInMPV);
+            // Resume modal elements
+            const resumeModal = document.getElementById('resumeModal');
+            const resumeClose = document.getElementById('resumeClose');
+            const resumeTimeEl = document.getElementById('resumeTime');
+            const resumeContinue = document.getElementById('resumeContinue');
+            const resumeStartOver = document.getElementById('resumeStartOver');
+
+            function formatResumeSeconds(s) { try { return formatTime(Math.floor(Number(s||0))); } catch(_) { return '00:00'; } }
+            function hideResumeModal(){ resumeModal?.classList.remove('active'); }
+            function showResumeModal(){ resumeModal?.classList.add('active'); }
+
+            // Dismiss on outside click
+            if (resumeModal) {
+                resumeModal.addEventListener('click', (e) => {
+                    if (e.target === resumeModal) {
+                        hideResumeModal();
+                    }
+                });
+                // prevent bubbling from content
+                const rc = resumeModal.querySelector('.modal-content');
+                if (rc) rc.addEventListener('click', (e) => e.stopPropagation());
+            }
+
+            async function handlePlayNowClick() {
+                // Ensure we have latest resume info; fetch if not present
+                let res = resumeInfo;
+                if ((!res || typeof res.position !== 'number') && resumeKey) {
+                    try { res = await fetchResume(resumeKey); } catch(_) {}
+                }
+                if (res && typeof res.position === 'number' && res.position > 0) {
+                    resumeInfo = res; // keep in sync
+                    resumeTimeEl.textContent = formatResumeSeconds(res.position);
+                    showResumeModal();
+                    // Wire temp listeners
+                    const onCont = async () => {
+                        // Immediately persist current resume snapshot so a record exists right away
+                        try {
+                            if (resumeKey && resumeInfo && typeof resumeInfo.position === 'number') {
+                                const title = currentSelectedVideoName || (currentContent?.title || currentContent?.name || '');
+                                await fetch(`${API_BASE_URL}/resume`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key: resumeKey, position: Math.floor(resumeInfo.position || 0), duration: Math.floor(resumeInfo.duration || 0), title }) });
+                            }
+                        } catch(_) {}
+                        hideResumeModal();
+                        openCustomPlayer();
+                        cleanup();
+                    };
+                    const onOver = async () => {
+                        try { if (resumeKey) await fetch(`${API_BASE_URL}/resume?key=${encodeURIComponent(resumeKey)}`, { method: 'DELETE' }); } catch(_){ }
+                        // Reset local resume so player starts at 0
+                        resumeInfo = null;
+                        hideResumeModal();
+                        openCustomPlayer();
+                        // As soon as playback begins, record fresh progress so quitting early is remembered
+                        try {
+                            const onFirst = () => { try { saveResumeThrottled(true); } catch(_) {} customVideo.removeEventListener('timeupdate', onFirst); };
+                            customVideo.addEventListener('timeupdate', onFirst);
+                        } catch(_) {}
+                        cleanup();
+                    };
+                    const cleanup = () => {
+                        resumeContinue.removeEventListener('click', onCont);
+                        resumeStartOver.removeEventListener('click', onOver);
+                        resumeClose.removeEventListener('click', onClose);
+                        document.removeEventListener('keydown', onEsc);
+                    };
+                    const onClose = () => { hideResumeModal(); cleanup(); };
+                    const onEsc = (e) => { if (e.key === 'Escape') { hideResumeModal(); cleanup(); } };
+                    resumeContinue.addEventListener('click', onCont);
+                    resumeStartOver.addEventListener('click', onOver);
+                    resumeClose.addEventListener('click', onClose);
+                    document.addEventListener('keydown', onEsc);
+                    return;
+                }
+                openCustomPlayer();
+            }
+
+            async function handleOpenMPVClick() {
+                // Ensure we have latest resume info; fetch if not present
+                let res = resumeInfo;
+                if ((!res || typeof res.position !== 'number') && resumeKey) {
+                    try { res = await fetchResume(resumeKey); } catch(_) {}
+                }
+                if (res && typeof res.position === 'number' && res.position > 0) {
+                    resumeInfo = res;
+                    resumeTimeEl.textContent = formatResumeSeconds(res.position);
+                    showResumeModal();
+                    const onCont = async () => {
+                        // Immediately persist current resume snapshot for MPV continue
+                        try {
+                            if (resumeKey && resumeInfo && typeof resumeInfo.position === 'number') {
+                                const title = currentSelectedVideoName || (currentContent?.title || currentContent?.name || '');
+                                await fetch(`${API_BASE_URL}/resume`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key: resumeKey, position: Math.floor(resumeInfo.position || 0), duration: Math.floor(resumeInfo.duration || 0), title }) });
+                            }
+                        } catch(_) {}
+                        hideResumeModal();
+                        await openInMPV();
+                        cleanup();
+                    };
+                    const onOver = async () => {
+                        try { if (resumeKey) await fetch(`${API_BASE_URL}/resume?key=${encodeURIComponent(resumeKey)}`, { method: 'DELETE' }); } catch(_){ }
+                        resumeInfo = null; // start from 0
+                        hideResumeModal();
+                        await openInMPV();
+                        cleanup();
+                    };
+                    const cleanup = () => {
+                        resumeContinue.removeEventListener('click', onCont);
+                        resumeStartOver.removeEventListener('click', onOver);
+                        resumeClose.removeEventListener('click', onClose);
+                        document.removeEventListener('keydown', onEsc);
+                    };
+                    const onClose = () => { hideResumeModal(); cleanup(); };
+                    const onEsc = (e) => { if (e.key === 'Escape') { hideResumeModal(); cleanup(); } };
+                    resumeContinue.addEventListener('click', onCont);
+                    resumeStartOver.addEventListener('click', onOver);
+                    resumeClose.addEventListener('click', onClose);
+                    document.addEventListener('keydown', onEsc);
+                    return;
+                }
+                await openInMPV();
+            }
+
+            openMPVBtn.addEventListener('click', handleOpenMPVClick);
             copyStreamBtn.addEventListener('click', copyStreamUrl);
-            playNowBtn.addEventListener('click', () => openCustomPlayer());
+            playNowBtn.addEventListener('click', handlePlayNowClick);
             
             // Custom Player Controls
             playPauseBtn.addEventListener('click', togglePlayPause);
@@ -3627,7 +3839,7 @@ Your browser does not support the video tag.
         async function startStream(magnet) {
             // Refresh debrid flags before deciding path
             await ensureDebridState();
-            const providerLabel = (debridProvider === 'alldebrid') ? 'AllDebrid' : 'Real‑Debrid';
+            const providerLabel = (debridProvider === 'alldebrid') ? 'AllDebrid' : (debridProvider === 'torbox' ? 'TorBox' : 'Real‑Debrid');
             // If Debrid is enabled but not authenticated, block fallback and prompt login
             if (useDebrid && !debridAuth) {
                 console.warn('[UI][Debrid] blocked: enabled but not logged in');
@@ -3665,6 +3877,8 @@ Your browser does not support the video tag.
                                     notif = `${providerLabel} authentication invalid. Please login again.`;
                                     if (debridStatus) debridStatus.textContent = 'Not logged in';
                                     promptDebridLogin();
+                                } else if (ej && ej.code === 'TORBOX_UNIMPLEMENTED') {
+                                    notif = 'TorBox is not supported yet. Please switch provider in Settings or disable Debrid to use WebTorrent.';
                                 } else if (ej && ej.error) {
                                     notif = ej.error;
                                 }
@@ -3682,7 +3896,21 @@ Your browser does not support the video tag.
                         if (fres.ok) info = await fres.json();
                     }
 
-                    const files = (info && info.files) || [];
+                    let files = (info && info.files) || [];
+                    // If metadata/files are not ready yet, poll a few times (helps TorBox and slow RD responses)
+                    if (!files.length) {
+                        for (let i = 0; i < 8; i++) {
+                            await new Promise(r => setTimeout(r, 1000));
+                            try {
+                                const rf = await fetch(`${API_BASE_URL}/debrid/files?id=${encodeURIComponent(rdId)}`);
+                                if (rf.ok) {
+                                    const ij = await rf.json();
+                                    files = (ij && ij.files) || [];
+                                    if (files.length) break;
+                                }
+                            } catch {}
+                        }
+                    }
                     // Render RD files for explicit selection, like our torrent file list
                     mpvLoading.style.display = 'none';
                     fileList.innerHTML = '';
@@ -3734,6 +3962,12 @@ Your browser does not support the video tag.
                         item.innerHTML = `<p class="file-name">${displayName(f)} ${statusBadgeHtml(f)}</p><p class="file-size">(${displaySize(f)})</p>`;
                         item.addEventListener('click', async () => {
                             try {
+                                // Set resume key and prefetch resume info for Debrid path
+                                try {
+                                    const fileId = String(f.id || f.file || f.filename || f.path || '0');
+                                    resumeKey = `debrid:${debridProvider}:${rdId}:${fileId}`;
+                                    resumeInfo = await fetchResume(resumeKey);
+                                } catch(_) {}
                                 // Ensure only this file is selected for RD to process
                                 try {
                                     console.log('[UI][Debrid] select-files', { id: rdId, file: String(f.id || f.file) });
@@ -3762,12 +3996,19 @@ Your browser does not support the video tag.
                                 }
                                 // Unrestrict the resolved link
                                 const unres = await fetch(`${API_BASE_URL}/debrid/link`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ link }) });
-                                if (!unres.ok) { console.error('[UI][Debrid] unrestrict failed', await unres.text()); showNotification('Failed to unrestrict'); mpvLoading.style.display = 'none'; return; }
+                                if (!unres.ok) {
+                                    console.error('[UI][Debrid] unrestrict/stream resolve failed', await unres.text());
+                                    const msg = (debridProvider === 'torbox') ? 'Failed to get stream link' : 'Failed to unrestrict';
+                                    showNotification(msg);
+                                    mpvLoading.style.display = 'none';
+                                    return;
+                                }
                                 const uj = await unres.json();
                                 if (!uj?.url) { console.error('[UI][Debrid] unrestrict response missing url', uj); showNotification('Invalid Debrid URL'); mpvLoading.style.display = 'none'; return; }
                                 currentStreamUrl = `${API_BASE_URL}/stream/debrid?url=${encodeURIComponent(uj.url)}`;
-                                currentSelectedVideoName = displayName(f);
-                                playerTitle.textContent = displayName(f);
+                                const fname = baseName(f.path || f.filename || '');
+                                currentSelectedVideoName = fname || displayName(f);
+                                playerTitle.textContent = currentSelectedVideoName || displayName(f);
                                 // Source badges -> Debrid
                                 if (streamSourceBadge) { streamSourceBadge.textContent = 'Debrid'; streamSourceBadge.classList.remove('webtorrent'); streamSourceBadge.classList.add('debrid'); }
                                 if (customSourceBadge) { customSourceBadge.textContent = 'Debrid'; customSourceBadge.classList.remove('webtorrent'); customSourceBadge.classList.add('debrid'); }
@@ -3965,14 +4206,19 @@ Your browser does not support the video tag.
 
                 item.addEventListener('click', async () => {
                     currentStreamUrl = `${API_BASE_URL}/stream-file?hash=${currentTorrentData.infoHash}&file=${file.index}`;
-                    currentSelectedVideoName = file.name;
-                    playerTitle.textContent = file.name;
+                    currentSelectedVideoName = baseName(file.name);
+                    playerTitle.textContent = currentSelectedVideoName;
+                    // Compute resume key and prefetch resume info for WebTorrent
+                    try {
+                        resumeKey = `webtorrent:${currentTorrentData.infoHash}:${file.index}`;
+                        resumeInfo = await fetchResume(resumeKey);
+                    } catch(_) {}
                     mpvControls.style.display = 'flex';
                     // Ask backend to begin downloading the selected file and subtitles, but don't start playback yet
                     try {
                         await fetch(`${API_BASE_URL}/prepare-file?hash=${currentTorrentData.infoHash}&file=${file.index}`);
                     } catch (_) {}
-                    showNotification(`Selected: ${file.name}. Click Play Now or Open in MPV to start.`);
+                    showNotification(`Selected: ${currentSelectedVideoName}. Click Play Now or Open in MPV to start.`);
                 });
                 fileList.appendChild(item);
             });
@@ -4044,7 +4290,8 @@ Your browser does not support the video tag.
             }
             const data = {
                 streamUrl: currentStreamUrl,
-                infoHash: (currentTorrentData && currentTorrentData.infoHash) ? currentTorrentData.infoHash : null
+                infoHash: (currentTorrentData && currentTorrentData.infoHash) ? currentTorrentData.infoHash : null,
+                startSeconds: (resumeInfo && typeof resumeInfo.position === 'number' && resumeInfo.position > 10) ? Math.floor(resumeInfo.position) : undefined
             };
             const result = await window.electronAPI.openInMPV(data);
             if (result.success) {
@@ -4098,9 +4345,70 @@ Your browser does not support the video tag.
                 return;
             }
             customPlayerContainer.classList.add('active');
-            videoSource.setAttribute('src', currentStreamUrl);
-            customVideo.load();
+            
+            // Check if this is an HLS stream (.m3u8) and use HLS.js if needed
+            if (currentStreamUrl.includes('.m3u8') && typeof Hls !== 'undefined' && Hls.isSupported()) {
+                // Destroy existing HLS instance if any
+                if (window.hls) {
+                    window.hls.destroy();
+                }
+                
+                // Create new HLS instance
+                window.hls = new Hls({
+                    enableWorker: false,
+                    lowLatencyMode: false,
+                    backBufferLength: 90
+                });
+                
+                window.hls.loadSource(currentStreamUrl);
+                window.hls.attachMedia(customVideo);
+                
+                window.hls.on(Hls.Events.MANIFEST_PARSED, () => {
+                    console.log('[HLS] Manifest parsed, ready to play');
+                });
+                
+                window.hls.on(Hls.Events.ERROR, (event, data) => {
+                    console.error('[HLS] Error:', data);
+                    if (data.fatal) {
+                        if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
+                            console.log('[HLS] Network error, trying to recover...');
+                            window.hls.startLoad();
+                        } else if (data.type === Hls.ErrorTypes.MEDIA_ERROR) {
+                            console.log('[HLS] Media error, trying to recover...');
+                            window.hls.recoverMediaError();
+                        }
+                    }
+                });
+            } else {
+                // Ensure any previous HLS instance is destroyed
+                if (window.hls) {
+                    window.hls.destroy();
+                    window.hls = null;
+                }
+                
+                if (customVideo.canPlayType('application/vnd.apple.mpegurl') && currentStreamUrl.includes('.m3u8')) {
+                    // Native HLS support (Safari)
+                    videoSource.setAttribute('src', currentStreamUrl);
+                    customVideo.load();
+                } else {
+                    // Regular video file
+                    videoSource.setAttribute('src', currentStreamUrl);
+                    customVideo.load();
+                }
+            }
+            
             customPlayerTitle.textContent = playerTitle.textContent;
+            // If resume is available, seek after metadata loaded
+            if (resumeInfo && typeof resumeInfo.position === 'number' && resumeInfo.position > 10) {
+                const to = Math.floor(resumeInfo.position);
+                customVideo.addEventListener('loadedmetadata', () => { try { customVideo.currentTime = Math.min(to, (customVideo.duration || to + 1) - 1); } catch(_) {} }, { once: true });
+                showNotification(`Resuming from ${formatTime(to)}`);
+            }
+            // Always start recording progress as soon as playback produces timeupdates
+            try {
+                const onFirst = () => { try { saveResumeThrottled(true); } catch(_) {} customVideo.removeEventListener('timeupdate', onFirst); };
+                customVideo.addEventListener('timeupdate', onFirst);
+            } catch(_) {}
             // If we prefetched a RD subtitle, attach it now
             if (currentSubtitleUrl) {
                 try { loadSubtitle(currentSubtitleUrl, { label: 'Auto', lang: 'en' }); } catch(_) {}
@@ -4507,6 +4815,20 @@ Your browser does not support the video tag.
         async function closeCustomPlayer_() {
             customPlayerContainer.classList.remove('active');
             try { customVideo.pause(); } catch(_) {}
+            
+            // Cleanup HLS instance if any
+            if (window.hls) {
+                window.hls.destroy();
+                window.hls = null;
+            }
+            
+            // Fully reset video source to clear any residual tracks/cues
+            try {
+                customVideo.removeAttribute('src');
+                if (videoSource) videoSource.setAttribute('src', '');
+                customVideo.load();
+            } catch(_) {}
+            
             // Cleanup temp subtitle file for HTML5 if any
             if (currentSubtitleFile) {
                 try { await fetch(`${API_BASE_URL}/subtitles/delete`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ filename: currentSubtitleFile }) }); } catch {}
@@ -4529,12 +4851,6 @@ Your browser does not support the video tag.
         function skipTime(amount) {
             customVideo.currentTime += amount;
         }
-            // Fully reset video source to clear any residual tracks/cues
-            try {
-                customVideo.removeAttribute('src');
-                if (videoSource) videoSource.setAttribute('src', '');
-                customVideo.load();
-            } catch(_) {}
 
         function toggleFullscreen() {
             if (!document.fullscreenElement) {
@@ -4548,10 +4864,12 @@ Your browser does not support the video tag.
             const percent = (customVideo.currentTime / customVideo.duration) * 100;
             progressFilled.style.width = `${percent}%`;
             currentTime.textContent = formatTime(customVideo.currentTime);
+            saveResumeThrottled();
         }
 
         function updateDuration() {
             totalTime.textContent = formatTime(customVideo.duration);
+            saveResumeThrottled();
         }
 
         function seekVideo(e) {
@@ -4559,6 +4877,7 @@ Your browser does not support the video tag.
             const offsetX = e.clientX - rect.left;
             const seekTime = (offsetX / progressBar.offsetWidth) * customVideo.duration;
             customVideo.currentTime = seekTime;
+            saveResumeThrottled(true);
         }
 
         function formatTime(seconds) {
@@ -4745,6 +5064,73 @@ Your browser does not support the video tag.
 
         // Initialize the app on DOMContentLoaded
         document.addEventListener('DOMContentLoaded', init);
+
+        // ---- Resume helpers ----
+        async function fetchResume(key) {
+            if (!key) return null;
+            try {
+                const r = await fetch(`${API_BASE_URL}/resume?key=${encodeURIComponent(key)}`);
+                if (!r.ok) return null;
+                const j = await r.json();
+                if (j && typeof j.position === 'number' && j.position > 0) return j;
+            } catch(_){ }
+            return null;
+        }
+        async function saveResume() {
+            if (!resumeKey || !customVideo || !isFinite(customVideo.duration) || !isFinite(customVideo.currentTime)) return;
+            const pos = Math.max(0, Math.floor(customVideo.currentTime || 0));
+            const dur = Math.max(0, Math.floor(customVideo.duration || 0));
+            const title = currentSelectedVideoName || (currentContent?.title || currentContent?.name || '');
+            if (dur === 0 || pos === 0) return;
+            try {
+                await fetch(`${API_BASE_URL}/resume`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key: resumeKey, position: pos, duration: dur, title }) });
+            } catch(_){ }
+        }
+        function saveResumeThrottled(immediate = false) {
+            const now = Date.now();
+            if (immediate || now - lastResumeSend > 2500) {
+                lastResumeSend = now;
+                clearTimeout(resumeTimer);
+                resumeTimer = null;
+                saveResume();
+                return;
+            }
+            if (!resumeTimer) {
+                resumeTimer = setTimeout(() => { lastResumeSend = Date.now(); saveResume(); resumeTimer = null; }, 1500);
+            }
+        }
+        try {
+            customVideo.addEventListener('ended', async () => {
+                if (resumeKey) {
+                    try { await fetch(`${API_BASE_URL}/resume?key=${encodeURIComponent(resumeKey)}`, { method: 'DELETE' }); } catch(_){ }
+                }
+            });
+        } catch(_){ }
     </script>
+    
+    <!-- Resume Prompt Modal (top-level) -->
+    <div class="modal" id="resumeModal">
+        <div class="modal-content" style="max-width:480px">
+            <button class="modal-close" id="resumeClose"><i class="fas fa-times"></i></button>
+            <div class="modal-header">
+                <div class="modal-header-content" style="gap:0.75rem; align-items:center;">
+                    <div style="display:flex; align-items:center; gap:0.5rem;">
+                        <i class="fas fa-history" style="color: var(--vlc-orange);"></i>
+                        <h2 class="modal-title" id="resumeTitle" style="margin:0; font-size:1.3rem;">Resume playback?</h2>
+                    </div>
+                    <div class="modal-info" style="display:flex; gap:0.5rem; align-items:center;">
+                        <span id="resumeTime" class="genre-chip">00:00</span>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-body" style="padding-top:0.5rem;">
+                <p class="modal-overview" id="resumeText" style="margin-bottom:1rem;">You have previous progress for this title. Would you like to continue from where you left off?</p>
+                <div style="display:flex; gap:0.75rem; justify-content:flex-end;">
+                    <button class="btn btn-outline" id="resumeStartOver"><i class="fas fa-undo"></i> Start Over</button>
+                    <button class="btn" id="resumeContinue"><i class="fas fa-play"></i> Continue</button>
+                </div>
+            </div>
+        </div>
+    </div>
 </body>
 </html>
