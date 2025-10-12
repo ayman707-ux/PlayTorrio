@@ -9,11 +9,15 @@ PlayTorrio's official [website](https://playtorrio.netlify.app/)
 
 ## 🧩 Features
 - 🔍 Fetch torrents from multiple sources via Jackett  
+-Or use the inapp scraper
 - 🎥 Stream magnet links instantly without full download  
 - 💾 Lightweight and fast UI  
 - ⚙️ Customizable Jackett URL and API key  
 - 🌙 Simple, dark-themed interface  
-- 🚀 Cross-platform support (Windows / Linux / macOS)
+- 🚀 Cross-platform support (Windows / Soon Linux / Soon macOS)
+- Debrid support (Real-Debrid, AllDebrid, TorBox
+- resume where you left off
+- Build-in subtitles
 
 ---
 
