@@ -15,9 +15,11 @@ PlayTorrio's official [website](https://playtorrio.netlify.app/)
 - ⚙️ Customizable Jackett URL and API key  
 - 🌙 Simple, dark-themed interface  
 - 🚀 Cross-platform support (Windows / Soon Linux / Soon macOS)
-- Debrid support (Real-Debrid, AllDebrid, TorBox
+- Debrid support (Real-Debrid, AllDebrid, TorBox, premiumize)
 - resume where you left off
 - Build-in subtitles
+- Customizable subtitles
+- 2 UI's modern and classic (can be switched in the settings)
 
 ---
 
