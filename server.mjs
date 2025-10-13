@@ -75,10 +75,11 @@ export function startServer(userDataPath) {
                 rdCredSecret: null,
                 adApiKey: null,
                 tbApiKey: null,
+                pmApiKey: null,
                 ...s,
             };
         } catch {
-            return { useTorrentless: false, useDebrid: false, debridProvider: 'realdebrid', rdToken: null, rdRefresh: null, rdClientId: null, rdCredId: null, rdCredSecret: null, adApiKey: null, tbApiKey: null };
+            return { useTorrentless: false, useDebrid: false, debridProvider: 'realdebrid', rdToken: null, rdRefresh: null, rdClientId: null, rdCredId: null, rdCredSecret: null, adApiKey: null, tbApiKey: null, pmApiKey: null };
         }
     }
     function writeSettings(obj) {
@@ -100,7 +101,10 @@ export function startServer(userDataPath) {
         const s = readSettings();
         // Determine auth state for the selected provider
         const provider = s.debridProvider || 'realdebrid';
-        const debridAuth = provider === 'alldebrid' ? !!s.adApiKey : provider === 'torbox' ? !!s.tbApiKey : !!s.rdToken;
+        const debridAuth = provider === 'alldebrid' ? !!s.adApiKey 
+            : provider === 'torbox' ? !!s.tbApiKey 
+            : provider === 'premiumize' ? !!s.pmApiKey 
+            : !!s.rdToken;
         res.json({
             useTorrentless: !!s.useTorrentless,
             useDebrid: !!s.useDebrid,
@@ -469,6 +473,83 @@ export function startServer(userDataPath) {
         return null;
     }
 
+    // Premiumize.me API helper
+    const PM_BASE = 'https://www.premiumize.me/api';
+    async function pmFetch(endpoint, opts = {}) {
+        const s = readSettings();
+        if (!s.pmApiKey) {
+            const err = new Error('Not authenticated with Premiumize');
+            err.code = 'PM_AUTH_INVALID';
+            throw err;
+        }
+        
+        // Build URL with apikey parameter
+        const url = new URL(`${PM_BASE}${endpoint}`);
+        url.searchParams.set('apikey', s.pmApiKey);
+        
+        console.log('[PM][call]', { endpoint, method: (opts.method || 'GET').toUpperCase() });
+        
+        const resp = await fetch(url.toString(), {
+            ...opts,
+            headers: {
+                'Accept': 'application/json',
+                ...(opts.headers || {})
+            }
+        });
+        
+        const ct = resp.headers.get('content-type') || '';
+        let bodyText = '';
+        try { bodyText = await resp.text(); } catch {}
+        
+        let data = null;
+        if (/json/i.test(ct)) {
+            try { data = bodyText ? JSON.parse(bodyText) : null; } catch {}
+        }
+        
+        if (!resp.ok) {
+            const lower = (bodyText || '').toLowerCase();
+            // Clear API key on auth errors
+            if (resp.status === 401 || resp.status === 403 || lower.includes('unauthorized') || lower.includes('invalid') || lower.includes('auth')) {
+                try { 
+                    const cur = readSettings(); 
+                    writeSettings({ ...cur, pmApiKey: null }); 
+                } catch {}
+                const err = new Error('Premiumize authentication invalid');
+                err.code = 'PM_AUTH_INVALID';
+                throw err;
+            }
+            if (resp.status === 429 || lower.includes('rate')) {
+                const err = new Error('Premiumize rate limited');
+                err.code = 'PM_RATE_LIMIT';
+                throw err;
+            }
+            if (resp.status === 402 || lower.includes('premium')) {
+                const err = new Error('Premiumize premium required');
+                err.code = 'PM_PREMIUM_REQUIRED';
+                throw err;
+            }
+            const err = new Error(`PM ${endpoint} failed: ${resp.status} ${truncate(bodyText, 300)}`);
+            throw err;
+        }
+        
+        // Check for API-level error in response
+        if (data && data.status === 'error') {
+            const errMsg = data.message || 'Premiumize API error';
+            if (/auth|unauthorized|invalid/i.test(errMsg)) {
+                try { 
+                    const cur = readSettings(); 
+                    writeSettings({ ...cur, pmApiKey: null }); 
+                } catch {}
+                const err = new Error(errMsg);
+                err.code = 'PM_AUTH_INVALID';
+                throw err;
+            }
+            throw new Error(errMsg);
+        }
+        
+        return data != null ? data : bodyText;
+    }
+
     // Save/clear AllDebrid API key manually (optional)
     app.post('/api/debrid/ad/apikey', (req, res) => {
         try {
@@ -491,6 +572,20 @@ export function startServer(userDataPath) {
             const next = { ...s, tbApiKey: token || null };
             const ok = writeSettings(next);
             if (!ok) return res.status(500).json({ success: false, error: 'Failed to save TorBox token' });
+            res.json({ success: true });
+        } catch (e) {
+            res.status(500).json({ success: false, error: e?.message || 'Failed' });
+        }
+    });
+
+    // Premiumize API key save/clear
+    app.post('/api/debrid/pm/apikey', (req, res) => {
+        try {
+            const s = readSettings();
+            const apikey = (req.body?.apikey || '').toString().trim();
+            const next = { ...s, pmApiKey: apikey || null };
+            const ok = writeSettings(next);
+            if (!ok) return res.status(500).json({ success: false, error: 'Failed to save Premiumize API key' });
             res.json({ success: true });
         } catch (e) {
             res.status(500).json({ success: false, error: e?.message || 'Failed' });
@@ -741,6 +836,20 @@ export function startServer(userDataPath) {
                     return res.status(502).json({ error: 'TorBox availability failed' });
                 }
             }
+            if (provider === 'premiumize') {
+                console.log('[PM][availability]', { btih });
+                try {
+                    const data = await pmFetch(`/cache/check?items[]=${encodeURIComponent(btih)}`);
+                    // Premiumize returns { status: 'success', response: [true/false], transcoded: [...] }
+                    const available = !!(data && data.status === 'success' && Array.isArray(data.response) && data.response[0] === true);
+                    return res.json({ provider: 'premiumize', available, raw: data });
+                } catch (e) {
+                    const msg = e?.message || '';
+                    if (e?.code === 'PM_AUTH_INVALID') return res.status(401).json({ error: 'Premiumize authentication invalid.', code: 'DEBRID_UNAUTH' });
+                    if (e?.code === 'PM_RATE_LIMIT' || /429/.test(msg)) return res.status(429).json({ error: 'Premiumize rate limit. Try again shortly.', code: 'PM_RATE_LIMIT' });
+                    return res.status(502).json({ error: 'Premiumize availability failed' });
+                }
+            }
             return res.status(400).json({ error: 'Availability not supported for this provider' });
         } catch (e) {
             const msg = e?.message || '';
@@ -888,6 +997,126 @@ export function startServer(userDataPath) {
                 }
                 if (!infoObj) infoObj = { id: String(id), filename: 'TorBox Torrent', files: [] };
                 return res.json({ id: String(id), info: infoObj });
+            } else if (provider === 'premiumize') {
+                console.log('[PM][prepare] transfer/directdl');
+                let data;
+                try {
+                    // Use /transfer/directdl to get instant cached links or create transfer
+                    data = await pmFetch('/transfer/directdl', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                        body: new URLSearchParams({ src: magnet })
+                    });
+                } catch (e) {
+                    const msg = e?.message || '';
+                    if (e?.code === 'PM_AUTH_INVALID' || /auth|unauthorized/i.test(msg)) {
+                        const cur = readSettings();
+                        writeSettings({ ...cur, pmApiKey: null });
+                        return res.status(401).json({ error: 'Premiumize authentication invalid. Please login again.', code: 'DEBRID_UNAUTH' });
+                    }
+                    if (e?.code === 'PM_PREMIUM_REQUIRED' || /premium/i.test(msg)) {
+                        return res.status(403).json({ error: 'Premiumize premium is required to add torrents.', code: 'RD_PREMIUM_REQUIRED' });
+                    }
+                    throw e;
+                }
+                
+                console.log('[PM][prepare] directdl response:', JSON.stringify(data, null, 2));
+                
+                // directdl returns: { status: 'success', content: [...files with links...] }
+                if (data?.status === 'success' && Array.isArray(data.content)) {
+                    const files = [];
+                    for (let idx = 0; idx < data.content.length; idx++) {
+                        const f = data.content[idx];
+                        // Each file has: path, size, link, stream_link, transcode_status
+                        const fname = f.path || f.name || `file_${idx}`;
+                        const fsize = Number(f.size || 0);
+                        // Prefer stream_link for videos, fallback to link
+                        const flink = f.stream_link || f.link || '';
+                        
+                        files.push({
+                            id: idx,
+                            path: fname,
+                            filename: fname,
+                            bytes: fsize,
+                            size: fsize,
+                            links: flink ? [flink] : []
+                        });
+                    }
+                    
+                    const infoObj = {
+                        id: 'directdl', // No transfer ID for directdl
+                        filename: 'Premiumize Direct Download',
+                        files
+                    };
+                    
+                    return res.json({ id: 'directdl', info: infoObj });
+                }
+                
+                // Fallback: if directdl didn't work, try transfer/create
+                console.log('[PM][prepare] directdl failed, trying transfer/create');
+                let transferData;
+                try {
+                    transferData = await pmFetch('/transfer/create', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                        body: new URLSearchParams({ src: magnet })
+                    });
+                } catch (e) {
+                    throw e;
+                }
+                
+                const transferId = transferData?.id || transferData?.transfer?.id;
+                if (!transferId) return res.status(500).json({ error: 'Failed to create Premiumize transfer' });
+                
+                console.log('[PM][prepare] transfer created:', transferId);
+                
+                // Wait for transfer to be ready and fetch file list
+                let infoObj = null;
+                for (let i = 0; i < 15; i++) {
+                    try {
+                        const listData = await pmFetch('/transfer/list');
+                        if (listData && listData.status === 'success' && Array.isArray(listData.transfers)) {
+                            const transfer = listData.transfers.find(t => String(t.id) === String(transferId));
+                            if (transfer && transfer.status === 'finished') {
+                                const files = [];
+                                const fileList = Array.isArray(transfer.file_list) ? transfer.file_list : [];
+                                
+                                for (let idx = 0; idx < fileList.length; idx++) {
+                                    const f = fileList[idx];
+                                    const fname = f.path || f.name || `file_${idx}`;
+                                    const fsize = Number(f.size || 0);
+                                    const flink = f.stream_link || f.link || '';
+                                    
+                                    files.push({
+                                        id: idx,
+                                        path: fname,
+                                        filename: fname,
+                                        bytes: fsize,
+                                        size: fsize,
+                                        links: flink ? [flink] : []
+                                    });
+                                }
+                                
+                                infoObj = {
+                                    id: String(transferId),
+                                    filename: transfer.name || 'Premiumize Transfer',
+                                    files
+                                };
+                                
+                                if (files.length > 0) break;
+                            }
+                        }
+                    } catch (e) {
+                        console.log('[PM][prepare] waiting for files:', e.message);
+                    }
+                    await new Promise(r => setTimeout(r, 1000));
+                }
+                
+                if (!infoObj) {
+                    infoObj = { id: String(transferId), filename: 'Premiumize Transfer', files: [] };
+                }
+                
+                return res.json({ id: String(transferId), info: infoObj });
             } else {
                 return res.status(400).json({ error: 'Debrid provider not supported' });
             }
@@ -919,6 +1148,10 @@ export function startServer(userDataPath) {
             }
             if (provider === 'torbox') {
                 // No-op for TorBox (files unlocked per-file when requested)
+                return res.json({ success: true });
+            }
+            if (provider === 'premiumize') {
+                // No-op for Premiumize (files are already available)
                 return res.json({ success: true });
             }
             const id = (req.body?.id || '').toString();
@@ -1018,6 +1251,55 @@ export function startServer(userDataPath) {
                     const code = e?.code || '';
                     if (code === 'TB_AUTH_INVALID') return res.status(401).json({ error: 'TorBox authentication invalid. Please login again.', code: 'DEBRID_UNAUTH' });
                     if (code === 'TB_RATE_LIMIT') return res.status(429).json({ error: 'TorBox rate limit. Try again shortly.', code: 'TB_RATE_LIMIT' });
+                    throw e;
+                }
+            }
+            if (provider === 'premiumize') {
+                console.log('[PM][files]', { id });
+                
+                // Special case: if id is 'directdl', files were already provided in prepare response
+                if (id === 'directdl') {
+                    return res.status(400).json({ error: 'Use files from prepare response for directdl' });
+                }
+                
+                try {
+                    const listData = await pmFetch('/transfer/list');
+                    if (listData && listData.status === 'success' && Array.isArray(listData.transfers)) {
+                        const transfer = listData.transfers.find(t => String(t.id) === String(id));
+                        if (!transfer) {
+                            return res.status(404).json({ error: 'Transfer not found' });
+                        }
+                        
+                        const outFiles = [];
+                        const fileList = Array.isArray(transfer.file_list) ? transfer.file_list : [];
+                        
+                        for (let idx = 0; idx < fileList.length; idx++) {
+                            const f = fileList[idx];
+                            const fname = f.path || f.name || `file_${idx}`;
+                            const fsize = Number(f.size || 0);
+                            const flink = f.stream_link || f.link || '';
+                            
+                            outFiles.push({
+                                id: idx,
+                                path: fname,
+                                filename: fname,
+                                bytes: fsize,
+                                size: fsize,
+                                links: flink ? [flink] : []
+                            });
+                        }
+                        
+                        return res.json({
+                            id: String(id),
+                            filename: transfer.name || 'Premiumize Transfer',
+                            files: outFiles
+                        });
+                    }
+                    return res.status(404).json({ error: 'Transfer not found' });
+                } catch (e) {
+                    const code = e?.code || '';
+                    if (code === 'PM_AUTH_INVALID') return res.status(401).json({ error: 'Premiumize authentication invalid. Please login again.', code: 'DEBRID_UNAUTH' });
+                    if (code === 'PM_RATE_LIMIT') return res.status(429).json({ error: 'Premiumize rate limit. Try again shortly.', code: 'PM_RATE_LIMIT' });
                     throw e;
                 }
             }
@@ -1190,6 +1472,21 @@ export function startServer(userDataPath) {
                     return res.status(502).json({ error: 'TorBox link request failed' });
                 }
             }
+            if (provider === 'premiumize') {
+                // For Premiumize, the links from file_list are already direct CDN URLs
+                // They come as either 'link' or 'stream_link' from /transfer/directdl or /transfer/list
+                console.log('[PM][link]', { link });
+                
+                // The link should already be a direct HTTPS URL ready for streaming
+                if (/^https?:\/\//i.test(link)) {
+                    console.log('[PM][link] using direct link:', link);
+                    return res.json({ url: link });
+                }
+                
+                // If not HTTP, something went wrong - Premiumize always returns HTTP URLs
+                console.error('[PM][link] unexpected non-HTTP link:', link);
+                return res.status(400).json({ error: 'Invalid Premiumize link format' });
+            }
             return res.status(400).json({ error: 'Debrid provider not supported' });
         } catch (e) {
             console.error('[RD][unrestrict] error', e?.message);
@@ -1237,6 +1534,27 @@ export function startServer(userDataPath) {
                 } catch (e) {
                     const code = e?.code || '';
                     if (code === 'TB_AUTH_INVALID') return res.status(401).json({ success: false, error: 'TorBox authentication invalid. Please login again.', code: 'DEBRID_UNAUTH' });
+                    throw e;
+                }
+            }
+            if (provider === 'premiumize') {
+                console.log('[PM][delete]', { id });
+                
+                // Special case: directdl doesn't create a transfer, so nothing to delete
+                if (id === 'directdl') {
+                    return res.json({ success: true });
+                }
+                
+                try {
+                    await pmFetch('/transfer/delete', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                        body: new URLSearchParams({ id: String(id) })
+                    });
+                    return res.json({ success: true });
+                } catch (e) {
+                    const code = e?.code || '';
+                    if (code === 'PM_AUTH_INVALID') return res.status(401).json({ success: false, error: 'Premiumize authentication invalid. Please login again.', code: 'DEBRID_UNAUTH' });
                     throw e;
                 }
             }
