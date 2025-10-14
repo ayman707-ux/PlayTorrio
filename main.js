@@ -5,7 +5,11 @@ import { fileURLToPath } from 'url';
 import fs from 'fs';
 import http from 'http';
 import os from 'os';
+// electron-updater is CommonJS; use default import + destructure for ESM
+import updaterPkg from 'electron-updater';
 import { startServer } from './server.mjs'; // Import the server
+
+const { autoUpdater } = updaterPkg;
 
 let httpServer;
 let webtorrentClient;
@@ -14,6 +18,119 @@ let torrentlessProc = null;
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+// ----------------------
+// Auto Update (Main-only)
+// ----------------------
+function setupAutoUpdater() {
+    try {
+        // Only enable in packaged builds
+        if (!app.isPackaged) {
+            console.log('[Updater] Skipping auto-update in development mode');
+            return;
+        }
+
+        autoUpdater.autoDownload = true;
+        autoUpdater.autoInstallOnAppQuit = true;
+
+        autoUpdater.on('checking-for-update', () => {
+            console.log('[Updater] Checking for updates...');
+            try {
+                if (mainWindow && !mainWindow.isDestroyed() && mainWindow.webContents) {
+                    if (mainWindow.webContents.isLoading()) {
+                        mainWindow.webContents.once('did-finish-load', () => {
+                            mainWindow.webContents.send('update-checking', {});
+                        });
+                    } else {
+                        mainWindow.webContents.send('update-checking', {});
+                    }
+                }
+            } catch(_) {}
+        });
+
+        autoUpdater.on('update-available', (info) => {
+            console.log('[Updater] Update available:', info?.version || 'unknown');
+            try {
+                if (mainWindow && !mainWindow.isDestroyed() && mainWindow.webContents) {
+                    // Ensure renderer is ready before sending
+                    if (mainWindow.webContents.isLoading()) {
+                        mainWindow.webContents.once('did-finish-load', () => {
+                            mainWindow.webContents.send('update-available', info || {});
+                        });
+                    } else {
+                        mainWindow.webContents.send('update-available', info || {});
+                    }
+                }
+            } catch(_) {}
+            // Auto-download will start automatically, so the download-progress event will follow
+        });
+
+        autoUpdater.on('update-not-available', (info) => {
+            console.log('[Updater] No updates available');
+            try {
+                if (mainWindow && !mainWindow.isDestroyed() && mainWindow.webContents) {
+                    if (mainWindow.webContents.isLoading()) {
+                        mainWindow.webContents.once('did-finish-load', () => {
+                            mainWindow.webContents.send('update-not-available', info || {});
+                        });
+                    } else {
+                        mainWindow.webContents.send('update-not-available', info || {});
+                    }
+                }
+            } catch(_) {}
+        });
+
+        autoUpdater.on('error', (err) => {
+            console.error('[Updater] Error:', err?.message || err);
+            // Retry on network errors after delay
+            if (checkAttempts < maxRetries && (
+                err?.message?.includes('net::') || 
+                err?.message?.includes('ENOTFOUND') ||
+                err?.message?.includes('timeout')
+            )) {
+                console.log(`[Updater] Network error detected, retrying in 30s...`);
+                setTimeout(checkForUpdatesWithRetry, 30000);
+            }
+        });
+
+        autoUpdater.on('download-progress', (progressObj) => {
+            const pct = Math.round(progressObj?.percent || 0);
+            console.log(`[Updater] Download progress: ${pct}%`);
+            try {
+                if (mainWindow && !mainWindow.isDestroyed()) {
+                    mainWindow.webContents.send('update-download-progress', progressObj || {});
+                }
+            } catch(_) {}
+        });
+
+        autoUpdater.on('update-downloaded', async (info) => {
+            console.log('[Updater] Update downloaded:', info?.version || 'unknown');
+            try {
+                if (mainWindow && !mainWindow.isDestroyed()) {
+                    mainWindow.webContents.send('update-downloaded', info || {});
+                }
+            } catch(_) {}
+        });
+
+        // Perform initial check with retry logic
+        let checkAttempts = 0;
+        const maxRetries = 3;
+        const checkForUpdatesWithRetry = () => {
+            try {
+                checkAttempts++;
+                autoUpdater.checkForUpdates();
+            } catch (e) {
+                console.error(`[Updater] checkForUpdates failed (attempt ${checkAttempts}):`, e?.message || e);
+                if (checkAttempts < maxRetries) {
+                    setTimeout(checkForUpdatesWithRetry, 10000); // Retry after 10s
+                }
+            }
+        };
+        setTimeout(checkForUpdatesWithRetry, 4000);
+    } catch (e) {
+        console.error('[Updater] setup failed:', e?.message || e);
+    }
+}
 
 // Function to clear the webtorrent temp folder
 async function clearWebtorrentTemp() {
@@ -319,6 +436,99 @@ if (!gotLock) {
             return { success: false, message: err?.message || 'Failed to copy' };
         }
     });
+
+    // Optional IPC: allow renderer to install the downloaded update
+    ipcMain.handle('updater-install', async () => {
+        try {
+            autoUpdater.quitAndInstall(false, true);
+            return { success: true };
+        } catch (e) {
+            return { success: false, message: e?.message || 'Failed to install update' };
+        }
+    });
+
+    // My List IPC handlers
+    ipcMain.handle('my-list-read', async () => {
+        try {
+            const myListPath = path.join(app.getPath('userData'), 'my-list.json');
+            if (fs.existsSync(myListPath)) {
+                const data = await fs.promises.readFile(myListPath, 'utf8');
+                return { success: true, data: JSON.parse(data) };
+            } else {
+                return { success: true, data: [] };
+            }
+        } catch (error) {
+            console.error('Error reading my-list.json:', error);
+            return { success: false, message: error.message, data: [] };
+        }
+    });
+
+    ipcMain.handle('my-list-write', async (event, listData) => {
+        try {
+            const myListPath = path.join(app.getPath('userData'), 'my-list.json');
+            await fs.promises.writeFile(myListPath, JSON.stringify(listData, null, 2));
+            return { success: true };
+        } catch (error) {
+            console.error('Error writing my-list.json:', error);
+            return { success: false, message: error.message };
+        }
+    });
+
+    // Done Watching IPC handlers
+    ipcMain.handle('done-watching-read', async () => {
+        try {
+            const doneWatchingPath = path.join(app.getPath('userData'), 'done-watching.json');
+            if (fs.existsSync(doneWatchingPath)) {
+                const data = await fs.promises.readFile(doneWatchingPath, 'utf8');
+                return { success: true, data: JSON.parse(data) };
+            } else {
+                return { success: true, data: [] };
+            }
+        } catch (error) {
+            console.error('Error reading done-watching.json:', error);
+            return { success: false, message: error.message, data: [] };
+        }
+    });
+
+    ipcMain.handle('done-watching-write', async (event, listData) => {
+        try {
+            const doneWatchingPath = path.join(app.getPath('userData'), 'done-watching.json');
+            await fs.promises.writeFile(doneWatchingPath, JSON.stringify(listData, null, 2));
+            return { success: true };
+        } catch (error) {
+            console.error('Error writing done-watching.json:', error);
+            return { success: false, message: error.message };
+        }
+    });
+
+    // Fullscreen management
+    ipcMain.handle('set-fullscreen', async (event, isFullscreen) => {
+        try {
+            if (mainWindow && !mainWindow.isDestroyed()) {
+                mainWindow.setFullScreen(isFullscreen);
+                return { success: true };
+            }
+            return { success: false, message: 'Main window not available' };
+        } catch (error) {
+            console.error('Error setting fullscreen:', error);
+            return { success: false, message: error.message };
+        }
+    });
+
+    ipcMain.handle('get-fullscreen', async () => {
+        try {
+            if (mainWindow && !mainWindow.isDestroyed()) {
+                return { success: true, isFullscreen: mainWindow.isFullScreen() };
+            }
+            return { success: false, message: 'Main window not available' };
+        } catch (error) {
+            console.error('Error getting fullscreen state:', error);
+            return { success: false, message: error.message };
+        }
+    });
+
+        // Initialize the auto-updater (main-process only, no renderer changes)
+        setupAutoUpdater();
     });
 }
 
