@@ -1474,6 +1474,28 @@
             pointer-events: auto;
         }
 
+        /* Hide player header (title and close button) when controls are hidden */
+        .custom-player-container .player-header { 
+            transform: translateY(-100%); 
+            opacity: 0; 
+            pointer-events: none; 
+            transition: transform 0.25s ease, opacity 0.25s ease;
+        }
+        .custom-player-container.show-controls .player-header,
+        .custom-player-container .player-header.force-visible {
+            transform: translateY(0);
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        /* Hide cursor when controls are hidden */
+        .custom-player-container:not(.show-controls) {
+            cursor: none;
+        }
+        .custom-player-container:not(.show-controls) * {
+            cursor: none;
+        }
+
         .progress-container {
             margin-bottom: 1rem;
         }
@@ -6287,6 +6309,7 @@ Your browser does not support the video tag.
 
             // Show controls initially
             videoContainer.classList.add('show-controls');
+            customPlayerContainer.classList.add('show-controls');
             resetControlsAutoHide();
 
             // If streaming via RD proxy, add a one-time retry to re-unrestrict on error
@@ -6324,12 +6347,14 @@ Your browser does not support the video tag.
 
         function showControls() {
             videoContainer.classList.add('show-controls');
+            customPlayerContainer.classList.add('show-controls');
         }
 
         function hideControls() {
             // Do not hide if subtitles panel is open
             if (htmlSubsPanel && htmlSubsPanel.style.display === 'block') return;
             videoContainer.classList.remove('show-controls');
+            customPlayerContainer.classList.remove('show-controls');
         }
 
         function clearControlsTimer() { if (controlsHideTimer) { clearTimeout(controlsHideTimer); controlsHideTimer = null; } }
