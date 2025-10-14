@@ -1,6 +1,6 @@
 {
   "name": "playtorrio",
-  "version": "1.0.0",
+  "version": "1.0.7",
   "description": "A sophisticated application designed to seamlessly interface with Jackett for fetching torrents and provide high-performance streaming directly through an integrated API.",
   "author": {
     "name": "ayman",
@@ -26,7 +26,8 @@
     "node-fetch": "^3.3.2",
     "parse-torrent": "^9.0.3",
     "webtorrent": "^2.6.8",
-    "xml2js": "^0.6.2"
+    "xml2js": "^0.6.2",
+    "electron-updater": "^6.6.2"
   },
   "devDependencies": {
     "electron": "^37.2.5",
@@ -40,6 +41,13 @@
     "appId": "com.ayman.PlayTorrio",
     "productName": "PlayTorrio",
     "artifactName": "${productName}-Setup-${version}.${ext}",
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "ayman707-ux",
+        "repo": "PlayTorrio"
+      }
+    ],
     "files": [
       "main.js",
       "preload.js",
@@ -55,12 +63,20 @@
       "Torrentless/**"
     ],
     "extraResources": [
-      { "from": "mpv", "to": "mpv" },
-      { "from": "Torrentless", "to": "Torrentless" }
+      {
+        "from": "mpv",
+        "to": "mpv"
+      },
+      {
+        "from": "Torrentless",
+        "to": "Torrentless"
+      }
     ],
     "win": {
       "icon": "icon.ico",
-      "target": ["nsis"]
+      "target": [
+        "nsis"
+      ]
     },
     "nsis": {
       "oneClick": false,
