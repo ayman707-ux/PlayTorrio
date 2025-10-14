@@ -141,6 +141,11 @@
             background-color: rgba(168, 85, 247, 0.1);
         }
         
+        .btn-outline.active {
+            background-color: var(--vlc-orange);
+            color: white;
+        }
+        
         main {
             max-width: 1400px;
             margin: 2rem auto;
@@ -246,6 +251,86 @@
             gap: 0.3rem;
         }
         
+        .add-to-list-btn {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background-color: rgba(0, 0, 0, 0.7);
+            color: var(--light);
+            border: none;
+            padding: 0.5rem;
+            border-radius: 50%;
+            width: 35px;
+            height: 35px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            opacity: 0;
+            transform: scale(0.8);
+        }
+        
+        .movie-card:hover .add-to-list-btn {
+            opacity: 1;
+            transform: scale(1);
+        }
+        
+        .add-to-list-btn:hover {
+            background-color: var(--success);
+            transform: scale(1.1);
+        }
+        
+        .add-to-list-btn.in-list {
+            background-color: var(--success);
+            opacity: 1;
+            transform: scale(1);
+        }
+        
+        .add-to-list-btn.in-list i:before {
+            content: "\f00c"; /* checkmark */
+        }
+        
+        .done-watching-btn {
+            position: absolute;
+            top: 10px;
+            left: 55px; /* Position next to the add-to-list button */
+            background-color: rgba(0, 0, 0, 0.7);
+            color: var(--light);
+            border: none;
+            padding: 0.5rem;
+            border-radius: 50%;
+            width: 35px;
+            height: 35px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            opacity: 0;
+            transform: scale(0.8);
+        }
+        
+        .movie-card:hover .done-watching-btn {
+            opacity: 1;
+            transform: scale(1);
+        }
+        
+        .done-watching-btn:hover {
+            background-color: #17a2b8; /* info blue color */
+            transform: scale(1.1);
+        }
+        
+        .done-watching-btn.is-done {
+            background-color: #17a2b8;
+            opacity: 1;
+            transform: scale(1);
+        }
+        
+        .done-watching-btn.is-done i:before {
+            content: "\f058"; /* check-circle */
+        }
+        
         .loading {
             text-align: center;
             padding: 2rem;
@@ -260,6 +345,17 @@
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
+        }
+        
+        @keyframes slideInRight {
+            0% { 
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            100% { 
+                transform: translateX(0);
+                opacity: 1;
+            }
         }
         
         .modal {
@@ -769,6 +865,105 @@
         .api-btn-secondary:hover {
             color: var(--light);
             border-color: var(--light);
+        }
+
+        /* Donate Modal */
+        .donate-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.95);
+            z-index: 5500;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+        
+        .donate-modal.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+        
+        .donate-content {
+            background: linear-gradient(135deg, var(--primary), var(--dark));
+            border-radius: 15px;
+            padding: 3rem;
+            max-width: 520px;
+            width: 90%;
+            text-align: center;
+            box-shadow: 0 20px 60px rgba(168, 85, 247, 0.3);
+            border: 2px solid var(--vlc-orange);
+            position: relative;
+        }
+        
+        .donate-close {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background-color: rgba(255, 255, 255, 0.1);
+            border: none;
+            color: var(--light);
+            font-size: 1.5rem;
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+        
+        .donate-close.visible {
+            display: flex;
+        }
+        
+        .donate-close:hover {
+            background-color: var(--danger);
+            transform: rotate(90deg);
+        }
+        
+        .donate-title {
+            font-size: 2rem;
+            margin-bottom: 1.5rem;
+            color: var(--vlc-orange);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
+        }
+        
+        .donate-message {
+            color: var(--light);
+            margin-bottom: 2rem;
+            line-height: 1.8;
+            text-align: left;
+        }
+        
+        .donate-btn {
+            padding: 1rem 2.5rem;
+            border-radius: 30px;
+            border: none;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 1.1rem;
+            background: linear-gradient(135deg, var(--vlc-orange), #9333ea);
+            color: white;
+            box-shadow: 0 4px 15px rgba(168, 85, 247, 0.4);
+        }
+        
+        .donate-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 25px rgba(168, 85, 247, 0.6);
         }
 
         /* Settings Modal */
@@ -1904,6 +2099,13 @@
             border: 1px solid rgba(168, 85, 247, 0.4);
         }
         
+        body.ui-new .btn-outline.active {
+            background: linear-gradient(135deg, var(--vlc-orange) 0%, #9333ea 100%);
+            border-color: transparent;
+            color: white;
+            box-shadow: 0 4px 12px rgba(168, 85, 247, 0.4);
+        }
+        
         body.ui-new .btn-primary {
             background: linear-gradient(135deg, var(--vlc-orange) 0%, #9333ea 100%);
             box-shadow: 0 4px 12px rgba(168, 85, 247, 0.3);
@@ -2103,6 +2305,100 @@
             transform: scale(1.1);
         }
         
+        /* New UI Add to List Button */
+        body.ui-new .add-to-list-btn {
+            position: absolute;
+            top: 12px;
+            left: 12px;
+            background: rgba(0, 0, 0, 0.8);
+            border: 1px solid rgba(168, 85, 247, 0.5);
+            color: var(--light);
+            padding: 0.6rem;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            opacity: 0;
+            transform: scale(0.7) translateY(10px);
+            backdrop-filter: blur(10px);
+            z-index: 2;
+        }
+        
+        body.ui-new .movie-card:hover .add-to-list-btn {
+            opacity: 1;
+            transform: scale(1) translateY(0);
+        }
+        
+        body.ui-new .add-to-list-btn:hover {
+            background: var(--success);
+            border-color: var(--success);
+            transform: scale(1.1) translateY(0);
+            box-shadow: 0 4px 15px rgba(40, 167, 69, 0.4);
+        }
+        
+        body.ui-new .add-to-list-btn.in-list {
+            background: var(--success);
+            border-color: var(--success);
+            opacity: 1;
+            transform: scale(1) translateY(0);
+            box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+        }
+        
+        body.ui-new .add-to-list-btn.in-list i:before {
+            content: "\f00c"; /* checkmark */
+        }
+        
+        /* New UI Done Watching Button */
+        body.ui-new .done-watching-btn {
+            position: absolute;
+            top: 12px;
+            left: 60px; /* Position next to the add-to-list button */
+            background: rgba(0, 0, 0, 0.8);
+            border: 1px solid rgba(23, 162, 184, 0.5);
+            color: var(--light);
+            padding: 0.6rem;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            opacity: 0;
+            transform: scale(0.7) translateY(10px);
+            backdrop-filter: blur(10px);
+            z-index: 2;
+        }
+        
+        body.ui-new .movie-card:hover .done-watching-btn {
+            opacity: 1;
+            transform: scale(1) translateY(0);
+        }
+        
+        body.ui-new .done-watching-btn:hover {
+            background: #17a2b8;
+            border-color: #17a2b8;
+            transform: scale(1.1) translateY(0);
+            box-shadow: 0 4px 15px rgba(23, 162, 184, 0.4);
+        }
+        
+        body.ui-new .done-watching-btn.is-done {
+            background: #17a2b8;
+            border-color: #17a2b8;
+            opacity: 1;
+            transform: scale(1) translateY(0);
+            box-shadow: 0 4px 15px rgba(23, 162, 184, 0.3);
+        }
+        
+        body.ui-new .done-watching-btn.is-done i:before {
+            content: "\f058"; /* check-circle */
+        }
+        
         body.ui-new .movie-info {
             padding: 1.25rem;
             background: linear-gradient(180deg, rgba(42, 24, 71, 0.6) 0%, rgba(18, 10, 31, 0.8) 100%);
@@ -2288,6 +2584,27 @@
     </div>
 </div>
 
+<!-- Donate Modal -->
+<div class="donate-modal" id="donateModal">
+    <div class="donate-content">
+        <button class="donate-close" id="donateClose">
+            <i class="fas fa-times"></i>
+        </button>
+        <h2 class="donate-title">
+            <i class="fas fa-heart"></i>
+            Support the Developer
+        </h2>
+        <div class="donate-message">
+            <p>Hi there! I built this app completely on my own — it's been over half a year of late nights, debugging, and learning just to make something people can enjoy. If you've found it useful, a small donation would mean the world to me. It helps keep the project alive and motivates me to keep improving it.</p>
+            <p style="margin-top: 1rem;">Thank you for even considering it ❤️</p>
+        </div>
+        <button class="donate-btn" id="donateButton">
+            <i class="fas fa-heart"></i>
+            Donate
+        </button>
+    </div>
+</div>
+
 <!-- Settings Modal -->
 <div class="settings-modal" id="settingsModal">
     <div class="settings-content">
@@ -2421,7 +2738,7 @@
                         <button class="api-btn" id="tbSaveToken" style="background:#0d6efd; color:#fff;"><i class="fas fa-key"></i> Save Token</button>
                         <button class="api-btn api-btn-secondary" id="tbClearToken"><i class="fas fa-sign-out-alt"></i> Logout</button>
                     </div>
-                    <div style="margin-top:0.25rem; color:#ffc107; font-size:0.9rem;">Token stored locally. Full TorBox integration coming soon.</div>
+                    <div style="margin-top:0.25rem; color:#ffc107; font-size:0.9rem;">Token stored locally.</div>
                 </div>
 
                 <!-- Premiumize Auth (API Key) -->
@@ -2444,6 +2761,17 @@
         <div class="settings-section" style="margin-top:1.25rem;">
             <h3>User Interface</h3>
             <div style="margin-top:0.5rem; padding:1rem; border:1px solid rgba(255,255,255,0.15); border-radius:8px; background: rgba(255,255,255,0.05);">
+                <!-- Fullscreen toggle (first option) -->
+                <div style="margin-bottom:1rem; padding-bottom:0.75rem; border-bottom:1px solid rgba(255,255,255,0.1);">
+                    <label style="display:flex; align-items:center; gap:0.6rem; cursor:pointer;">
+                        <input type="checkbox" id="fullscreenToggle" />
+                        <span><i class="fas fa-expand-arrows-alt" style="margin-right:0.25rem; color:var(--vlc-orange);"></i><strong>Fullscreen Mode</strong></span>
+                    </label>
+                    <div style="margin-top:0.25rem; color:var(--secondary); font-size:0.85rem; margin-left:1.85rem;">
+                        <i class="fas fa-info-circle"></i> Toggle between fullscreen and windowed mode
+                    </div>
+                </div>
+                
                 <div style="display:flex; flex-direction:column; gap:0.75rem;">
                     <label style="display:flex; align-items:center; gap:0.6rem; cursor:pointer;">
                         <input type="radio" name="uiMode" value="new" id="uiModeNew" checked />
@@ -2497,6 +2825,14 @@
                 <i class="fas fa-layer-group"></i>
                 <span>Genres</span>
             </div>
+            <div class="nav-item" data-page="my-list">
+                <i class="fas fa-heart"></i>
+                <span>My List</span>
+            </div>
+            <div class="nav-item" data-page="done-watching">
+                <i class="fas fa-check-circle"></i>
+                <span>Done Watching</span>
+            </div>
             
             <div class="nav-section-title">LIBRARY</div>
             <div class="nav-item" id="sidebarClearCache">
@@ -2544,8 +2880,17 @@
             <i class="fas fa-circle"></i>
             <span>Connected</span>
         </div>
+        <button class="btn btn-outline" id="headerDonateBtn">
+        <i class="fas fa-heart"></i> Donate
+                        </button>
         <button class="btn btn-outline" id="genresBtn">
         <i class="fas fa-layer-group"></i> Genres
+                        </button>
+        <button class="btn btn-outline" id="myListBtn">
+        <i class="fas fa-heart"></i> My List
+                        </button>
+        <button class="btn btn-outline" id="doneWatchingBtn">
+        <i class="fas fa-check-circle"></i> Done Watching
                         </button>
         <button class="btn btn-outline" id="clearCacheBtn">
         <i class="fas fa-trash"></i> Clear Cache
@@ -2633,6 +2978,62 @@
         </div>
         <div class="loading" id="genreEmptyMessage" style="display:none;">
             <i class="fas fa-info-circle"></i> No results found for this selection.
+        </div>
+    </div>
+
+    <!-- My List Page -->
+    <div id="myListPage" style="display: none;">
+        <div class="page-header-enhanced">
+            <div class="page-title-section">
+                <h2 class="section-title">
+                    <i class="fas fa-heart"></i> <span>My List</span>
+                </h2>
+                <p class="page-subtitle">Your personal collection of movies and shows</p>
+            </div>
+            <div class="page-actions">
+                <button class="action-btn" id="clearMyListBtn">
+                    <i class="fas fa-trash"></i>
+                    <span>Clear All</span>
+                </button>
+            </div>
+        </div>
+        
+        <div class="movies-grid" id="myListGrid">
+            <!-- My list items will be loaded here -->
+        </div>
+        <div class="loading" id="myListLoading" style="display:none;">
+            <i class="fas fa-spinner"></i> Loading your list...
+        </div>
+        <div class="loading" id="myListEmpty" style="display:none;">
+            <i class="fas fa-heart-broken"></i> Your list is empty. Start adding movies and shows!
+        </div>
+    </div>
+
+    <!-- Done Watching Page -->
+    <div id="doneWatchingPage" style="display: none;">
+        <div class="page-header-enhanced">
+            <div class="page-title-section">
+                <h2 class="section-title">
+                    <i class="fas fa-check-circle"></i> <span>Done Watching</span>
+                </h2>
+                <p class="page-subtitle">Movies and shows you've finished watching</p>
+            </div>
+            <div class="page-actions">
+                <button class="action-btn" id="clearDoneWatchingBtn">
+                    <i class="fas fa-trash"></i>
+                    <span>Clear All</span>
+                </button>
+            </div>
+        </div>
+        
+        <div class="movies-grid" id="doneWatchingGrid">
+            <!-- Done watching items will be loaded here -->
+        </div>
+        <div class="loading" id="doneWatchingLoading" style="display:none;">
+            <i class="fas fa-spinner"></i> Loading your completed items...
+        </div>
+        <div class="loading" id="doneWatchingEmpty" style="display:none;">
+            <i class="fas fa-check-circle"></i> No completed items yet. Mark movies and shows as done when you finish watching!
         </div>
     </div>
 </main>
@@ -3034,6 +3435,12 @@ Your browser does not support the video tag.
         const saveFirstTimeApiKey = document.getElementById('saveFirstTimeApiKey');
     const openJackettLinkBtn = document.getElementById('openJackettLink');
         
+        // Donate Modal elements
+        const donateModal = document.getElementById('donateModal');
+        const donateClose = document.getElementById('donateClose');
+        const donateButton = document.getElementById('donateButton');
+        const headerDonateBtn = document.getElementById('headerDonateBtn');
+        
         // Settings Modal elements
         const settingsModal = document.getElementById('settingsModal');
     const settingsBtn = document.getElementById('settingsBtn');
@@ -3290,6 +3697,30 @@ Your browser does not support the video tag.
             await ensureDebridState();
             setupEventListeners();
             handleRoute(); // route-aware initial load
+            checkFirstLaunch(); // Show donate modal on first launch
+        }
+        
+        // Check if this is the first launch and show donate modal
+        function checkFirstLaunch() {
+            const hasSeenDonateModal = localStorage.getItem('hasSeenDonateModal');
+            if (!hasSeenDonateModal) {
+                // Wait a bit for the page to fully load before showing the donate modal
+                setTimeout(() => {
+                    showDonateModal();
+                    localStorage.setItem('hasSeenDonateModal', 'true');
+                }, 500);
+            }
+        }
+
+        // Get provider display name for notifications and UI
+        function getProviderDisplayName(provider) {
+            switch(provider) {
+                case 'alldebrid': return 'AllDebrid';
+                case 'torbox': return 'TorBox';
+                case 'premiumize': return 'Premiumize';
+                case 'realdebrid':
+                default: return 'Real‑Debrid';
+            }
         }
 
         // Ensure debrid flags are loaded at startup and before streaming
@@ -3367,6 +3798,26 @@ Your browser does not support the video tag.
             document.body.style.overflow = 'auto';
         }
         
+        // Show donate modal
+        function showDonateModal() {
+            donateModal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+            
+            // Hide the close button initially
+            donateClose.classList.remove('visible');
+            
+            // Show close button after 2 seconds
+            setTimeout(() => {
+                donateClose.classList.add('visible');
+            }, 2000);
+        }
+        
+        // Hide donate modal
+        function hideDonateModal() {
+            donateModal.classList.remove('active');
+            document.body.style.overflow = 'auto';
+        }
+        
         // Show settings modal
         async function showSettingsModal() {
             await loadCurrentApiKey();
@@ -3382,6 +3833,19 @@ Your browser does not support the video tag.
                     uiModeNew.checked = true;
                 } else {
                     uiModeOld.checked = true;
+                }
+            }
+            
+            // Load fullscreen setting
+            const fullscreenToggle = document.getElementById('fullscreenToggle');
+            if (fullscreenToggle && window.electronAPI && window.electronAPI.getFullscreen) {
+                try {
+                    const result = await window.electronAPI.getFullscreen();
+                    if (result.success) {
+                        fullscreenToggle.checked = result.isFullscreen;
+                    }
+                } catch (error) {
+                    console.error('Error loading fullscreen state:', error);
                 }
             }
             
@@ -3460,6 +3924,21 @@ Your browser does not support the video tag.
             const toggleEl = document.getElementById('useTorrentlessToggle');
             const desiredTorrentless = toggleEl ? !!toggleEl.checked : useTorrentless;
             
+            // Handle fullscreen toggle
+            const fullscreenToggle = document.getElementById('fullscreenToggle');
+            if (fullscreenToggle && window.electronAPI && window.electronAPI.setFullscreen) {
+                try {
+                    const result = await window.electronAPI.setFullscreen(fullscreenToggle.checked);
+                    if (!result.success) {
+                        console.error('Failed to set fullscreen:', result.message);
+                        showNotification('Failed to change fullscreen mode');
+                    }
+                } catch (error) {
+                    console.error('Error setting fullscreen:', error);
+                    showNotification('Error changing fullscreen mode');
+                }
+            }
+            
             // Handle UI mode change
             const uiModeNew = document.getElementById('uiModeNew');
             const uiModeOld = document.getElementById('uiModeOld');
@@ -3518,6 +3997,14 @@ Your browser does not support the video tag.
             window.location.hash = '#/genres';
         }
         
+        function showMyListPage() {
+            window.location.hash = '#/my-list';
+        }
+        
+        function showDoneWatchingPage() {
+            window.location.hash = '#/done-watching';
+        }
+        
     function setupEventListeners() {
             // Initialize Video.js player
             if (typeof videojs !== 'undefined') {
@@ -3560,6 +4047,29 @@ Your browser does not support the video tag.
                     const url = 'https://www.youtube.com/watch?v=3igLReZFFzg';
                     if (window.electronAPI?.openExternal) await window.electronAPI.openExternal(url);
                 });
+            }
+            
+            // Donate Modal
+            if (donateClose) {
+                donateClose.addEventListener('click', hideDonateModal);
+            }
+            if (donateButton) {
+                donateButton.addEventListener('click', async () => {
+                    const url = 'https://buymeacoffee.com/ayman228x?status=1';
+                    try {
+                        if (window.electronAPI?.openExternal) {
+                            await window.electronAPI.openExternal(url);
+                        } else {
+                            // Fallback in case preload bridge is unavailable
+                            window.open(url, '_blank', 'noopener');
+                        }
+                    } catch(_) {}
+                    // Optionally close the donate modal after opening the link
+                    try { hideDonateModal(); } catch(_) {}
+                });
+            }
+            if (headerDonateBtn) {
+                headerDonateBtn.addEventListener('click', showDonateModal);
             }
             
             // Settings Modal
@@ -3907,6 +4417,22 @@ Your browser does not support the video tag.
             genresBtn.addEventListener('click', () => {
                 window.location.hash = '#/genres';
             });
+
+            // My List navigation
+            const myListBtn = document.getElementById('myListBtn');
+            if (myListBtn) {
+                myListBtn.addEventListener('click', () => {
+                    window.location.hash = '#/my-list';
+                });
+            }
+
+            // Done Watching navigation
+            const doneWatchingBtn = document.getElementById('doneWatchingBtn');
+            if (doneWatchingBtn) {
+                doneWatchingBtn.addEventListener('click', () => {
+                    window.location.hash = '#/done-watching';
+                });
+            }
 
             // Router: hash change
             window.addEventListener('hashchange', handleRoute);
@@ -4290,6 +4816,10 @@ Your browser does not support the video tag.
                         showHomePage();
                     } else if (page === 'genres') {
                         showGenresPage();
+                    } else if (page === 'my-list') {
+                        showMyListPage();
+                    } else if (page === 'done-watching') {
+                        showDoneWatchingPage();
                     }
                 });
             });
@@ -4383,6 +4913,16 @@ Your browser does not support the video tag.
     await ensureGenresLoaded();
     renderGenres();
     return;
+} else if (hash === '#/my-list') {
+    activeRoute = 'my-list';
+    showSection('my-list');
+    await displayMyList();
+    return;
+} else if (hash === '#/done-watching') {
+    activeRoute = 'done-watching';
+    showSection('done-watching');
+    await displayDoneWatching();
+    return;
 }
 
             // Fallback
@@ -4395,10 +4935,47 @@ Your browser does not support the video tag.
             homePageEl.style.display = section === 'home' ? '' : 'none';
             genresPageEl.style.display = section === 'genres' ? '' : 'none';
             genreDetailsPageEl.style.display = section === 'genreDetails' ? '' : 'none';
+            const myListPageEl = document.getElementById('myListPage');
+            if (myListPageEl) myListPageEl.style.display = section === 'my-list' ? '' : 'none';
+            const doneWatchingPageEl = document.getElementById('doneWatchingPage');
+            if (doneWatchingPageEl) doneWatchingPageEl.style.display = section === 'done-watching' ? '' : 'none';
+            // Update navigation states
+            updateNavigationStates(section);
             // Reset loading flag for new route
             isLoading = false;
             // Scroll to top on route change
             window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function updateNavigationStates(activeSection) {
+            // Update sidebar navigation (new UI)
+            const sidebarNavItems = document.querySelectorAll('.nav-item[data-page]');
+            sidebarNavItems.forEach(item => {
+                item.classList.remove('active');
+                if (item.dataset.page === activeSection || 
+                    (activeSection === 'genreDetails' && item.dataset.page === 'genres')) {
+                    item.classList.add('active');
+                }
+            });
+
+            // Update header buttons (classic UI)
+            const headerButtons = {
+                'home': null, // No specific home button
+                'genres': document.getElementById('genresBtn'),
+                'my-list': document.getElementById('myListBtn'),
+                'done-watching': document.getElementById('doneWatchingBtn')
+            };
+
+            // Reset all header button active states
+            Object.values(headerButtons).forEach(btn => {
+                if (btn) btn.classList.remove('active');
+            });
+
+            // Set active header button
+            const activeBtn = headerButtons[activeSection];
+            if (activeBtn) {
+                activeBtn.classList.add('active');
+            }
         }
 
         async function ensureGenresLoaded() {
@@ -4537,6 +5114,12 @@ Your browser does not support the video tag.
                 const year = (item.release_date || item.first_air_date || '').substring(0, 4);
                 const rating = (item.vote_average || 0).toFixed(1);
                 card.innerHTML = `
+                    <button class="add-to-list-btn" onclick="toggleMyList(event, ${item.id}, '${mediaType}', '${title.replace(/'/g, "\\'")}', '${item.poster_path}', '${year}', ${item.vote_average || 0})">
+                        <i class="fas fa-plus"></i>
+                    </button>
+                    <button class="done-watching-btn" onclick="toggleDoneWatching(event, ${item.id}, '${mediaType}', '${title.replace(/'/g, "\\'")}', '${item.poster_path}', '${year}', ${item.vote_average || 0})">
+                        <i class="fas fa-check"></i>
+                    </button>
                     <img src="https://image.tmdb.org/t/p/w500${item.poster_path}" alt="${title}" class="movie-poster">
                     <div class="movie-info">
                         <h3 class="movie-title">${title}</h3>
@@ -4636,6 +5219,12 @@ Your browser does not support the video tag.
                 card.dataset.rating = movie.vote_average || 0;
                 card.dataset.date = movie.release_date || movie.first_air_date || '';
                 card.innerHTML = `
+                    <button class="add-to-list-btn" onclick="toggleMyList(event, ${movie.id}, '${movie.media_type || 'movie'}', '${(movie.title || movie.name || '').replace(/'/g, "\\'")}', '${movie.poster_path}', '${(movie.release_date || movie.first_air_date || '').substring(0, 4)}', ${movie.vote_average || 0})">
+                        <i class="fas fa-plus"></i>
+                    </button>
+                    <button class="done-watching-btn" onclick="toggleDoneWatching(event, ${movie.id}, '${movie.media_type || 'movie'}', '${(movie.title || movie.name || '').replace(/'/g, "\\'")}', '${movie.poster_path}', '${(movie.release_date || movie.first_air_date || '').substring(0, 4)}', ${movie.vote_average || 0})">
+                        <i class="fas fa-check"></i>
+                    </button>
                     <img src="https://image.tmdb.org/t/p/w500${movie.poster_path}" alt="${movie.title || movie.name}" class="movie-poster">
                     <div class="movie-info">
                         <h3 class="movie-title">${movie.title || movie.name}</h3>
@@ -5032,7 +5621,7 @@ Your browser does not support the video tag.
         async function startStream(magnet) {
             // Refresh debrid flags before deciding path
             await ensureDebridState();
-            const providerLabel = (debridProvider === 'alldebrid') ? 'AllDebrid' : (debridProvider === 'torbox' ? 'TorBox' : 'Real‑Debrid');
+            const providerLabel = getProviderDisplayName(debridProvider);
             // If Debrid is enabled but not authenticated, block fallback and prompt login
             if (useDebrid && !debridAuth) {
                 console.warn('[UI][Debrid] blocked: enabled but not logged in');
@@ -5521,13 +6110,89 @@ Your browser does not support the video tag.
             });
         }
 
-        // Show notification
-        function showNotification(message) {
+        // Show notification with optional duration
+        function showNotification(message, type = 'info', duration = 3000) {
             notification.textContent = message;
             notification.classList.add('show');
-            setTimeout(() => {
+            
+            // Clear any existing timeout
+            if (window.notificationTimeout) {
+                clearTimeout(window.notificationTimeout);
+            }
+            
+            window.notificationTimeout = setTimeout(() => {
                 notification.classList.remove('show');
-            }, 3000);
+            }, duration);
+        }
+
+        // Persistent update notification that stays until user restarts
+        let persistentUpdateNotification = null;
+        
+        function showPersistentUpdateNotification() {
+            // Remove any existing persistent notification
+            hideUpdateNotification();
+            
+            // Create persistent notification element
+            persistentUpdateNotification = document.createElement('div');
+            persistentUpdateNotification.id = 'persistentUpdateNotification';
+            persistentUpdateNotification.innerHTML = `
+                <div style="
+                    position: fixed;
+                    top: 20px;
+                    right: 20px;
+                    background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+                    color: white;
+                    padding: 16px 20px;
+                    border-radius: 12px;
+                    box-shadow: 0 8px 32px rgba(34, 197, 94, 0.3);
+                    z-index: 10000;
+                    font-weight: 600;
+                    font-size: 14px;
+                    max-width: 320px;
+                    backdrop-filter: blur(10px);
+                    border: 1px solid rgba(255, 255, 255, 0.1);
+                    animation: slideInRight 0.4s ease-out;
+                ">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <i class="fas fa-rocket" style="font-size: 18px; color: #dcfce7;"></i>
+                        <div>
+                            <div style="font-size: 15px; margin-bottom: 4px;">🎉 Update Ready!</div>
+                            <div style="font-size: 13px; opacity: 0.9;">Restart the app to complete the update</div>
+                        </div>
+                        <button onclick="restartForUpdate()" style="
+                            background: rgba(255, 255, 255, 0.2);
+                            border: 1px solid rgba(255, 255, 255, 0.3);
+                            color: white;
+                            padding: 8px 12px;
+                            border-radius: 8px;
+                            cursor: pointer;
+                            font-size: 12px;
+                            font-weight: 600;
+                            transition: all 0.2s ease;
+                        " onmouseover="this.style.background='rgba(255,255,255,0.3)'" onmouseout="this.style.background='rgba(255,255,255,0.2)'">
+                            Restart
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(persistentUpdateNotification);
+            
+            // Also show a regular notification
+            showNotification('🎉 Update ready! Restart to complete installation.', 'success', 6000);
+        }
+        
+        function hideUpdateNotification() {
+            if (persistentUpdateNotification) {
+                persistentUpdateNotification.remove();
+                persistentUpdateNotification = null;
+            }
+        }
+        
+        function restartForUpdate() {
+            hideUpdateNotification();
+            // Trigger restart via the existing restart button in the overlay
+            document.getElementById('updateRestartBtn')?.click();
         }
 
         // --- Custom Player Logic ---
@@ -5784,6 +6449,31 @@ Your browser does not support the video tag.
             wcjsLoading.style.display = 'none';
             clearInterval(wcjsTimer);
             wcjsTimer = null;
+            
+            // Exit video fullscreen if active
+            if (document.fullscreenElement) {
+                try {
+                    await document.exitFullscreen();
+                } catch(_) {}
+            }
+            
+            // Also exit app fullscreen if the window is in fullscreen to prevent black screen
+            if (window.electronAPI && window.electronAPI.getFullscreen) {
+                try {
+                    const result = await window.electronAPI.getFullscreen();
+                    if (result.success && result.isFullscreen) {
+                        // Temporarily exit app fullscreen to prevent black screen
+                        await window.electronAPI.setFullscreen(false);
+                        // Show notification that user can re-enable fullscreen via settings
+                        setTimeout(() => {
+                            showNotification('Exited fullscreen mode. Re-enable in Settings if needed.', 'info', 4000);
+                        }, 500);
+                    }
+                } catch (error) {
+                    console.error('Error handling fullscreen exit:', error);
+                }
+            }
+            
             if (wcjsPlayer) {
                 try { wcjsPlayer.stop(); } catch(_){}
                 try { wcjsPlayer.close && wcjsPlayer.close(); } catch(_){}
@@ -6008,6 +6698,30 @@ Your browser does not support the video tag.
         async function closeCustomPlayer_() {
             customPlayerContainer.classList.remove('active');
             try { customVideo.pause(); } catch(_) {}
+            
+            // Exit video fullscreen if active
+            if (document.fullscreenElement) {
+                try {
+                    await document.exitFullscreen();
+                } catch(_) {}
+            }
+            
+            // Also exit app fullscreen if the window is in fullscreen to prevent black screen
+            if (window.electronAPI && window.electronAPI.getFullscreen) {
+                try {
+                    const result = await window.electronAPI.getFullscreen();
+                    if (result.success && result.isFullscreen) {
+                        // Temporarily exit app fullscreen to prevent black screen
+                        await window.electronAPI.setFullscreen(false);
+                        // Show notification that user can re-enable fullscreen via settings
+                        setTimeout(() => {
+                            showNotification('Exited fullscreen mode. Re-enable in Settings if needed.', 'info', 4000);
+                        }, 500);
+                    }
+                } catch (error) {
+                    console.error('Error handling fullscreen exit:', error);
+                }
+            }
             
             // Cleanup HLS instance if any
             if (window.hls) {
@@ -6355,8 +7069,503 @@ Your browser does not support the video tag.
                 }
             });
         } catch(_){ }
+
+        // ---- Updater overlay wiring (non-intrusive) ----
+        try {
+            const overlay = document.getElementById('updateOverlay');
+            const icon = document.getElementById('updateStatusIcon');
+            const text = document.getElementById('updateStatusText');
+            const bar = document.getElementById('updateProgressBar');
+            const pct = document.getElementById('updatePercent');
+            const restartBtn = document.getElementById('updateRestartBtn');
+
+            function showOverlay() {
+                if (overlay) overlay.style.display = 'flex';
+                document.body && (document.body.style.overflow = 'hidden');
+            }
+            function hideOverlay() {
+                if (overlay) overlay.style.display = 'none';
+                document.body && (document.body.style.overflow = 'auto');
+            }
+
+            if (window.electronAPI) {
+                // When update check starts, show longer notification
+                window.electronAPI.onUpdateChecking?.((_info) => {
+                    showNotification('🔍 Checking for updates...', 'info', 5000); // Show for 5 seconds
+                });
+
+                // When no update is available, show longer notification
+                window.electronAPI.onUpdateNotAvailable?.((_info) => {
+                    showNotification('✅ App is up to date', 'success', 4000); // Show for 4 seconds
+                });
+                
+                // When update becomes available, show persistent overlay and notification
+                window.electronAPI.onUpdateAvailable?.((_info) => {
+                    showOverlay();
+                    if (icon) { icon.className = 'fas fa-download'; icon.style.animation = 'pulse 1.5s ease-in-out infinite'; icon.style.color = '#a855f7'; }
+                    if (text) text.textContent = 'Update found! Download starting, please wait...';
+                    if (bar) bar.style.width = '0%';
+                    if (pct) pct.textContent = '0%';
+                    if (restartBtn) restartBtn.style.display = 'none';
+                    
+                    const warningText = document.getElementById('updateWarningText');
+                    if (warningText) warningText.textContent = '⚠️ Downloading update - please keep the app open';
+                    
+                    // Show persistent notification that update download started
+                    showNotification('📥 Update found! Download starting...', 'info', 8000); // Show for 8 seconds
+                });
+                
+                // Progress updates - keep overlay visible throughout download
+                window.electronAPI.onUpdateProgress?.((p) => {
+                    const percent = Math.max(0, Math.min(100, Math.round(p?.percent || 0)));
+                    if (bar) bar.style.width = percent + '%';
+                    if (pct) pct.textContent = percent + '%';
+                    if (text) text.textContent = `Downloading update... ${percent}% complete`;
+                    if (icon) { icon.className = 'fas fa-download'; icon.style.animation = 'pulse 1.5s ease-in-out infinite'; }
+                    
+                    // Show progress notification every 25%
+                    if (percent > 0 && percent % 25 === 0) {
+                        showNotification(`📥 Download progress: ${percent}%`, 'info', 3000);
+                    }
+                });
+                
+                // Download finished - keep overlay visible and show persistent restart notification
+                window.electronAPI.onUpdateDownloaded?.((_info) => {
+                    if (icon) { icon.className = 'fas fa-check-circle'; icon.style.animation = 'none'; icon.style.color = '#22c55e'; }
+                    if (text) text.textContent = 'Update downloaded successfully! Click "Restart Now" to complete the update.';
+                    if (bar) bar.style.width = '100%';
+                    if (pct) pct.textContent = '100%';
+                    if (restartBtn) restartBtn.style.display = 'inline-flex';
+                    
+                    const warningText = document.getElementById('updateWarningText');
+                    if (warningText) warningText.textContent = '✅ Update ready! You can restart the app anytime to apply the update';
+                    
+                    const closeBtn = document.getElementById('updateCloseBtn');
+                    if (closeBtn) closeBtn.style.display = 'flex';
+                    
+                    // Show persistent restart notification that stays until user restarts
+                    showPersistentUpdateNotification();
+                    
+                    // Auto-dismiss overlay after 10 seconds, but keep persistent notification
+                    setTimeout(() => {
+                        hideOverlay();
+                    }, 10000);
+                });
+                
+                // Restart button
+                restartBtn?.addEventListener('click', async () => {
+                    try { 
+                        hideUpdateNotification(); // Hide the persistent notification
+                        await window.electronAPI.installUpdateNow?.(); 
+                    } catch(_) {}
+                });
+            }
+        } catch(_){ }
+
+        // ---- My List functionality ----
+        let myListCache = [];
+
+        async function loadMyList() {
+            try {
+                const response = await window.electronAPI.myListRead();
+                if (response.success) {
+                    myListCache = response.data || [];
+                    return myListCache;
+                } else {
+                    console.error('Failed to load my list:', response.message);
+                    return [];
+                }
+            } catch (error) {
+                console.error('Error loading my list:', error);
+                return [];
+            }
+        }
+
+        async function saveMyList() {
+            try {
+                const response = await window.electronAPI.myListWrite(myListCache);
+                if (!response.success) {
+                    console.error('Failed to save my list:', response.message);
+                }
+                return response.success;
+            } catch (error) {
+                console.error('Error saving my list:', error);
+                return false;
+            }
+        }
+
+        async function toggleMyList(event, id, mediaType, title, posterPath, year, rating) {
+            event.preventDefault();
+            event.stopPropagation();
+            
+            const button = event.target.closest('.add-to-list-btn');
+            if (!button) return;
+
+            const existingIndex = myListCache.findIndex(item => item.id === id && item.media_type === mediaType);
+            
+            if (existingIndex >= 0) {
+                // Remove from list
+                myListCache.splice(existingIndex, 1);
+                button.classList.remove('in-list');
+                button.innerHTML = '<i class="fas fa-plus"></i>';
+                button.title = 'Add to My List';
+            } else {
+                // Add to list
+                const listItem = {
+                    id: id,
+                    media_type: mediaType,
+                    title: title,
+                    poster_path: posterPath,
+                    year: year,
+                    vote_average: rating,
+                    added_date: new Date().toISOString()
+                };
+                myListCache.unshift(listItem); // Add to beginning
+                button.classList.add('in-list');
+                button.innerHTML = '<i class="fas fa-check"></i>';
+                button.title = 'Remove from My List';
+            }
+
+            await saveMyList();
+            
+            // Refresh My List page if it's currently open
+            if (document.getElementById('myListPage').style.display !== 'none') {
+                displayMyList();
+            }
+        }
+
+        function updateCardListStatus(cardElement, id, mediaType) {
+            const button = cardElement.querySelector('.add-to-list-btn');
+            if (!button) return;
+
+            const isInList = myListCache.some(item => item.id === id && item.media_type === mediaType);
+            
+            if (isInList) {
+                button.classList.add('in-list');
+                button.innerHTML = '<i class="fas fa-check"></i>';
+                button.title = 'Remove from My List';
+            } else {
+                button.classList.remove('in-list');
+                button.innerHTML = '<i class="fas fa-plus"></i>';
+                button.title = 'Add to My List';
+            }
+        }
+
+        function updateCardDoneStatus(cardElement, id, mediaType) {
+            const button = cardElement.querySelector('.done-watching-btn');
+            if (!button) return;
+
+            const isDone = doneWatchingCache.some(item => item.id === id && item.media_type === mediaType);
+            
+            if (isDone) {
+                button.classList.add('watched');
+                button.innerHTML = '<i class="fas fa-check-double"></i>';
+                button.title = 'Remove from Done Watching';
+            } else {
+                button.classList.remove('watched');
+                button.innerHTML = '<i class="fas fa-check"></i>';
+                button.title = 'Add to Done Watching';
+            }
+        }
+
+        async function displayMyList() {
+            const grid = document.getElementById('myListGrid');
+            const loading = document.getElementById('myListLoading');
+            const empty = document.getElementById('myListEmpty');
+            
+            if (!grid) return;
+
+            loading.style.display = 'block';
+            empty.style.display = 'none';
+            grid.innerHTML = '';
+
+            await loadMyList();
+
+            loading.style.display = 'none';
+
+            if (myListCache.length === 0) {
+                empty.style.display = 'block';
+                return;
+            }
+
+            myListCache.forEach(item => {
+                const card = document.createElement('div');
+                card.className = 'movie-card';
+                card.dataset.rating = item.vote_average || 0;
+                card.dataset.date = `${item.year}-01-01`; // Approximate date for consistency
+                card.innerHTML = `
+                    <button class="add-to-list-btn in-list" onclick="toggleMyList(event, ${item.id}, '${item.media_type}', '${item.title.replace(/'/g, "\\'")}', '${item.poster_path}', '${item.year}', ${item.vote_average})">
+                        <i class="fas fa-check"></i>
+                    </button>
+                    <img src="https://image.tmdb.org/t/p/w500${item.poster_path}" alt="${item.title}" class="movie-poster">
+                    <div class="movie-info">
+                        <h3 class="movie-title">${item.title}</h3>
+                        <p class="movie-year">${item.year}</p>
+                    </div>
+                    <div class="movie-rating">
+                        <i class="fas fa-star"></i> ${Number(item.vote_average).toFixed(1)}
+                    </div>
+                `;
+                card.addEventListener('click', (e) => {
+                    if (!e.target.closest('.add-to-list-btn')) {
+                        openDetailsModal(item, item.media_type);
+                    }
+                });
+                grid.appendChild(card);
+            });
+        }
+
+        async function clearMyList() {
+            if (confirm('Are you sure you want to clear your entire list? This action cannot be undone.')) {
+                myListCache = [];
+                await saveMyList();
+                
+                // Update all visible cards
+                document.querySelectorAll('.add-to-list-btn.in-list').forEach(button => {
+                    button.classList.remove('in-list');
+                    button.innerHTML = '<i class="fas fa-plus"></i>';
+                    button.title = 'Add to My List';
+                });
+                
+                // Refresh My List page if open
+                if (document.getElementById('myListPage').style.display !== 'none') {
+                    displayMyList();
+                }
+            }
+        }
+
+        // ---- Done Watching functionality ----
+        let doneWatchingCache = [];
+
+        async function loadDoneWatching() {
+            try {
+                const response = await window.electronAPI.doneWatchingRead();
+                if (response.success) {
+                    doneWatchingCache = response.data || [];
+                    return doneWatchingCache;
+                } else {
+                    console.error('Failed to load done watching:', response.message);
+                    return [];
+                }
+            } catch (error) {
+                console.error('Error loading done watching:', error);
+                return [];
+            }
+        }
+
+        async function saveDoneWatching() {
+            try {
+                const response = await window.electronAPI.doneWatchingWrite(doneWatchingCache);
+                if (!response.success) {
+                    console.error('Failed to save done watching:', response.message);
+                }
+                return response.success;
+            } catch (error) {
+                console.error('Error saving done watching:', error);
+                return false;
+            }
+        }
+
+        async function toggleDoneWatching(event, id, mediaType, title, posterPath, year, rating) {
+            event.preventDefault();
+            event.stopPropagation();
+            
+            const button = event.target.closest('.done-watching-btn');
+            if (!button) return;
+
+            const existingIndex = doneWatchingCache.findIndex(item => item.id === id && item.media_type === mediaType);
+            
+            if (existingIndex >= 0) {
+                // Remove from done watching
+                doneWatchingCache.splice(existingIndex, 1);
+                button.classList.remove('is-done');
+                button.innerHTML = '<i class="fas fa-check"></i>';
+                button.title = 'Mark as Done Watching';
+            } else {
+                // Add to done watching
+                const doneItem = {
+                    id: id,
+                    media_type: mediaType,
+                    title: title,
+                    poster_path: posterPath,
+                    year: year,
+                    vote_average: rating,
+                    completed_date: new Date().toISOString()
+                };
+                doneWatchingCache.unshift(doneItem); // Add to beginning
+                button.classList.add('is-done');
+                button.innerHTML = '<i class="fas fa-check-circle"></i>';
+                button.title = 'Remove from Done Watching';
+            }
+
+            await saveDoneWatching();
+            
+            // Refresh Done Watching page if it's currently open
+            if (document.getElementById('doneWatchingPage').style.display !== 'none') {
+                displayDoneWatching();
+            }
+        }
+
+        function updateCardDoneStatus(cardElement, id, mediaType) {
+            const button = cardElement.querySelector('.done-watching-btn');
+            if (!button) return;
+
+            const isDone = doneWatchingCache.some(item => item.id === id && item.media_type === mediaType);
+            
+            if (isDone) {
+                button.classList.add('is-done');
+                button.innerHTML = '<i class="fas fa-check-circle"></i>';
+                button.title = 'Remove from Done Watching';
+            } else {
+                button.classList.remove('is-done');
+                button.innerHTML = '<i class="fas fa-check"></i>';
+                button.title = 'Mark as Done Watching';
+            }
+        }
+
+        async function displayDoneWatching() {
+            const grid = document.getElementById('doneWatchingGrid');
+            const loading = document.getElementById('doneWatchingLoading');
+            const empty = document.getElementById('doneWatchingEmpty');
+            
+            if (!grid) return;
+
+            loading.style.display = 'block';
+            empty.style.display = 'none';
+            grid.innerHTML = '';
+
+            await loadDoneWatching();
+
+            loading.style.display = 'none';
+
+            if (doneWatchingCache.length === 0) {
+                empty.style.display = 'block';
+                return;
+            }
+
+            doneWatchingCache.forEach(item => {
+                const card = document.createElement('div');
+                card.className = 'movie-card';
+                card.dataset.rating = item.vote_average || 0;
+                card.dataset.date = `${item.year}-01-01`; // Approximate date for consistency
+                card.innerHTML = `
+                    <button class="add-to-list-btn" onclick="toggleMyList(event, ${item.id}, '${item.media_type}', '${item.title.replace(/'/g, "\\'")}', '${item.poster_path}', '${item.year}', ${item.vote_average})">
+                        <i class="fas fa-plus"></i>
+                    </button>
+                    <button class="done-watching-btn is-done" onclick="toggleDoneWatching(event, ${item.id}, '${item.media_type}', '${item.title.replace(/'/g, "\\'")}', '${item.poster_path}', '${item.year}', ${item.vote_average})">
+                        <i class="fas fa-check-circle"></i>
+                    </button>
+                    <img src="https://image.tmdb.org/t/p/w500${item.poster_path}" alt="${item.title}" class="movie-poster">
+                    <div class="movie-info">
+                        <h3 class="movie-title">${item.title}</h3>
+                        <p class="movie-year">${item.year}</p>
+                    </div>
+                    <div class="movie-rating">
+                        <i class="fas fa-star"></i> ${Number(item.vote_average).toFixed(1)}
+                    </div>
+                `;
+                card.addEventListener('click', (e) => {
+                    if (!e.target.closest('.add-to-list-btn') && !e.target.closest('.done-watching-btn')) {
+                        openDetailsModal(item, item.media_type);
+                    }
+                });
+                grid.appendChild(card);
+            });
+        }
+
+        async function clearDoneWatching() {
+            if (confirm('Are you sure you want to clear your entire done watching list? This action cannot be undone.')) {
+                doneWatchingCache = [];
+                await saveDoneWatching();
+                
+                // Update all visible cards
+                document.querySelectorAll('.done-watching-btn.is-done').forEach(button => {
+                    button.classList.remove('is-done');
+                    button.innerHTML = '<i class="fas fa-check"></i>';
+                    button.title = 'Mark as Done Watching';
+                });
+                
+                // Refresh Done Watching page if open
+                if (document.getElementById('doneWatchingPage').style.display !== 'none') {
+                    displayDoneWatching();
+                }
+            }
+        }
+
+        // Load both lists on app start
+        document.addEventListener('DOMContentLoaded', async () => {
+            await loadMyList();
+            await loadDoneWatching();
+            
+            // Update existing cards with both list statuses when movies are loaded
+            const originalDisplayMovies = displayMovies;
+            displayMovies = function(movies, append = true) {
+                const result = originalDisplayMovies.call(this, movies, append);
+                
+                // Update both list and done watching status for newly added cards
+                setTimeout(() => {
+                    movies.forEach(movie => {
+                        const cards = document.querySelectorAll(`[data-rating="${movie.vote_average || 0}"]`);
+                        cards.forEach(card => {
+                            updateCardListStatus(card, movie.id, movie.media_type || 'movie');
+                            updateCardDoneStatus(card, movie.id, movie.media_type || 'movie');
+                        });
+                    });
+                }, 100);
+                
+                return result;
+            };
+
+            // Also update cards for genre items
+            const originalDisplayGenreItems = displayGenreItems;
+            displayGenreItems = function(items, mediaType) {
+                const result = originalDisplayGenreItems.call(this, items, mediaType);
+                
+                // Update both list and done watching status for genre cards
+                setTimeout(() => {
+                    items.forEach(item => {
+                        const cards = document.querySelectorAll(`.movie-card`);
+                        cards.forEach(card => {
+                            const cardImg = card.querySelector('img');
+                            if (cardImg && cardImg.src.includes(item.poster_path)) {
+                                updateCardListStatus(card, item.id, mediaType);
+                                updateCardDoneStatus(card, item.id, mediaType);
+                            }
+                        });
+                    });
+                }, 100);
+                
+                return result;
+            };
+
+            // Add button handlers
+            document.getElementById('clearMyListBtn')?.addEventListener('click', clearMyList);
+            document.getElementById('clearDoneWatchingBtn')?.addEventListener('click', clearDoneWatching);
+        });
     </script>
     
+    <!-- Updater Overlay (enhanced, user-friendly) -->
+    <div id="updateOverlay" style="position:fixed; inset:0; background:rgba(0,0,0,0.95); z-index:9999; display:none; align-items:center; justify-content:center; backdrop-filter:blur(10px);">
+        <div style="background:linear-gradient(135deg, #2a1847 0%, #1f1235 100%); border:2px solid #a855f7; padding:2.5rem; border-radius:16px; width:min(90%, 480px); text-align:center; color:#f8f9fa; box-shadow:0 20px 40px rgba(0,0,0,0.5); position:relative;">
+            <!-- Close button (only shown when download is complete) -->
+            <button id="updateCloseBtn" onclick="hideOverlay()" style="position:absolute; top:15px; right:15px; background:rgba(255,255,255,0.1); border:none; color:#c084fc; width:32px; height:32px; border-radius:50%; cursor:pointer; display:none; align-items:center; justify-content:center; transition:all 0.2s ease;" onmouseover="this.style.background='rgba(255,255,255,0.2)'" onmouseout="this.style.background='rgba(255,255,255,0.1)'">
+                <i class="fas fa-times" style="font-size:14px;"></i>
+            </button>
+            
+            <div id="updateStatusIcon" class="fas fa-download" style="font-size:3rem; margin-bottom:1.5rem; color:#a855f7; animation: spin 1s linear infinite;"></div>
+            <h2 style="margin:0 0 0.5rem 0; font-size:1.5rem; font-weight:600;">App Update in Progress</h2>
+            <p id="updateStatusText" style="margin:0.25rem 0 1.5rem 0; color:#c084fc; font-size:1rem; line-height:1.4;">Update found! Downloading now, please wait...</p>
+            <div style="height:12px; background:rgba(255,255,255,0.08); border-radius:12px; overflow:hidden; margin-bottom:12px; box-shadow:inset 0 2px 4px rgba(0,0,0,0.3);">
+                <div id="updateProgressBar" style="height:100%; width:0%; background:linear-gradient(90deg, #a855f7, #22c55e); transition:width 0.4s ease; border-radius:12px;"></div>
+            </div>
+            <div id="updatePercent" style="font-weight:700; color:#a855f7; font-size:1.1rem; margin-bottom:1rem;">0%</div>
+            <p id="updateWarningText" style="margin:0.5rem 0 1rem 0; color:#8b5cf6; font-size:0.9rem; opacity:0.8;">⚠️ Please do not close the application during the update</p>
+            <button id="updateRestartBtn" class="btn btn-primary" style="margin-top:1rem; display:none; padding:0.75rem 2rem; font-size:1rem; border-radius:8px;">
+                <i class="fas fa-sync-alt"></i> Restart Now to Complete Update
+            </button>
+        </div>
+    </div>
+
     <!-- Resume Prompt Modal (top-level) -->
     <div class="modal" id="resumeModal">
         <div class="modal-content" style="max-width:480px">
