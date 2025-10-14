@@ -20,6 +20,22 @@ contextBridge.exposeInMainWorld('electronAPI', {
   restartApp: () => ipcRenderer.invoke('restart-app'),
   openExternal: (url) => ipcRenderer.invoke('open-external', url),
   copyToClipboard: (text) => ipcRenderer.invoke('copy-to-clipboard', text),
+  // Updater bridge (events only + install trigger)
+  onUpdateChecking: (cb) => ipcRenderer.on('update-checking', (_e, info) => cb && cb(info)),
+  onUpdateAvailable: (cb) => ipcRenderer.on('update-available', (_e, info) => cb && cb(info)),
+  onUpdateNotAvailable: (cb) => ipcRenderer.on('update-not-available', (_e, info) => cb && cb(info)),
+  onUpdateProgress: (cb) => ipcRenderer.on('update-download-progress', (_e, p) => cb && cb(p)),
+  onUpdateDownloaded: (cb) => ipcRenderer.on('update-downloaded', (_e, info) => cb && cb(info)),
+  installUpdateNow: () => ipcRenderer.invoke('updater-install'),
+  // My List API
+  myListRead: () => ipcRenderer.invoke('my-list-read'),
+  myListWrite: (data) => ipcRenderer.invoke('my-list-write', data),
+  // Done Watching API
+  doneWatchingRead: () => ipcRenderer.invoke('done-watching-read'),
+  doneWatchingWrite: (data) => ipcRenderer.invoke('done-watching-write', data),
+  // Fullscreen API
+  setFullscreen: (isFullscreen) => ipcRenderer.invoke('set-fullscreen', isFullscreen),
+  getFullscreen: () => ipcRenderer.invoke('get-fullscreen'),
   // WebChimera exposure (optional, may be null if not installed)
   wcjs: {
     available: Boolean(wcRendererMod),
