@@ -36,6 +36,99 @@ export function startServer(userDataPath) {
     const __filename = fileURLToPath(import.meta.url);
     const __dirname = path.dirname(__filename);
 
+    // Trakt API Configuration
+    const TRAKT_CONFIG = {
+        CLIENT_ID: 'd1fd29900d9ed0b07de3529907bd290c0f5eb7e96c9a8c544ff1f919fd3c0d18',
+        CLIENT_SECRET: '2a773d3d57be6662a51266ca40c95366cec011ad630a8601f8710484be20c04c',
+        BASE_URL: 'https://api.trakt.tv',
+        REDIRECT_URI: 'urn:ietf:wg:oauth:2.0:oob',
+        API_VERSION: '2'
+    };
+
+    // Trakt API helper function
+    async function traktFetch(endpoint, options = {}) {
+        const url = `${TRAKT_CONFIG.BASE_URL}${endpoint}`;
+        const headers = {
+            'Content-Type': 'application/json',
+            'trakt-api-version': TRAKT_CONFIG.API_VERSION,
+            'trakt-api-key': TRAKT_CONFIG.CLIENT_ID,
+            ...options.headers
+        };
+
+        // Add access token if available
+        const traktToken = readTraktToken();
+        if (traktToken && traktToken.access_token) {
+            headers['Authorization'] = `Bearer ${traktToken.access_token}`;
+        }
+
+        console.log(`[TRAKT] ${options.method || 'GET'} ${url}`);
+        
+        const response = await fetch(url, {
+            ...options,
+            headers
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error(`[TRAKT] Error ${response.status}: ${errorText}`);
+            throw new Error(`Trakt API Error: ${response.status} ${errorText}`);
+        }
+
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+            return await response.json();
+        }
+        return null;
+    }
+
+    // Trakt token storage functions
+    const TRAKT_TOKEN_PATH = path.join(userDataPath, 'trakt_token.json');
+    
+    function readTraktToken() {
+        try {
+            if (fs.existsSync(TRAKT_TOKEN_PATH)) {
+                const tokenData = JSON.parse(fs.readFileSync(TRAKT_TOKEN_PATH, 'utf8'));
+                // Check if token is expired
+                if (tokenData.expires_at && Date.now() > tokenData.expires_at) {
+                    console.log('[TRAKT] Token expired, needs refresh');
+                    return null;
+                }
+                return tokenData;
+            }
+        } catch (error) {
+            console.error('[TRAKT] Error reading token:', error);
+        }
+        return null;
+    }
+
+    function saveTraktToken(tokenData) {
+        try {
+            // Calculate expiration time
+            if (tokenData.expires_in) {
+                tokenData.expires_at = Date.now() + (tokenData.expires_in * 1000);
+            }
+            fs.writeFileSync(TRAKT_TOKEN_PATH, JSON.stringify(tokenData, null, 2));
+            console.log('[TRAKT] Token saved successfully');
+            return true;
+        } catch (error) {
+            console.error('[TRAKT] Error saving token:', error);
+            return false;
+        }
+    }
+
+    function deleteTraktToken() {
+        try {
+            if (fs.existsSync(TRAKT_TOKEN_PATH)) {
+                fs.unlinkSync(TRAKT_TOKEN_PATH);
+                console.log('[TRAKT] Token deleted');
+            }
+            return true;
+        } catch (error) {
+            console.error('[TRAKT] Error deleting token:', error);
+            return false;
+        }
+    }
+
     app.use(cors());
     app.use(express.static(path.join(__dirname, 'public')));
     app.use(express.json());
@@ -718,14 +811,19 @@ export function startServer(userDataPath) {
             }
             if (/vtt/i.test(ct)) ext = '.vtt';
             else if (/srt/i.test(ct)) ext = '.srt';
+            else if (/ass|ssa/i.test(ct)) ext = '.ass';
             // Convert to VTT when SRT detected
             let text = buf.toString('utf8');
             let finalPath = '';
             if (ext === '.vtt' || /^\s*WEBVTT/i.test(text)) {
                 finalPath = path.join(SUB_TMP_DIR, `${base}.vtt`);
                 fs.writeFileSync(finalPath, /^\s*WEBVTT/i.test(text) ? text : `WEBVTT\n\n${text}`);
-            } else if (ext === '.srt' || /(\d{2}:\d{2}:\d{2}),\d{3}\s*-->/m.test(text)) {
+            } else if (ext === '.srt' || /(\d{2}:\d{2}:\d{2}),(\d{3})\s*-->/m.test(text)) {
                 const vtt = srtToVtt(text);
+                finalPath = path.join(SUB_TMP_DIR, `${base}.vtt`);
+                fs.writeFileSync(finalPath, vtt);
+            } else if (ext === '.ass' || /\[Script Info\]/i.test(text)) {
+                const vtt = assToVtt(text);
                 finalPath = path.join(SUB_TMP_DIR, `${base}.vtt`);
                 fs.writeFileSync(finalPath, vtt);
             } else {
@@ -1565,6 +1663,617 @@ export function startServer(userDataPath) {
         }
     });
 
+    // ===== TRAKT API ENDPOINTS =====
+
+    // Trakt device authentication - step 1: get device code
+    app.post('/api/trakt/device/code', async (req, res) => {
+        try {
+            const response = await traktFetch('/oauth/device/code', {
+                method: 'POST',
+                body: JSON.stringify({
+                    client_id: TRAKT_CONFIG.CLIENT_ID
+                })
+            });
+
+            // Store device code for verification
+            saveTraktToken({ device_code: response.device_code });
+
+            res.json({
+                success: true,
+                device_code: response.device_code,
+                user_code: response.user_code,
+                verification_url: response.verification_url,
+                expires_in: response.expires_in,
+                interval: response.interval
+            });
+        } catch (error) {
+            console.error('[TRAKT] Device code error:', error);
+            res.status(500).json({ success: false, error: error.message });
+        }
+    });
+
+    // Legacy endpoint for backwards compatibility
+    app.get('/api/trakt/device-code', async (req, res) => {
+        try {
+            const response = await traktFetch('/oauth/device/code', {
+                method: 'POST',
+                body: JSON.stringify({
+                    client_id: TRAKT_CONFIG.CLIENT_ID
+                })
+            });
+
+            res.json({
+                success: true,
+                device_code: response.device_code,
+                user_code: response.user_code,
+                verification_url: response.verification_url,
+                expires_in: response.expires_in,
+                interval: response.interval
+            });
+        } catch (error) {
+            console.error('[TRAKT] Device code error:', error);
+            res.status(500).json({ success: false, error: error.message });
+        }
+    });
+
+    // Trakt device authentication - step 2: verify device code
+    app.post('/api/trakt/device/verify', async (req, res) => {
+        try {
+            const traktToken = readTraktToken();
+            if (!traktToken || !traktToken.device_code) {
+                return res.json({ success: false, error: 'No device code found' });
+            }
+
+            const response = await traktFetch('/oauth/device/token', {
+                method: 'POST',
+                body: JSON.stringify({
+                    code: traktToken.device_code,
+                    client_id: TRAKT_CONFIG.CLIENT_ID,
+                    client_secret: TRAKT_CONFIG.CLIENT_SECRET
+                })
+            });
+
+            if (response.access_token) {
+                saveTraktToken({
+                    access_token: response.access_token,
+                    refresh_token: response.refresh_token,
+                    expires_in: response.expires_in,
+                    created_at: response.created_at
+                });
+                res.json({ success: true });
+            } else {
+                res.json({ success: false, error: 'pending' });
+            }
+        } catch (error) {
+            if (error.message.includes('pending')) {
+                res.json({ success: false, error: 'pending' });
+            } else {
+                console.error('[TRAKT] Device verify error:', error);
+                res.status(500).json({ success: false, error: error.message });
+            }
+        }
+    });
+
+    // Trakt device authentication - step 2: poll for token
+    app.post('/api/trakt/device-token', async (req, res) => {
+        try {
+            const { device_code } = req.body;
+            
+            const response = await traktFetch('/oauth/device/token', {
+                method: 'POST',
+                body: JSON.stringify({
+                    code: device_code,
+                    client_id: TRAKT_CONFIG.CLIENT_ID,
+                    client_secret: TRAKT_CONFIG.CLIENT_SECRET
+                })
+            });
+
+            // Save the token
+            if (saveTraktToken(response)) {
+                res.json({ success: true, token: response });
+            } else {
+                res.status(500).json({ success: false, error: 'Failed to save token' });
+            }
+        } catch (error) {
+            console.error('[TRAKT] Token exchange error:', error);
+            // Handle specific Trakt errors
+            if (error.message.includes('400')) {
+                res.status(400).json({ success: false, error: 'Pending - user hasn\'t authorized yet' });
+            } else if (error.message.includes('404')) {
+                res.status(404).json({ success: false, error: 'Not found - invalid device code' });
+            } else if (error.message.includes('409')) {
+                res.status(409).json({ success: false, error: 'Already used - device code already approved' });
+            } else if (error.message.includes('410')) {
+                res.status(410).json({ success: false, error: 'Expired - device code expired' });
+            } else if (error.message.includes('418')) {
+                res.status(418).json({ success: false, error: 'Denied - user denied authorization' });
+            } else if (error.message.includes('429')) {
+                res.status(429).json({ success: false, error: 'Slow down - polling too quickly' });
+            } else {
+                res.status(500).json({ success: false, error: error.message });
+            }
+        }
+    });
+
+    // Get Trakt authentication status
+    app.get('/api/trakt/status', async (req, res) => {
+        try {
+            const token = readTraktToken();
+            if (!token) {
+                return res.json({ authenticated: false });
+            }
+
+            // Test the token by getting user info
+            const userInfo = await traktFetch('/users/me');
+            res.json({ 
+                authenticated: true, 
+                user: userInfo,
+                token_expires: token.expires_at 
+            });
+        } catch (error) {
+            console.error('[TRAKT] Status check error:', error);
+            // Token might be invalid, delete it
+            deleteTraktToken();
+            res.json({ authenticated: false, error: error.message });
+        }
+    });
+
+    // Logout from Trakt
+    app.post('/api/trakt/logout', (req, res) => {
+        try {
+            deleteTraktToken();
+            res.json({ success: true });
+        } catch (error) {
+            res.status(500).json({ success: false, error: error.message });
+        }
+    });
+
+    // Refresh Trakt token
+    app.post('/api/trakt/refresh', async (req, res) => {
+        try {
+            const currentToken = readTraktToken();
+            if (!currentToken || !currentToken.refresh_token) {
+                return res.status(400).json({ success: false, error: 'No refresh token available' });
+            }
+
+            const response = await traktFetch('/oauth/token', {
+                method: 'POST',
+                body: JSON.stringify({
+                    refresh_token: currentToken.refresh_token,
+                    client_id: TRAKT_CONFIG.CLIENT_ID,
+                    client_secret: TRAKT_CONFIG.CLIENT_SECRET,
+                    redirect_uri: TRAKT_CONFIG.REDIRECT_URI,
+                    grant_type: 'refresh_token'
+                })
+            });
+
+            if (saveTraktToken(response)) {
+                res.json({ success: true, token: response });
+            } else {
+                res.status(500).json({ success: false, error: 'Failed to save refreshed token' });
+            }
+        } catch (error) {
+            console.error('[TRAKT] Token refresh error:', error);
+            deleteTraktToken(); // Delete invalid token
+            res.status(500).json({ success: false, error: error.message });
+        }
+    });
+
+    // Scrobble start watching
+    app.post('/api/trakt/scrobble/start', async (req, res) => {
+        try {
+            const { title, type, year, season, episode, progress = 0 } = req.body;
+            
+            let scrobbleData = {
+                progress: Math.min(Math.max(progress, 0), 100)
+            };
+
+            if (type === 'movie') {
+                scrobbleData.movie = {
+                    title: title,
+                    year: year
+                };
+            } else if (type === 'show') {
+                scrobbleData.show = {
+                    title: title,
+                    year: year
+                };
+                scrobbleData.episode = {
+                    season: season,
+                    number: episode
+                };
+            }
+
+            const response = await traktFetch('/scrobble/start', {
+                method: 'POST',
+                body: JSON.stringify(scrobbleData)
+            });
+
+            res.json({ success: true, data: response });
+        } catch (error) {
+            console.error('[TRAKT] Scrobble start error:', error);
+            res.status(500).json({ success: false, error: error.message });
+        }
+    });
+
+    // Scrobble pause
+    app.post('/api/trakt/scrobble/pause', async (req, res) => {
+        try {
+            const { title, type, year, season, episode, progress } = req.body;
+            
+            let scrobbleData = {
+                progress: Math.min(Math.max(progress, 0), 100)
+            };
+
+            if (type === 'movie') {
+                scrobbleData.movie = {
+                    title: title,
+                    year: year
+                };
+            } else if (type === 'show') {
+                scrobbleData.show = {
+                    title: title,
+                    year: year
+                };
+                scrobbleData.episode = {
+                    season: season,
+                    number: episode
+                };
+            }
+
+            const response = await traktFetch('/scrobble/pause', {
+                method: 'POST',
+                body: JSON.stringify(scrobbleData)
+            });
+
+            res.json({ success: true, data: response });
+        } catch (error) {
+            console.error('[TRAKT] Scrobble pause error:', error);
+            res.status(500).json({ success: false, error: error.message });
+        }
+    });
+
+    // Scrobble stop/finish watching
+    app.post('/api/trakt/scrobble/stop', async (req, res) => {
+        try {
+            const { title, type, year, season, episode, progress } = req.body;
+            
+            let scrobbleData = {
+                progress: Math.min(Math.max(progress, 0), 100)
+            };
+
+            if (type === 'movie') {
+                scrobbleData.movie = {
+                    title: title,
+                    year: year
+                };
+            } else if (type === 'show') {
+                scrobbleData.show = {
+                    title: title,
+                    year: year
+                };
+                scrobbleData.episode = {
+                    season: season,
+                    number: episode
+                };
+            }
+
+            const response = await traktFetch('/scrobble/stop', {
+                method: 'POST',
+                body: JSON.stringify(scrobbleData)
+            });
+
+            res.json({ success: true, data: response });
+        } catch (error) {
+            console.error('[TRAKT] Scrobble stop error:', error);
+            res.status(500).json({ success: false, error: error.message });
+        }
+    });
+
+    // Get user's watchlist
+    app.get('/api/trakt/watchlist', async (req, res) => {
+        try {
+            const type = req.query.type || 'mixed'; // movies, shows, mixed
+            const response = await traktFetch(`/users/me/watchlist/${type}`);
+            res.json({ success: true, watchlist: response });
+        } catch (error) {
+            console.error('[TRAKT] Watchlist error:', error);
+            res.status(500).json({ success: false, error: error.message });
+        }
+    });
+
+    // Add to watchlist
+    app.post('/api/trakt/watchlist/add', async (req, res) => {
+        try {
+            const { title, type, year, season } = req.body;
+            
+            let requestData = {};
+            if (type === 'movie') {
+                requestData.movies = [{
+                    title: title,
+                    year: year
+                }];
+            } else if (type === 'show') {
+                requestData.shows = [{
+                    title: title,
+                    year: year
+                }];
+            }
+
+            const response = await traktFetch('/sync/watchlist', {
+                method: 'POST',
+                body: JSON.stringify(requestData)
+            });
+
+            res.json({ success: true, data: response });
+        } catch (error) {
+            console.error('[TRAKT] Add to watchlist error:', error);
+            res.status(500).json({ success: false, error: error.message });
+        }
+    });
+
+    // Remove from watchlist
+    app.post('/api/trakt/watchlist/remove', async (req, res) => {
+        try {
+            const { title, type, year } = req.body;
+            
+            let requestData = {};
+            if (type === 'movie') {
+                requestData.movies = [{
+                    title: title,
+                    year: year
+                }];
+            } else if (type === 'show') {
+                requestData.shows = [{
+                    title: title,
+                    year: year
+                }];
+            }
+
+            const response = await traktFetch('/sync/watchlist/remove', {
+                method: 'POST',
+                body: JSON.stringify(requestData)
+            });
+
+            res.json({ success: true, data: response });
+        } catch (error) {
+            console.error('[TRAKT] Remove from watchlist error:', error);
+            res.status(500).json({ success: false, error: error.message });
+        }
+    });
+
+    // Get viewing history
+    app.get('/api/trakt/history', async (req, res) => {
+        try {
+            const type = req.query.type || 'mixed'; // movies, shows, mixed
+            const page = req.query.page || 1;
+            const limit = req.query.limit || 10;
+            
+            const response = await traktFetch(`/users/me/history/${type}?page=${page}&limit=${limit}`);
+            res.json({ success: true, history: response });
+        } catch (error) {
+            console.error('[TRAKT] History error:', error);
+            res.status(500).json({ success: false, error: error.message });
+        }
+    });
+
+    // Get user stats
+    app.get('/api/trakt/stats', async (req, res) => {
+        try {
+            const response = await traktFetch('/users/me/stats');
+            res.json({ success: true, stats: response });
+        } catch (error) {
+            console.error('[TRAKT] Stats error:', error);
+            res.status(500).json({ success: false, error: error.message });
+        }
+    });
+
+    // Search for content on Trakt
+    app.get('/api/trakt/search', async (req, res) => {
+        try {
+            const { query, type = 'movie,show' } = req.query;
+            if (!query) {
+                return res.status(400).json({ success: false, error: 'Query parameter required' });
+            }
+
+            const response = await traktFetch(`/search/${type}?query=${encodeURIComponent(query)}`);
+            res.json({ success: true, results: response });
+        } catch (error) {
+            console.error('[TRAKT] Search error:', error);
+            res.status(500).json({ success: false, error: error.message });
+        }
+    });
+
+    // Get comprehensive user stats including watchlist, collection, etc.
+    app.get('/api/trakt/user/stats', async (req, res) => {
+        try {
+            const [stats, watchlist, collection, ratings] = await Promise.all([
+                traktFetch('/users/me/stats'),
+                traktFetch('/users/me/watchlist').catch(() => []),
+                traktFetch('/users/me/collection/movies').catch(() => []),
+                traktFetch('/users/me/ratings').catch(() => [])
+            ]);
+
+            res.json({
+                success: true,
+                stats: {
+                    movies: stats.movies || { watched: 0, collected: 0, ratings: 0 },
+                    shows: stats.shows || { watched: 0, collected: 0, ratings: 0 },
+                    episodes: stats.episodes || { watched: 0, collected: 0, ratings: 0 },
+                    network: stats.network || { friends: 0, followers: 0, following: 0 },
+                    watchlist: Array.isArray(watchlist) ? watchlist : [],
+                    collection: Array.isArray(collection) ? collection : [],
+                    ratings: Array.isArray(ratings) ? ratings : []
+                }
+            });
+        } catch (error) {
+            console.error('[TRAKT] Comprehensive stats error:', error);
+            res.status(500).json({ success: false, error: error.message });
+        }
+    });
+
+    // Get user profile info
+    app.get('/api/trakt/user/profile', async (req, res) => {
+        try {
+            const profile = await traktFetch('/users/me');
+            res.json({ success: true, profile });
+        } catch (error) {
+            console.error('[TRAKT] Profile error:', error);
+            res.status(500).json({ success: false, error: error.message });
+        }
+    });
+
+    // Get user collection
+    app.get('/api/trakt/collection', async (req, res) => {
+        try {
+            const [movies, shows] = await Promise.all([
+                traktFetch('/users/me/collection/movies').catch(() => []),
+                traktFetch('/users/me/collection/shows').catch(() => [])
+            ]);
+            res.json({ 
+                success: true, 
+                collection: { 
+                    movies: Array.isArray(movies) ? movies : [],
+                    shows: Array.isArray(shows) ? shows : []
+                }
+            });
+        } catch (error) {
+            console.error('[TRAKT] Collection error:', error);
+            res.status(500).json({ success: false, error: error.message });
+        }
+    });
+
+    // Get user ratings
+    app.get('/api/trakt/ratings', async (req, res) => {
+        try {
+            const ratings = await traktFetch('/users/me/ratings');
+            res.json({ success: true, ratings: Array.isArray(ratings) ? ratings : [] });
+        } catch (error) {
+            console.error('[TRAKT] Ratings error:', error);
+            res.status(500).json({ success: false, error: error.message });
+        }
+    });
+
+    // Rate content
+    app.post('/api/trakt/rate', async (req, res) => {
+        try {
+            const { title, type, year, rating } = req.body;
+            if (!title || !type || !rating) {
+                return res.status(400).json({ success: false, error: 'Missing required parameters' });
+            }
+
+            const items = [{
+                [type]: {
+                    title,
+                    year: parseInt(year)
+                },
+                rating: parseInt(rating)
+            }];
+
+            const response = await traktFetch('/sync/ratings', {
+                method: 'POST',
+                body: JSON.stringify({ [type + 's']: items })
+            });
+
+            res.json({ success: true, response });
+        } catch (error) {
+            console.error('[TRAKT] Rate error:', error);
+            res.status(500).json({ success: false, error: error.message });
+        }
+    });
+
+    // Add to collection
+    app.post('/api/trakt/collection/add', async (req, res) => {
+        try {
+            const { title, type, year } = req.body;
+            if (!title || !type) {
+                return res.status(400).json({ success: false, error: 'Missing required parameters' });
+            }
+
+            const items = [{
+                [type]: {
+                    title,
+                    year: parseInt(year)
+                }
+            }];
+
+            const response = await traktFetch('/sync/collection', {
+                method: 'POST',
+                body: JSON.stringify({ [type + 's']: items })
+            });
+
+            res.json({ success: true, response });
+        } catch (error) {
+            console.error('[TRAKT] Add to collection error:', error);
+            res.status(500).json({ success: false, error: error.message });
+        }
+    });
+
+    // Remove from collection
+    app.post('/api/trakt/collection/remove', async (req, res) => {
+        try {
+            const { title, type, year } = req.body;
+            if (!title || !type) {
+                return res.status(400).json({ success: false, error: 'Missing required parameters' });
+            }
+
+            const items = [{
+                [type]: {
+                    title,
+                    year: parseInt(year)
+                }
+            }];
+
+            const response = await traktFetch('/sync/collection/remove', {
+                method: 'POST',
+                body: JSON.stringify({ [type + 's']: items })
+            });
+
+            res.json({ success: true, response });
+        } catch (error) {
+            console.error('[TRAKT] Remove from collection error:', error);
+            res.status(500).json({ success: false, error: error.message });
+        }
+    });
+
+    // Get trending content
+    app.get('/api/trakt/trending', async (req, res) => {
+        try {
+            const { type = 'movies' } = req.query;
+            const response = await traktFetch(`/${type}/trending?limit=20`);
+            res.json({ success: true, trending: Array.isArray(response) ? response : [] });
+        } catch (error) {
+            console.error('[TRAKT] Trending error:', error);
+            res.status(500).json({ success: false, error: error.message });
+        }
+    });
+
+    // Get popular content
+    app.get('/api/trakt/popular', async (req, res) => {
+        try {
+            const { type = 'movies' } = req.query;
+            const response = await traktFetch(`/${type}/popular?limit=20`);
+            res.json({ success: true, popular: Array.isArray(response) ? response : [] });
+        } catch (error) {
+            console.error('[TRAKT] Popular error:', error);
+            res.status(500).json({ success: false, error: error.message });
+        }
+    });
+
+    // Get recommendations
+    app.get('/api/trakt/recommendations', async (req, res) => {
+        try {
+            const { type = 'movies' } = req.query;
+            const response = await traktFetch(`/recommendations/${type}?limit=20`);
+            res.json({ success: true, recommendations: Array.isArray(response) ? response : [] });
+        } catch (error) {
+            console.error('[TRAKT] Recommendations error:', error);
+            res.status(500).json({ success: false, error: error.message });
+        }
+    });
+
+    // ===== END TRAKT API ENDPOINTS =====
+
     // Range-capable proxy for debrid direct URLs with HLS support
     app.get('/stream/debrid', async (req, res) => {
         try {
@@ -1883,6 +2592,82 @@ export function startServer(userDataPath) {
             return `WEBVTT\n\n${body}\n`;
         } catch {
             return `WEBVTT\n\n` + String(srtText || '');
+        }
+    };
+    // Helper: Convert basic ASS/SSA into WebVTT (best-effort)
+    // Parses the [Events] section using its Format line to extract Start, End, Text.
+    // Strips styling tags and converts \N to line breaks. Timing is converted from h:mm:ss.cs to hh:mm:ss.mmm
+    const assToVtt = (assText) => {
+        try {
+            const text = String(assText || '');
+            const lines = text.replace(/\r+/g, '').split(/\n/);
+            let inEvents = false;
+            let format = [];
+            const cues = [];
+            const cleanAssText = (t) => {
+                let s = String(t || '');
+                // Remove styling override blocks {\...}
+                s = s.replace(/\{[^}]*\}/g, '');
+                // Replace \N with newlines and \h with space
+                s = s.replace(/\\N/g, '\n').replace(/\\h/g, ' ');
+                // Collapse multiple spaces
+                s = s.replace(/\s{2,}/g, ' ').trim();
+                return s;
+            };
+            const toVttTime = (assTime) => {
+                // ASS: H:MM:SS.CS (centiseconds)
+                const m = String(assTime || '').trim().match(/^(\d+):(\d{2}):(\d{2})[.](\d{2})$/);
+                if (!m) return null;
+                const h = String(m[1]).padStart(2, '0');
+                const mm = m[2];
+                const ss = m[3];
+                const cs = m[4];
+                const ms = String(parseInt(cs, 10) * 10).padStart(3, '0');
+                return `${h}:${mm}:${ss}.${ms}`;
+            };
+            for (let raw of lines) {
+                const line = raw.trim();
+                if (!line) continue;
+                if (/^\[events\]/i.test(line)) { inEvents = true; continue; }
+                if (/^\[.*\]/.test(line)) { inEvents = false; continue; }
+                if (!inEvents) {
+                    if (/^format\s*:/i.test(line)) {
+                        // Build field order
+                        const parts = line.split(':')[1] || '';
+                        format = parts.split(',').map(s => s.trim().toLowerCase());
+                    }
+                    continue;
+                }
+                if (!/^dialogue\s*:/i.test(line)) continue;
+                // Parse Dialogue using the known number of fields from Format
+                const after = line.replace(/^dialogue\s*:\s*/i, '');
+                const fieldsCount = format.length || 10; // common default is 10
+                const parts = [];
+                let remaining = after;
+                for (let i = 0; i < Math.max(1, fieldsCount - 1); i++) {
+                    const idx = remaining.indexOf(',');
+                    if (idx === -1) { parts.push(remaining); remaining = ''; break; }
+                    parts.push(remaining.slice(0, idx));
+                    remaining = remaining.slice(idx + 1);
+                }
+                parts.push(remaining);
+                // Map to a record
+                const rec = {};
+                for (let i = 0; i < format.length && i < parts.length; i++) {
+                    rec[format[i]] = parts[i];
+                }
+                const start = toVttTime(rec.start);
+                const end = toVttTime(rec.end);
+                let body = rec.text || parts[parts.length - 1] || '';
+                body = cleanAssText(body);
+                if (start && end && body) {
+                    cues.push(`${start} --> ${end}\n${body}`);
+                }
+            }
+            return `WEBVTT\n\n${cues.join('\n\n')}\n`;
+        } catch {
+            // Fallback: wrap raw text into VTT
+            return `WEBVTT\n\n${String(assText || '')}`;
         }
     };
 
@@ -2518,6 +3303,7 @@ export function startServer(userDataPath) {
             const text = contentBuf.toString('utf8');
             const looksLikeVtt = /^\s*WEBVTT/i.test(text);
             const looksLikeSrt = /(\d{2}:\d{2}:\d{2}),(\d{3})\s*-->\s*(\d{2}:\d{2}:\d{2}),(\d{3})/m.test(text);
+            const looksLikeAss = /\[Script Info\]/i.test(text);
 
             let finalPath = '';
             if (looksLikeVtt || /\.vtt$/i.test(ext)) {
@@ -2526,6 +3312,11 @@ export function startServer(userDataPath) {
                 catch { ensureSubsDir(); fs.writeFileSync(finalPath, looksLikeVtt ? text : `WEBVTT\n\n${text}`); }
             } else if (looksLikeSrt || /\.srt$/i.test(ext)) {
                 const vtt = srtToVtt(text);
+                finalPath = `${baseOut}.vtt`;
+                try { fs.writeFileSync(finalPath, vtt); }
+                catch { ensureSubsDir(); fs.writeFileSync(finalPath, vtt); }
+            } else if (looksLikeAss || /\.(ass|ssa)$/i.test(ext)) {
+                const vtt = assToVtt(text);
                 finalPath = `${baseOut}.vtt`;
                 try { fs.writeFileSync(finalPath, vtt); }
                 catch { ensureSubsDir(); fs.writeFileSync(finalPath, vtt); }
@@ -2555,6 +3346,7 @@ export function startServer(userDataPath) {
             const text = contentBuf.toString('utf8');
             const looksLikeVtt = /^\s*WEBVTT/i.test(text);
             const looksLikeSrt = /(\d{2}:\d{2}:\d{2}),(\d{3})\s*-->\s*(\d{2}:\d{2}:\d{2}),(\d{3})/m.test(text);
+            const looksLikeAss = /\[Script Info\]/i.test(text) || /\.(ass|ssa)$/i.test(original);
             const filenameBase = original.replace(/\.[^.]+$/, '') + '-' + crypto.randomBytes(6).toString('hex');
 
             let finalPath = '';
@@ -2564,6 +3356,11 @@ export function startServer(userDataPath) {
                 catch { ensureSubsDir(); fs.writeFileSync(finalPath, looksLikeVtt ? text : `WEBVTT\n\n${text}`); }
             } else if (looksLikeSrt || /\.srt$/i.test(original)) {
                 const vtt = srtToVtt(text);
+                finalPath = path.join(SUB_TMP_DIR, `${filenameBase}.vtt`);
+                try { fs.writeFileSync(finalPath, vtt); }
+                catch { ensureSubsDir(); fs.writeFileSync(finalPath, vtt); }
+            } else if (looksLikeAss) {
+                const vtt = assToVtt(text);
                 finalPath = path.join(SUB_TMP_DIR, `${filenameBase}.vtt`);
                 try { fs.writeFileSync(finalPath, vtt); }
                 catch { ensureSubsDir(); fs.writeFileSync(finalPath, vtt); }
