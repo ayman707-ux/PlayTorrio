@@ -1,6 +1,6 @@
 {
   "name": "playtorrio",
-  "version": "1.0.7",
+  "version": "1.1.0",
   "description": "A sophisticated application designed to seamlessly interface with Jackett for fetching torrents and provide high-performance streaming directly through an integrated API.",
   "author": {
     "name": "ayman",
@@ -20,6 +20,7 @@
     "cheerio": "^1.0.0",
     "cors": "^2.8.5",
     "express": "^4.21.2",
+    "ffmpeg-static": "^5.2.0",
     "got": "^14.4.7",
     "mime-types": "^2.1.35",
     "multer": "^2.0.1",
@@ -30,7 +31,7 @@
     "electron-updater": "^6.6.2"
   },
   "devDependencies": {
-    "electron": "^37.2.5",
+    "electron": "^38.2.2",
     "electron-builder": "^24.13.3"
   },
   "optionalDependencies": {
