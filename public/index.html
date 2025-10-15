@@ -379,6 +379,21 @@
             pointer-events: all;
         }
 
+        /* Episode details overlay used in showEpisodeDetails() */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.9);
+            z-index: 5000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 1;
+        }
+
         /* Ensure resume modal is above all other overlays */
         #resumeModal { z-index: 6000; }
         
@@ -582,6 +597,260 @@
         .episode-card.selected {
             border-color: var(--vlc-orange);
             background-color: rgba(255, 105, 0, 0.1);
+        }
+
+        .episode-actions {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+            justify-content: flex-end;
+        }
+
+        .episode-done-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: var(--text-primary);
+            padding: 0.4rem 0.6rem;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+
+        .episode-done-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            border-color: rgba(255, 255, 255, 0.3);
+            transform: translateY(-1px);
+        }
+
+        .episode-done-btn.is-done {
+            background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+            border-color: #22c55e;
+            color: white;
+        }
+
+        .episode-done-btn.is-done:hover {
+            background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+        }
+
+        .episode-badge {
+            position: absolute;
+            top: 0.5rem;
+            left: 0.5rem;
+            background: linear-gradient(135deg, #ed1c24 0%, #d41920 100%);
+            color: white;
+            padding: 0.25rem 0.5rem;
+            border-radius: 12px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+            z-index: 5;
+        }
+
+        .episode-subtitle {
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            margin: 0.25rem 0;
+            font-style: italic;
+        }
+
+        .episode-details-btn {
+            position: absolute;
+            bottom: 12px;
+            right: 12px;
+            transform: none;
+            width: auto;
+            height: 36px;
+            padding: 0 14px;
+            border: none;
+            border-radius: 18px;
+            background: linear-gradient(135deg, var(--secondary) 0%, var(--vlc-orange) 100%);
+            color: white;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0.2px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            z-index: 4;
+            box-shadow: 0 6px 14px rgba(0,0,0,0.35);
+            backdrop-filter: blur(6px);
+            border: 1px solid rgba(255,255,255,0.15);
+        }
+
+        .episode-details-btn:hover {
+            background: linear-gradient(135deg, var(--vlc-orange) 0%, var(--secondary) 100%);
+            transform: translateY(-1px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.45);
+        }
+
+        .episode-modal {
+            max-width: 700px;
+            max-height: 85vh;
+            overflow: hidden;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .episode-modal .modal-header {
+            display: flex;
+            align-items: center;
+            padding: 24px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            position: relative;
+        }
+
+        .episode-modal .show-poster {
+            width: 60px;
+            height: 90px;
+            border-radius: 8px;
+            object-fit: cover;
+            margin-right: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+        }
+
+        .episode-modal .header-content {
+            flex: 1;
+        }
+
+        .episode-modal .modal-header h2 {
+            margin: 0 0 8px 0;
+            color: white;
+            font-size: 24px;
+            font-weight: 700;
+        }
+
+        .episode-modal .modal-subtitle {
+            margin: 0;
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .episode-modal .modal-close {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 36px;
+            height: 36px;
+            border: none;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .episode-modal .modal-close:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: scale(1.1);
+        }
+
+        .episode-modal .modal-body {
+            padding: 0;
+            max-height: calc(85vh - 140px);
+            overflow-y: auto;
+        }
+
+        .episode-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+        }
+
+        .episode-item {
+            display: flex;
+            align-items: center;
+            padding: 16px 24px;
+            background: transparent;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .episode-item:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .episode-item:last-child {
+            border-bottom: none;
+        }
+
+        .episode-number {
+            flex-shrink: 0;
+            width: 70px;
+            height: 50px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 14px;
+            margin-right: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        }
+
+        .episode-info {
+            flex: 1;
+        }
+
+        .episode-info h4 {
+            margin: 0 0 6px 0;
+            color: #fff;
+            font-size: 16px;
+            font-weight: 600;
+            line-height: 1.3;
+        }
+
+        .episode-info p {
+            margin: 0;
+            color: #8a92b2;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .episode-info p i {
+            color: #667eea;
+        }
+
+        .episode-remove-btn {
+            flex-shrink: 0;
+            width: 36px;
+            height: 36px;
+            border: none;
+            border-radius: 50%;
+            background: rgba(244, 67, 54, 0.8);
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            box-shadow: 0 2px 8px rgba(244, 67, 54, 0.3);
+        }
+
+        .episode-remove-btn:hover {
+            background: #f44336;
+            transform: scale(1.1);
+            box-shadow: 0 4px 12px rgba(244, 67, 54, 0.5);
         }
         
         .episode-img {
@@ -1605,17 +1874,79 @@
         
         .notification {
             position: fixed;
-            bottom: 20px;
-            right: 20px;
-            background-color: var(--vlc-orange);
-            color: white;
-            padding: 1rem 2rem;
-            border-radius: 8px;
-            font-weight: 600;
-            transform: translateY(100px);
+            top: 2rem;
+            right: 2rem;
+            background: linear-gradient(135deg, rgba(40, 40, 40, 0.95) 0%, rgba(30, 30, 30, 0.95) 100%);
+            color: var(--text-primary);
+            padding: 1.25rem 1.75rem;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            z-index: 10000;
+            transform: translateY(-100px);
             opacity: 0;
-            transition: all 0.3s ease;
-            z-index: 3000;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            max-width: 400px;
+            min-width: 300px;
+            font-weight: 500;
+            font-size: 0.95rem;
+            line-height: 1.4;
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75rem;
+        }
+
+        .notification.success {
+            border-left: 4px solid #22c55e;
+            background: linear-gradient(135deg, rgba(34, 197, 94, 0.15) 0%, rgba(40, 40, 40, 0.95) 100%);
+        }
+
+        .notification.success::before {
+            content: '✓';
+            color: #22c55e;
+            font-weight: bold;
+            font-size: 1.1rem;
+            flex-shrink: 0;
+        }
+
+        .notification.error {
+            border-left: 4px solid #ef4444;
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.15) 0%, rgba(40, 40, 40, 0.95) 100%);
+        }
+
+        .notification.error::before {
+            content: '✕';
+            color: #ef4444;
+            font-weight: bold;
+            font-size: 1.1rem;
+            flex-shrink: 0;
+        }
+
+        .notification.info {
+            border-left: 4px solid #3b82f6;
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(40, 40, 40, 0.95) 100%);
+        }
+
+        .notification.info::before {
+            content: 'ℹ';
+            color: #3b82f6;
+            font-weight: bold;
+            font-size: 1.1rem;
+            flex-shrink: 0;
+        }
+
+        .notification.warning {
+            border-left: 4px solid #f59e0b;
+            background: linear-gradient(135deg, rgba(245, 158, 11, 0.15) 0%, rgba(40, 40, 40, 0.95) 100%);
+        }
+
+        .notification.warning::before {
+            content: '⚠';
+            color: #f59e0b;
+            font-weight: bold;
+            font-size: 1.1rem;
+            flex-shrink: 0;
         }
 
         /* Subtitles menu panel */
@@ -1674,6 +2005,497 @@
             transform: translateY(0);
             opacity: 1;
         }
+
+        /* ===== TRAKT PAGE STYLES ===== */
+        .trakt-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+        }
+
+        .trakt-card {
+            background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%);
+            border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 16px;
+            backdrop-filter: blur(10px);
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .trakt-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 32px rgba(237, 28, 36, 0.2);
+            border-color: rgba(237, 28, 36, 0.3);
+        }
+
+        .trakt-card-header {
+            padding: 1.5rem 2rem;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            background: linear-gradient(90deg, rgba(237, 28, 36, 0.1) 0%, transparent 100%);
+        }
+
+        .trakt-card-header h3 {
+            margin: 0;
+            color: var(--text-primary);
+            font-size: 1.2rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .trakt-card-header i {
+            color: #ed1c24;
+            font-size: 1.1rem;
+        }
+
+        .trakt-card-body {
+            padding: 2rem;
+        }
+
+        .trakt-status-card {
+            border: 2px solid rgba(237, 28, 36, 0.3);
+        }
+
+        .trakt-status-section {
+            text-align: center;
+        }
+
+        .trakt-status-indicator {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        .trakt-status-indicator.connected {
+            color: #22c55e;
+        }
+
+        .trakt-status-indicator.disconnected {
+            color: #ef4444;
+        }
+
+        .trakt-status-indicator i {
+            font-size: 1.3rem;
+        }
+
+        .trakt-description {
+            color: var(--text-secondary);
+            line-height: 1.6;
+            margin-bottom: 2rem;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .trakt-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            border: none;
+            cursor: pointer;
+            font-size: 0.95rem;
+        }
+
+        .trakt-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .trakt-btn-primary {
+            background: linear-gradient(135deg, #ed1c24 0%, #d41920 100%);
+            color: white;
+        }
+
+        .trakt-btn-primary:hover:not(:disabled) {
+            background: linear-gradient(135deg, #d41920 0%, #b8161c 100%);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(237, 28, 36, 0.4);
+        }
+
+        .trakt-btn-secondary {
+            background: rgba(255,255,255,0.1);
+            color: var(--text-primary);
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .trakt-btn-secondary:hover:not(:disabled) {
+            background: rgba(255,255,255,0.15);
+            border-color: rgba(255,255,255,0.3);
+        }
+
+        .trakt-btn-info {
+            background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
+            color: white;
+        }
+
+        .trakt-btn-info:hover:not(:disabled) {
+            background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+        }
+
+        .trakt-user-actions {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        /* Device Code Panel */
+        .trakt-device-code {
+            margin-top: 2rem;
+            padding: 2rem;
+            background: rgba(0,0,0,0.3);
+            border-radius: 12px;
+            border: 1px solid rgba(237, 28, 36, 0.2);
+        }
+
+        .trakt-code-header h4 {
+            margin: 0 0 1.5rem 0;
+            color: var(--text-primary);
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .trakt-code-content {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .trakt-code-display {
+            text-align: center;
+        }
+
+        .trakt-code-display label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .trakt-code-value {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .trakt-code-value span {
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 1.5rem;
+            font-weight: 800;
+            background: rgba(255,255,255,0.1);
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            border: 2px solid rgba(237, 28, 36, 0.3);
+            color: #ed1c24;
+            letter-spacing: 0.2em;
+        }
+
+        .trakt-copy-btn {
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            color: var(--text-primary);
+            padding: 0.5rem;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .trakt-copy-btn:hover {
+            background: rgba(255,255,255,0.2);
+        }
+
+        .trakt-verify-section {
+            text-align: center;
+        }
+
+        .trakt-verify-section p {
+            color: var(--text-secondary);
+            margin-bottom: 1rem;
+        }
+
+        .trakt-verify-actions {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 1rem;
+        }
+
+        .trakt-status-message {
+            padding: 1rem;
+            background: rgba(255,255,255,0.05);
+            border-radius: 8px;
+            border-left: 4px solid #ed1c24;
+        }
+
+        .trakt-status-message span {
+            color: var(--text-secondary);
+            font-style: italic;
+        }
+
+        /* Actions Grid */
+        .trakt-actions-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .trakt-action-card {
+            cursor: pointer;
+            padding: 2rem;
+            text-align: center;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .trakt-action-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #ed1c24 0%, #d41920 100%);
+            transform: scaleX(0);
+            transition: transform 0.3s ease;
+        }
+
+        .trakt-action-card:hover::before {
+            transform: scaleX(1);
+        }
+
+        .trakt-action-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 32px rgba(237, 28, 36, 0.15);
+        }
+
+        .trakt-action-icon {
+            margin-bottom: 1rem;
+        }
+
+        .trakt-action-icon i {
+            font-size: 2.5rem;
+            color: #ed1c24;
+        }
+
+        .trakt-action-content h4 {
+            margin: 0 0 0.5rem 0;
+            color: var(--text-primary);
+            font-size: 1.1rem;
+        }
+
+        .trakt-action-content p {
+            margin: 0 0 1rem 0;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .trakt-action-count {
+            display: inline-block;
+            background: linear-gradient(135deg, #ed1c24 0%, #d41920 100%);
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .trakt-action-badge {
+            display: inline-block;
+            background: rgba(255,255,255,0.1);
+            color: var(--text-primary);
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        /* Settings Grid */
+        .trakt-settings-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .trakt-setting-item {
+            padding: 1.5rem;
+            background: rgba(255,255,255,0.05);
+            border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.1);
+            transition: all 0.3s ease;
+        }
+
+        .trakt-setting-item:hover {
+            background: rgba(255,255,255,0.08);
+            border-color: rgba(237, 28, 36, 0.3);
+        }
+
+        .trakt-setting-main {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .trakt-setting-content h4 {
+            margin: 0 0 0.25rem 0;
+            color: var(--text-primary);
+            font-size: 1rem;
+        }
+
+        .trakt-setting-content p {
+            margin: 0;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            line-height: 1.4;
+        }
+
+        /* Custom Toggle Switch */
+        .trakt-toggle {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 24px;
+            flex-shrink: 0;
+        }
+
+        .trakt-toggle input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .trakt-toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(255,255,255,0.2);
+            transition: 0.3s;
+            border-radius: 24px;
+            border: 1px solid rgba(255,255,255,0.3);
+        }
+
+        .trakt-toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 2px;
+            bottom: 2px;
+            background-color: white;
+            transition: 0.3s;
+            border-radius: 50%;
+        }
+
+        .trakt-toggle input:checked + .trakt-toggle-slider {
+            background: linear-gradient(135deg, #ed1c24 0%, #d41920 100%);
+            border-color: #ed1c24;
+        }
+
+        .trakt-toggle input:checked + .trakt-toggle-slider:before {
+            transform: translateX(26px);
+        }
+
+        /* Activity List */
+        .trakt-activity-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .trakt-activity-item {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem;
+            background: rgba(255,255,255,0.05);
+            border-radius: 8px;
+            border-left: 4px solid #ed1c24;
+        }
+
+        .trakt-activity-icon {
+            flex-shrink: 0;
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #ed1c24 0%, #d41920 100%);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+        }
+
+        .trakt-activity-content {
+            flex: 1;
+        }
+
+        .trakt-activity-title {
+            margin: 0 0 0.25rem 0;
+            color: var(--text-primary);
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+
+        .trakt-activity-meta {
+            margin: 0;
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .trakt-container {
+                padding: 1rem;
+                gap: 1.5rem;
+            }
+
+            .trakt-card-body {
+                padding: 1.5rem;
+            }
+
+            .trakt-actions-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .trakt-verify-actions {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .trakt-user-actions {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .trakt-setting-main {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.75rem;
+            }
+        }
+        /* ===== END TRAKT PAGE STYLES ===== */
 
         .error-message {
             background-color: var(--danger);
@@ -2809,6 +3631,102 @@
                 </div>
             </div>
         </div>
+
+        <!-- Trakt Integration Section -->
+        <div class="settings-section" style="margin-top:1.25rem;">
+            <h3>
+                <i class="fas fa-tv" style="color: #ed1c24; margin-right: 0.5rem;"></i>
+                Trakt Integration
+            </h3>
+            <div style="padding:1rem; border:1px solid rgba(255,255,255,0.15); border-radius:8px; background: rgba(255,255,255,0.05);">
+                <div style="margin-bottom: 1rem; color: var(--secondary); font-size: 0.9rem;">
+                    <i class="fas fa-info-circle"></i>
+                    Sync your watch history, progress, and manage your watchlist with Trakt.tv
+                </div>
+                
+                <div id="traktNotConnected" style="display: block;">
+                    <div style="margin-bottom: 1rem;">
+                        <span id="traktStatus" style="color: #dc3545; font-weight: 500;">
+                            <i class="fas fa-times-circle"></i> Not connected
+                        </span>
+                    </div>
+                    <div style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
+                        <button class="api-btn" id="traktLogin" style="background: #ed1c24; color: #fff;">
+                            <i class="fas fa-sign-in-alt"></i> Connect to Trakt
+                        </button>
+                        <small style="opacity: 0.85;">Authenticate with your Trakt.tv account using a secure device code</small>
+                    </div>
+                </div>
+
+                <div id="traktConnected" style="display: none;">
+                    <div style="margin-bottom: 1rem;">
+                        <span id="traktConnectedStatus" style="color: #198754; font-weight: 500;">
+                            <i class="fas fa-check-circle"></i> Connected as <span id="traktUsername">User</span>
+                        </span>
+                    </div>
+                    <div style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap; margin-bottom: 1rem;">
+                        <button class="api-btn" id="traktViewWatchlist" style="background: #0d6efd; color: #fff;">
+                            <i class="fas fa-list"></i> View Watchlist
+                        </button>
+                        <button class="api-btn" id="traktViewHistory" style="background: #6f42c1; color: #fff;">
+                            <i class="fas fa-history"></i> View History
+                        </button>
+                        <button class="api-btn" id="traktViewStats" style="background: #17a2b8; color: #fff;">
+                            <i class="fas fa-chart-bar"></i> View Stats
+                        </button>
+                    </div>
+                    <div style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
+                        <button class="api-btn api-btn-secondary" id="traktDisconnect">
+                            <i class="fas fa-sign-out-alt"></i> Disconnect
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Trakt Device Code Panel -->
+                <div id="traktCodePanel" style="display: none; margin-top: 1rem; padding: 0.75rem; background: rgba(0,0,0,0.35); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px;">
+                    <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.5rem;">
+                        <div>Device Code:</div>
+                        <div id="traktUserCode" style="font-family: monospace; font-weight: 800; background: rgba(255,255,255,0.1); padding: 0.25rem 0.5rem; border-radius: 6px;">----</div>
+                        <button class="api-btn" id="traktCopyCode" style="padding: 0.4rem 0.6rem; background: #0d6efd; color: #fff;">
+                            <i class="fas fa-copy"></i> Copy
+                        </button>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+                        <div>Authorize at:</div>
+                        <a id="traktVerifyUrl" href="#" target="_blank" style="color: #0d6efd; text-decoration: underline;">https://trakt.tv/activate</a>
+                        <button class="api-btn" id="traktOpenVerify" style="padding: 0.4rem 0.6rem; background: #0d6efd; color: #fff;">
+                            <i class="fas fa-external-link-alt"></i> Open
+                        </button>
+                        <span id="traktLoginStatus" style="margin-left: auto; font-size: 0.9rem; opacity: 0.9;">Waiting for authorization…</span>
+                        <button class="api-btn api-btn-secondary" id="traktCancelLogin">
+                            <i class="fas fa-times"></i> Cancel
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Trakt Settings -->
+                <div id="traktSettings" style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid rgba(255,255,255,0.1);">
+                    <h4 style="margin-bottom: 0.75rem; color: var(--text-primary);">Scrobbling Settings</h4>
+                    <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                        <label style="display: flex; align-items: center; gap: 0.6rem; cursor: pointer;">
+                            <input type="checkbox" id="traktAutoScrobble" checked />
+                            <span>Automatically track what I watch</span>
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 0.6rem; cursor: pointer;">
+                            <input type="checkbox" id="traktScrobbleProgress" checked />
+                            <span>Sync watch progress</span>
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 0.6rem; cursor: pointer;">
+                            <input type="checkbox" id="traktSyncWatchlist" checked />
+                            <span>Show Trakt watchlist items in search</span>
+                        </label>
+                    </div>
+                    <div style="margin-top: 0.5rem; color: var(--secondary); font-size: 0.85rem;">
+                        <i class="fas fa-info-circle"></i> Your viewing activity will be automatically synchronized with Trakt.tv
+                    </div>
+                </div>
+            </div>
+        </div>
         
         <div class="settings-buttons">
             <button class="api-btn api-btn-secondary" id="cancelSettings">
@@ -2857,6 +3775,11 @@
             </div>
             
             <div class="nav-section-title">LIBRARY</div>
+            <div class="nav-item" data-page="trakt">
+                <i class="fas fa-tv" style="color: #ed1c24;"></i>
+                <span>Trakt</span>
+                <span class="nav-badge" style="background: #ed1c24;">Sync</span>
+            </div>
             <div class="nav-item" id="sidebarClearCache">
                 <i class="fas fa-trash"></i>
                 <span>Clear Cache</span>
@@ -3058,6 +3981,207 @@
             <i class="fas fa-check-circle"></i> No completed items yet. Mark movies and shows as done when you finish watching!
         </div>
     </div>
+
+    <!-- Trakt Page -->
+    <div id="trakt-page" style="display: none;">
+        <div class="page-header-enhanced">
+            <div class="page-title-section">
+                <h2 class="section-title">
+                    <i class="fas fa-tv" style="color: #ed1c24;"></i> <span>Trakt Integration</span>
+                </h2>
+                <p class="page-subtitle">Sync your watching activity with Trakt.tv</p>
+            </div>
+        </div>
+
+        <div class="trakt-container">
+            <!-- Connection Status Card -->
+            <div class="trakt-card trakt-status-card">
+                <div class="trakt-card-header">
+                    <h3><i class="fas fa-wifi"></i> Connection Status</h3>
+                </div>
+                <div class="trakt-card-body">
+                    <div id="traktPageNotConnected" class="trakt-status-section">
+                        <div id="traktStatusIndicator" class="trakt-status-indicator disconnected">
+                            <i class="fas fa-times-circle"></i>
+                            <span>Not Connected</span>
+                        </div>
+                        <p id="traktStatusDescription" class="trakt-description">
+                            Connect your Trakt.tv account to automatically track your watching activity, 
+                            sync progress, and manage your watchlist.
+                        </p>
+                        <div id="traktStatusActions">
+                            <button id="traktAuthenticateBtn" class="trakt-btn trakt-btn-primary">
+                                <i class="fas fa-link"></i>Connect to Trakt
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="traktPageConnected" class="trakt-status-section" style="display: none;">
+                        <div class="trakt-status-indicator connected">
+                            <i class="fas fa-check-circle"></i>
+                            <span>Connected as <strong id="traktPageUsername">User</strong></span>
+                        </div>
+                        <p class="trakt-description">
+                            Your account is connected and actively syncing. All your watching activity 
+                            is being tracked automatically.
+                        </p>
+                        <div class="trakt-user-actions">
+                            <button class="trakt-btn trakt-btn-secondary" id="traktPageDisconnect">
+                                <i class="fas fa-sign-out-alt"></i> Disconnect
+                            </button>
+                            <button class="trakt-btn trakt-btn-info" id="traktPageRefresh">
+                                <i class="fas fa-sync-alt"></i> Refresh Status
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Device Code Panel -->
+                    <div id="traktDeviceCodePanel" class="trakt-device-code" style="display: none;">
+                        <div class="trakt-code-header">
+                            <h4><i class="fas fa-mobile-alt"></i> Device Authorization</h4>
+                        </div>
+                        <div class="trakt-code-content">
+                            <div class="trakt-code-display">
+                                <label>Device Code:</label>
+                                <div class="trakt-code-value">
+                                    <span id="traktUserCode">----</span>
+                                    <button id="traktCopyCodeBtn" class="trakt-copy-btn">
+                                        <i class="fas fa-copy"></i>
+                                    </button>
+                                </div>
+                                <label>Visit URL:</label>
+                                <div class="trakt-code-value">
+                                    <span id="traktVerificationUrl">https://trakt.tv/activate</span>
+                                </div>
+                            </div>
+                            <div class="trakt-verify-section">
+                                <p>Visit the URL above and enter the device code</p>
+                                <div class="trakt-verify-actions">
+                                    <button id="traktOpenUrlBtn" class="trakt-btn trakt-btn-primary">
+                                        <i class="fas fa-external-link-alt"></i> Open Trakt URL
+                                    </button>
+                                    <button id="traktVerifyDeviceBtn" class="trakt-btn trakt-btn-secondary">
+                                        <i class="fas fa-check"></i> Verify Code
+                                    </button>
+                                </div>
+                                <div id="traktDeviceCodeStatus" class="trakt-status-message">
+                                    <span>Waiting for authorization...</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions Grid -->
+            <div class="trakt-actions-grid">
+                <div class="trakt-card trakt-action-card" data-action="watchlist">
+                    <div class="trakt-action-icon">
+                        <i class="fas fa-list"></i>
+                    </div>
+                    <div class="trakt-action-content">
+                        <h4>Your Watchlist</h4>
+                        <p>View and manage your Trakt watchlist</p>
+                        <span class="trakt-action-count">0</span>
+                    </div>
+                </div>
+
+                <div class="trakt-card trakt-action-card" data-action="history">
+                    <div class="trakt-action-icon">
+                        <i class="fas fa-history"></i>
+                    </div>
+                    <div class="trakt-action-content">
+                        <h4>Watch History</h4>
+                        <p>See your recently watched content</p>
+                        <span class="trakt-action-count">0</span>
+                    </div>
+                </div>
+
+                <div class="trakt-card trakt-action-card" data-action="collection">
+                    <div class="trakt-action-icon">
+                        <i class="fas fa-collection"></i>
+                    </div>
+                    <div class="trakt-action-content">
+                        <h4>Collection</h4>
+                        <p>Your collected movies and shows</p>
+                        <span class="trakt-action-count">0</span>
+                    </div>
+                </div>
+
+                <div class="trakt-card trakt-action-card" data-action="ratings">
+                    <div class="trakt-action-icon">
+                        <i class="fas fa-star"></i>
+                    </div>
+                    <div class="trakt-action-content">
+                        <h4>Ratings</h4>
+                        <p>Your rated content</p>
+                        <span class="trakt-action-count">0</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Scrobbling Settings Card -->
+            <div class="trakt-card">
+                <div class="trakt-card-header">
+                    <h3><i class="fas fa-play-circle"></i> Scrobbling Settings</h3>
+                </div>
+                <div class="trakt-card-body">
+                    <div class="trakt-settings-grid">
+                        <div class="trakt-setting-item">
+                            <div class="trakt-setting-main">
+                                <label class="trakt-toggle">
+                                    <input type="checkbox" id="traktPageAutoScrobble" checked>
+                                    <span class="trakt-toggle-slider"></span>
+                                </label>
+                                <div class="trakt-setting-content">
+                                    <h4>Auto-Track Watching</h4>
+                                    <p>Automatically track movies and shows you watch</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="trakt-setting-item">
+                            <div class="trakt-setting-main">
+                                <label class="trakt-toggle">
+                                    <input type="checkbox" id="traktPageScrobbleProgress" checked>
+                                    <span class="trakt-toggle-slider"></span>
+                                </label>
+                                <div class="trakt-setting-content">
+                                    <h4>Sync Progress</h4>
+                                    <p>Keep your watch progress synchronized in real-time</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="trakt-setting-item">
+                            <div class="trakt-setting-main">
+                                <label class="trakt-toggle">
+                                    <input type="checkbox" id="traktPageWatchlistSync" checked>
+                                    <span class="trakt-toggle-slider"></span>
+                                </label>
+                                <div class="trakt-setting-content">
+                                    <h4>Watchlist Integration</h4>
+                                    <p>Show Trakt watchlist items in search results</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Activity -->
+            <div class="trakt-card" id="traktRecentActivity" style="display: none;">
+                <div class="trakt-card-header">
+                    <h3><i class="fas fa-clock"></i> Recent Activity</h3>
+                </div>
+                <div class="trakt-card-body">
+                    <div class="trakt-activity-list" id="traktActivityList">
+                        <!-- Activity items will be loaded here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </main>
     </div> <!-- End app-main -->
 </div> <!-- End app-container -->
@@ -3082,9 +4206,14 @@
 <div class="modal-runtime" id="modalRuntime">120 min</div>
 </div>
 <p class="modal-tagline" id="modalTagline">Tagline goes here</p>
-<button class="btn btn-primary" id="watchNowBtn">
-<i class="fas fa-play"></i> Find Torrents
-                        </button>
+<div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+    <button class="btn btn-primary" id="watchNowBtn">
+        <i class="fas fa-play"></i> Find Torrents
+    </button>
+    <button class="btn btn-secondary" id="traktWatchlistBtn" style="display: none;">
+        <i class="fas fa-plus"></i> Add to Watchlist
+    </button>
+</div>
 </div>
 </div>
 </div>
@@ -3445,6 +4574,7 @@ Your browser does not support the video tag.
         const torrentsList = document.getElementById('torrentsList');
         const notification = document.getElementById('notification');
         const watchNowBtn = document.getElementById('watchNowBtn');
+        const traktWatchlistBtn = document.getElementById('traktWatchlistBtn');
         const seasonsContainer = document.getElementById('seasonsContainer');
         const seasonSelector = document.getElementById('seasonSelector');
         const episodesGrid = document.getElementById('episodesGrid');
@@ -3517,6 +4647,28 @@ Your browser does not support the video tag.
     const pmSaveApiKeyBtn = document.getElementById('pmSaveApiKey');
     const pmClearApiKeyBtn = document.getElementById('pmClearApiKey');
         
+    // Trakt controls
+    const traktNotConnected = document.getElementById('traktNotConnected');
+    const traktConnected = document.getElementById('traktConnected');
+    const traktStatus = document.getElementById('traktStatus');
+    const traktConnectedStatus = document.getElementById('traktConnectedStatus');
+    const traktUsername = document.getElementById('traktUsername');
+    const traktLoginBtn = document.getElementById('traktLogin');
+    const traktViewWatchlistBtn = document.getElementById('traktViewWatchlist');
+    const traktViewHistoryBtn = document.getElementById('traktViewHistory');
+    const traktViewStatsBtn = document.getElementById('traktViewStats');
+    const traktDisconnectBtn = document.getElementById('traktDisconnect');
+    const traktCodePanel = document.getElementById('traktCodePanel');
+    const traktUserCodeEl = document.getElementById('traktUserCode');
+    const traktVerifyUrlEl = document.getElementById('traktVerifyUrl');
+    const traktOpenVerifyBtn = document.getElementById('traktOpenVerify');
+    const traktCopyCodeBtn = document.getElementById('traktCopyCode');
+    const traktCancelLoginBtn = document.getElementById('traktCancelLogin');
+    const traktLoginStatusEl = document.getElementById('traktLoginStatus');
+    const traktAutoScrobbleToggle = document.getElementById('traktAutoScrobble');
+    const traktScrobbleProgressToggle = document.getElementById('traktScrobbleProgress');
+    const traktSyncWatchlistToggle = document.getElementById('traktSyncWatchlist');
+
         // MPV Player elements
         const mpvPlayerContainer = document.getElementById('mpvPlayerContainer');
         const playerTitle = document.getElementById('mpvPlayerTitle');
@@ -3615,6 +4767,7 @@ Your browser does not support the video tag.
         let isLoading = false; // route-scoped loading flag
         let currentContent = null;
         let currentMediaType = 'movie';
+        let currentMovie = null; // Store current movie/show data for Trakt
         let currentSeason = 1;
         let torrentsLoaded = false;
         let currentTorrentData = null;
@@ -3860,6 +5013,9 @@ Your browser does not support the video tag.
             
             // Load fullscreen setting
             const fullscreenToggle = document.getElementById('fullscreenToggle');
+            
+            // Check Trakt authentication status
+            await checkTraktStatus();
             if (fullscreenToggle && window.electronAPI && window.electronAPI.getFullscreen) {
                 try {
                     const result = await window.electronAPI.getFullscreen();
@@ -3939,6 +5095,1396 @@ Your browser does not support the video tag.
                 showNotification('Error saving API key');
             }
         }
+
+        // ===== TRAKT FUNCTIONS =====
+
+        let traktPollingInterval = null;
+        let traktCurrentScrobble = null;
+
+        // Parse media title to extract info for Trakt
+        function parseMediaTitle(title) {
+            if (!title) return { title: 'Unknown', type: 'movie', year: null };
+
+            // Clean up the title
+            let cleanTitle = title
+                .replace(/\.(mkv|mp4|avi|mov|wmv|flv|webm)$/i, '') // Remove file extensions
+                .replace(/\.(720p|1080p|4k|2160p|480p|hdtv|bdrip|webrip|dvdrip|cam|ts|hdrip)/gi, '') // Remove quality tags
+                .replace(/\.(x264|x265|h264|h265|xvid|divx)/gi, '') // Remove codec tags
+                .replace(/\.(aac|ac3|dts|mp3|flac)/gi, '') // Remove audio tags
+                .replace(/[\[\]()]/g, ' ') // Remove brackets
+                .replace(/\b(repack|proper|real|retail|uncut|unrated|extended|directors?\.cut)\b/gi, '') // Remove release tags
+                .trim();
+
+            // Check if it's a TV show (contains S##E## or Season/Episode patterns)
+            const tvPatterns = [
+                /(.+?)[\s\.]S(\d{1,2})E(\d{1,2})/i, // Title S01E01
+                /(.+?)[\s\.]Season[\s\.](\d{1,2})[\s\.]Episode[\s\.](\d{1,2})/i, // Title Season 1 Episode 1
+                /(.+?)[\s\.](\d{1,2})x(\d{1,2})/i, // Title 1x01
+            ];
+
+            for (const pattern of tvPatterns) {
+                const match = cleanTitle.match(pattern);
+                if (match) {
+                    const showTitle = match[1].trim().replace(/[.\-_]/g, ' ');
+                    const season = parseInt(match[2]);
+                    const episode = parseInt(match[3]);
+                    
+                    // Extract year if present
+                    const yearMatch = showTitle.match(/\b(19\d{2}|20\d{2})\b/);
+                    const year = yearMatch ? parseInt(yearMatch[1]) : null;
+                    const titleWithoutYear = showTitle.replace(/\b(19\d{2}|20\d{2})\b/, '').trim();
+
+                    return {
+                        title: titleWithoutYear || showTitle,
+                        type: 'show',
+                        year: year,
+                        season: season,
+                        episode: episode
+                    };
+                }
+            }
+
+            // If not a TV show, treat as movie
+            const yearMatch = cleanTitle.match(/\b(19\d{2}|20\d{2})\b/);
+            const year = yearMatch ? parseInt(yearMatch[1]) : null;
+            const titleWithoutYear = cleanTitle.replace(/\b(19\d{2}|20\d{2})\b/, '').trim();
+
+            return {
+                title: titleWithoutYear || cleanTitle,
+                type: 'movie',
+                year: year
+            };
+        }
+
+        // Check Trakt authentication status
+        async function checkTraktStatus() {
+            try {
+                const response = await fetch('/api/trakt/status');
+                const data = await response.json();
+                
+                if (data.authenticated && data.user) {
+                    showTraktConnected(data.user);
+                } else {
+                    showTraktDisconnected();
+                }
+            } catch (error) {
+                console.error('[TRAKT] Status check failed:', error);
+                showTraktDisconnected();
+            }
+        }
+
+        function showTraktConnected(user) {
+            traktNotConnected.style.display = 'none';
+            traktConnected.style.display = 'block';
+            traktUsername.textContent = user.username || user.name || 'User';
+            traktStatus.innerHTML = '<i class="fas fa-check-circle"></i> Connected';
+            traktStatus.style.color = '#198754';
+        }
+
+        function showTraktDisconnected() {
+            traktNotConnected.style.display = 'block';
+            traktConnected.style.display = 'none';
+            traktStatus.innerHTML = '<i class="fas fa-times-circle"></i> Not connected';
+            traktStatus.style.color = '#dc3545';
+        }
+
+        // Start Trakt authentication flow
+        async function startTraktLogin() {
+            try {
+                traktLoginBtn.disabled = true;
+                traktLoginBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Connecting...';
+
+                // Get device code
+                const response = await fetch('/api/trakt/device-code');
+                const data = await response.json();
+
+                if (!data.success) {
+                    throw new Error(data.error || 'Failed to get device code');
+                }
+
+                // Show the code panel
+                traktCodePanel.style.display = 'block';
+                traktUserCodeEl.textContent = data.user_code;
+                traktVerifyUrlEl.href = data.verification_url;
+                traktLoginStatusEl.textContent = 'Waiting for authorization…';
+
+                // Start polling for token
+                startTraktPolling(data.device_code, data.interval || 5);
+
+            } catch (error) {
+                console.error('[TRAKT] Login error:', error);
+                showNotification('Failed to start Trakt login: ' + error.message, 'error');
+                resetTraktLogin();
+            }
+        }
+
+        function startTraktPolling(deviceCode, interval) {
+            if (traktPollingInterval) {
+                clearInterval(traktPollingInterval);
+            }
+
+            traktPollingInterval = setInterval(async () => {
+                try {
+                    const response = await fetch('/api/trakt/device-token', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ device_code: deviceCode })
+                    });
+
+                    const data = await response.json();
+
+                    if (data.success) {
+                        // Authentication successful
+                        clearInterval(traktPollingInterval);
+                        traktPollingInterval = null;
+                        traktCodePanel.style.display = 'none';
+                        showNotification('Successfully connected to Trakt!', 'success');
+                        await checkTraktStatus();
+                        resetTraktLogin();
+                    } else if (response.status === 400) {
+                        // Still waiting for user authorization
+                        traktLoginStatusEl.textContent = 'Waiting for authorization…';
+                    } else if (response.status === 410) {
+                        // Code expired
+                        clearInterval(traktPollingInterval);
+                        traktPollingInterval = null;
+                        showNotification('Authorization code expired. Please try again.', 'error');
+                        resetTraktLogin();
+                    } else if (response.status === 418) {
+                        // User denied
+                        clearInterval(traktPollingInterval);
+                        traktPollingInterval = null;
+                        showNotification('Authorization denied by user.', 'error');
+                        resetTraktLogin();
+                    } else {
+                        throw new Error(data.error || 'Unknown error');
+                    }
+                } catch (error) {
+                    console.error('[TRAKT] Polling error:', error);
+                    clearInterval(traktPollingInterval);
+                    traktPollingInterval = null;
+                    showNotification('Authentication failed: ' + error.message, 'error');
+                    resetTraktLogin();
+                }
+            }, interval * 1000);
+        }
+
+        function resetTraktLogin() {
+            traktLoginBtn.disabled = false;
+            traktLoginBtn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Connect to Trakt';
+            traktCodePanel.style.display = 'none';
+            if (traktPollingInterval) {
+                clearInterval(traktPollingInterval);
+                traktPollingInterval = null;
+            }
+        }
+
+        function cancelTraktLogin() {
+            resetTraktLogin();
+            showNotification('Trakt login cancelled', 'info');
+        }
+
+        async function disconnectTrakt() {
+            try {
+                const response = await fetch('/api/trakt/logout', { method: 'POST' });
+                const data = await response.json();
+
+                if (data.success) {
+                    showTraktDisconnected();
+                    showNotification('Disconnected from Trakt', 'success');
+                } else {
+                    throw new Error(data.error || 'Failed to logout');
+                }
+            } catch (error) {
+                console.error('[TRAKT] Logout error:', error);
+                showNotification('Failed to disconnect: ' + error.message, 'error');
+            }
+        }
+
+        // Scrobbling functions
+        async function scrobbleStart(title, type, year, season, episode, progress = 0) {
+            if (!traktAutoScrobbleToggle.checked) return;
+
+            try {
+                const response = await fetch('/api/trakt/scrobble/start', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ title, type, year, season, episode, progress })
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    traktCurrentScrobble = { title, type, year, season, episode };
+                    console.log('[TRAKT] Started scrobbling:', title);
+                } else {
+                    console.error('[TRAKT] Scrobble start failed:', data.error);
+                }
+            } catch (error) {
+                console.error('[TRAKT] Scrobble start error:', error);
+            }
+        }
+
+        async function scrobblePause(progress) {
+            if (!traktCurrentScrobble || !traktScrobbleProgressToggle.checked) return;
+
+            try {
+                const response = await fetch('/api/trakt/scrobble/pause', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ ...traktCurrentScrobble, progress })
+                });
+
+                if (response.ok) {
+                    console.log('[TRAKT] Paused scrobbling at', progress + '%');
+                }
+            } catch (error) {
+                console.error('[TRAKT] Scrobble pause error:', error);
+            }
+        }
+
+        async function scrobbleStop(progress) {
+            if (!traktCurrentScrobble) return;
+
+            try {
+                const response = await fetch('/api/trakt/scrobble/stop', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ ...traktCurrentScrobble, progress })
+                });
+
+                if (response.ok) {
+                    console.log('[TRAKT] Stopped scrobbling at', progress + '%');
+                    traktCurrentScrobble = null;
+                }
+            } catch (error) {
+                console.error('[TRAKT] Scrobble stop error:', error);
+            }
+        }
+
+        // Utility functions
+        function copyTraktCode() {
+            const code = traktUserCodeEl.textContent;
+            navigator.clipboard.writeText(code).then(() => {
+                showNotification('Code copied to clipboard!', 'success');
+            }).catch(() => {
+                showNotification('Failed to copy code', 'error');
+            });
+        }
+
+        function openTraktVerify() {
+            const url = traktVerifyUrlEl.href;
+            if (window.electronAPI && window.electronAPI.openExternal) {
+                window.electronAPI.openExternal(url);
+            } else {
+                window.open(url, '_blank');
+            }
+        }
+
+        // Watchlist management
+        async function setupTraktWatchlistButton() {
+            if (!traktWatchlistBtn || !currentMovie) return;
+
+            // Check if user is authenticated with Trakt
+            try {
+                const statusResponse = await fetch('/api/trakt/status');
+                const statusData = await statusResponse.json();
+                
+                if (!statusData.authenticated) {
+                    traktWatchlistBtn.style.display = 'none';
+                    return;
+                }
+
+                traktWatchlistBtn.style.display = 'block';
+                
+                // Check if item is already in watchlist
+                const title = currentMovie.title || currentMovie.name;
+                const year = parseInt((currentMovie.release_date || currentMovie.first_air_date || '').substring(0, 4));
+                
+                // For now, assume it's not in watchlist - could check against API in the future
+                updateWatchlistButton(false);
+                
+            } catch (error) {
+                console.error('[TRAKT] Error setting up watchlist button:', error);
+                traktWatchlistBtn.style.display = 'none';
+            }
+        }
+
+        function updateWatchlistButton(isInWatchlist) {
+            if (!traktWatchlistBtn) return;
+
+            if (isInWatchlist) {
+                traktWatchlistBtn.innerHTML = '<i class="fas fa-check"></i> In Watchlist';
+                traktWatchlistBtn.classList.remove('btn-secondary');
+                traktWatchlistBtn.classList.add('btn-success');
+                traktWatchlistBtn.onclick = removeFromTraktWatchlist;
+            } else {
+                traktWatchlistBtn.innerHTML = '<i class="fas fa-plus"></i> Add to Watchlist';
+                traktWatchlistBtn.classList.remove('btn-success');
+                traktWatchlistBtn.classList.add('btn-secondary');
+                traktWatchlistBtn.onclick = addToTraktWatchlist;
+            }
+        }
+
+        async function addToTraktWatchlist() {
+            if (!currentMovie) return;
+
+            try {
+                traktWatchlistBtn.disabled = true;
+                traktWatchlistBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Adding...';
+
+                const title = currentMovie.title || currentMovie.name;
+                const year = parseInt((currentMovie.release_date || currentMovie.first_air_date || '').substring(0, 4));
+                const type = currentMediaType === 'tv' ? 'show' : 'movie';
+
+                const response = await fetch('/api/trakt/watchlist/add', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ title, type, year })
+                });
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    updateWatchlistButton(true);
+                    showNotification(`Added "${title}" to your Trakt watchlist!`, 'success');
+                } else {
+                    throw new Error(data.error || 'Failed to add to watchlist');
+                }
+                
+            } catch (error) {
+                console.error('[TRAKT] Add to watchlist error:', error);
+                showNotification('Failed to add to watchlist: ' + error.message, 'error');
+                updateWatchlistButton(false);
+            } finally {
+                traktWatchlistBtn.disabled = false;
+            }
+        }
+
+        async function removeFromTraktWatchlist() {
+            if (!currentMovie) return;
+
+            try {
+                traktWatchlistBtn.disabled = true;
+                traktWatchlistBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Removing...';
+
+                const title = currentMovie.title || currentMovie.name;
+                const year = parseInt((currentMovie.release_date || currentMovie.first_air_date || '').substring(0, 4));
+                const type = currentMediaType === 'tv' ? 'show' : 'movie';
+
+                const response = await fetch('/api/trakt/watchlist/remove', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ title, type, year })
+                });
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    updateWatchlistButton(false);
+                    showNotification(`Removed "${title}" from your Trakt watchlist`, 'success');
+                } else {
+                    throw new Error(data.error || 'Failed to remove from watchlist');
+                }
+                
+            } catch (error) {
+                console.error('[TRAKT] Remove from watchlist error:', error);
+                showNotification('Failed to remove from watchlist: ' + error.message, 'error');
+                updateWatchlistButton(true);
+            } finally {
+                traktWatchlistBtn.disabled = false;
+            }
+        }
+
+        // ===== END TRAKT FUNCTIONS =====
+
+        // ===== TRAKT PAGE FUNCTIONS =====
+        
+        // Global Trakt page state
+        let traktPageInitialized = false;
+        let traktDeviceCodeInterval = null;
+        let traktStats = null;
+
+        async function initializeTraktPage() {
+            if (traktPageInitialized) return;
+            
+            try {
+                await updateTraktPageStatus();
+                setupTraktPageEventListeners();
+                traktPageInitialized = true;
+                console.log('[TRAKT PAGE] Initialized successfully');
+            } catch (error) {
+                console.error('[TRAKT PAGE] Initialization error:', error);
+            }
+        }
+
+        function setupTraktPageEventListeners() {
+            // Authenticate button
+            const authBtn = document.getElementById('traktAuthenticateBtn');
+            if (authBtn) {
+                authBtn.addEventListener('click', startTraktPageAuth);
+            }
+
+            // Disconnect button
+            const disconnectBtn = document.getElementById('traktDisconnectBtn');
+            if (disconnectBtn) {
+                disconnectBtn.addEventListener('click', disconnectTraktFromPage);
+            }
+
+            // Verify Device Code button
+            const verifyBtn = document.getElementById('traktVerifyDeviceBtn');
+            if (verifyBtn) {
+                verifyBtn.addEventListener('click', verifyTraktDeviceCode);
+            }
+
+            // Open Trakt URL button
+            const openUrlBtn = document.getElementById('traktOpenUrlBtn');
+            if (openUrlBtn) {
+                openUrlBtn.addEventListener('click', () => {
+                    const url = document.getElementById('traktVerificationUrl')?.textContent;
+                    if (url) {
+                        window.electronAPI?.openExternal(url);
+                    }
+                });
+            }
+
+            // Copy device code button
+            const copyCodeBtn = document.getElementById('traktCopyCodeBtn');
+            if (copyCodeBtn) {
+                copyCodeBtn.addEventListener('click', copyTraktDeviceCode);
+            }
+
+            // Action cards
+            document.querySelectorAll('.trakt-action-card').forEach(card => {
+                card.addEventListener('click', handleTraktActionClick);
+            });
+
+            // Settings toggles
+            const autoScrobbleToggle = document.getElementById('traktPageAutoScrobble');
+            const progressToggle = document.getElementById('traktPageScrobbleProgress');
+            const watchlistToggle = document.getElementById('traktPageWatchlistSync');
+
+            if (autoScrobbleToggle) {
+                autoScrobbleToggle.addEventListener('change', () => {
+                    if (traktAutoScrobbleToggle) {
+                        traktAutoScrobbleToggle.checked = autoScrobbleToggle.checked;
+                    }
+                });
+            }
+
+            if (progressToggle) {
+                progressToggle.addEventListener('change', () => {
+                    if (traktScrobbleProgressToggle) {
+                        traktScrobbleProgressToggle.checked = progressToggle.checked;
+                    }
+                });
+            }
+
+            if (watchlistToggle) {
+                watchlistToggle.addEventListener('change', () => {
+                    if (traktWatchlistSyncToggle) {
+                        traktWatchlistSyncToggle.checked = watchlistToggle.checked;
+                    }
+                });
+            }
+        }
+
+        async function updateTraktPageStatus() {
+            try {
+                const response = await fetch('/api/trakt/status');
+                const data = await response.json();
+
+                const statusIndicator = document.getElementById('traktStatusIndicator');
+                const statusDescription = document.getElementById('traktStatusDescription');
+                const statusActions = document.getElementById('traktStatusActions');
+                const deviceCodePanel = document.getElementById('traktDeviceCodePanel');
+
+                if (data.authenticated) {
+                    // Connected state
+                    if (statusIndicator) {
+                        statusIndicator.className = 'trakt-status-indicator connected';
+                        statusIndicator.innerHTML = '<i class="fas fa-check-circle"></i>Connected to Trakt';
+                    }
+
+                    if (statusDescription) {
+                        statusDescription.textContent = 'Your account is connected and ready for automatic scrobbling, watchlist sync, and more!';
+                    }
+
+                    if (statusActions) {
+                        statusActions.innerHTML = `
+                            <button id="traktDisconnectBtn" class="trakt-btn trakt-btn-secondary">
+                                <i class="fas fa-unlink"></i>Disconnect Account
+                            </button>
+                            <button onclick="showDetailedTraktStatistics()" class="trakt-btn trakt-btn-info">
+                                <i class="fas fa-chart-bar"></i>View Statistics
+                            </button>
+                        `;
+                    }
+
+                    if (deviceCodePanel) {
+                        deviceCodePanel.style.display = 'none';
+                    }
+
+                    // Update action grid with stats
+                    await loadTraktStats();
+                    
+                } else {
+                    // Disconnected state
+                    if (statusIndicator) {
+                        statusIndicator.className = 'trakt-status-indicator disconnected';
+                        statusIndicator.innerHTML = '<i class="fas fa-times-circle"></i>Not Connected';
+                    }
+
+                    if (statusDescription) {
+                        statusDescription.textContent = 'Connect your Trakt account to automatically track what you watch, sync your watchlist, and get personalized recommendations.';
+                    }
+
+                    if (statusActions) {
+                        statusActions.innerHTML = `
+                            <button id="traktAuthenticateBtn" class="trakt-btn trakt-btn-primary">
+                                <i class="fas fa-link"></i>Connect to Trakt
+                            </button>
+                        `;
+                    }
+
+                    if (deviceCodePanel) {
+                        deviceCodePanel.style.display = 'none';
+                    }
+
+                    // Clear action grid
+                    clearTraktActionGrid();
+                }
+
+                // Sync settings toggles
+                syncTraktPageSettings();
+                
+                // Re-setup event listeners after DOM update
+                setupTraktPageEventListeners();
+
+            } catch (error) {
+                console.error('[TRAKT PAGE] Status update error:', error);
+                // Only show error if we can't get basic status, not for stats loading
+                if (error.message && !error.message.includes('stats')) {
+                    showNotification('Trakt loading', 'warning');
+                }
+            }
+        }
+
+        async function startTraktPageAuth() {
+            try {
+                const response = await fetch('/api/trakt/device/code', { method: 'POST' });
+                const data = await response.json();
+
+                if (data.success) {
+                    showTraktDeviceCode(data.device_code, data.user_code, data.verification_url, data.expires_in);
+                    
+                    // Start polling for verification
+                    traktDeviceCodeInterval = setInterval(async () => {
+                        await verifyTraktDeviceCode();
+                    }, data.interval * 1000 || 5000);
+                    
+                } else {
+                    throw new Error(data.error || 'Failed to get device code');
+                }
+            } catch (error) {
+                console.error('[TRAKT PAGE] Auth start error:', error);
+                showNotification('Failed to start authentication: ' + error.message, 'error');
+            }
+        }
+
+        function showTraktDeviceCode(deviceCode, userCode, verificationUrl, expiresIn) {
+            const deviceCodePanel = document.getElementById('traktDeviceCodePanel');
+            const userCodeSpan = document.getElementById('traktUserCode');
+            const verificationUrlSpan = document.getElementById('traktVerificationUrl');
+            const statusMessage = document.getElementById('traktDeviceCodeStatus');
+
+            if (deviceCodePanel) deviceCodePanel.style.display = 'block';
+            if (userCodeSpan) userCodeSpan.textContent = userCode;
+            if (verificationUrlSpan) verificationUrlSpan.textContent = verificationUrl;
+            if (statusMessage) {
+                statusMessage.innerHTML = '<span>Waiting for authorization... Please enter the code above on Trakt.tv</span>';
+            }
+
+            // Set timeout to hide panel after expiration
+            setTimeout(() => {
+                if (traktDeviceCodeInterval) {
+                    clearInterval(traktDeviceCodeInterval);
+                    traktDeviceCodeInterval = null;
+                    if (deviceCodePanel) deviceCodePanel.style.display = 'none';
+                    showNotification('Device code expired. Please try again.', 'error');
+                }
+            }, expiresIn * 1000);
+        }
+
+        async function verifyTraktDeviceCode() {
+            try {
+                const response = await fetch('/api/trakt/device/verify', { method: 'POST' });
+                const data = await response.json();
+
+                if (data.success) {
+                    // Success! Clear interval and update page
+                    if (traktDeviceCodeInterval) {
+                        clearInterval(traktDeviceCodeInterval);
+                        traktDeviceCodeInterval = null;
+                    }
+                    
+                    const deviceCodePanel = document.getElementById('traktDeviceCodePanel');
+                    if (deviceCodePanel) deviceCodePanel.style.display = 'none';
+                    
+                    showNotification('Successfully connected to Trakt!', 'success');
+                    await updateTraktPageStatus();
+                    
+                } else if (data.error === 'pending') {
+                    // Still waiting, update status
+                    const statusMessage = document.getElementById('traktDeviceCodeStatus');
+                    if (statusMessage) {
+                        statusMessage.innerHTML = '<span>Waiting for authorization... Please enter the code above on Trakt.tv</span>';
+                    }
+                } else {
+                    throw new Error(data.error || 'Verification failed');
+                }
+            } catch (error) {
+                console.error('[TRAKT PAGE] Verify error:', error);
+                if (error.message !== 'pending') {
+                    showNotification('Verification failed: ' + error.message, 'error');
+                }
+            }
+        }
+
+        async function disconnectTraktFromPage() {
+            try {
+                const response = await fetch('/api/trakt/logout', { method: 'POST' });
+                const data = await response.json();
+
+                if (data.success) {
+                    showNotification('Successfully disconnected from Trakt', 'success');
+                    await updateTraktPageStatus();
+                } else {
+                    throw new Error(data.error || 'Failed to disconnect');
+                }
+            } catch (error) {
+                console.error('[TRAKT PAGE] Disconnect error:', error);
+                showNotification('Failed to disconnect: ' + error.message, 'error');
+            }
+        }
+
+        function copyTraktDeviceCode() {
+            const userCode = document.getElementById('traktUserCode')?.textContent;
+            if (userCode && navigator.clipboard) {
+                navigator.clipboard.writeText(userCode).then(() => {
+                    showNotification('Device code copied to clipboard!', 'success');
+                }).catch(() => {
+                    showNotification('Failed to copy code', 'error');
+                });
+            }
+        }
+
+        async function showDetailedTraktStatistics() {
+            try {
+                showNotification('Loading your statistics...', 'info', 2000);
+                
+                const response = await fetch('/api/trakt/user/stats');
+                const data = await response.json();
+                
+                if (data.success && data.stats) {
+                    displayTraktStatisticsModal(data.stats);
+                    showNotification('Statistics loaded successfully!', 'success', 2000);
+                } else {
+                    throw new Error(data.error || 'Failed to load statistics');
+                }
+            } catch (error) {
+                console.error('[TRAKT] Detailed statistics error:', error);
+                showNotification('Unable to load detailed statistics. Please ensure you\'re connected to Trakt and try again.', 'error', 4000);
+            }
+        }
+
+        function displayTraktStatisticsModal(stats) {
+            // Create statistics modal
+            const modal = document.createElement('div');
+            modal.id = 'traktStatisticsModal';
+            modal.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: rgba(0, 0, 0, 0.8);
+                backdrop-filter: blur(8px);
+                z-index: 20000;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                padding: 2rem;
+                animation: fadeIn 0.3s ease;
+            `;
+
+            const modalContent = document.createElement('div');
+            modalContent.style.cssText = `
+                background: linear-gradient(135deg, rgba(30, 30, 30, 0.95) 0%, rgba(20, 20, 20, 0.95) 100%);
+                border-radius: 16px;
+                padding: 2rem;
+                max-width: 800px;
+                width: 100%;
+                max-height: 80vh;
+                overflow-y: auto;
+                border: 1px solid rgba(255, 255, 255, 0.1);
+                box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            `;
+
+            // Calculate totals
+            const movieStats = stats.movies || { watched: 0, collected: 0, ratings: 0, plays: 0, minutes: 0 };
+            const showStats = stats.shows || { watched: 0, collected: 0, ratings: 0, plays: 0, minutes: 0 };
+            const episodeStats = stats.episodes || { watched: 0, collected: 0, ratings: 0, plays: 0, minutes: 0 };
+            
+            const totalWatched = movieStats.watched + showStats.watched;
+            const totalMinutes = movieStats.minutes + episodeStats.minutes;
+            const totalHours = Math.round(totalMinutes / 60);
+            const totalDays = Math.round(totalHours / 24);
+            
+            modalContent.innerHTML = `
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                    <h2 style="margin: 0; color: #ed1c24; font-size: 1.8rem;">
+                        <i class="fas fa-chart-bar"></i> Your Trakt Statistics
+                    </h2>
+                    <button onclick="closeTraktStatisticsModal()" style="
+                        background: rgba(255, 255, 255, 0.1);
+                        border: none;
+                        color: white;
+                        padding: 0.5rem;
+                        border-radius: 50%;
+                        cursor: pointer;
+                        font-size: 1.2rem;
+                        width: 40px;
+                        height: 40px;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                    ">×</button>
+                </div>
+
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+                    <div style="background: rgba(237, 28, 36, 0.1); padding: 1.5rem; border-radius: 12px; border-left: 4px solid #ed1c24;">
+                        <div style="font-size: 2rem; font-weight: bold; color: #ed1c24;">${totalWatched}</div>
+                        <div style="color: #ccc; margin-top: 0.5rem;">Total Content Watched</div>
+                        <div style="font-size: 0.9rem; color: #999; margin-top: 0.25rem;">Movies + Shows</div>
+                    </div>
+                    
+                    <div style="background: rgba(34, 197, 94, 0.1); padding: 1.5rem; border-radius: 12px; border-left: 4px solid #22c55e;">
+                        <div style="font-size: 2rem; font-weight: bold; color: #22c55e;">${totalDays}</div>
+                        <div style="color: #ccc; margin-top: 0.5rem;">Days Watched</div>
+                        <div style="font-size: 0.9rem; color: #999; margin-top: 0.25rem;">${totalHours} hours total</div>
+                    </div>
+                    
+                    <div style="background: rgba(59, 130, 246, 0.1); padding: 1.5rem; border-radius: 12px; border-left: 4px solid #3b82f6;">
+                        <div style="font-size: 2rem; font-weight: bold; color: #3b82f6;">${stats.watchlist?.length || 0}</div>
+                        <div style="color: #ccc; margin-top: 0.5rem;">Watchlist Items</div>
+                        <div style="font-size: 0.9rem; color: #999; margin-top: 0.25rem;">Pending to watch</div>
+                    </div>
+                    
+                    <div style="background: rgba(245, 158, 11, 0.1); padding: 1.5rem; border-radius: 12px; border-left: 4px solid #f59e0b;">
+                        <div style="font-size: 2rem; font-weight: bold; color: #f59e0b;">${stats.ratings?.length || 0}</div>
+                        <div style="color: #ccc; margin-top: 0.5rem;">Items Rated</div>
+                        <div style="font-size: 0.9rem; color: #999; margin-top: 0.25rem;">Your taste profile</div>
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-bottom: 2rem;">
+                    <div style="background: rgba(255, 255, 255, 0.05); padding: 1.5rem; border-radius: 12px;">
+                        <h3 style="margin: 0 0 1rem 0; color: #ed1c24;">
+                            <i class="fas fa-film"></i> Movies
+                        </h3>
+                        <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                            <div style="display: flex; justify-content: space-between;">
+                                <span style="color: #ccc;">Watched:</span>
+                                <span style="color: white; font-weight: bold;">${movieStats.watched || 0}</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between;">
+                                <span style="color: #ccc;">Collected:</span>
+                                <span style="color: white; font-weight: bold;">${movieStats.collected || 0}</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between;">
+                                <span style="color: #ccc;">Rated:</span>
+                                <span style="color: white; font-weight: bold;">${movieStats.ratings || 0}</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between;">
+                                <span style="color: #ccc;">Watch Time:</span>
+                                <span style="color: white; font-weight: bold;">${Math.round((movieStats.minutes || 0) / 60)}h</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="background: rgba(255, 255, 255, 0.05); padding: 1.5rem; border-radius: 12px;">
+                        <h3 style="margin: 0 0 1rem 0; color: #ed1c24;">
+                            <i class="fas fa-tv"></i> TV Shows
+                        </h3>
+                        <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                            <div style="display: flex; justify-content: space-between;">
+                                <span style="color: #ccc;">Shows Watched:</span>
+                                <span style="color: white; font-weight: bold;">${showStats.watched || 0}</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between;">
+                                <span style="color: #ccc;">Episodes:</span>
+                                <span style="color: white; font-weight: bold;">${episodeStats.watched || 0}</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between;">
+                                <span style="color: #ccc;">Shows Rated:</span>
+                                <span style="color: white; font-weight: bold;">${showStats.ratings || 0}</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between;">
+                                <span style="color: #ccc;">Watch Time:</span>
+                                <span style="color: white; font-weight: bold;">${Math.round((episodeStats.minutes || 0) / 60)}h</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                ${stats.network ? `
+                <div style="background: rgba(255, 255, 255, 0.05); padding: 1.5rem; border-radius: 12px; margin-bottom: 1rem;">
+                    <h3 style="margin: 0 0 1rem 0; color: #ed1c24;">
+                        <i class="fas fa-users"></i> Social Network
+                    </h3>
+                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; text-align: center;">
+                        <div>
+                            <div style="font-size: 1.5rem; font-weight: bold; color: #3b82f6;">${stats.network.friends || 0}</div>
+                            <div style="color: #ccc; font-size: 0.9rem;">Friends</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 1.5rem; font-weight: bold; color: #22c55e;">${stats.network.followers || 0}</div>
+                            <div style="color: #ccc; font-size: 0.9rem;">Followers</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 1.5rem; font-weight: bold; color: #f59e0b;">${stats.network.following || 0}</div>
+                            <div style="color: #ccc; font-size: 0.9rem;">Following</div>
+                        </div>
+                    </div>
+                </div>
+                ` : ''}
+
+                <div style="text-align: center; margin-top: 2rem;">
+                    <button onclick="window.electronAPI?.openExternal('https://trakt.tv/users/me')" style="
+                        background: linear-gradient(135deg, #ed1c24 0%, #d41920 100%);
+                        color: white;
+                        border: none;
+                        padding: 0.75rem 1.5rem;
+                        border-radius: 8px;
+                        font-weight: 600;
+                        cursor: pointer;
+                        margin-right: 1rem;
+                    ">
+                        <i class="fas fa-external-link-alt"></i> View Profile on Trakt
+                    </button>
+                    <button onclick="closeTraktStatisticsModal()" style="
+                        background: rgba(255, 255, 255, 0.1);
+                        color: white;
+                        border: 1px solid rgba(255, 255, 255, 0.2);
+                        padding: 0.75rem 1.5rem;
+                        border-radius: 8px;
+                        font-weight: 600;
+                        cursor: pointer;
+                    ">
+                        Close
+                    </button>
+                </div>
+            `;
+
+            modal.appendChild(modalContent);
+            document.body.appendChild(modal);
+
+            // Add click outside to close
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    closeTraktStatisticsModal();
+                }
+            });
+
+            showNotification('Statistics loaded successfully!', 'success');
+        }
+
+        function closeTraktStatisticsModal() {
+            const modal = document.getElementById('traktStatisticsModal');
+            if (modal) {
+                modal.style.animation = 'fadeOut 0.3s ease';
+                setTimeout(() => {
+                    modal.remove();
+                }, 300);
+            }
+        }
+
+        // Add fade animations
+        const fadeStyle = document.createElement('style');
+        fadeStyle.textContent = `
+            @keyframes fadeIn {
+                from { opacity: 0; transform: scale(0.9); }
+                to { opacity: 1; transform: scale(1); }
+            }
+            @keyframes fadeOut {
+                from { opacity: 1; transform: scale(1); }
+                to { opacity: 0; transform: scale(0.9); }
+            }
+        `;
+        document.head.appendChild(fadeStyle);
+
+        async function loadTraktStats() {
+            try {
+                const response = await fetch('/api/trakt/user/stats');
+                const data = await response.json();
+
+                if (data.success) {
+                    traktStats = data.stats;
+                    updateTraktActionGrid(data.stats);
+                    console.log('[TRAKT PAGE] Stats loaded successfully');
+                } else {
+                    // Silently use placeholder stats - don't show error notifications
+                    console.log('[TRAKT PAGE] Using placeholder stats:', data.error);
+                    const placeholderStats = {
+                        watchlist: [],
+                        collection: { movies: [], shows: [] },
+                        ratings: [],
+                        movies: { watched: 0, collected: 0, ratings: 0 },
+                        shows: { watched: 0, collected: 0, ratings: 0 }
+                    };
+                    updateTraktActionGrid(placeholderStats);
+                }
+            } catch (error) {
+                // Don't show error notifications for stats loading - just use placeholders
+                console.log('[TRAKT PAGE] Stats loading failed, using placeholders:', error);
+                const placeholderStats = {
+                    watchlist: [],
+                    collection: { movies: [], shows: [] },
+                    ratings: [],
+                    movies: { watched: 0, collected: 0, ratings: 0 },
+                    shows: { watched: 0, collected: 0, ratings: 0 }
+                };
+                updateTraktActionGrid(placeholderStats);
+            }
+        }
+
+        function updateTraktActionGrid(stats) {
+            const actionCards = document.querySelectorAll('.trakt-action-card');
+            
+            actionCards.forEach(card => {
+                const action = card.dataset.action;
+                const countEl = card.querySelector('.trakt-action-count');
+                
+                switch (action) {
+                    case 'watchlist':
+                        if (countEl) {
+                            const count = stats.watchlist?.length || 0;
+                            countEl.textContent = count;
+                            countEl.style.display = count > 0 ? 'inline-block' : 'none';
+                        }
+                        break;
+                    case 'history':
+                        if (countEl) {
+                            const movieCount = stats.movies?.watched || 0;
+                            const showCount = stats.shows?.watched || 0;
+                            const totalCount = movieCount + showCount;
+                            countEl.textContent = totalCount;
+                            countEl.style.display = totalCount > 0 ? 'inline-block' : 'none';
+                        }
+                        break;
+                    case 'collection':
+                        if (countEl) {
+                            const movieCount = stats.collection?.movies?.length || 0;
+                            const showCount = stats.collection?.shows?.length || 0;
+                            const totalCount = movieCount + showCount;
+                            countEl.textContent = totalCount;
+                            countEl.style.display = totalCount > 0 ? 'inline-block' : 'none';
+                        }
+                        break;
+                    case 'ratings':
+                        if (countEl) {
+                            const count = stats.ratings?.length || 0;
+                            countEl.textContent = count;
+                            countEl.style.display = count > 0 ? 'inline-block' : 'none';
+                        }
+                        break;
+                }
+            });
+            
+            console.log('[TRAKT PAGE] Action grid updated with stats');
+        }
+
+        function clearTraktActionGrid() {
+            const actionCards = document.querySelectorAll('.trakt-action-card');
+            actionCards.forEach(card => {
+                const countEl = card.querySelector('.trakt-action-count');
+                if (countEl) countEl.textContent = '0';
+            });
+        }
+
+        async function handleTraktActionClick(event) {
+            const card = event.currentTarget;
+            const action = card.dataset.action;
+            
+            // Show detailed information for each action
+            switch (action) {
+                case 'watchlist':
+                    await showTraktWatchlistDetails();
+                    break;
+                case 'history':
+                    await showTraktHistoryDetails();
+                    break;
+                case 'collection':
+                    await showTraktCollectionDetails();
+                    break;
+                case 'ratings':
+                    await showTraktRatingsDetails();
+                    break;
+                default:
+                    showNotification('Feature coming soon!', 'info');
+            }
+        }
+
+        async function showTraktWatchlistDetails() {
+            try {
+                const response = await fetch('/api/trakt/watchlist');
+                const data = await response.json();
+                
+                if (data.success && data.watchlist) {
+                    const count = data.watchlist.length;
+                    if (count > 0) {
+                        showNotification(`Your watchlist has ${count} items. They will appear automatically when browsing!`, 'success');
+                    } else {
+                        showNotification('Your watchlist is empty. Add items by clicking the + button on movies and shows!', 'info');
+                    }
+                } else {
+                    showNotification('Could not load watchlist. Make sure you\'re connected to Trakt.', 'error');
+                }
+            } catch (error) {
+                console.error('[TRAKT] Watchlist details error:', error);
+                showNotification('Failed to load watchlist details', 'error');
+            }
+        }
+
+        async function showTraktHistoryDetails() {
+            try {
+                const response = await fetch('/api/trakt/history');
+                const data = await response.json();
+                
+                if (data.success && data.history) {
+                    const count = data.history.length;
+                    if (count > 0) {
+                        showNotification(`You've watched ${count} items. Your watch history is automatically tracked!`, 'success');
+                    } else {
+                        showNotification('No watch history yet. Start watching content and it will be tracked automatically!', 'info');
+                    }
+                } else {
+                    showNotification('Could not load watch history. Make sure you\'re connected to Trakt.', 'error');
+                }
+            } catch (error) {
+                console.error('[TRAKT] History details error:', error);
+                showNotification('Failed to load watch history', 'error');
+            }
+        }
+
+        async function showTraktCollectionDetails() {
+            try {
+                const response = await fetch('/api/trakt/collection');
+                const data = await response.json();
+                
+                if (data.success && data.collection) {
+                    const movieCount = data.collection.movies?.length || 0;
+                    const showCount = data.collection.shows?.length || 0;
+                    const total = movieCount + showCount;
+                    
+                    if (total > 0) {
+                        showNotification(`Your collection has ${movieCount} movies and ${showCount} shows (${total} total)`, 'success');
+                    } else {
+                        showNotification('Your collection is empty. Items are added automatically when you finish watching!', 'info');
+                    }
+                } else {
+                    showNotification('Could not load collection. Make sure you\'re connected to Trakt.', 'error');
+                }
+            } catch (error) {
+                console.error('[TRAKT] Collection details error:', error);
+                showNotification('Failed to load collection details', 'error');
+            }
+        }
+
+        async function showTraktRatingsDetails() {
+            try {
+                const response = await fetch('/api/trakt/ratings');
+                const data = await response.json();
+                
+                if (data.success && data.ratings) {
+                    const count = data.ratings.length;
+                    if (count > 0) {
+                        showNotification(`You've rated ${count} items on Trakt. Visit trakt.tv to rate more content!`, 'success');
+                    } else {
+                        showNotification('You haven\'t rated anything yet. Visit trakt.tv to start rating movies and shows!', 'info');
+                    }
+                } else {
+                    showNotification('Could not load ratings. Make sure you\'re connected to Trakt.', 'error');
+                }
+            } catch (error) {
+                console.error('[TRAKT] Ratings details error:', error);
+                showNotification('Failed to load ratings details', 'error');
+            }
+        }
+
+        function syncTraktPageSettings() {
+            // Sync main settings with page settings
+            const autoScrobbleToggle = document.getElementById('traktPageAutoScrobble');
+            const progressToggle = document.getElementById('traktPageScrobbleProgress');
+            const watchlistToggle = document.getElementById('traktPageWatchlistSync');
+
+            if (autoScrobbleToggle && traktAutoScrobbleToggle) {
+                autoScrobbleToggle.checked = traktAutoScrobbleToggle.checked;
+            }
+
+            if (progressToggle && traktScrobbleProgressToggle) {
+                progressToggle.checked = traktScrobbleProgressToggle.checked;
+            }
+
+            if (watchlistToggle && traktWatchlistSyncToggle) {
+                watchlistToggle.checked = traktWatchlistSyncToggle.checked;
+            }
+        }
+
+        // ===== END TRAKT PAGE FUNCTIONS =====
+
+        // ===== TRAKT SYNC FUNCTIONS FOR IN-APP LISTS =====
+        
+        async function syncWithTraktWatchlist(action, title, mediaType, year) {
+            try {
+                // Check if user is authenticated
+                const statusResponse = await fetch('/api/trakt/status');
+                const statusData = await statusResponse.json();
+                if (!statusData.authenticated) {
+                    console.log('[TRAKT SYNC] User not authenticated, skipping watchlist sync');
+                    return;
+                }
+
+                const endpoint = action === 'add' ? '/api/trakt/watchlist/add' : '/api/trakt/watchlist/remove';
+                const type = mediaType === 'movie' ? 'movie' : 'show';
+                
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ title, type, year: parseInt(year) })
+                });
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    const actionText = action === 'add' ? 'Added to' : 'Removed from';
+                    showNotification(`${actionText} Trakt watchlist: "${title}"`, 'success');
+                    console.log(`[TRAKT SYNC] ${actionText} watchlist:`, title);
+                } else {
+                    console.log(`[TRAKT SYNC] Watchlist ${action} failed:`, data.error);
+                }
+            } catch (error) {
+                console.log('[TRAKT SYNC] Watchlist sync error:', error);
+            }
+        }
+
+        async function syncWithTraktWatched(mediaType, title, year) {
+            try {
+                // Check if user is authenticated
+                const statusResponse = await fetch('/api/trakt/status');
+                const statusData = await statusResponse.json();
+                if (!statusData.authenticated) {
+                    console.log('[TRAKT SYNC] User not authenticated, skipping watched sync');
+                    return;
+                }
+
+                // Use scrobble/stop to mark as watched (100% progress)
+                const response = await fetch('/api/trakt/scrobble/stop', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        title, 
+                        type: mediaType, 
+                        year: parseInt(year),
+                        progress: 100 
+                    })
+                });
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    showNotification(`Marked "${title}" as watched on Trakt`, 'success');
+                    console.log('[TRAKT SYNC] Marked as watched:', title);
+                } else {
+                    console.log('[TRAKT SYNC] Watched sync failed:', data.error);
+                }
+            } catch (error) {
+                console.log('[TRAKT SYNC] Watched sync error:', error);
+            }
+        }
+
+        async function syncWithTraktWatchedEpisode(showTitle, year, season, episode) {
+            try {
+                // Check if user is authenticated
+                const statusResponse = await fetch('/api/trakt/status');
+                const statusData = await statusResponse.json();
+                if (!statusData.authenticated) {
+                    console.log('[TRAKT SYNC] User not authenticated, skipping episode sync');
+                    return;
+                }
+
+                // Use scrobble/stop to mark episode as watched
+                const response = await fetch('/api/trakt/scrobble/stop', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        title: showTitle, 
+                        type: 'show', 
+                        year: parseInt(year),
+                        season: parseInt(season),
+                        episode: parseInt(episode),
+                        progress: 100 
+                    })
+                });
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    showNotification(`Marked S${season}E${episode} of "${showTitle}" as watched on Trakt`, 'success');
+                    console.log('[TRAKT SYNC] Marked episode as watched:', showTitle, `S${season}E${episode}`);
+                } else {
+                    console.log('[TRAKT SYNC] Episode watched sync failed:', data.error);
+                }
+            } catch (error) {
+                console.log('[TRAKT SYNC] Episode watched sync error:', error);
+            }
+        }
+
+        async function syncWithTraktCollection(action, title, mediaType, year) {
+            try {
+                // Check if user is authenticated
+                const statusResponse = await fetch('/api/trakt/status');
+                const statusData = await statusResponse.json();
+                if (!statusData.authenticated) {
+                    console.log('[TRAKT SYNC] User not authenticated, skipping collection sync');
+                    return;
+                }
+
+                const endpoint = action === 'add' ? '/api/trakt/collection/add' : '/api/trakt/collection/remove';
+                const type = mediaType === 'movie' ? 'movie' : 'show';
+                
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ title, type, year: parseInt(year) })
+                });
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    const actionText = action === 'add' ? 'Added to' : 'Removed from';
+                    console.log(`[TRAKT SYNC] ${actionText} collection:`, title);
+                } else {
+                    console.log(`[TRAKT SYNC] Collection ${action} failed:`, data.error);
+                }
+            } catch (error) {
+                console.log('[TRAKT SYNC] Collection sync error:', error);
+            }
+        }
+
+        // Function to add episode-specific done watching
+        function addEpisodeToDoneWatching(showId, showTitle, season, episode, episodeTitle, year, poster) {
+            const episodeItem = {
+                id: showId,
+                media_type: 'tv',
+                title: showTitle,
+                episode_title: episodeTitle,
+                season: season,
+                episode: episode,
+                poster_path: poster,
+                year: year,
+                vote_average: 0,
+                completed_date: new Date().toISOString()
+            };
+            
+            // Check if this episode is already in done watching
+            const existingIndex = doneWatchingCache.findIndex(item => 
+                item.id === showId && item.media_type === 'tv' && 
+                item.season === season && item.episode === episode
+            );
+            
+            if (existingIndex === -1) {
+                doneWatchingCache.unshift(episodeItem);
+                saveDoneWatching();
+                
+                // Sync with Trakt
+                syncWithTraktWatchedEpisode(showTitle, year, season, episode);
+                
+                showNotification(`Added S${season}E${episode} "${episodeTitle}" to done watching`, 'success');
+            } else {
+                showNotification(`S${season}E${episode} is already in done watching`, 'info');
+            }
+        }
+
+        // Toggle episode-specific done watching
+        async function toggleEpisodeDoneWatching(event, showId, showTitle, season, episode, episodeTitle, year, poster) {
+            event.preventDefault();
+            event.stopPropagation();
+            
+            const button = event.target.closest('.episode-done-btn');
+            if (!button) return;
+
+            const existingIndex = doneWatchingCache.findIndex(item => 
+                item.id === showId && item.media_type === 'tv' && 
+                item.season === season && item.episode === episode
+            );
+            
+            if (existingIndex >= 0) {
+                // Remove episode from done watching
+                doneWatchingCache.splice(existingIndex, 1);
+                button.classList.remove('is-done');
+                button.innerHTML = '<i class="fas fa-check"></i>';
+                button.title = 'Mark Episode as Done Watching';
+                
+                showNotification(`Removed S${season}E${episode} from done watching`, 'info');
+            } else {
+                // Add episode to done watching
+                const episodeItem = {
+                    id: showId,
+                    media_type: 'tv',
+                    title: showTitle,
+                    episode_title: episodeTitle,
+                    season: season,
+                    episode: episode,
+                    poster_path: poster,
+                    year: year,
+                    vote_average: 0,
+                    completed_date: new Date().toISOString()
+                };
+                
+                doneWatchingCache.unshift(episodeItem);
+                button.classList.add('is-done');
+                button.innerHTML = '<i class="fas fa-check-circle"></i>';
+                button.title = 'Remove from Done Watching';
+                
+                // Sync with Trakt
+                await syncWithTraktWatchedEpisode(showTitle, year, season, episode);
+                
+                showNotification(`Marked S${season}E${episode} "${episodeTitle}" as watched`, 'success');
+            }
+
+            await saveDoneWatching();
+            
+            // Refresh Done Watching page if it's currently open
+            if (document.getElementById('doneWatchingPage').style.display !== 'none') {
+                displayDoneWatching();
+            }
+            // Also update any other cards for the same show immediately
+            updateAllDoneButtons(showId, 'tv');
+        }
+
+        // Update all .done-watching-btn in DOM for a given id/mediaType
+        function updateAllDoneButtons(id, mediaType) {
+            document.querySelectorAll('.done-watching-btn').forEach(btn => {
+                const onClick = btn.getAttribute('onclick') || '';
+                if (onClick.includes('toggleDoneWatching') && onClick.includes(`, ${id},`) && onClick.includes(`'${mediaType}'`)) {
+                    const card = btn.closest('.movie-card');
+                    if (card) updateCardDoneStatus(card, id, mediaType);
+                }
+            });
+        }
+
+        // ===== END TRAKT SYNC FUNCTIONS =====
         
         // Save Settings: persist useTorrentless and optionally API key, then close modal
         async function saveSettings_() {
@@ -4027,6 +6573,10 @@ Your browser does not support the video tag.
             window.location.hash = '#/done-watching';
         }
         
+        function showTraktPage() {
+            window.location.hash = '#/trakt';
+        }
+        
     function setupEventListeners() {
             // Initialize Video.js player
             if (typeof videojs !== 'undefined') {
@@ -4098,7 +6648,7 @@ Your browser does not support the video tag.
             settingsBtn.addEventListener('click', showSettingsModal);
             clearCacheBtn.addEventListener('click', async () => {
                 const result = await window.electronAPI.clearCache();
-                showNotification(result.message, !result.success);
+                showNotification(result.message, result.success ? 'success' : 'error');
             });
             // MPV install helpers removed
             settingsClose.addEventListener('click', hideSettingsModal);
@@ -4377,6 +6927,70 @@ Your browser does not support the video tag.
                     if (r.ok) { if (debridStatus) debridStatus.textContent = 'Not logged in'; showNotification('Logged out of Premiumize'); }
                 } catch {}
             });
+
+            // ===== TRAKT EVENT LISTENERS =====
+            
+            if (traktLoginBtn) traktLoginBtn.addEventListener('click', startTraktLogin);
+            if (traktDisconnectBtn) traktDisconnectBtn.addEventListener('click', disconnectTrakt);
+            if (traktCopyCodeBtn) traktCopyCodeBtn.addEventListener('click', copyTraktCode);
+            if (traktOpenVerifyBtn) traktOpenVerifyBtn.addEventListener('click', openTraktVerify);
+            if (traktCancelLoginBtn) traktCancelLoginBtn.addEventListener('click', cancelTraktLogin);
+            
+            if (traktViewWatchlistBtn) traktViewWatchlistBtn.addEventListener('click', async () => {
+                try {
+                    const response = await fetch('/api/trakt/watchlist?type=mixed');
+                    const data = await response.json();
+                    
+                    if (data.success && data.watchlist) {
+                        showNotification(`Found ${data.watchlist.length} items in your watchlist`, 'info');
+                        // TODO: Could open a modal to show watchlist items
+                        console.log('[TRAKT] Watchlist:', data.watchlist);
+                    } else {
+                        showNotification('Failed to load watchlist', 'error');
+                    }
+                } catch (error) {
+                    console.error('[TRAKT] Watchlist error:', error);
+                    showNotification('Failed to load watchlist', 'error');
+                }
+            });
+            
+            if (traktViewHistoryBtn) traktViewHistoryBtn.addEventListener('click', async () => {
+                try {
+                    const response = await fetch('/api/trakt/history?type=mixed&limit=20');
+                    const data = await response.json();
+                    
+                    if (data.success && data.history) {
+                        showNotification(`Loaded ${data.history.length} recent items from your history`, 'info');
+                        console.log('[TRAKT] History:', data.history);
+                    } else {
+                        showNotification('Failed to load history', 'error');
+                    }
+                } catch (error) {
+                    console.error('[TRAKT] History error:', error);
+                    showNotification('Failed to load history', 'error');
+                }
+            });
+            
+            if (traktViewStatsBtn) traktViewStatsBtn.addEventListener('click', async () => {
+                try {
+                    const response = await fetch('/api/trakt/stats');
+                    const data = await response.json();
+                    
+                    if (data.success && data.stats) {
+                        const stats = data.stats;
+                        const message = `Movies: ${stats.movies?.watched || 0} watched, Shows: ${stats.shows?.watched || 0} watched, Episodes: ${stats.episodes?.watched || 0} watched`;
+                        showNotification(message, 'info', 5000);
+                        console.log('[TRAKT] Stats:', stats);
+                    } else {
+                        showNotification('Failed to load stats', 'error');
+                    }
+                } catch (error) {
+                    console.error('[TRAKT] Stats error:', error);
+                    showNotification('Failed to load stats', 'error');
+                }
+            });
+
+            // ===== END TRAKT EVENT LISTENERS =====
 
             // Open Jackett installer link in default browser
             if (openJackettLinkBtn) {
@@ -4708,9 +7322,28 @@ Your browser does not support the video tag.
             customVideo.addEventListener('loadedmetadata', updateDuration);
             customVideo.addEventListener('play', () => {
                 playPauseBtn.innerHTML = '<i class="fas fa-pause"></i>';
+                
+                // Start Trakt scrobbling when video plays
+                if (currentStreamTitle && traktAutoScrobbleToggle.checked) {
+                    const progress = customVideo.currentTime / customVideo.duration * 100;
+                    const { title, type, year, season, episode } = parseMediaTitle(currentStreamTitle);
+                    scrobbleStart(title, type, year, season, episode, Math.floor(progress));
+                }
             });
             customVideo.addEventListener('pause', () => {
                 playPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
+                
+                // Pause Trakt scrobbling when video pauses
+                if (customVideo.duration && traktScrobbleProgressToggle.checked) {
+                    const progress = customVideo.currentTime / customVideo.duration * 100;
+                    scrobblePause(Math.floor(progress));
+                }
+            });
+            customVideo.addEventListener('ended', () => {
+                // Stop Trakt scrobbling when video ends
+                if (customVideo.duration) {
+                    scrobbleStop(100); // 100% watched
+                }
             });
             
            
@@ -4842,6 +7475,8 @@ Your browser does not support the video tag.
                         showMyListPage();
                     } else if (page === 'done-watching') {
                         showDoneWatchingPage();
+                    } else if (page === 'trakt') {
+                        showTraktPage();
                     }
                 });
             });
@@ -4851,7 +7486,7 @@ Your browser does not support the video tag.
             if (sidebarClearCache) {
                 sidebarClearCache.addEventListener('click', async () => {
                     const result = await window.electronAPI.clearCache();
-                    showNotification(result || 'Cache cleared!');
+                    showNotification(result.message, result.success ? 'success' : 'error');
                 });
             }
             
@@ -4945,6 +7580,10 @@ Your browser does not support the video tag.
     showSection('done-watching');
     await displayDoneWatching();
     return;
+} else if (hash === '#/trakt') {
+    activeRoute = 'trakt';
+    showSection('trakt');
+    return;
 }
 
             // Fallback
@@ -4961,6 +7600,15 @@ Your browser does not support the video tag.
             if (myListPageEl) myListPageEl.style.display = section === 'my-list' ? '' : 'none';
             const doneWatchingPageEl = document.getElementById('doneWatchingPage');
             if (doneWatchingPageEl) doneWatchingPageEl.style.display = section === 'done-watching' ? '' : 'none';
+            const traktPageEl = document.getElementById('trakt-page');
+            if (traktPageEl) {
+                traktPageEl.style.display = section === 'trakt' ? '' : 'none';
+                // Initialize Trakt page if showing it
+                if (section === 'trakt' && !traktPageEl.dataset.initialized) {
+                    initializeTraktPage();
+                    traktPageEl.dataset.initialized = 'true';
+                }
+            }
             // Update navigation states
             updateNavigationStates(section);
             // Reset loading flag for new route
@@ -4985,7 +7633,8 @@ Your browser does not support the video tag.
                 'home': null, // No specific home button
                 'genres': document.getElementById('genresBtn'),
                 'my-list': document.getElementById('myListBtn'),
-                'done-watching': document.getElementById('doneWatchingBtn')
+                'done-watching': document.getElementById('doneWatchingBtn'),
+                'trakt': null // Trakt is only in new UI sidebar
             };
 
             // Reset all header button active states
@@ -5345,6 +7994,12 @@ Your browser does not support the video tag.
             modalYear.textContent = (movie.release_date || movie.first_air_date || '').substring(0, 4);
             modalOverview.textContent = movie.overview || '';
 
+            // Store current movie data for Trakt
+            currentMovie = movie;
+
+            // Set up Trakt watchlist button
+            setupTraktWatchlistButton();
+
             // Fetch additional details
             const detailsUrl = `https://api.themoviedb.org/3/${currentMediaType}/${movie.id}?api_key=${TMDB_API_KEY}&append_to_response=credits,similar`;
             try {
@@ -5457,20 +8112,169 @@ Your browser does not support the video tag.
             episodes.forEach(episode => {
                 const card = document.createElement('div');
                 card.className = 'episode-card';
+                
+                // Check if this episode is already in done watching
+                const isEpisodeDone = doneWatchingCache.some(item => 
+                    item.id === currentMovie.id && item.media_type === 'tv' && 
+                    item.season === currentSeason && item.episode === episode.episode_number
+                );
+                
                 card.innerHTML = `
                     <img src="${episode.still_path ? `https://image.tmdb.org/t/p/w300${episode.still_path}` : 'https://via.placeholder.com/300x169'}" alt="${episode.name}" class="episode-img">
                     <div class="episode-info">
                         <h4 class="episode-title">E${episode.episode_number}: ${episode.name}</h4>
                         <p class="episode-date">${episode.air_date || ''}</p>
+                        <div class="episode-actions">
+                            <button class="episode-done-btn ${isEpisodeDone ? 'is-done' : ''}" 
+                                    onclick="toggleEpisodeDoneWatching(event, ${currentMovie.id}, '${currentMovie.title || currentMovie.name}', ${currentSeason}, ${episode.episode_number}, '${episode.name.replace(/'/g, "\\'")}', '${currentMovie.release_date?.substring(0, 4) || currentMovie.first_air_date?.substring(0, 4) || ''}', '${currentMovie.poster_path || ''}')"
+                                    title="${isEpisodeDone ? 'Remove from Done Watching' : 'Mark Episode as Done Watching'}">
+                                <i class="fas ${isEpisodeDone ? 'fa-check-circle' : 'fa-check'}"></i>
+                            </button>
+                        </div>
                     </div>
                 `;
                 card.addEventListener('click', (e) => {
+                    // Don't select if clicking on the done button
+                    if (e.target.closest('.episode-done-btn')) return;
+                    
                     document.querySelectorAll('.episode-card').forEach(c => c.classList.remove('selected'));
                     card.classList.add('selected');
                     showTorrents(e, currentSeason, episode.episode_number);
                 });
                 episodesGrid.appendChild(card);
             });
+        }
+
+        // Show episode details modal
+        function showEpisodeDetails(event, showId, showTitle) {
+            event.stopPropagation();
+            
+            // Find all episodes for this show
+            const showEpisodes = doneWatchingCache.filter(item => 
+                item.id === showId && item.media_type === 'tv' && item.season && item.episode
+            );
+            
+            if (showEpisodes.length === 0) return;
+            
+            // Get show poster from the first episode
+            const showPoster = showEpisodes[0].poster_path;
+            
+            // Sort episodes by season and episode
+            showEpisodes.sort((a, b) => {
+                if (a.season !== b.season) return a.season - b.season;
+                return a.episode - b.episode;
+            });
+            
+            // Create modal
+            const modal = document.createElement('div');
+            modal.className = 'modal-overlay';
+            modal.innerHTML = `
+                <div class="modal-content episode-modal">
+                    <div class="modal-header">
+                        <img src="https://image.tmdb.org/t/p/w500${showPoster}" alt="${showTitle}" class="show-poster">
+                        <div class="header-content">
+                            <h2>${showTitle}</h2>
+                            <p class="modal-subtitle"><i class="fas fa-tv"></i> ${showEpisodes.length} episode${showEpisodes.length > 1 ? 's' : ''} watched</p>
+                        </div>
+                        <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="episode-list">
+                            ${showEpisodes.map(ep => `
+                                <div class="episode-item">
+                                    <div class="episode-number">S${ep.season}E${ep.episode}</div>
+                                    <div class="episode-info">
+                                        <h4>${ep.episode_title || `Episode ${ep.episode}`}</h4>
+                                        <p><i class="fas fa-calendar"></i> Watched on ${new Date(ep.completed_date).toLocaleDateString()}</p>
+                                    </div>
+                                    <button class="episode-remove-btn" onclick="removeEpisodeFromDoneWatching(event, ${ep.id}, ${ep.season}, ${ep.episode})" title="Remove episode">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) modal.remove();
+            });
+        }
+        
+        // Remove individual episode from done watching
+    async function removeEpisodeFromDoneWatching(event, showId, season, episode) {
+            // Update cache in memory
+            const beforeLen = doneWatchingCache.length;
+            doneWatchingCache = doneWatchingCache.filter(item => {
+                if (item.media_type === 'tv' && item.id === showId) {
+                    return !(item.season === season && item.episode === episode);
+                }
+                return true;
+            });
+            if (doneWatchingCache.length !== beforeLen) {
+                await saveDoneWatching();
+            }
+            
+            // Sync with Trakt if available
+            if (traktToken) {
+                try {
+                    {
+                        await fetch('/api/trakt/scrobble/pause', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                token: traktToken,
+                                show: {
+                                    ids: { tmdb: showId },
+                                    title: undefined,
+                                    year: undefined
+                                },
+                                episode: {
+                                    season: season,
+                                    number: episode
+                                }
+                            })
+                        });
+                    }
+                } catch (error) {
+                    console.warn('Failed to remove episode from Trakt:', error);
+                }
+            }
+            
+            showNotification('Episode removed from done watching', 'success');
+            
+            // If Done Watching page is visible, re-render; otherwise keep context
+            if (document.getElementById('doneWatchingPage').style.display !== 'none') {
+                displayDoneWatching();
+            }
+            updateTraktPageStatus();
+            updateAllDoneButtons(showId, 'tv');
+
+            // Remove row in the modal immediately and update header count
+            if (event && event.target) {
+                const row = event.target.closest('.episode-item');
+                const list = row?.closest('.episode-list');
+                row?.remove();
+                const headerCountEl = document.querySelector('.episode-modal .modal-subtitle');
+                if (headerCountEl && list) {
+                    const remaining = list.querySelectorAll('.episode-item').length;
+                    headerCountEl.innerHTML = `<i class="fas fa-tv"></i> ${remaining} episode${remaining === 1 ? '' : 's'} watched`;
+                }
+            }
+            
+            // Close modal if no more episodes
+            const remainingEpisodes = doneWatchingCache.filter(item => 
+                item.id === showId && item.media_type === 'tv' && item.season && item.episode
+            );
+            if (remainingEpisodes.length === 0) {
+                document.querySelector('.modal-overlay')?.remove();
+            }
         }
 
         // Show torrents for the current content
@@ -6132,8 +8936,17 @@ Your browser does not support the video tag.
             });
         }
 
-        // Show notification with optional duration
-        function showNotification(message, type = 'info', duration = 3000) {
+        // Show notification with optional duration and type
+        function showNotification(message, type = 'info', duration = 5000) {
+            // Clear any existing notification classes
+            notification.className = 'notification';
+            
+            // Add the type class for styling
+            if (type) {
+                notification.classList.add(type);
+            }
+            
+            // Set the message (text content to avoid HTML injection)
             notification.textContent = message;
             notification.classList.add('show');
             
@@ -6142,9 +8955,13 @@ Your browser does not support the video tag.
                 clearTimeout(window.notificationTimeout);
             }
             
+            // Auto-hide notification after duration
             window.notificationTimeout = setTimeout(() => {
                 notification.classList.remove('show');
             }, duration);
+            
+            // Log notification for debugging
+            console.log(`[NOTIFICATION] ${type.toUpperCase()}: ${message}`);
         }
 
         // Persistent update notification that stays until user restarts
@@ -6574,12 +9391,16 @@ Your browser does not support the video tag.
                 formData.append('subtitle', new Blob([text]), file.name);
                 const response = await fetch(`${API_BASE_URL}/upload-subtitle`, { method: 'POST', body: formData });
                 const data = await response.json();
-                if (data?.url) {
-                    try { wcjsPlayer.subtitles && wcjsPlayer.subtitles.load && wcjsPlayer.subtitles.load(data.url); } catch(_){}
-                    showNotification('Subtitles loaded');
+                if (!response.ok || !data?.url) {
+                    showNotification(data?.error || 'Subtitle upload failed');
+                    return;
                 }
+                try { wcjsPlayer.subtitles && wcjsPlayer.subtitles.load && wcjsPlayer.subtitles.load(data.url); } catch(_){ }
+                showNotification('Subtitles loaded');
             } catch (e) {
                 showNotification('Failed to load subtitles');
+            } finally {
+                try { event.target.value = ''; } catch {}
             }
         }
 
@@ -6721,6 +9542,12 @@ Your browser does not support the video tag.
         }
 
         async function closeCustomPlayer_() {
+            // Stop Trakt scrobbling when player closes
+            if (customVideo.duration && traktCurrentScrobble) {
+                const progress = customVideo.currentTime / customVideo.duration * 100;
+                scrobbleStop(Math.floor(progress));
+            }
+            
             customPlayerContainer.classList.remove('active');
             try { customVideo.pause(); } catch(_) {}
             
@@ -6819,24 +9646,30 @@ Your browser does not support the video tag.
             return `${minutes}:${String(secs).padStart(2, '0')}`;
         }
 
-        function handleSubtitleUpload(event) {
+        async function handleSubtitleUpload(event) {
             const file = event.target.files[0];
             if (!file) return;
-
-            const reader = new FileReader();
-            reader.onload = async (e) => {
-                const text = e.target.result;
-                // Upload to server to get a URL
+            try {
+                const text = await file.text();
                 const formData = new FormData();
                 formData.append('subtitle', new Blob([text]), file.name);
-                const response = await fetch(`${API_BASE_URL}/upload-subtitle`, {
-                    method: 'POST',
-                    body: formData
-                });
+                const response = await fetch(`${API_BASE_URL}/upload-subtitle`, { method: 'POST', body: formData });
                 const data = await response.json();
-                loadSubtitle(data.url);
-            };
-            reader.readAsText(file);
+                if (!response.ok || !data?.url) {
+                    showNotification(data?.error || 'Subtitle upload failed');
+                    return;
+                }
+                // Delete previous temp file if any
+                if (currentSubtitleFile) {
+                    try { await fetch(`${API_BASE_URL}/subtitles/delete`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ filename: currentSubtitleFile }) }); } catch {}
+                }
+                await loadSubtitle(data.url, { label: file.name.replace(/\.[^.]+$/, ''), lang: 'en' });
+                showNotification('Subtitles loaded');
+            } catch (_) {
+                showNotification('Failed to load subtitles');
+            } finally {
+                try { event.target.value = ''; } catch {}
+            }
         }
 
         function updateSubtitleControlDisplays() {
@@ -7234,6 +10067,9 @@ Your browser does not support the video tag.
                 button.classList.remove('in-list');
                 button.innerHTML = '<i class="fas fa-plus"></i>';
                 button.title = 'Add to My List';
+                
+                // Sync removal with Trakt
+                await syncWithTraktWatchlist('remove', title, mediaType, year);
             } else {
                 // Add to list
                 const listItem = {
@@ -7249,6 +10085,9 @@ Your browser does not support the video tag.
                 button.classList.add('in-list');
                 button.innerHTML = '<i class="fas fa-check"></i>';
                 button.title = 'Remove from My List';
+                
+                // Sync addition with Trakt
+                await syncWithTraktWatchlist('add', title, mediaType, year);
             }
 
             await saveMyList();
@@ -7280,16 +10119,20 @@ Your browser does not support the video tag.
             const button = cardElement.querySelector('.done-watching-btn');
             if (!button) return;
 
-            const isDone = doneWatchingCache.some(item => item.id === id && item.media_type === mediaType);
-            
+            // Only mark as done if the exact title (movie or full show) is in doneWatchingCache,
+            // never due to episode entries.
+            const isDone = doneWatchingCache.some(item =>
+                item.id === id && item.media_type === mediaType && (!item.season && !item.episode)
+            );
+
             if (isDone) {
-                button.classList.add('watched');
-                button.innerHTML = '<i class="fas fa-check-double"></i>';
+                button.classList.add('is-done');
+                button.innerHTML = '<i class="fas fa-check-circle"></i>';
                 button.title = 'Remove from Done Watching';
             } else {
-                button.classList.remove('watched');
+                button.classList.remove('is-done');
                 button.innerHTML = '<i class="fas fa-check"></i>';
-                button.title = 'Add to Done Watching';
+                button.title = 'Mark as Done Watching';
             }
         }
 
@@ -7391,14 +10234,23 @@ Your browser does not support the video tag.
             }
         }
 
-        async function toggleDoneWatching(event, id, mediaType, title, posterPath, year, rating) {
+        async function toggleDoneWatching(event, id, mediaType, title, posterPath, year, rating, season, episode) {
             event.preventDefault();
             event.stopPropagation();
             
             const button = event.target.closest('.done-watching-btn');
             if (!button) return;
 
-            const existingIndex = doneWatchingCache.findIndex(item => item.id === id && item.media_type === mediaType);
+            const existingIndex = doneWatchingCache.findIndex(item => {
+                if (mediaType === 'tv' && season && episode) {
+                    // For episodes, match by show ID, season, and episode
+                    return item.id === id && item.media_type === mediaType && 
+                           item.season === season && item.episode === episode;
+                } else {
+                    // For movies and whole shows, match by ID and media type
+                    return item.id === id && item.media_type === mediaType;
+                }
+            });
             
             if (existingIndex >= 0) {
                 // Remove from done watching
@@ -7406,6 +10258,9 @@ Your browser does not support the video tag.
                 button.classList.remove('is-done');
                 button.innerHTML = '<i class="fas fa-check"></i>';
                 button.title = 'Mark as Done Watching';
+                
+                // Note: We don't remove from Trakt history as that's not typical behavior
+                showNotification('Removed from local done watching list', 'info');
             } else {
                 // Add to done watching
                 const doneItem = {
@@ -7417,10 +10272,34 @@ Your browser does not support the video tag.
                     vote_average: rating,
                     completed_date: new Date().toISOString()
                 };
+                
+                // Add episode info if this is a TV episode
+                if (mediaType === 'tv' && season && episode) {
+                    doneItem.season = season;
+                    doneItem.episode = episode;
+                    doneItem.episode_title = title; // Store episode title separately
+                }
+                
                 doneWatchingCache.unshift(doneItem); // Add to beginning
                 button.classList.add('is-done');
                 button.innerHTML = '<i class="fas fa-check-circle"></i>';
                 button.title = 'Remove from Done Watching';
+                
+                // Sync with Trakt
+                if (mediaType === 'movie') {
+                    // For movies, mark as watched and add to collection
+                    await syncWithTraktWatched('movie', title, year);
+                    await syncWithTraktCollection('add', title, 'movie', year);
+                } else if (mediaType === 'tv') {
+                    if (season && episode) {
+                        // For specific episodes
+                        await syncWithTraktWatchedEpisode(title, year, season, episode);
+                    } else {
+                        // For whole shows (only add to collection, not mark entire show as watched)
+                        await syncWithTraktCollection('add', title, 'show', year);
+                        showNotification(`Added "${title}" to your Trakt collection`, 'success');
+                    }
+                }
             }
 
             await saveDoneWatching();
@@ -7435,7 +10314,11 @@ Your browser does not support the video tag.
             const button = cardElement.querySelector('.done-watching-btn');
             if (!button) return;
 
-            const isDone = doneWatchingCache.some(item => item.id === id && item.media_type === mediaType);
+            // Only mark as done if the exact title (movie or full show) is in doneWatchingCache,
+            // never due to episode entries.
+            const isDone = doneWatchingCache.some(item =>
+                item.id === id && item.media_type === mediaType && (!item.season && !item.episode)
+            );
             
             if (isDone) {
                 button.classList.add('is-done');
@@ -7468,28 +10351,88 @@ Your browser does not support the video tag.
                 return;
             }
 
+            // Group episodes by show and keep movies separate
+            const groupedItems = new Map();
+            
             doneWatchingCache.forEach(item => {
-                const card = document.createElement('div');
-                card.className = 'movie-card';
-                card.dataset.rating = item.vote_average || 0;
-                card.dataset.date = `${item.year}-01-01`; // Approximate date for consistency
-                card.innerHTML = `
-                    <button class="add-to-list-btn" onclick="toggleMyList(event, ${item.id}, '${item.media_type}', '${item.title.replace(/'/g, "\\'")}', '${item.poster_path}', '${item.year}', ${item.vote_average})">
-                        <i class="fas fa-plus"></i>
-                    </button>
-                    <button class="done-watching-btn is-done" onclick="toggleDoneWatching(event, ${item.id}, '${item.media_type}', '${item.title.replace(/'/g, "\\'")}', '${item.poster_path}', '${item.year}', ${item.vote_average})">
-                        <i class="fas fa-check-circle"></i>
-                    </button>
-                    <img src="https://image.tmdb.org/t/p/w500${item.poster_path}" alt="${item.title}" class="movie-poster">
-                    <div class="movie-info">
-                        <h3 class="movie-title">${item.title}</h3>
-                        <p class="movie-year">${item.year}</p>
-                    </div>
-                    <div class="movie-rating">
-                        <i class="fas fa-star"></i> ${Number(item.vote_average).toFixed(1)}
-                    </div>
-                `;
-                card.addEventListener('click', (e) => {
+                if (item.media_type === 'tv' && item.season && item.episode) {
+                    // This is an individual episode
+                    const showKey = `${item.id}-${item.media_type}`;
+                    if (!groupedItems.has(showKey)) {
+                        groupedItems.set(showKey, {
+                            ...item,
+                            episodes: [],
+                            isGrouped: true
+                        });
+                    }
+                    groupedItems.get(showKey).episodes.push({
+                        season: item.season,
+                        episode: item.episode,
+                        episode_title: item.episode_title,
+                        completed_date: item.completed_date
+                    });
+                } else {
+                    // This is a movie or full show
+                    const key = `${item.id}-${item.media_type}-single`;
+                    groupedItems.set(key, {
+                        ...item,
+                        isGrouped: false
+                    });
+                }
+            });
+
+            // Sort and display grouped items
+            Array.from(groupedItems.values())
+                .sort((a, b) => new Date(b.completed_date) - new Date(a.completed_date))
+                .forEach(item => {
+                    const card = document.createElement('div');
+                    card.className = 'movie-card';
+                    card.dataset.rating = item.vote_average || 0;
+                    card.dataset.date = `${item.year}-01-01`;
+                    
+                    let displayTitle = item.title;
+                    let episodeInfo = '';
+                    let episodeBadge = '';
+                    
+                    if (item.isGrouped && item.episodes && item.episodes.length > 0) {
+                        // Sort episodes by season/episode to get the latest
+                        const sortedEpisodes = item.episodes.sort((a, b) => {
+                            if (a.season !== b.season) return b.season - a.season;
+                            return b.episode - a.episode;
+                        });
+                        
+                        const latestEpisode = sortedEpisodes[0];
+                        const episodeCount = item.episodes.length;
+                        
+                        displayTitle = item.title;
+                        episodeInfo = `<p class="episode-subtitle">${episodeCount} episode${episodeCount > 1 ? 's' : ''} watched • Latest: S${latestEpisode.season}E${latestEpisode.episode}</p>`;
+                        episodeBadge = `<div class="episode-badge"><i class="fas fa-tv"></i> ${episodeCount} Episodes</div>`;
+                    }
+                    
+                    card.innerHTML = `
+                        <button class="add-to-list-btn" onclick="toggleMyList(event, ${item.id}, '${item.media_type}', '${item.title.replace(/'/g, "\\'")}', '${item.poster_path}', '${item.year}', ${item.vote_average})">
+                            <i class="fas fa-plus"></i>
+                        </button>
+                        <button class="done-watching-btn is-done" onclick="toggleDoneWatching(event, ${item.id}, '${item.media_type}', '${item.title.replace(/'/g, "\\'")}', '${item.poster_path}', '${item.year}', ${item.vote_average}, ${item.season || 'null'}, ${item.episode || 'null'})">
+                            <i class="fas fa-check-circle"></i>
+                        </button>
+                        ${episodeBadge}
+                        <img src="https://image.tmdb.org/t/p/w500${item.poster_path}" alt="${displayTitle}" class="movie-poster">
+                        <div class="movie-info">
+                            <h3 class="movie-title">${displayTitle}</h3>
+                            ${episodeInfo}
+                            <p class="movie-year">${item.year}</p>
+                        </div>
+                        <div class="movie-rating">
+                            <i class="fas fa-star"></i> ${Number(item.vote_average).toFixed(1)}
+                        </div>
+                        ${item.isGrouped ? `
+                        <button class="episode-details-btn" onclick="showEpisodeDetails(event, ${item.id}, '${item.title.replace(/'/g, "\\'")}')">
+                            <i class="fas fa-list"></i> View ${item.episodes.length} Episode${item.episodes.length > 1 ? 's' : ''}
+                        </button>
+                        ` : ''}
+                    `;
+                    card.addEventListener('click', (e) => {
                     if (!e.target.closest('.add-to-list-btn') && !e.target.closest('.done-watching-btn')) {
                         openDetailsModal(item, item.media_type);
                     }
