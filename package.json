@@ -1,6 +1,6 @@
 {
   "name": "playtorrio",
-  "version": "1.1.0",
+  "version": "1.1.4",
   "description": "A sophisticated application designed to seamlessly interface with Jackett for fetching torrents and provide high-performance streaming directly through an integrated API.",
   "author": {
     "name": "ayman",
@@ -12,7 +12,7 @@
   "scripts": {
     "start": "electron .",
     "serve": "node server.mjs",
-    "prebuild": "node -e \"const cp=require('child_process');cp.spawnSync(process.platform==='win32'?'npm.cmd':'npm',['install','--production'],{stdio:'inherit',cwd:'./Torrentless'});\"",
+    "prebuild": "node -e \"const cp=require('child_process');const npm=process.platform==='win32'?'npm.cmd':'npm';cp.spawnSync(npm,['install','--production'],{stdio:'inherit',cwd:'./Torrentless'});cp.spawnSync(npm,['install','--production'],{stdio:'inherit',cwd:'./111477'});\"",
     "build": "electron-builder"
   },
   "dependencies": {
@@ -57,11 +57,13 @@
       "public/**/*",
       "node_modules/**/*",
       "mpv/**",
-      "Torrentless/**/*"
+      "Torrentless/**/*",
+      "111477/**/*"
     ],
     "asarUnpack": [
       "mpv/**",
-      "Torrentless/**"
+      "Torrentless/**",
+      "111477/**"
     ],
     "extraResources": [
       {
@@ -71,10 +73,14 @@
       {
         "from": "Torrentless",
         "to": "Torrentless"
+      },
+      {
+        "from": "111477",
+        "to": "111477"
       }
     ],
     "win": {
-      "icon": "icon.ico",
+      "icon": "build/icon.ico",
       "target": [
         "nsis"
       ]
