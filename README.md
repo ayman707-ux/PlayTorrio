@@ -20,7 +20,8 @@ PlayTorrio's official [website](https://playtorrio.netlify.app/)
 - Build-in subtitles
 - Customizable subtitles
 - 2 UI's modern and classic (can be switched in the settings)
-
+- in app downloader
+- in app custom made 111477 api to get download links from
 ---
 
 ## 🛠️ Tech Stack
