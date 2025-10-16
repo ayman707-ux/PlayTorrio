@@ -15,6 +15,7 @@ let httpServer;
 let webtorrentClient;
 let mainWindow;
 let torrentlessProc = null;
+let svc111477Proc = null;
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -134,9 +135,25 @@ function setupAutoUpdater() {
 
 // Function to clear the webtorrent temp folder
 async function clearWebtorrentTemp() {
-    const tempPath = path.join(os.tmpdir(), 'webtorrent');
-    console.log(`Clearing webtorrent temp folder: ${tempPath}`);
     try {
+        // Get cache location from settings
+        const userDataPath = app.getPath('userData');
+        const settingsPath = path.join(userDataPath, 'user_settings.json');
+        let cacheLocation = os.tmpdir();
+        
+        if (fs.existsSync(settingsPath)) {
+            try {
+                const settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
+                if (settings.cacheLocation) {
+                    cacheLocation = settings.cacheLocation;
+                }
+            } catch (err) {
+                console.error('Error reading settings:', err);
+            }
+        }
+        
+        const tempPath = path.join(cacheLocation, 'webtorrent');
+        console.log(`Clearing webtorrent temp folder: ${tempPath}`);
         await fs.promises.rm(tempPath, { recursive: true, force: true });
         console.log('Webtorrent temp folder cleared successfully');
         return { success: true, message: 'Webtorrent temp folder cleared' };
@@ -148,9 +165,25 @@ async function clearWebtorrentTemp() {
 
 // Function to clear the downloaded subtitles temp folder (cross-user)
 async function clearPlaytorrioSubtitlesTemp() {
-    const subsPath = path.join(os.tmpdir(), 'playtorrio_subs');
-    console.log(`Clearing subtitles temp folder: ${subsPath}`);
     try {
+        // Get cache location from settings
+        const userDataPath = app.getPath('userData');
+        const settingsPath = path.join(userDataPath, 'user_settings.json');
+        let cacheLocation = os.tmpdir();
+        
+        if (fs.existsSync(settingsPath)) {
+            try {
+                const settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
+                if (settings.cacheLocation) {
+                    cacheLocation = settings.cacheLocation;
+                }
+            } catch (err) {
+                console.error('Error reading settings:', err);
+            }
+        }
+        
+        const subsPath = path.join(cacheLocation, 'playtorrio_subs');
+        console.log(`Clearing subtitles temp folder: ${subsPath}`);
         await fs.promises.rm(subsPath, { recursive: true, force: true });
         console.log('Subtitles temp folder cleared successfully');
         return { success: true, message: 'Subtitles temp folder cleared' };
@@ -324,25 +357,33 @@ function startTorrentless() {
                 if (attempts >= maxAttempts) {
                     clearInterval(timer);
                     if (!healthy && !app.isQuitting) {
-                        // Attempt fallback using system Node if available
-                        try {
-                            console.warn('Torrentless did not respond; attempting to start with system Node...');
-                            // Stop previous child if any
-                            try { torrentlessProc && torrentlessProc.kill('SIGTERM'); } catch(_) {}
-                            const nodeCmd = process.platform === 'win32' ? 'node.exe' : 'node';
-                            torrentlessProc = spawn(nodeCmd, [entry], {
-                                stdio: ['ignore', 'pipe', 'pipe'],
-                                env: { ...process.env, PORT: '3002' },
-                                cwd: path.dirname(entry),
-                                shell: false
-                            });
+                        // Attempt fallback using system Node if available (dev only)
+                        if (!app.isPackaged) {
                             try {
-                                torrentlessProc.stdout.on('data', (d) => { try { logStream.write(d); } catch(_) {} });
-                                torrentlessProc.stderr.on('data', (d) => { try { logStream.write(d); } catch(_) {} });
-                            } catch(_) {}
-                        } catch (e) {
-                            console.error('Fallback start with system Node failed:', e);
-                            try { logStream.write('Fallback failed: ' + String(e?.stack || e) + '\n'); } catch(_) {}
+                                console.warn('Torrentless did not respond; attempting to start with system Node (dev)...');
+                                // Stop previous child if any
+                                try { torrentlessProc && torrentlessProc.kill('SIGTERM'); } catch(_) {}
+                                const nodeCmd = process.platform === 'win32' ? 'node.exe' : 'node';
+                                torrentlessProc = spawn(nodeCmd, [entry], {
+                                    stdio: ['ignore', 'pipe', 'pipe'],
+                                    env: { ...process.env, PORT: '3002' },
+                                    cwd: path.dirname(entry),
+                                    shell: false
+                                });
+                                try {
+                                    torrentlessProc.stdout.on('data', (d) => { try { logStream.write(d); } catch(_) {} });
+                                    torrentlessProc.stderr.on('data', (d) => { try { logStream.write(d); } catch(_) {} });
+                                    torrentlessProc.on('error', (err) => {
+                                        console.error('System Node fallback failed (Torrentless):', err?.message || err);
+                                        try { logStream.write('System Node fallback error: ' + String(err?.stack || err) + '\n'); } catch(_) {}
+                                    });
+                                } catch(_) {}
+                            } catch (e) {
+                                console.error('Fallback start with system Node failed:', e);
+                                try { logStream.write('Fallback failed: ' + String(e?.stack || e) + '\n'); } catch(_) {}
+                            }
+                        } else {
+                            console.warn('Skipping system Node fallback in packaged build (Torrentless).');
                         }
                     }
                 }
@@ -350,6 +391,132 @@ function startTorrentless() {
         } catch(_) {}
     } catch (e) {
         console.error('Failed to start Torrentless server:', e);
+    }
+}
+
+function start111477() {
+    try {
+        const candidates = [];
+        // In packaged builds, prefer resources locations first (avoid running from inside asar)
+        if (app.isPackaged && process.resourcesPath) {
+            candidates.push(path.join(process.resourcesPath, '111477', 'src', 'index.js'));
+            candidates.push(path.join(process.resourcesPath, '111477', 'index.js'));
+            candidates.push(path.join(process.resourcesPath, 'app.asar.unpacked', '111477', 'src', 'index.js'));
+            candidates.push(path.join(process.resourcesPath, 'app.asar.unpacked', '111477', 'index.js'));
+        }
+        // Dev paths
+        candidates.push(path.join(__dirname, '111477', 'src', 'index.js'));
+        candidates.push(path.join(__dirname, '111477', 'index.js'));
+        let entry = null;
+        for (const p of candidates) {
+            try { if (p && fs.existsSync(p)) { entry = p; break; } } catch {}
+        }
+        if (!entry) {
+            console.warn('111477 server entry not found. Ensure the 111477 folder is packaged.');
+            return;
+        }
+        console.log('[111477] Using entry:', entry);
+
+        // Resolve NODE_PATH for child
+        const nodePathCandidates = [
+            path.join(process.resourcesPath || '', 'app.asar', 'node_modules'),
+            path.join(process.resourcesPath || '', 'node_modules'),
+            path.join(process.resourcesPath || '', 'app.asar.unpacked', 'node_modules'),
+            path.join(__dirname, 'node_modules'),
+            // node_modules next to entry dir (covers dev when src/node_modules exists)
+            path.join(path.dirname(entry), 'node_modules'),
+            // node_modules in parent of src (packaged extraResources: 111477/node_modules)
+            path.join(path.dirname(path.dirname(entry)), 'node_modules'),
+        ];
+        const existingNodePaths = nodePathCandidates.filter(p => { try { return fs.existsSync(p); } catch { return false; } });
+        const NODE_PATH_VALUE = existingNodePaths.join(path.delimiter);
+
+        // Spawn electron binary as node
+        const logPath = path.join(app.getPath('userData'), '111477.log');
+        const logStream = fs.createWriteStream(logPath, { flags: 'a' });
+    const childEnv = { ...process.env, PORT: '3003', ELECTRON_RUN_AS_NODE: '1', NODE_PATH: NODE_PATH_VALUE, TMDB_API_KEY: 'b3556f3b206e16f82df4d1f6fd4545e6' };
+        svc111477Proc = spawn(process.execPath, [entry], {
+            stdio: ['ignore', 'pipe', 'pipe'],
+            env: childEnv,
+            cwd: path.dirname(entry),
+        });
+
+        try {
+            svc111477Proc.stdout.on('data', (d) => { try { logStream.write(d); } catch(_) {} });
+            svc111477Proc.stderr.on('data', (d) => { try { logStream.write(d); } catch(_) {} });
+        } catch (_) {}
+
+        svc111477Proc.on('exit', (code, signal) => {
+            console.log(`111477 exited code=${code} signal=${signal}`);
+            try { logStream.end(); } catch(_) {}
+            if (!app.isQuitting) {
+                setTimeout(() => { try { start111477(); } catch(_) {} }, 1000);
+            }
+        });
+
+        svc111477Proc.on('error', (err) => {
+            console.error('Failed to start 111477 server process:', err);
+            try { logStream.write(String(err?.stack || err) + '\n'); } catch(_) {}
+        });
+
+        // Health probe
+        try {
+            let attempts = 0;
+            let healthy = false;
+            const maxAttempts = 25;
+            const timer = setInterval(() => {
+                attempts++;
+                try {
+                    const req = http.get({ hostname: '127.0.0.1', port: 3003, path: '/health', timeout: 350 }, (res) => {
+                        if (res.statusCode === 200) {
+                            healthy = true;
+                            console.log('111477 is up on http://127.0.0.1:3003');
+                            clearInterval(timer);
+                            try { res.resume(); } catch(_) {}
+                        } else {
+                            try { res.resume(); } catch(_) {}
+                        }
+                    });
+                    req.on('timeout', () => { try { req.destroy(); } catch(_) {} });
+                    req.on('error', () => {});
+                } catch(_) {}
+                if (attempts >= maxAttempts) {
+                    clearInterval(timer);
+                    if (!healthy && !app.isQuitting) {
+                        if (!app.isPackaged) {
+                            try {
+                                console.warn('111477 did not respond; attempting to start with system Node (dev)...');
+                                try { svc111477Proc && svc111477Proc.kill('SIGTERM'); } catch(_) {}
+                                const nodeCmd = process.platform === 'win32' ? 'node.exe' : 'node';
+                                svc111477Proc = spawn(nodeCmd, [entry], {
+                                    stdio: ['ignore', 'pipe', 'pipe'],
+                                    env: { ...process.env, PORT: '3003', TMDB_API_KEY: 'b3556f3b206e16f82df4d1f6fd4545e6' },
+                                    cwd: path.dirname(entry),
+                                    shell: false
+                                });
+                                try {
+                                    svc111477Proc.stdout.on('data', (d) => { try { logStream.write(d); } catch(_) {} });
+                                    svc111477Proc.stderr.on('data', (d) => { try { logStream.write(d); } catch(_) {} });
+                                    svc111477Proc.on('error', (err) => {
+                                        console.error('System Node fallback failed (111477):', err?.message || err);
+                                        try { logStream.write('System Node fallback error: ' + String(err?.stack || err) + '\n'); } catch(_) {}
+                                    });
+                                } catch(_) {}
+                            } catch (e) {
+                                console.error('Fallback start with system Node failed (111477):', e);
+                                try { logStream.write('Fallback failed: ' + String(e?.stack || e) + '\n'); } catch(_) {}
+                            }
+                        } else {
+                            console.warn('111477 did not respond in time; restarting Electron-as-Node child (packaged)...');
+                            try { svc111477Proc && svc111477Proc.kill('SIGTERM'); } catch(_) {}
+                            setTimeout(() => { try { start111477(); } catch(_) {} }, 500);
+                        }
+                    }
+                }
+            }, 400);
+        } catch(_) {}
+    } catch (e) {
+        console.error('Failed to start 111477 server:', e);
     }
 }
 
@@ -377,6 +544,9 @@ if (!gotLock) {
     // Start the Torrentless scraper server (port 3002)
     startTorrentless();
 
+    // Start the 111477 service (port 3003)
+    start111477();
+
         mainWindow = createWindow();
 
     // IPC handler to open MPV from renderer
@@ -401,6 +571,19 @@ if (!gotLock) {
                 ? 'Cache cleared: webtorrent and downloaded subtitles.'
                 : results.map(r => r.message).join(' | ');
             return { success, message };
+    });
+
+    // IPC handler: Select cache folder
+    ipcMain.handle('select-cache-folder', async () => {
+        const result = await dialog.showOpenDialog(mainWindow, {
+            properties: ['openDirectory', 'createDirectory'],
+            title: 'Select Cache Location'
+        });
+        
+        if (!result.canceled && result.filePaths.length > 0) {
+            return { success: true, path: result.filePaths[0] };
+        }
+        return { success: false };
     });
 
     // Removed MPV installer helpers and IPC
@@ -438,9 +621,12 @@ if (!gotLock) {
     });
 
     // Optional IPC: allow renderer to install the downloaded update
+    // Change: Close the app and DO NOT relaunch automatically.
     ipcMain.handle('updater-install', async () => {
         try {
-            autoUpdater.quitAndInstall(false, true);
+            // Install update and do not run after install
+            // electron-updater: quitAndInstall(isSilent=false, isForceRunAfter=false)
+            autoUpdater.quitAndInstall(false, false);
             return { success: true };
         } catch (e) {
             return { success: false, message: e?.message || 'Failed to install update' };
@@ -551,6 +737,11 @@ app.on('will-quit', () => {
     if (torrentlessProc) {
         try { torrentlessProc.kill('SIGTERM'); } catch(_) {}
         torrentlessProc = null;
+    }
+    // Stop 111477 child process
+    if (svc111477Proc) {
+        try { svc111477Proc.kill('SIGTERM'); } catch(_) {}
+        svc111477Proc = null;
     }
 });
 
