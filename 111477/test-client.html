@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Movie Parser API - Test Client</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #555;
+        }
+        
+        input, textarea, button {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        
+        button {
+            background-color: #007cba;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+        
+        button:hover {
+            background-color: #005a87;
+        }
+        
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        
+        .results {
+            margin-top: 30px;
+            padding: 20px;
+            background-color: #f8f9fa;
+            border-radius: 4px;
+            border-left: 4px solid #007cba;
+        }
+        
+        .file-item {
+            background: white;
+            margin: 10px 0;
+            padding: 15px;
+            border-radius: 4px;
+            border: 1px solid #e9ecef;
+        }
+        
+        .file-name {
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 5px;
+        }
+        
+        .file-url {
+            color: #007cba;
+            word-break: break-all;
+            font-size: 12px;
+            margin-bottom: 5px;
+        }
+        
+        .file-size {
+            color: #666;
+            font-size: 12px;
+        }
+        
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border-color: #f5c6cb;
+            padding: 15px;
+            border-radius: 4px;
+            margin-top: 20px;
+        }
+        
+        .loading {
+            text-align: center;
+            color: #666;
+            font-style: italic;
+        }
+        
+        .examples {
+            background-color: #e7f3ff;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+        
+        .examples h3 {
+            margin-top: 0;
+            color: #0366d6;
+        }
+        
+        .examples ul {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+        
+        .examples li {
+            margin: 5px 0;
+            cursor: pointer;
+            color: #0366d6;
+        }
+        
+        .examples li:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎬 Movie Parser API Test Client</h1>
+        
+        <div class="examples">
+            <h3>Example Movie Names (click to use):</h3>
+            <ul>
+                <li onclick="setMovieName('The Death of Superman (2018)')">The Death of Superman (2018)</li>
+                <li onclick="setMovieName('Zookeeper (2011)')">Zookeeper (2011)</li>
+                <li onclick="setMovieName('Zodiac (2007)')">Zodiac (2007)</li>
+            </ul>
+            
+            <h3>Example TMDB IDs (click to use):</h3>
+            <ul>
+                <li onclick="setTmdbId('562')">Zodiac (2007) - TMDB ID: 562</li>
+                <li onclick="setTmdbId('8078')">Zookeeper (2011) - TMDB ID: 8078</li>
+                <li onclick="setTmdbId('541982')">The Death of Superman (2018) - TMDB ID: 541982</li>
+            </ul>
+        </div>
+        
+        <div class="form-group">
+            <label for="apiUrl">API Base URL:</label>
+            <input type="text" id="apiUrl" value="http://localhost:3000" placeholder="http://localhost:3000">
+        </div>
+        
+        <div class="form-group">
+            <label for="movieName">Movie Name:</label>
+            <input type="text" id="movieName" placeholder="e.g., Zodiac (2007)">
+            <button onclick="fetchByMovieName()">🎯 Fetch by Movie Name</button>
+        </div>
+        
+        <div class="form-group">
+            <label for="tmdbId">TMDB ID:</label>
+            <input type="number" id="tmdbId" placeholder="e.g., 562 (for Zodiac)">
+            <button onclick="fetchByTmdbId()">🎬 Fetch by TMDB ID</button>
+        </div>
+        
+        <div class="form-group">
+            <label for="searchQuery">Search Movies on TMDB:</label>
+            <input type="text" id="searchQuery" placeholder="e.g., Zodiac">
+            <button onclick="searchTmdb()">🔍 Search TMDB</button>
+        </div>
+        
+        <div class="form-group">
+            <label for="customUrl">Custom URL:</label>
+            <input type="text" id="customUrl" placeholder="https://a.111477.xyz/movies/Zodiac%20(2007)/">
+            <button onclick="fetchByUrl()">🔗 Parse Custom URL</button>
+        </div>
+        
+        <div class="form-group">
+            <label for="batchUrls">Batch URLs (one per line):</label>
+            <textarea id="batchUrls" rows="4" placeholder="https://a.111477.xyz/movies/Movie1/&#10;https://a.111477.xyz/movies/Movie2/"></textarea>
+            <button onclick="fetchBatch()">📦 Parse Batch URLs</button>
+        </div>
+        
+        <button onclick="testHealth()">❤️ Test Health Endpoint</button>
+        
+        <div id="results"></div>
+    </div>
+
+    <script>
+        function setMovieName(movieName) {
+            document.getElementById('movieName').value = movieName;
+        }
+        
+        function setTmdbId(tmdbId) {
+            document.getElementById('tmdbId').value = tmdbId;
+        }
+        
+        function getApiUrl() {
+            return document.getElementById('apiUrl').value || 'http://localhost:3000';
+        }
+        
+        function showLoading() {
+            document.getElementById('results').innerHTML = '<div class="loading">🔄 Loading...</div>';
+        }
+        
+        function showError(message) {
+            document.getElementById('results').innerHTML = `<div class="error">❌ Error: ${message}</div>`;
+        }
+        
+        function showResults(data) {
+            const resultsDiv = document.getElementById('results');
+            
+            if (data.success === false) {
+                showError(data.error || 'Unknown error occurred');
+                return;
+            }
+            
+            let html = '<div class="results">';
+            
+            if (data.results && Array.isArray(data.results)) {
+                if (data.query) {
+                    // TMDB search results
+                    html += `<h3>🔍 TMDB Search Results for "${data.query}" (${data.totalResults} results)</h3>`;
+                    data.results.forEach(movie => {
+                        html += `<div class="file-item">`;
+                        html += `<div class="file-name">🎬 ${movie.title} (${movie.year || 'Unknown'})</div>`;
+                        html += `<div class="file-url">TMDB ID: ${movie.tmdbId} | Rating: ${movie.voteAverage}/10</div>`;
+                        html += `<div class="file-size">${movie.overview ? movie.overview.substring(0, 150) + '...' : 'No overview available'}</div>`;
+                        html += `<div class="file-size">Constructed URL: <a href="${movie.constructedUrl}" target="_blank">${movie.constructedUrl}</a></div>`;
+                        html += `<button onclick="fetchByTmdbId('${movie.tmdbId}')" style="margin-top: 10px; width: auto; padding: 5px 10px;">📥 Fetch Files</button>`;
+                        html += `</div>`;
+                    });
+                } else {
+                    // Batch results
+                    html += `<h3>📊 Batch Results (${data.count} URLs processed)</h3>`;
+                    data.results.forEach(result => {
+                        html += `<div class="file-item">`;
+                        html += `<div class="file-name">🎬 ${result.movieName || 'Unknown Movie'}</div>`;
+                        html += `<div class="file-url">${result.baseUrl || result.url}</div>`;
+                        if (result.success) {
+                            html += `<div class="file-size">✅ ${result.fileCount} files found</div>`;
+                        } else {
+                            html += `<div class="file-size">❌ ${result.error}</div>`;
+                        }
+                        html += `</div>`;
+                    });
+                }
+            } else if (data.movieName) {
+                // Single movie result
+                html += `<h3>🎬 ${data.movieName}</h3>`;
+                
+                // Show TMDB data if available
+                if (data.tmdb) {
+                    html += `<div class="file-item" style="background: #e7f3ff; border-color: #0366d6;">`;
+                    html += `<div class="file-name">📊 TMDB Information</div>`;
+                    html += `<div class="file-url"><strong>TMDB ID:</strong> ${data.tmdb.id}</div>`;
+                    html += `<div class="file-size"><strong>Original Title:</strong> ${data.tmdb.originalTitle}</div>`;
+                    html += `<div class="file-size"><strong>Release Date:</strong> ${data.tmdb.releaseDate}</div>`;
+                    html += `<div class="file-size"><strong>Runtime:</strong> ${data.tmdb.runtime || 'Unknown'} minutes</div>`;
+                    if (data.tmdb.genres && data.tmdb.genres.length > 0) {
+                        html += `<div class="file-size"><strong>Genres:</strong> ${data.tmdb.genres.map(g => g.name).join(', ')}</div>`;
+                    }
+                    if (data.tmdb.overview) {
+                        html += `<div class="file-size"><strong>Overview:</strong> ${data.tmdb.overview}</div>`;
+                    }
+                    if (data.tmdb.posterPath) {
+                        html += `<div class="file-size"><img src="${data.tmdb.posterPath}" alt="Movie Poster" style="max-width: 200px; margin-top: 10px;"></div>`;
+                    }
+                    html += `</div>`;
+                }
+                
+                html += `<p><strong>Base URL:</strong> ${data.baseUrl}</p>`;
+                html += `<p><strong>Files Found:</strong> ${data.fileCount}</p>`;
+                
+                if (data.files && data.files.length > 0) {
+                    html += '<h4>📁 Available Files:</h4>';
+                    data.files.forEach((file, index) => {
+                        html += `<div class="file-item">`;
+                        html += `<div class="file-name">${index + 1}. ${file.name}</div>`;
+                        html += `<div class="file-url"><a href="${file.url}" target="_blank">${file.url}</a></div>`;
+                        html += `<div class="file-size">📊 Size: ${file.sizeFormatted} (${file.size} bytes)</div>`;
+                        html += `</div>`;
+                    });
+                }
+            } else {
+                // Health check or other responses
+                html += `<h3>✅ Response</h3>`;
+                html += `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+            }
+            
+            html += '</div>';
+            resultsDiv.innerHTML = html;
+        }
+        
+        async function fetchByMovieName() {
+            const movieName = document.getElementById('movieName').value;
+            if (!movieName) {
+                showError('Please enter a movie name');
+                return;
+            }
+            
+            showLoading();
+            
+            try {
+                const response = await fetch(`${getApiUrl()}/api/movies/${encodeURIComponent(movieName)}`);
+                const data = await response.json();
+                showResults(data);
+            } catch (error) {
+                showError(`Network error: ${error.message}`);
+            }
+        }
+        
+        async function fetchByTmdbId(tmdbId) {
+            // Support both parameter and input field
+            const id = tmdbId || document.getElementById('tmdbId').value;
+            if (!id) {
+                showError('Please enter a TMDB ID');
+                return;
+            }
+            
+            showLoading();
+            
+            try {
+                const response = await fetch(`${getApiUrl()}/api/tmdb/${encodeURIComponent(id)}`);
+                const data = await response.json();
+                showResults(data);
+            } catch (error) {
+                showError(`Network error: ${error.message}`);
+            }
+        }
+        
+        async function searchTmdb() {
+            const query = document.getElementById('searchQuery').value;
+            if (!query) {
+                showError('Please enter a search query');
+                return;
+            }
+            
+            showLoading();
+            
+            try {
+                const response = await fetch(`${getApiUrl()}/api/tmdb/search/${encodeURIComponent(query)}`);
+                const data = await response.json();
+                showResults(data);
+            } catch (error) {
+                showError(`Network error: ${error.message}`);
+            }
+        }
+        
+        async function fetchByUrl() {
+            const url = document.getElementById('customUrl').value;
+            if (!url) {
+                showError('Please enter a URL');
+                return;
+            }
+            
+            showLoading();
+            
+            try {
+                const response = await fetch(`${getApiUrl()}/api/parse`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ url })
+                });
+                const data = await response.json();
+                showResults(data);
+            } catch (error) {
+                showError(`Network error: ${error.message}`);
+            }
+        }
+        
+        async function fetchBatch() {
+            const batchText = document.getElementById('batchUrls').value;
+            if (!batchText) {
+                showError('Please enter URLs (one per line)');
+                return;
+            }
+            
+            const urls = batchText.split('\n').filter(url => url.trim());
+            if (urls.length === 0) {
+                showError('No valid URLs found');
+                return;
+            }
+            
+            showLoading();
+            
+            try {
+                const response = await fetch(`${getApiUrl()}/api/parse-batch`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ urls })
+                });
+                const data = await response.json();
+                showResults(data);
+            } catch (error) {
+                showError(`Network error: ${error.message}`);
+            }
+        }
+        
+        async function testHealth() {
+            showLoading();
+            
+            try {
+                const response = await fetch(`${getApiUrl()}/health`);
+                const data = await response.json();
+                showResults(data);
+            } catch (error) {
+                showError(`Network error: ${error.message}`);
+            }
+        }
+    </script>
+</body>
+</html>
