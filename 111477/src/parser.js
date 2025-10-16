@@ -103,12 +103,13 @@ function parseTvDirectory(html, baseUrl, filterSeason = null, filterEpisode = nu
         if (hasVideoExtension) {
             // If filtering by specific episode, check if filename matches pattern
             if (filterSeason !== null && filterEpisode !== null) {
-                const seasonStr = filterSeason.toString().padStart(2, '0');
-                const episodeStr = filterEpisode.toString().padStart(2, '0');
-                const episodePattern = `S${seasonStr}E${episodeStr}`;
+                const episodeInfo = extractEpisodeInfo(fileName);
                 
-                if (!fileName.includes(episodePattern)) {
-                    return; // Skip this file if it doesn't match the episode pattern
+                // Skip if we can't extract episode info or if it doesn't match the filter
+                if (!episodeInfo || 
+                    episodeInfo.season !== filterSeason || 
+                    episodeInfo.episode !== filterEpisode) {
+                    return;
                 }
             }
             
@@ -226,22 +227,52 @@ function extractTvName(url, $) {
  * @returns {Object|null} Episode info with season and episode numbers
  */
 function extractEpisodeInfo(fileName) {
-    // Look for patterns like S01E01, S1E1, etc.
+    // Comprehensive list of episode patterns
     const patterns = [
-        /S(\d{1,2})E(\d{1,2})/i,
-        /Season\s*(\d+).*Episode\s*(\d+)/i,
-        /(\d{1,2})x(\d{1,2})/
+        // Standard formats
+        /S(\d{1,2})E(\d{1,2})/i,                    // S01E01, S1E1, S03E22
+        /S(\d{1,2})\.E(\d{1,2})/i,                  // S01.E01, S3.E22
+        /S(\d{1,2})\s*E(\d{1,2})/i,                 // S01 E01, S3 E22
+        /Season\s*(\d+)\s*Episode\s*(\d+)/i,        // Season 1 Episode 1
+        /(\d{1,2})x(\d{1,2})/,                      // 1x01, 3x22
+        /(\d{1,2})\.(\d{1,2})/,                     // 1.01, 3.22
+        
+        // Less common but valid formats
+        /Ep(\d+).*S(\d+)/i,                         // Ep22 S3 (reversed)
+        /Episode\s*(\d+).*Season\s*(\d+)/i,         // Episode 22 Season 3 (reversed)
+        /S(\d{1,2})-E(\d{1,2})/i,                   // S01-E01
+        /S(\d{1,2})_E(\d{1,2})/i,                   // S01_E01
+        /(\d{1,2})-(\d{1,2})/,                      // 1-01, 3-22
+        /(\d{1,2})_(\d{1,2})/,                      // 1_01, 3_22
+        
+        // More flexible patterns (be careful with order)
+        /(\d{1,2})\s*[xX]\s*(\d{1,2})/,            // 1 x 01, 3X22
+        /S(\d{1,2})[^\dE]*(\d{1,2})/i,              // S03 22, S3-22 (catch-all for S##<separator>##)
     ];
     
     for (const pattern of patterns) {
         const match = fileName.match(pattern);
         if (match) {
-            return {
-                season: parseInt(match[1]),
-                episode: parseInt(match[2]),
-                seasonStr: match[1].padStart(2, '0'),
-                episodeStr: match[2].padStart(2, '0')
-            };
+            let season, episode;
+            
+            // Handle patterns where episode and season might be reversed
+            if (pattern.source.includes('Ep.*S') || pattern.source.includes('Episode.*Season')) {
+                episode = parseInt(match[1]);
+                season = parseInt(match[2]);
+            } else {
+                season = parseInt(match[1]);
+                episode = parseInt(match[2]);
+            }
+            
+            // Sanity check: seasons and episodes should be reasonable numbers
+            if (season >= 1 && season <= 50 && episode >= 1 && episode <= 500) {
+                return {
+                    season: season,
+                    episode: episode,
+                    seasonStr: season.toString().padStart(2, '0'),
+                    episodeStr: episode.toString().padStart(2, '0')
+                };
+            }
         }
     }
     
