@@ -1357,6 +1357,47 @@
             justify-content: flex-end;
         }
 
+        /* Floating Settings Button (Old UI Only, Home Page Only) */
+        .floating-settings-btn {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, var(--vlc-orange) 0%, var(--secondary) 100%);
+            border: none;
+            border-radius: 50%;
+            color: white;
+            font-size: 1.4rem;
+            cursor: pointer;
+            box-shadow: 0 8px 20px rgba(168, 85, 247, 0.3);
+            transition: all 0.3s ease;
+            z-index: 1000;
+            display: none; /* Hidden by default */
+        }
+
+        .floating-settings-btn:hover {
+            transform: translateY(-2px) scale(1.05);
+            box-shadow: 0 12px 30px rgba(168, 85, 247, 0.4);
+            background: linear-gradient(135deg, var(--tertiary) 0%, var(--vlc-orange) 100%);
+        }
+
+        .floating-settings-btn:active {
+            transform: translateY(0) scale(0.95);
+        }
+
+        /* Show floating button only in old UI on home page */
+        body:not(.ui-new) .floating-settings-btn.show-on-home {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Hide in new UI */
+        body.ui-new .floating-settings-btn {
+            display: none !important;
+        }
+
         /* VLC Player Styles */
         .vlc-player-container {
             position: fixed;
@@ -3817,6 +3858,11 @@
         </div>
     </div>
 </div>
+
+<!-- Floating Settings Button (Old UI Only, Home Page Only) -->
+<button class="floating-settings-btn" id="floatingSettingsBtn">
+    <i class="fas fa-cog"></i>
+</button>
 
 <!-- MPV Install Helper Modal removed -->
 
@@ -7654,6 +7700,12 @@ Your browser does not support the video tag.
                 sidebarSettings.addEventListener('click', showSettingsModal);
             }
 
+            // Floating settings button (Old UI)
+            const floatingSettingsBtn = document.getElementById('floatingSettingsBtn');
+            if (floatingSettingsBtn) {
+                floatingSettingsBtn.addEventListener('click', showSettingsModal);
+            }
+
             // Downloader wiring (top-level)
             const downloaderQuery = document.getElementById('downloaderQuery');
             const downloaderBtn = document.getElementById('downloaderSearchBtn');
@@ -7810,7 +7862,8 @@ Your browser does not support the video tag.
                     list.style.display = 'flex';
                     list.style.flexDirection = 'column';
                     list.style.gap = '0.5rem';
-                    files.slice(0, 50).forEach(f => {
+                    // Show up to 100 files (increased from 50 due to multiple variants)
+                    files.slice(0, 100).forEach(f => {
                         const row = document.createElement('div');
                         row.style.display = 'flex';
                         row.style.justifyContent = 'space-between';
@@ -7829,6 +7882,8 @@ Your browser does not support the video tag.
                         const size = document.createElement('div');
                         size.style.color = '#9ca3af';
                         size.style.marginRight = '0.75rem';
+                        size.style.minWidth = '80px';
+                        size.style.textAlign = 'right';
                         size.textContent = f.sizeFormatted || '';
                         const btn = document.createElement('button');
                         btn.className = 'api-btn api-btn-primary';
@@ -7851,6 +7906,17 @@ Your browser does not support the video tag.
                         list.appendChild(row);
                     });
                     inner.appendChild(list);
+                    
+                    // If there are more files than displayed, show a note
+                    if (files.length > 100) {
+                        const moreNote = document.createElement('div');
+                        moreNote.style.marginTop = '0.5rem';
+                        moreNote.style.color = '#9ca3af';
+                        moreNote.style.fontSize = '0.9rem';
+                        moreNote.style.textAlign = 'center';
+                        moreNote.textContent = `Showing first 100 of ${files.length} files`;
+                        inner.appendChild(moreNote);
+                    }
                 }
                 filesWrap.appendChild(inner);
                 // Remove any previous files card before appending (last-writer-wins)
@@ -7870,8 +7936,22 @@ Your browser does not support the video tag.
                     const res = await fetch(`http://127.0.0.1:3003/api/tmdb/movie/${encodeURIComponent(tmdbId)}`);
                     if (!res.ok) throw new Error(`HTTP ${res.status}`);
                     const data = await res.json();
-                    const files = Array.isArray(data?.files) ? data.files : [];
-                    renderFilesCard(files, container, loadKey);
+                    
+                    // Handle new multi-result format from 111477 API
+                    let allFiles = [];
+                    if (Array.isArray(data?.results)) {
+                        // New format: extract files from all successful results
+                        data.results.forEach(result => {
+                            if (result.success && Array.isArray(result.files)) {
+                                allFiles = allFiles.concat(result.files);
+                            }
+                        });
+                    } else if (Array.isArray(data?.files)) {
+                        // Old format: direct files array
+                        allFiles = data.files;
+                    }
+                    
+                    renderFilesCard(allFiles, container, loadKey);
                 } catch (e) {
                     console.error('Failed to load files by TMDB id', e);
                     showNotification('Failed to load files for this title');
@@ -7967,8 +8047,22 @@ Your browser does not support the video tag.
                             const res = await fetch(`http://127.0.0.1:3003/api/tmdb/tv/${encodeURIComponent(tmdbId)}/season/${encodeURIComponent(sVal)}/episode/${encodeURIComponent(eVal)}`);
                             if (!res.ok) throw new Error(`HTTP ${res.status}`);
                             const data = await res.json();
-                            const files = Array.isArray(data?.files) ? data.files : [];
-                            renderFilesCard(files, container, loadKey);
+                            
+                            // Handle new multi-result format from 111477 API
+                            let allFiles = [];
+                            if (Array.isArray(data?.results)) {
+                                // New format: extract files from all successful results
+                                data.results.forEach(result => {
+                                    if (result.success && Array.isArray(result.files)) {
+                                        allFiles = allFiles.concat(result.files);
+                                    }
+                                });
+                            } else if (Array.isArray(data?.files)) {
+                                // Old format: direct files array
+                                allFiles = data.files;
+                            }
+                            
+                            renderFilesCard(allFiles, container, loadKey);
                         } catch (err) {
                             console.error('Failed to load TV episode files', err);
                             showNotification('Failed to load files for this episode');
@@ -8130,10 +8224,24 @@ Your browser does not support the video tag.
             if (downloaderPageEl) downloaderPageEl.style.display = section === 'downloader' ? '' : 'none';
             // Update navigation states
             updateNavigationStates(section);
+            // Update floating settings button visibility (Old UI only, Home page only)
+            updateFloatingSettingsButton(section);
             // Reset loading flag for new route
             isLoading = false;
             // Scroll to top on route change
             window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function updateFloatingSettingsButton(section) {
+            const floatingBtn = document.getElementById('floatingSettingsBtn');
+            if (floatingBtn) {
+                // Show only on home page in old UI
+                if (section === 'home') {
+                    floatingBtn.classList.add('show-on-home');
+                } else {
+                    floatingBtn.classList.remove('show-on-home');
+                }
+            }
         }
 
         function updateNavigationStates(activeSection) {
