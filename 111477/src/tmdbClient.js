@@ -104,13 +104,68 @@ function constructMovieName(movieData) {
     const title = movieData.title || movieData.original_title || 'Unknown Movie';
     const releaseDate = movieData.release_date;
     
+    // Remove colons from the title for 111477 compatibility
+    const cleanTitle = title.replace(/:/g, '');
+    
     if (!releaseDate) {
-        return title;
+        return cleanTitle;
     }
     
     // Extract year from release date (YYYY-MM-DD format)
     const year = releaseDate.split('-')[0];
-    return `${title} (${year})`;
+    return `${cleanTitle} (${year})`;
+}
+
+/**
+ * Construct movie directory name with colons replaced by hyphens
+ * @param {Object} movieData - TMDB movie data
+ * @returns {string} Formatted movie name for directory with hyphens (e.g., "Spider-Man - No Way Home (2021)")
+ */
+function constructMovieNameWithHyphens(movieData) {
+    const title = movieData.title || movieData.original_title || 'Unknown Movie';
+    const releaseDate = movieData.release_date;
+    
+    // Replace colons with hyphens for 111477 compatibility
+    const hyphenTitle = title.replace(/:/g, ' -');
+    
+    if (!releaseDate) {
+        return hyphenTitle;
+    }
+    
+    // Extract year from release date (YYYY-MM-DD format)
+    const year = releaseDate.split('-')[0];
+    return `${hyphenTitle} (${year})`;
+}
+
+/**
+ * Get both possible movie names (colon removed and colon replaced with hyphen)
+ * @param {Object} movieData - TMDB movie data
+ * @returns {Object} Object with both name variants
+ */
+function getMovieNameVariants(movieData) {
+    const title = movieData.title || movieData.original_title || 'Unknown Movie';
+    const hasColon = title.includes(':');
+    
+    if (!hasColon) {
+        // If no colon, return single variant
+        const singleName = constructMovieName(movieData);
+        return {
+            hasVariants: false,
+            primary: singleName,
+            variants: [singleName]
+        };
+    }
+    
+    // If has colon, return both variants
+    const colonRemoved = constructMovieName(movieData);
+    const colonToHyphen = constructMovieNameWithHyphens(movieData);
+    
+    return {
+        hasVariants: true,
+        primary: colonRemoved,
+        secondary: colonToHyphen,
+        variants: [colonRemoved, colonToHyphen]
+    };
 }
 
 /**
@@ -120,7 +175,50 @@ function constructMovieName(movieData) {
  */
 function constructTvName(tvData) {
     const title = tvData.name || tvData.original_name || 'Unknown TV Show';
-    return title;
+    // Remove colons from the title for 111477 compatibility
+    return title.replace(/:/g, '');
+}
+
+/**
+ * Construct TV show directory name with colons replaced by hyphens
+ * @param {Object} tvData - TMDB TV show data
+ * @returns {string} Formatted TV show name for directory with hyphens
+ */
+function constructTvNameWithHyphens(tvData) {
+    const title = tvData.name || tvData.original_name || 'Unknown TV Show';
+    // Replace colons with hyphens for 111477 compatibility
+    return title.replace(/:/g, ' -');
+}
+
+/**
+ * Get both possible TV show names (colon removed and colon replaced with hyphen)
+ * @param {Object} tvData - TMDB TV show data
+ * @returns {Object} Object with both name variants
+ */
+function getTvNameVariants(tvData) {
+    const title = tvData.name || tvData.original_name || 'Unknown TV Show';
+    const hasColon = title.includes(':');
+    
+    if (!hasColon) {
+        // If no colon, return single variant
+        const singleName = constructTvName(tvData);
+        return {
+            hasVariants: false,
+            primary: singleName,
+            variants: [singleName]
+        };
+    }
+    
+    // If has colon, return both variants
+    const colonRemoved = constructTvName(tvData);
+    const colonToHyphen = constructTvNameWithHyphens(tvData);
+    
+    return {
+        hasVariants: true,
+        primary: colonRemoved,
+        secondary: colonToHyphen,
+        variants: [colonRemoved, colonToHyphen]
+    };
 }
 
 /**
@@ -237,7 +335,11 @@ module.exports = {
     getTvDetails,
     searchMovies,
     constructMovieName,
+    constructMovieNameWithHyphens,
+    getMovieNameVariants,
     constructTvName,
+    constructTvNameWithHyphens,
+    getTvNameVariants,
     constructMovieUrl,
     constructTvUrl,
     getMovieByTmdbId,
