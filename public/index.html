@@ -235,6 +235,40 @@
             color: var(--tertiary);
             font-size: 0.9rem;
         }
+
+        /* ===== DOWNLOADER STYLES ===== */
+        .downloader-search { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem; flex-wrap: wrap; }
+        .downloader-search input { flex: 1; padding: 0.8rem 1rem; border-radius: 10px; border: none; background-color: rgba(255, 255, 255, 0.08); color: var(--light); }
+        .downloader-search button { padding: 0.7rem 1rem; border-radius: 10px; border: none; background: linear-gradient(135deg, #8b5cf6, #6d28d9); color: #fff; cursor: pointer; }
+    .downloader-results { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1rem; }
+    .downloader-results.single {
+        display: flex;
+        justify-content: center;
+        align-items: flex-start; /* don't stretch heights */
+        gap: 1rem;
+    }
+    .downloader-results.single .downloader-item {
+        flex: 0 0 260px; /* fixed column width for poster card */
+        max-width: 260px;
+        align-self: flex-start;
+        position: sticky; /* keep the highlighted card visible */
+        top: 12px;
+    }
+    .downloader-results.single .downloader-files-card {
+        flex: 1 1 auto; /* fill remaining space */
+        min-width: 360px;
+    }
+        .downloader-item { display: flex; flex-direction: column; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; overflow: hidden; transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease; cursor: pointer; outline: none; }
+        .downloader-item:hover { transform: translateY(-2px); border-color: rgba(168,85,247,0.35); box-shadow: 0 6px 20px rgba(168,85,247,0.15); }
+        .downloader-item.selected { border-color: #a855f7; box-shadow: 0 0 0 2px rgba(168,85,247,0.35) inset, 0 10px 24px rgba(168,85,247,0.25); }
+        .downloader-thumb { width: 100%; height: 240px; object-fit: cover; background: #1f2937; }
+        .downloader-meta { padding: 0.75rem; display: flex; flex-direction: column; gap: 0.3rem; }
+        .downloader-title { color: #fff; font-weight: 600; }
+        .downloader-year { color: #9ca3af; font-size: 0.9rem; }
+        .downloader-empty { color: #9ca3af; text-align: center; padding: 2rem 1rem; }
+        .downloader-type-toggle { display:flex; align-items:center; gap:0.5rem; margin-left:auto; }
+        .downloader-type-toggle .filter-btn { padding: 0.55rem 0.9rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.18); background: rgba(255,255,255,0.06); color:#fff; font-weight:600; cursor:pointer; }
+        .downloader-type-toggle .filter-btn.active { background: linear-gradient(135deg, #8b5cf6, #6d28d9); border-color: transparent; }
         
         .movie-rating {
             position: absolute;
@@ -1353,12 +1387,17 @@
             justify-content: space-between;
             align-items: center;
             border-bottom: 2px solid var(--vlc-orange);
+            position: sticky;
+            top: 0;
+            z-index: 2100;
         }
         
         .vlc-player-title {
             font-size: 1.2rem;
             font-weight: 600;
             color: white;
+            position: relative;
+            z-index: 2101;
         }
         
         .vlc-player-close {
@@ -1370,6 +1409,9 @@
             font-size: 1rem;
             cursor: pointer;
             font-weight: 600;
+            position: relative;
+            z-index: 2102;
+            pointer-events: auto;
         }
         
         .vlc-player-close:hover {
@@ -1384,12 +1426,16 @@
             /* Allow inner flex children to shrink within viewport */
             min-height: 0;
             min-width: 0;
+            position: relative;
+            z-index: 1;
         }
         
         .file-selector {
             background: rgba(0, 0, 0, 0.5);
             padding: 1rem 2rem;
             border-bottom: 1px solid #444;
+            position: relative;
+            z-index: 1;
         }
         
         .file-selector h3 {
@@ -1417,6 +1463,8 @@
             align-items: center;
             gap: 0.75rem;
             padding: 1rem 0 1.25rem;
+            position: relative;
+            z-index: 0;
         }
 
         #mpvControls .vlc-btn { width: auto; }
@@ -1480,6 +1528,7 @@
             min-height: 0;
             min-width: 0;
             overflow: hidden;
+            z-index: 1;
         }
         
         .vlc-loading {
@@ -1488,6 +1537,9 @@
             display: flex;
             align-items: center;
             gap: 1rem;
+            position: relative;
+            z-index: 2;
+            pointer-events: none;
         }
         
         .vlc-loading i {
@@ -1538,6 +1590,8 @@
             background: rgba(0, 0, 0, 0.5);
             padding: 1rem 2rem;
             flex-direction: column;
+            position: relative;
+            z-index: 0;
         }
         
         .subtitle-controls h4 {
@@ -3471,6 +3525,11 @@
                 <label for="newApiKey">New API Key:</label>
                 <input type="text" id="newApiKey" class="api-input" placeholder="Enter new Jackett API key..." />
             </div>
+            <div class="api-input-group" style="margin-top:1rem;">
+                <label for="jackettUrl">Jackett Base URL:</label>
+                <input type="text" id="jackettUrl" class="api-input" placeholder="http://127.0.0.1:9117/api/v2.0/indexers/all/results/torznab" />
+                <small style="color:var(--secondary); font-size:0.85rem; margin-top:0.25rem;">Default: http://127.0.0.1:9117/api/v2.0/indexers/all/results/torznab</small>
+            </div>
             <div style="margin-top:1rem; padding:1rem; border:1px solid rgba(255,255,255,0.15); border-radius:8px; background: rgba(255,255,255,0.05);">
                 <label style="display:flex; align-items:center; gap:0.6rem; cursor:pointer;">
                     <input type="checkbox" id="useTorrentlessToggle" />
@@ -3483,6 +3542,24 @@
                     <button class="api-btn" id="videoTutorialBtn" style="background:#0d6efd; color:#fff;">
                         <i class="fas fa-video"></i> Video Tutorial
                     </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="settings-section" style="margin-top:1.25rem;">
+            <h3>Cache & Storage</h3>
+            <div style="margin-top:0.5rem; padding:1rem; border:1px solid rgba(255,255,255,0.15); border-radius:8px; background: rgba(255,255,255,0.05);">
+                <div class="api-input-group">
+                    <label for="cacheLocation">Cache Location:</label>
+                    <div style="display:flex; gap:0.5rem; align-items:center;">
+                        <input type="text" id="cacheLocation" class="api-input" readonly placeholder="System default temp folder" style="flex:1;" />
+                        <button class="api-btn" id="selectCacheBtn" style="background:#0d6efd; color:#fff; white-space:nowrap;">
+                            <i class="fas fa-folder-open"></i> Browse
+                        </button>
+                    </div>
+                    <small style="color:var(--secondary); font-size:0.85rem; margin-top:0.25rem;">
+                        <i class="fas fa-info-circle"></i> Location where WebTorrent streams and subtitles are cached
+                    </small>
                 </div>
             </div>
         </div>
@@ -3780,6 +3857,10 @@
                 <span>Trakt</span>
                 <span class="nav-badge" style="background: #ed1c24;">Sync</span>
             </div>
+            <div class="nav-item" data-page="downloader">
+                <i class="fas fa-download" style="color: #a855f7;"></i>
+                <span>Downloader</span>
+            </div>
             <div class="nav-item" id="sidebarClearCache">
                 <i class="fas fa-trash"></i>
                 <span>Clear Cache</span>
@@ -3825,6 +3906,12 @@
             <i class="fas fa-circle"></i>
             <span>Connected</span>
         </div>
+        <button class="btn btn-outline" id="doneWatchingBtn">
+        <i class="fas fa-check-circle"></i> Done Watching
+                        </button>
+        <button class="btn btn-outline" id="clearCacheBtn">
+        <i class="fas fa-trash"></i> Clear Cache
+                        </button>
         <button class="btn btn-outline" id="headerDonateBtn">
         <i class="fas fa-heart"></i> Donate
                         </button>
@@ -3834,16 +3921,10 @@
         <button class="btn btn-outline" id="myListBtn">
         <i class="fas fa-heart"></i> My List
                         </button>
-        <button class="btn btn-outline" id="doneWatchingBtn">
-        <i class="fas fa-check-circle"></i> Done Watching
-                        </button>
-        <button class="btn btn-outline" id="clearCacheBtn">
-        <i class="fas fa-trash"></i> Clear Cache
-                        </button>
+        <div style="color: var(--light); font-size: 0.9rem; opacity: 0.8; margin-left: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+            <i class="fas fa-code"></i> Made by Ayman
+        </div>
         <!-- Install MPV button removed -->
-        <button class="btn btn-primary" id="settingsBtn">
-        <i class="fas fa-cog"></i> Settings
-                        </button>
         </div>
         </div>
         </header>
@@ -4182,6 +4263,35 @@
             </div>
         </div>
     </div>
+
+    <!-- Downloader Page -->
+    <div id="downloader-page" style="display: none;">
+        <div class="page-header-enhanced">
+            <div class="page-title-section">
+                <h2 class="section-title">
+                    <i class="fas fa-download" style="color: #a855f7;"></i> <span>Downloader</span>
+                </h2>
+                <p class="page-subtitle">Download and manage your media files</p>
+            </div>
+        </div>
+
+        <div class="trakt-container">
+            <div class="trakt-card">
+                <div class="trakt-card-body">
+                    <div class="downloader-search">
+                        <input id="downloaderQuery" type="text" placeholder="Search movies or shows (e.g., Superman)" />
+                        <button id="downloaderSearchBtn"><i class="fas fa-search"></i></button>
+                        <div class="downloader-type-toggle">
+                            <button id="downloaderFilterMovies" class="filter-btn active">Movies</button>
+                            <button id="downloaderFilterTV" class="filter-btn">TV Shows</button>
+                        </div>
+                    </div>
+                    <div id="downloaderResults" class="downloader-results"></div>
+                    <div id="downloaderEmpty" class="downloader-empty" style="display:none;">Type a search above to see results.</div>
+                </div>
+            </div>
+        </div>
+    </div>
 </main>
     </div> <!-- End app-main -->
 </div> <!-- End app-container -->
@@ -4278,7 +4388,7 @@
 <div class="vlc-player-header">
 <div class="vlc-player-title" id="mpvPlayerTitle">MPV Torrent Player <span class="source-badge webtorrent" id="streamSourceBadge" title="Streaming source">WebTorrent</span></div>
 <button class="vlc-player-close" id="closePlayerBtn">
-<i class="fas fa-times"></i> Close Player
+<i class="fas fa-times"></i> Press Escape to Exit
             </button>
 </div>
 <div class="vlc-player-content">
@@ -4595,7 +4705,6 @@ Your browser does not support the video tag.
         
         // Settings Modal elements
         const settingsModal = document.getElementById('settingsModal');
-    const settingsBtn = document.getElementById('settingsBtn');
     const clearCacheBtn = document.getElementById('clearCacheBtn');
         const settingsClose = document.getElementById('settingsClose');
         const currentApiKey = document.getElementById('currentApiKey');
@@ -4603,6 +4712,9 @@ Your browser does not support the video tag.
         const saveSettings = document.getElementById('saveSettings');
         const cancelSettings = document.getElementById('cancelSettings');
         const useTorrentlessToggle = document.getElementById('useTorrentlessToggle');
+    const jackettUrlInput = document.getElementById('jackettUrl');
+    const cacheLocationInput = document.getElementById('cacheLocation');
+    const selectCacheBtn = document.getElementById('selectCacheBtn');
     // Debrid controls
     const useDebridToggle = document.getElementById('useDebridToggle');
     const debridProviderSel = document.getElementById('debridProvider');
@@ -5034,6 +5146,14 @@ Your browser does not support the video tag.
                     const s = await res.json();
                     useTorrentless = !!s.useTorrentless;
                     if (useTorrentlessToggle) useTorrentlessToggle.checked = useTorrentless;
+                    // Load Jackett URL
+                    if (jackettUrlInput && s.jackettUrl) {
+                        jackettUrlInput.value = s.jackettUrl;
+                    }
+                    // Load cache location
+                    if (cacheLocationInput && s.cacheLocation) {
+                        cacheLocationInput.value = s.cacheLocation;
+                    }
                     // Debrid: populate form
                     if (useDebridToggle) useDebridToggle.checked = !!s.useDebrid;
                     const prov = s.debridProvider || 'realdebrid';
@@ -6491,6 +6611,8 @@ Your browser does not support the video tag.
             const apiKey = newApiKey.value.trim();
             const toggleEl = document.getElementById('useTorrentlessToggle');
             const desiredTorrentless = toggleEl ? !!toggleEl.checked : useTorrentless;
+            const jackettUrl = jackettUrlInput?.value.trim() || '';
+            const cacheLocation = cacheLocationInput?.value.trim() || '';
             
             // Handle fullscreen toggle
             const fullscreenToggle = document.getElementById('fullscreenToggle');
@@ -6522,11 +6644,16 @@ Your browser does not support the video tag.
 
             let apiResult = null;
             try {
-                // Persist Torrentless toggle first so UI/search respects it immediately
+                // Build settings object
+                const settings = { useTorrentless: desiredTorrentless };
+                if (jackettUrl) settings.jackettUrl = jackettUrl;
+                if (cacheLocation) settings.cacheLocation = cacheLocation;
+                
+                // Persist all settings including Jackett URL and cache location
                 await fetch(`${API_BASE_URL}/settings`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ useTorrentless: desiredTorrentless })
+                    body: JSON.stringify(settings)
                 });
                 useTorrentless = desiredTorrentless;
 
@@ -6575,6 +6702,10 @@ Your browser does not support the video tag.
         
         function showTraktPage() {
             window.location.hash = '#/trakt';
+        }
+        
+        function showDownloaderPage() {
+            window.location.hash = '#/downloader';
         }
         
     function setupEventListeners() {
@@ -6627,7 +6758,7 @@ Your browser does not support the video tag.
             }
             if (donateButton) {
                 donateButton.addEventListener('click', async () => {
-                    const url = 'https://buymeacoffee.com/ayman228x?status=1';
+                    const url = 'https://buymeacoffee.com/ayman228x';
                     try {
                         if (window.electronAPI?.openExternal) {
                             await window.electronAPI.openExternal(url);
@@ -6645,11 +6776,24 @@ Your browser does not support the video tag.
             }
             
             // Settings Modal
-            settingsBtn.addEventListener('click', showSettingsModal);
             clearCacheBtn.addEventListener('click', async () => {
                 const result = await window.electronAPI.clearCache();
                 showNotification(result.message, result.success ? 'success' : 'error');
             });
+            // Cache folder browse button
+            if (selectCacheBtn && window.electronAPI && window.electronAPI.selectCacheFolder) {
+                selectCacheBtn.addEventListener('click', async () => {
+                    try {
+                        const result = await window.electronAPI.selectCacheFolder();
+                        if (result.success && result.path) {
+                            cacheLocationInput.value = result.path;
+                        }
+                    } catch (error) {
+                        console.error('Error selecting cache folder:', error);
+                        showNotification('Failed to select folder');
+                    }
+                });
+            }
             // MPV install helpers removed
             settingsClose.addEventListener('click', hideSettingsModal);
             saveSettings.addEventListener('click', saveSettings_);
@@ -6698,6 +6842,8 @@ Your browser does not support the video tag.
                             body: JSON.stringify({ useDebrid: enabled, debridProvider: provider, rdClientId })
                         });
                         if (!res.ok) throw new Error('save failed');
+
+                    
                         await res.json();
                         useDebrid = enabled;
                         debridProvider = provider;
@@ -7013,10 +7159,20 @@ Your browser does not support the video tag.
             // Close modals on Escape key
             document.addEventListener('keydown', (e) => {
                 if (e.key === 'Escape') {
-                    if (settingsModal.classList.contains('active')) {
+                    // Check in priority order and stop after handling one
+                    if (mpvPlayerContainer.classList.contains('active')) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        closePlayer(false); // Don't show notification when using Escape
+                    }
+                    else if (settingsModal.classList.contains('active')) {
+                        e.preventDefault();
+                        e.stopPropagation();
                         hideSettingsModal();
                     }
                     else if (apiSetupModal.classList.contains('active') && hasApiKey) {
+                        e.preventDefault();
+                        e.stopPropagation();
                         hideApiSetupModal();
                     }
                 }
@@ -7477,6 +7633,8 @@ Your browser does not support the video tag.
                         showDoneWatchingPage();
                     } else if (page === 'trakt') {
                         showTraktPage();
+                    } else if (page === 'downloader') {
+                        showDownloaderPage();
                     }
                 });
             });
@@ -7494,6 +7652,361 @@ Your browser does not support the video tag.
             const sidebarSettings = document.getElementById('sidebarSettings');
             if (sidebarSettings) {
                 sidebarSettings.addEventListener('click', showSettingsModal);
+            }
+
+            // Downloader wiring (top-level)
+            const downloaderQuery = document.getElementById('downloaderQuery');
+            const downloaderBtn = document.getElementById('downloaderSearchBtn');
+            const downloaderResults = document.getElementById('downloaderResults');
+            const downloaderEmpty = document.getElementById('downloaderEmpty');
+            const filterMoviesBtn = document.getElementById('downloaderFilterMovies');
+            const filterTvBtn = document.getElementById('downloaderFilterTV');
+            let downloaderType = 'movies'; // 'movies' | 'tv'
+            async function runDownloaderSearch(q) {
+                if (!downloaderResults || !downloaderEmpty) return;
+                const query = (q || '').trim();
+                downloaderResults.innerHTML = '';
+                downloaderResults.classList.remove('single');
+                if (!query) { downloaderEmpty.style.display = ''; downloaderEmpty.textContent = 'Type a search above to see results.'; return; }
+                downloaderEmpty.style.display = 'none';
+                try {
+                    // Try local 111477 service first
+                    let results = [];
+                    try {
+                        const res = await fetch(`http://127.0.0.1:3003/api/tmdb/search/${encodeURIComponent(query)}`);
+                        if (res.ok) {
+                            const data = await res.json();
+                            results = Array.isArray(data?.results) ? data.results : [];
+                        }
+                    } catch (_) {}
+                    if (!results.length) {
+                        // Fallback: direct TMDB (movies + TV)
+                        const [mRes, tvRes] = await Promise.all([
+                            fetch(`https://api.themoviedb.org/3/search/movie?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(query)}&page=1&include_adult=false`),
+                            fetch(`https://api.themoviedb.org/3/search/tv?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(query)}&page=1&include_adult=false`)
+                        ]);
+                        const [mData, tvData] = [await mRes.json(), await tvRes.json()];
+                        const mResults = Array.isArray(mData?.results) ? mData.results.map(r => ({
+                            title: r.title,
+                            posterPath: r.poster_path ? `https://image.tmdb.org/t/p/w500${r.poster_path}` : '',
+                            releaseDate: r.release_date || '',
+                            year: r.release_date ? String(r.release_date).slice(0,4) : '',
+                            tmdbId: r.id,
+                            mediaType: 'movie'
+                        })) : [];
+                        const tvResults = Array.isArray(tvData?.results) ? tvData.results.map(r => ({
+                            title: r.name,
+                            posterPath: r.poster_path ? `https://image.tmdb.org/t/p/w500${r.poster_path}` : '',
+                            releaseDate: r.first_air_date || '',
+                            year: r.first_air_date ? String(r.first_air_date).slice(0,4) : '',
+                            tmdbId: r.id,
+                            mediaType: 'tv'
+                        })) : [];
+                        results = [...mResults, ...tvResults];
+                    }
+                    // Filter by selected type
+                    const filtered = results.filter((item) => {
+                        const mt = (item.mediaType || item.media_type || (item.firstAirDate || item.name ? 'tv' : 'movie')).toLowerCase();
+                        return downloaderType === 'movies' ? mt === 'movie' : mt === 'tv';
+                    });
+                    if (!filtered.length) {
+                        // Fallback fetch type-specific from TMDB if none after filtering
+                        if (downloaderType === 'tv') {
+                            const tvRes = await fetch(`https://api.themoviedb.org/3/search/tv?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(query)}&page=1&include_adult=false`);
+                            const tvData = await tvRes.json();
+                            results = Array.isArray(tvData?.results) ? tvData.results.map(r => ({
+                                title: r.name,
+                                posterPath: r.poster_path ? `https://image.tmdb.org/t/p/w500${r.poster_path}` : '',
+                                releaseDate: r.first_air_date || '',
+                                year: r.first_air_date ? String(r.first_air_date).slice(0,4) : '',
+                                tmdbId: r.id,
+                                mediaType: 'tv'
+                            })) : [];
+                        } else {
+                            const mRes2 = await fetch(`https://api.themoviedb.org/3/search/movie?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(query)}&page=1&include_adult=false`);
+                            const mData2 = await mRes2.json();
+                            results = Array.isArray(mData2?.results) ? mData2.results.map(r => ({
+                                title: r.title,
+                                posterPath: r.poster_path ? `https://image.tmdb.org/t/p/w500${r.poster_path}` : '',
+                                releaseDate: r.release_date || '',
+                                year: r.release_date ? String(r.release_date).slice(0,4) : '',
+                                tmdbId: r.id,
+                                mediaType: 'movie'
+                            })) : [];
+                        }
+                    } else {
+                        results = filtered;
+                    }
+                    results = results.slice(0, 10);
+                    if (!results.length) {
+                        downloaderEmpty.style.display = '';
+                        downloaderEmpty.textContent = downloaderType === 'movies' ? 'No movies found.' : 'No TV shows found.';
+                        return;
+                    }
+                    const frag = document.createDocumentFragment();
+                    results.forEach((item) => {
+                        const card = document.createElement('div');
+                        card.className = 'downloader-item';
+                        card.tabIndex = 0;
+                        const poster = item.posterPath || '';
+                        const title = item.title || item.name || item.constructedName || 'Untitled';
+                        const year = item.year || (item.releaseDate ? String(item.releaseDate).slice(0,4) : '');
+                        const tmdbId = item.tmdbId || item.id || item.tmdb_id || '';
+                        const mediaType = item.mediaType || item.media_type || (item.firstAirDate || item.name ? 'tv' : 'movie');
+                        if (tmdbId) card.dataset.tmdbId = String(tmdbId);
+                        if (mediaType) card.dataset.mediaType = String(mediaType);
+                        card.innerHTML = `
+                            <img class="downloader-thumb" src="${poster}" alt="${title.replace(/"/g,'&quot;')}" onerror="this.style.opacity=0;" />
+                            <div class="downloader-meta">
+                                <div class="downloader-title">${title}</div>
+                                <div class="downloader-year">${year || ''}</div>
+                            </div>`;
+                        card.addEventListener('click', (e) => {
+                            e.preventDefault(); e.stopPropagation();
+                            // Remove other cards and center the selected one
+                            const container = downloaderResults;
+                            document.querySelectorAll('.downloader-item').forEach(el => { if (el !== card) el.remove(); });
+                            container.classList.add('single');
+                            document.querySelectorAll('.downloader-item.selected').forEach(el => el.classList.remove('selected'));
+                            card.classList.add('selected');
+                            const id = card.dataset.tmdbId;
+                            const type = (card.dataset.mediaType || 'movie').toLowerCase();
+                            // Remove any previous blocks (files, tv controls)
+                            container.querySelectorAll('.downloader-files-card, .downloader-tv-controls').forEach(el => el.remove());
+                            if (id) {
+                                if (type === 'tv') {
+                                    fetchAndRenderTvSelectors(id, container);
+                                } else {
+                                    fetchDownloaderFilesByTmdb(id, container);
+                                }
+                            }
+                        });
+                        frag.appendChild(card);
+                    });
+                    downloaderResults.appendChild(frag);
+                } catch (err) {
+                    console.error('Downloader search failed:', err);
+                    downloaderEmpty.style.display = '';
+                    downloaderEmpty.textContent = 'Search failed.';
+                }
+            }
+            function renderFilesCard(files, container, loadKey) {
+                // If a key is provided but doesn't match the latest, skip (prevents duplicates)
+                if (loadKey && container.dataset.filesLoadKey && container.dataset.filesLoadKey !== loadKey) return;
+                const filesWrap = document.createElement('div');
+                filesWrap.className = 'trakt-card downloader-files-card';
+                filesWrap.style.maxWidth = '900px';
+                filesWrap.style.width = '100%';
+                const inner = document.createElement('div');
+                inner.className = 'trakt-card-body';
+                inner.innerHTML = `<h3 style="margin-bottom:0.75rem;">Available files (${files.length})</h3>`;
+                if (!files.length) {
+                    const empty = document.createElement('div');
+                    empty.className = 'downloader-empty';
+                    empty.textContent = 'No files found for this title.';
+                    inner.appendChild(empty);
+                } else {
+                    const list = document.createElement('div');
+                    list.style.display = 'flex';
+                    list.style.flexDirection = 'column';
+                    list.style.gap = '0.5rem';
+                    files.slice(0, 50).forEach(f => {
+                        const row = document.createElement('div');
+                        row.style.display = 'flex';
+                        row.style.justifyContent = 'space-between';
+                        row.style.alignItems = 'center';
+                        row.style.background = 'rgba(255,255,255,0.06)';
+                        row.style.border = '1px solid rgba(255,255,255,0.08)';
+                        row.style.borderRadius = '10px';
+                        row.style.padding = '0.6rem 0.8rem';
+                        const name = document.createElement('div');
+                        name.style.flex = '1';
+                        name.style.marginRight = '0.75rem';
+                        name.style.overflow = 'hidden';
+                        name.style.whiteSpace = 'nowrap';
+                        name.style.textOverflow = 'ellipsis';
+                        name.textContent = f.name || 'File';
+                        const size = document.createElement('div');
+                        size.style.color = '#9ca3af';
+                        size.style.marginRight = '0.75rem';
+                        size.textContent = f.sizeFormatted || '';
+                        const btn = document.createElement('button');
+                        btn.className = 'api-btn api-btn-primary';
+                        btn.innerHTML = '<i class="fas fa-download"></i> Download';
+                        btn.addEventListener('click', async (ev) => {
+                            ev.preventDefault(); ev.stopPropagation();
+                            const href = f.url || '';
+                            if (!href) return;
+                            try {
+                                if (window.electronAPI?.openExternal) {
+                                    await window.electronAPI.openExternal(href);
+                                } else {
+                                    window.open(href, '_blank', 'noopener');
+                                }
+                            } catch (_) { window.open(href, '_blank'); }
+                        });
+                        row.appendChild(name);
+                        row.appendChild(size);
+                        row.appendChild(btn);
+                        list.appendChild(row);
+                    });
+                    inner.appendChild(list);
+                }
+                filesWrap.appendChild(inner);
+                // Remove any previous files card before appending (last-writer-wins)
+                container.querySelectorAll('.downloader-files-card').forEach(el => el.remove());
+                container.appendChild(filesWrap);
+            }
+
+            function startFilesLoad(container) {
+                const key = `${Date.now()}_${Math.random().toString(36).slice(2)}`;
+                container.dataset.filesLoadKey = key;
+                return key;
+            }
+
+            async function fetchDownloaderFilesByTmdb(tmdbId, container) {
+                try {
+                    const loadKey = startFilesLoad(container);
+                    const res = await fetch(`http://127.0.0.1:3003/api/tmdb/movie/${encodeURIComponent(tmdbId)}`);
+                    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                    const data = await res.json();
+                    const files = Array.isArray(data?.files) ? data.files : [];
+                    renderFilesCard(files, container, loadKey);
+                } catch (e) {
+                    console.error('Failed to load files by TMDB id', e);
+                    showNotification('Failed to load files for this title');
+                }
+            }
+
+            async function fetchAndRenderTvSelectors(tmdbId, container) {
+                // Controls card
+                const ctrl = document.createElement('div');
+                ctrl.className = 'trakt-card downloader-tv-controls';
+                ctrl.style.maxWidth = '900px';
+                ctrl.style.width = '100%';
+                const body = document.createElement('div');
+                body.className = 'trakt-card-body';
+                body.innerHTML = '<h3 style="margin-bottom:0.75rem;">Pick season and episode</h3>';
+
+                const row = document.createElement('div');
+                row.style.display = 'flex';
+                row.style.gap = '0.75rem';
+                row.style.alignItems = 'center';
+                row.style.flexWrap = 'wrap';
+
+                const seasonLabel = document.createElement('label');
+                seasonLabel.textContent = 'Season';
+                seasonLabel.style.marginRight = '0.25rem';
+                const seasonSel = document.createElement('select');
+                seasonSel.style.padding = '0.5rem 0.6rem';
+                seasonSel.style.borderRadius = '8px';
+                seasonSel.style.border = '1px solid rgba(255,255,255,0.15)';
+                seasonSel.style.background = 'rgba(0,0,0,0.25)';
+                seasonSel.style.color = '#fff';
+
+                const episodeLabel = document.createElement('label');
+                episodeLabel.textContent = 'Episode';
+                episodeLabel.style.marginRight = '0.25rem';
+                const episodeSel = document.createElement('select');
+                episodeSel.style.padding = '0.5rem 0.6rem';
+                episodeSel.style.borderRadius = '8px';
+                episodeSel.style.border = '1px solid rgba(255,255,255,0.15)';
+                episodeSel.style.background = 'rgba(0,0,0,0.25)';
+                episodeSel.style.color = '#fff';
+                episodeSel.disabled = true;
+
+                row.appendChild(seasonLabel);
+                row.appendChild(seasonSel);
+                row.appendChild(episodeLabel);
+                row.appendChild(episodeSel);
+                body.appendChild(row);
+                ctrl.appendChild(body);
+                container.appendChild(ctrl);
+
+                // Fetch TMDB TV info for seasons
+                try {
+                    const infoRes = await fetch(`https://api.themoviedb.org/3/tv/${encodeURIComponent(tmdbId)}?api_key=${TMDB_API_KEY}`);
+                    const info = await infoRes.json();
+                    const numberOfSeasons = info?.number_of_seasons || (Array.isArray(info?.seasons) ? info.seasons.length : 0);
+                    const seasons = [];
+                    for (let s = 1; s <= numberOfSeasons; s++) seasons.push(s);
+                    if (!seasons.length) {
+                        showNotification('No seasons found for this show');
+                        return;
+                    }
+                    seasonSel.innerHTML = seasons.map(s => `<option value="${s}">S${String(s).padStart(2,'0')}</option>`).join('');
+
+                    seasonSel.addEventListener('change', async () => {
+                        const sVal = Number(seasonSel.value);
+                        episodeSel.disabled = true;
+                        episodeSel.innerHTML = '';
+                        // Remove prior files card if any
+                        container.querySelectorAll('.downloader-files-card').forEach(el => el.remove());
+                        try {
+                            const seasonRes = await fetch(`https://api.themoviedb.org/3/tv/${encodeURIComponent(tmdbId)}/season/${encodeURIComponent(sVal)}?api_key=${TMDB_API_KEY}`);
+                            const seasonData = await seasonRes.json();
+                            const eps = Array.isArray(seasonData?.episodes) ? seasonData.episodes.map(e => e.episode_number) : [];
+                            if (!eps.length && Number.isFinite(seasonData?.episode_count)) {
+                                for (let e = 1; e <= seasonData.episode_count; e++) eps.push(e);
+                            }
+                            episodeSel.innerHTML = eps.map(e => `<option value="${e}">E${String(e).padStart(2,'0')}</option>`).join('');
+                            episodeSel.disabled = eps.length === 0;
+                        } catch (err) {
+                            console.error('Failed to fetch episodes list', err);
+                            showNotification('Failed to load episodes');
+                        }
+                    });
+
+                    episodeSel.addEventListener('change', async () => {
+                        const sVal = Number(seasonSel.value);
+                        const eVal = Number(episodeSel.value);
+                        // Remove prior files card if any
+                        container.querySelectorAll('.downloader-files-card').forEach(el => el.remove());
+                        try {
+                            const loadKey = startFilesLoad(container);
+                            const res = await fetch(`http://127.0.0.1:3003/api/tmdb/tv/${encodeURIComponent(tmdbId)}/season/${encodeURIComponent(sVal)}/episode/${encodeURIComponent(eVal)}`);
+                            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                            const data = await res.json();
+                            const files = Array.isArray(data?.files) ? data.files : [];
+                            renderFilesCard(files, container, loadKey);
+                        } catch (err) {
+                            console.error('Failed to load TV episode files', err);
+                            showNotification('Failed to load files for this episode');
+                        }
+                    });
+
+                    // Trigger initial season load to populate episodes
+                    seasonSel.dispatchEvent(new Event('change'));
+                } catch (err) {
+                    console.error('Failed to fetch TV info', err);
+                    showNotification('Failed to load TV seasons');
+                }
+            }
+
+            if (filterMoviesBtn && filterTvBtn) {
+                filterMoviesBtn.addEventListener('click', () => {
+                    if (downloaderType !== 'movies') {
+                        downloaderType = 'movies';
+                        filterMoviesBtn.classList.add('active');
+                        filterTvBtn.classList.remove('active');
+                        if (downloaderQuery.value.trim()) runDownloaderSearch(downloaderQuery.value);
+                    }
+                });
+                filterTvBtn.addEventListener('click', () => {
+                    if (downloaderType !== 'tv') {
+                        downloaderType = 'tv';
+                        filterTvBtn.classList.add('active');
+                        filterMoviesBtn.classList.remove('active');
+                        if (downloaderQuery.value.trim()) runDownloaderSearch(downloaderQuery.value);
+                    }
+                });
+            }
+
+            if (downloaderBtn && downloaderQuery) {
+                downloaderBtn.addEventListener('click', () => runDownloaderSearch(downloaderQuery.value));
+                downloaderQuery.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') runDownloaderSearch(downloaderQuery.value);
+                });
             }
             
             // Quick refresh button
@@ -7584,6 +8097,10 @@ Your browser does not support the video tag.
     activeRoute = 'trakt';
     showSection('trakt');
     return;
+} else if (hash === '#/downloader') {
+    activeRoute = 'downloader';
+    showSection('downloader');
+    return;
 }
 
             // Fallback
@@ -7609,6 +8126,8 @@ Your browser does not support the video tag.
                     traktPageEl.dataset.initialized = 'true';
                 }
             }
+            const downloaderPageEl = document.getElementById('downloader-page');
+            if (downloaderPageEl) downloaderPageEl.style.display = section === 'downloader' ? '' : 'none';
             // Update navigation states
             updateNavigationStates(section);
             // Reset loading flag for new route
@@ -8865,13 +9384,13 @@ Your browser does not support the video tag.
         }
 
         // Close the MPV player
-        async function closePlayer() {
+        async function closePlayer(showNotif = true) {
             mpvPlayerContainer.classList.remove('active');
             if (currentTorrentData) {
                 try {
                     await fetch(`${API_BASE_URL}/stop-stream?hash=${currentTorrentData.infoHash}`);
                 } catch (e) {}
-                if (window.electronAPI) {
+                if (window.electronAPI && showNotif) {
                     try {
                         const result = await window.electronAPI.clearWebtorrentTemp();
                         if (result.success) {
@@ -8879,6 +9398,11 @@ Your browser does not support the video tag.
                         } else {
                             showNotification(`Error clearing temp files: ${result.message}`);
                         }
+                    } catch (e) {}
+                } else if (window.electronAPI) {
+                    // Still clear cache, just don't show notification
+                    try {
+                        await window.electronAPI.clearWebtorrentTemp();
                     } catch (e) {}
                 }
             }
@@ -9085,12 +9609,16 @@ Your browser does not support the video tag.
                 
                 if (customVideo.canPlayType('application/vnd.apple.mpegurl') && currentStreamUrl.includes('.m3u8')) {
                     // Native HLS support (Safari)
+                    const savedTracks = preserveSubtitleTracks();
                     videoSource.setAttribute('src', currentStreamUrl);
                     customVideo.load();
+                    customVideo.addEventListener('loadedmetadata', () => restoreSubtitleTracks(savedTracks), { once: true });
                 } else {
                     // Regular video file
+                    const savedTracks = preserveSubtitleTracks();
                     videoSource.setAttribute('src', currentStreamUrl);
                     customVideo.load();
+                    customVideo.addEventListener('loadedmetadata', () => restoreSubtitleTracks(savedTracks), { once: true });
                 }
             }
             
@@ -9146,8 +9674,10 @@ Your browser does not support the video tag.
                                 const rj = await rr.json();
                                 if (rj?.url) {
                                     const proxied = `${API_BASE_URL}/stream/debrid?url=${encodeURIComponent(rj.url)}`;
+                                    const savedTracks = preserveSubtitleTracks();
                                     videoSource.setAttribute('src', proxied);
                                     customVideo.load();
+                                    customVideo.addEventListener('loadedmetadata', () => restoreSubtitleTracks(savedTracks), { once: true });
                                     await customVideo.play();
                                 }
                             }
@@ -9190,6 +9720,20 @@ Your browser does not support the video tag.
         videoControls.addEventListener('mouseenter', () => { clearControlsTimer(); showControls(); });
         videoControls.addEventListener('mousemove', () => { clearControlsTimer(); showControls(); });
         videoControls.addEventListener('mouseleave', resetControlsAutoHide);
+
+        // Prevent header from flickering when mouse is over it
+        const customPlayerHeader = customPlayerContainer.querySelector('.player-header');
+        if (customPlayerHeader) {
+            customPlayerHeader.addEventListener('mouseenter', () => { 
+                clearControlsTimer(); 
+                showControls(); 
+            });
+            customPlayerHeader.addEventListener('mousemove', () => { 
+                clearControlsTimer(); 
+                showControls(); 
+            });
+            customPlayerHeader.addEventListener('mouseleave', resetControlsAutoHide);
+        }
 
         // When opening and closing the subtitles panel, force controls visibility appropriately
         if (htmlSubsBtn) {
@@ -9597,10 +10141,6 @@ Your browser does not support the video tag.
 
         function togglePlayPause() {
             if (customVideo.paused) {
-                // Also ensure any textTracks are disabled
-                try {
-                    for (const t of customVideo.textTracks || []) { t.mode = 'disabled'; }
-                } catch(_){ }
                 customVideo.play();
             } else {
                 customVideo.pause();
@@ -9727,11 +10267,72 @@ Your browser does not support the video tag.
             `;
         }
 
+        // Helper to preserve subtitle tracks across video loads
+        function preserveSubtitleTracks() {
+            const tracks = Array.from(customVideo.querySelectorAll('track[kind="subtitles"]'));
+            return tracks.map(t => ({
+                src: t.src,
+                label: t.label,
+                srclang: t.srclang,
+                isDefault: t.default,
+                mode: t.track ? t.track.mode : 'hidden'
+            }));
+        }
+
+        function restoreSubtitleTracks(trackData) {
+            if (!trackData || trackData.length === 0) return;
+            
+            trackData.forEach((data, index) => {
+                const track = document.createElement('track');
+                track.kind = 'subtitles';
+                track.label = data.label;
+                track.srclang = data.srclang;
+                track.src = data.src;
+                if (data.isDefault) {
+                    track.default = true;
+                    track.setAttribute('default', '');
+                }
+                customVideo.appendChild(track);
+                
+                // Restore the mode when track loads
+                track.addEventListener('load', () => {
+                    try {
+                        if (track.track) {
+                            track.track.mode = data.mode;
+                            if (data.mode === 'showing') {
+                                applySubtitleSettings();
+                                subtitleTrack = track;
+                            }
+                        }
+                    } catch {}
+                }, { once: true });
+            });
+        }
+
         async function loadSubtitle(url, opts = {}) {
-            // Remove existing subtitle tracks
+            // Check if this subtitle URL is already loaded
             const existingTracks = Array.from(customVideo.querySelectorAll('track[kind="subtitles"]'));
-            existingTracks.forEach(t => t.remove());
-            subtitleTrack = null;
+            const alreadyLoaded = existingTracks.find(t => t.src === url);
+            
+            if (alreadyLoaded) {
+                // Just switch to the existing track
+                for (const t of customVideo.textTracks) { t.mode = 'hidden'; }
+                if (alreadyLoaded.track) {
+                    alreadyLoaded.track.mode = 'showing';
+                    applySubtitleSettings();
+                }
+                subtitleTrack = alreadyLoaded;
+                return;
+            }
+
+            // Only remove tracks if we're loading a completely new subtitle
+            // Keep the current track to avoid it disappearing
+            if (subtitleTrack && subtitleTrack.src !== url) {
+                // Don't remove the current track yet, just hide it
+                if (subtitleTrack.track) {
+                    subtitleTrack.track.mode = 'hidden';
+                }
+            }
 
             const track = document.createElement('track');
             track.kind = 'subtitles';
