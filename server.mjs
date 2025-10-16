@@ -192,6 +192,8 @@ export function startServer(userDataPath) {
 
     app.get('/api/settings', (req, res) => {
         const s = readSettings();
+        // Also load Jackett URL and cache location from user settings
+        const userSettings = loadUserSettings();
         // Determine auth state for the selected provider
         const provider = s.debridProvider || 'realdebrid';
         const debridAuth = provider === 'alldebrid' ? !!s.adApiKey 
@@ -203,7 +205,9 @@ export function startServer(userDataPath) {
             useDebrid: !!s.useDebrid,
             debridProvider: provider,
             debridAuth,
-            rdClientId: s.rdClientId || null
+            rdClientId: s.rdClientId || null,
+            jackettUrl: userSettings.jackettUrl || JACKETT_URL,
+            cacheLocation: userSettings.cacheLocation || CACHE_LOCATION
         });
     });
     app.post('/api/settings', (req, res) => {
@@ -216,7 +220,27 @@ export function startServer(userDataPath) {
             rdClientId: typeof req.body.rdClientId === 'string' ? req.body.rdClientId.trim() || null : (s.rdClientId || null),
         };
         const ok = writeSettings(next);
-        if (ok) return res.json({ success: true, settings: { ...next, rdToken: next.rdToken ? '***' : null } });
+        
+        // Also handle Jackett URL and cache location
+        const userSettings = loadUserSettings();
+        let settingsUpdated = false;
+        
+        if (req.body.jackettUrl !== undefined) {
+            userSettings.jackettUrl = req.body.jackettUrl;
+            JACKETT_URL = req.body.jackettUrl;
+            settingsUpdated = true;
+        }
+        if (req.body.cacheLocation !== undefined) {
+            userSettings.cacheLocation = req.body.cacheLocation;
+            CACHE_LOCATION = req.body.cacheLocation;
+            settingsUpdated = true;
+        }
+        
+        if (settingsUpdated) {
+            saveUserSettings(userSettings);
+        }
+        
+        if (ok) return res.json({ success: true, settings: { ...next, ...userSettings, rdToken: next.rdToken ? '***' : null } });
         return res.status(500).json({ success: false, error: 'Failed to save settings' });
     });
 
@@ -2431,26 +2455,11 @@ export function startServer(userDataPath) {
         }
     });
 
-    // Temporary subtitles storage
-    const SUB_TMP_DIR = path.join(os.tmpdir(), 'playtorrio_subs');
-    const ensureSubsDir = () => { try { fs.mkdirSync(SUB_TMP_DIR, { recursive: true }); } catch {} };
-    ensureSubsDir();
-    // Guard: recreate folder if it was cleared just before a request
-    app.use('/subtitles', (req, res, next) => { ensureSubsDir(); next(); });
-    // Serve temp subtitles under /subtitles/*.ext with explicit content types
-    app.use('/subtitles', express.static(SUB_TMP_DIR, {
-        fallthrough: true,
-        setHeaders: (res, filePath) => {
-            const lower = filePath.toLowerCase();
-            if (lower.endsWith('.vtt')) {
-                res.setHeader('Content-Type', 'text/vtt; charset=utf-8');
-            } else if (lower.endsWith('.srt')) {
-                // Most browsers expect WebVTT, but we convert to .vtt; keep for completeness
-                res.setHeader('Content-Type', 'application/x-subrip; charset=utf-8');
-            }
-            res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
-        }
-    }));
+    // Note: SUB_TMP_DIR, ensureSubsDir, and /subtitles middleware are initialized after settings are loaded (see below)
+    
+    // ----------------------
+    // Configuration and API Key Management
+    // ----------------------
 
     // API Key Management
     let API_KEY = '';
@@ -2569,8 +2578,70 @@ export function startServer(userDataPath) {
     // Load any existing key at startup
     const hasAPIKey = loadAPIKey();
 
-    // Use 127.0.0.1 to force IPv4 connection
-    const JACKETT_URL = 'http://127.0.0.1:9117/api/v2.0/indexers/all/results/torznab';
+    // Configuration defaults
+    let JACKETT_URL = 'http://127.0.0.1:9117/api/v2.0/indexers/all/results/torznab';
+    let CACHE_LOCATION = os.tmpdir(); // Default to system temp
+
+    // Load user settings for Jackett URL and cache location
+    function loadUserSettings() {
+        const settingsPath = path.join(userDataPath, 'user_settings.json');
+        try {
+            if (fs.existsSync(settingsPath)) {
+                const settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
+                if (settings.jackettUrl) {
+                    JACKETT_URL = settings.jackettUrl;
+                    console.log(`Loaded custom Jackett URL: ${JACKETT_URL}`);
+                }
+                if (settings.cacheLocation) {
+                    CACHE_LOCATION = settings.cacheLocation;
+                    console.log(`Loaded custom cache location: ${CACHE_LOCATION}`);
+                }
+                return settings;
+            }
+        } catch (error) {
+            console.error('Error loading user settings:', error);
+        }
+        return { jackettUrl: JACKETT_URL, cacheLocation: CACHE_LOCATION };
+    }
+
+    function saveUserSettings(settings) {
+        const settingsPath = path.join(userDataPath, 'user_settings.json');
+        try {
+            fs.writeFileSync(settingsPath, JSON.stringify(settings, null, 2), 'utf8');
+            console.log('User settings saved:', settings);
+            return true;
+        } catch (error) {
+            console.error('Error saving user settings:', error);
+            return false;
+        }
+    }
+
+    // Load settings on startup
+    loadUserSettings();
+
+    // Temporary subtitles storage (must be after loadUserSettings)
+    const SUB_TMP_DIR = path.join(CACHE_LOCATION, 'playtorrio_subs');
+    const ensureSubsDir = () => { try { fs.mkdirSync(SUB_TMP_DIR, { recursive: true }); } catch {} };
+    ensureSubsDir();
+
+    // Register subtitle middleware now that SUB_TMP_DIR is defined
+    // Guard: recreate folder if it was cleared just before a request
+    app.use('/subtitles', (req, res, next) => { ensureSubsDir(); next(); });
+    // Serve temp subtitles under /subtitles/*.ext with explicit content types
+    app.use('/subtitles', express.static(SUB_TMP_DIR, {
+        fallthrough: true,
+        setHeaders: (res, filePath) => {
+            const lower = filePath.toLowerCase();
+            if (lower.endsWith('.vtt')) {
+                res.setHeader('Content-Type', 'text/vtt; charset=utf-8');
+            } else if (lower.endsWith('.srt')) {
+                // Most browsers expect WebVTT, but we convert to .vtt; keep for completeness
+                res.setHeader('Content-Type', 'application/x-subrip; charset=utf-8');
+            }
+            res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+        }
+    }));
+
     const client = new WebTorrent();
     const activeTorrents = new Map();
     // OpenSubtitles API key (provided by user for this app)
@@ -2712,7 +2783,7 @@ export function startServer(userDataPath) {
             else return torrent.once('ready', () => handleReady(torrent));
         }
 
-        const torrentDownloadPath = path.join(os.tmpdir(), 'webtorrent', infoHash);
+        const torrentDownloadPath = path.join(CACHE_LOCATION, 'webtorrent', infoHash);
         fs.mkdirSync(torrentDownloadPath, { recursive: true });
         const torrentOptions = { path: torrentDownloadPath, destroyStoreOnDestroy: true };
         const torrent = client.add(magnet, torrentOptions);
@@ -2874,7 +2945,7 @@ export function startServer(userDataPath) {
         const torrent = activeTorrents.get(hash);
         if (torrent) {
             console.log(`⏹️ Stopping torrent: ${hash}`);
-            const torrentDownloadPath = path.join(os.tmpdir(), 'webtorrent', hash);
+            const torrentDownloadPath = path.join(CACHE_LOCATION, 'webtorrent', hash);
             client.remove(torrent.magnetURI, { destroyStore: true }, async (err) => {
                 if (err) console.error('Error removing torrent from client:', err);
                 else console.log(`Torrent ${hash} removed successfully from client.`);
