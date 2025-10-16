@@ -17,6 +17,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   onStreamClosed: (callback) => ipcRenderer.on('stream-closed', callback),
   clearWebtorrentTemp: () => ipcRenderer.invoke('clear-webtorrent-temp'),
   clearCache: () => ipcRenderer.invoke('clear-cache'),
+  selectCacheFolder: () => ipcRenderer.invoke('select-cache-folder'),
   restartApp: () => ipcRenderer.invoke('restart-app'),
   openExternal: (url) => ipcRenderer.invoke('open-external', url),
   copyToClipboard: (text) => ipcRenderer.invoke('copy-to-clipboard', text),
