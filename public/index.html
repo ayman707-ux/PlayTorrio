@@ -268,6 +268,323 @@
         .downloader-empty { color: #9ca3af; text-align: center; padding: 2rem 1rem; }
         .downloader-type-toggle { display:flex; align-items:center; gap:0.5rem; margin-left:auto; }
         .downloader-type-toggle .filter-btn { padding: 0.55rem 0.9rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.18); background: rgba(255,255,255,0.06); color:#fff; font-weight:600; cursor:pointer; }
+
+        /* Live TV Styles */
+        .livetv-category-section {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 0.5rem 0;
+        }
+        .livetv-category-label {
+            font-weight: 600;
+            color: #10b981;
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .livetv-category-dropdown {
+            padding: 0.75rem 1.25rem;
+            border-radius: 12px;
+            border: 2px solid rgba(16, 185, 129, 0.3);
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.12), rgba(5, 150, 105, 0.08));
+            color: #fff;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            outline: none;
+            min-width: 200px;
+        }
+        .livetv-category-dropdown:hover {
+            border-color: rgba(16, 185, 129, 0.5);
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.18), rgba(5, 150, 105, 0.12));
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
+        }
+        .livetv-category-dropdown:focus {
+            border-color: #10b981;
+            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
+        }
+        .livetv-category-dropdown option {
+            background: #1a1a2e;
+            color: #fff;
+            padding: 0.75rem;
+            font-weight: 600;
+        }
+        .livetv-matches-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 1.5rem;
+            padding: 0.5rem 0;
+        }
+        .livetv-match-card {
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.08), rgba(5, 150, 105, 0.05));
+            border: 1px solid rgba(16, 185, 129, 0.2);
+            border-radius: 16px;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+        }
+        .livetv-match-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, #10b981, #059669);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        .livetv-match-card:hover {
+            transform: translateY(-4px);
+            border-color: #10b981;
+            box-shadow: 0 8px 24px rgba(16, 185, 129, 0.25);
+        }
+        .livetv-match-card:hover::before {
+            opacity: 1;
+        }
+        .livetv-poster {
+            width: 100%;
+            height: 140px;
+            object-fit: cover;
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+        }
+        .livetv-poster-placeholder {
+            width: 100%;
+            height: 140px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            color: rgba(255, 255, 255, 0.3);
+            font-size: 2.5em;
+        }
+        .livetv-match-info {
+            padding: 1rem;
+        }
+        .livetv-match-title {
+            font-weight: 700;
+            font-size: 0.95rem;
+            margin-bottom: 0.5rem;
+            color: #fff;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            line-height: 1.3;
+        }
+        .livetv-match-category {
+            display: inline-block;
+            padding: 0.35rem 0.75rem;
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(5, 150, 105, 0.15));
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: #10b981;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .livetv-watch-btn {
+            width: 100%;
+            margin-top: 0.75rem;
+            padding: 0.75rem;
+            background: linear-gradient(135deg, #10b981, #059669);
+            border: none;
+            border-radius: 10px;
+            color: #fff;
+            font-weight: 700;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .livetv-watch-btn:hover {
+            background: linear-gradient(135deg, #059669, #047857);
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+            transform: scale(1.02);
+        }
+        .livetv-empty {
+            text-align: center;
+            padding: 4rem 2rem;
+            color: rgba(255, 255, 255, 0.4);
+        }
+        .livetv-empty p {
+            margin-top: 1rem;
+            font-size: 1.1rem;
+        }
+        
+        /* Streams List Modal */
+        .livetv-streams-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+        }
+        .livetv-streams-content {
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            border: 2px solid rgba(16, 185, 129, 0.3);
+            border-radius: 20px;
+            max-width: 600px;
+            width: 100%;
+            max-height: 80vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: 0 20px 60px rgba(16, 185, 129, 0.3);
+        }
+        .livetv-streams-header {
+            padding: 1.5rem;
+            background: rgba(16, 185, 129, 0.1);
+            border-bottom: 2px solid rgba(16, 185, 129, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .livetv-streams-header h3 {
+            font-size: 1.3rem;
+            color: #10b981;
+            font-weight: 700;
+        }
+        .livetv-close-btn {
+            background: rgba(220, 53, 69, 0.2);
+            border: 1px solid rgba(220, 53, 69, 0.4);
+            border-radius: 8px;
+            color: #ff4757;
+            padding: 0.5rem 0.75rem;
+            cursor: pointer;
+            font-size: 1.2rem;
+            transition: all 0.3s ease;
+        }
+        .livetv-close-btn:hover {
+            background: rgba(220, 53, 69, 0.3);
+            transform: scale(1.1);
+        }
+        .livetv-streams-list {
+            padding: 1.5rem;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        .livetv-stream-item {
+            padding: 1rem 1.25rem;
+            background: rgba(16, 185, 129, 0.08);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+            border-radius: 12px;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+        }
+        .livetv-stream-item:hover {
+            background: rgba(16, 185, 129, 0.15);
+            border-color: #10b981;
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
+        }
+        .livetv-stream-info {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        .livetv-stream-actions {
+            display: flex;
+            gap: 0.75rem;
+            align-items: center;
+        }
+        .livetv-copy-link-btn, .livetv-open-browser-btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 10px;
+            color: #fff;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+        }
+        .livetv-copy-link-btn {
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+        }
+        .livetv-copy-link-btn:hover {
+            background: linear-gradient(135deg, #2563eb, #1d4ed8);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+            transform: scale(1.05);
+        }
+        .livetv-open-browser-btn {
+            background: linear-gradient(135deg, #10b981, #059669);
+        }
+        .livetv-open-browser-btn:hover {
+            background: linear-gradient(135deg, #059669, #047857);
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+            transform: scale(1.05);
+        }
+        .livetv-copy-link-btn:active, .livetv-open-browser-btn:active {
+            transform: scale(0.98);
+        }
+        .livetv-stream-source {
+            font-weight: 700;
+            color: #10b981;
+            font-size: 1.1rem;
+        }
+        .livetv-stream-details {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            align-items: center;
+            font-size: 0.9rem;
+        }
+        .livetv-stream-badge {
+            padding: 0.25rem 0.6rem;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .livetv-stream-badge.hd {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            color: #fff;
+        }
+        .livetv-stream-badge.language {
+            background: rgba(59, 130, 246, 0.2);
+            border: 1px solid rgba(59, 130, 246, 0.4);
+            color: #3b82f6;
+        }
+        .livetv-stream-badge.viewers {
+            background: rgba(168, 85, 247, 0.2);
+            border: 1px solid rgba(168, 85, 247, 0.4);
+            color: #a855f7;
+        }
+        .livetv-loading {
+            text-align: center;
+            padding: 2rem;
+            color: rgba(255, 255, 255, 0.6);
+        }
+        .livetv-loading i {
+            font-size: 2em;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
         .downloader-type-toggle .filter-btn.active { background: linear-gradient(135deg, #8b5cf6, #6d28d9); border-color: transparent; }
         
         .movie-rating {
@@ -1357,11 +1674,16 @@
             justify-content: flex-end;
         }
 
-        /* Floating Settings Button (Old UI Only, Home Page Only) */
-        .floating-settings-btn {
+        /* Floating Navigation Arrow (Old UI Only, Home Page Only) */
+        .floating-nav-container {
             position: fixed;
-            bottom: 30px;
             right: 30px;
+            bottom: 30px;
+            z-index: 1000;
+            display: none;
+        }
+
+        .floating-nav-btn {
             width: 60px;
             height: 60px;
             background: linear-gradient(135deg, var(--vlc-orange) 0%, var(--secondary) 100%);
@@ -1372,30 +1694,862 @@
             cursor: pointer;
             box-shadow: 0 8px 20px rgba(168, 85, 247, 0.3);
             transition: all 0.3s ease;
-            z-index: 1000;
-            display: none; /* Hidden by default */
-        }
-
-        .floating-settings-btn:hover {
-            transform: translateY(-2px) scale(1.05);
-            box-shadow: 0 12px 30px rgba(168, 85, 247, 0.4);
-            background: linear-gradient(135deg, var(--tertiary) 0%, var(--vlc-orange) 100%);
-        }
-
-        .floating-settings-btn:active {
-            transform: translateY(0) scale(0.95);
-        }
-
-        /* Show floating button only in old UI on home page */
-        body:not(.ui-new) .floating-settings-btn.show-on-home {
             display: flex;
             align-items: center;
             justify-content: center;
         }
 
+        .floating-nav-btn:hover {
+            transform: translateY(-2px) scale(1.05);
+            box-shadow: 0 12px 30px rgba(168, 85, 247, 0.4);
+            background: linear-gradient(135deg, var(--tertiary) 0%, var(--vlc-orange) 100%);
+        }
+
+        .floating-nav-btn:active {
+            transform: translateY(0) scale(0.95);
+        }
+
+        .floating-nav-menu {
+            position: absolute;
+            bottom: 70px;
+            right: 0;
+            background: rgba(42, 24, 71, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 0.5rem 0;
+            min-width: 160px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            opacity: 0;
+            transform: translateY(10px) scale(0.95);
+            pointer-events: none;
+            transition: all 0.3s ease;
+        }
+
+        .floating-nav-container.active .floating-nav-menu {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+            pointer-events: all;
+        }
+
+        .floating-nav-container.active .floating-nav-btn {
+            background: linear-gradient(135deg, #6d28d9, #553c9a);
+        }
+
+        .floating-nav-container.active #floatingNavIcon {
+            transform: rotate(180deg);
+        }
+
+        .floating-nav-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem 1rem;
+            color: #fff;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .floating-nav-item:last-child {
+            border-bottom: none;
+        }
+
+        .floating-nav-item:hover {
+            background: rgba(139, 92, 246, 0.2);
+            color: #c084fc;
+        }
+
+        .floating-nav-item i {
+            width: 16px;
+            text-align: center;
+            opacity: 0.8;
+        }
+
+        .floating-nav-item span {
+            font-weight: 500;
+            font-size: 0.9rem;
+        }
+
+        /* Show floating nav only in old UI on home page */
+        body:not(.ui-new) .floating-nav-container.show-on-home {
+            display: block;
+        }
+
         /* Hide in new UI */
-        body.ui-new .floating-settings-btn {
+        body.ui-new .floating-nav-container {
             display: none !important;
+        }
+
+        /* Books Page Styles */
+        .books-search-section {
+            margin-bottom: 2rem;
+        }
+
+        .books-search-container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .books-search-bar {
+            display: flex;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 16px;
+            padding: 0.5rem;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .books-search-bar:focus-within {
+            border-color: rgba(245, 158, 11, 0.5);
+            box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.15);
+        }
+
+        .books-search-icon {
+            position: absolute;
+            left: 1.25rem;
+            color: #9ca3af;
+            font-size: 1.1rem;
+        }
+
+        #books-search-input {
+            flex: 1;
+            padding: 1rem 1.5rem;
+            padding-left: 3rem;
+            background: transparent;
+            border: none;
+            color: #fff;
+            font-size: 1.1rem;
+            outline: none;
+        }
+
+        #books-search-input::placeholder {
+            color: #9ca3af;
+        }
+
+        .books-search-button {
+            padding: 0.75rem 1.5rem;
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            border: none;
+            border-radius: 12px;
+            color: #fff;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .books-search-button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 8px 25px rgba(245, 158, 11, 0.3);
+        }
+
+        .books-loading {
+            text-align: center;
+            padding: 4rem 2rem;
+            color: #9ca3af;
+        }
+
+        .books-loading-spinner {
+            font-size: 3rem;
+            margin-bottom: 1.5rem;
+            color: #f59e0b;
+        }
+
+        .books-empty {
+            text-align: center;
+            padding: 4rem 2rem;
+            color: #9ca3af;
+        }
+
+        .books-empty-icon {
+            font-size: 4rem;
+            margin-bottom: 2rem;
+            color: #f59e0b;
+        }
+
+        .books-empty h3 {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            color: #fff;
+        }
+
+        .books-results {
+            animation: fadeIn 0.5s ease;
+        }
+
+        .books-results-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .books-results-header h3 {
+            font-size: 1.5rem;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .books-results-count {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            color: #fff;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .books-results-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .books-book-card {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .books-book-card:hover {
+            transform: translateY(-5px);
+            border-color: rgba(245, 158, 11, 0.4);
+            box-shadow: 0 10px 40px rgba(245, 158, 11, 0.15);
+        }
+
+        .books-book-cover {
+            position: relative;
+            width: 100%;
+            height: 200px;
+            overflow: hidden;
+            background: linear-gradient(135deg, #374151, #1f2937);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .books-book-cover img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.3s ease;
+        }
+
+        .books-book-card:hover .books-book-cover img {
+            transform: scale(1.05);
+        }
+
+        .books-book-cover-placeholder {
+            font-size: 3rem;
+            color: #9ca3af;
+        }
+
+        .books-book-format {
+            position: absolute;
+            top: 0.75rem;
+            right: 0.75rem;
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            color: #fff;
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .books-book-info {
+            padding: 1.5rem;
+        }
+
+        .books-book-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 0.5rem;
+            line-height: 1.4;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .books-book-author {
+            color: #9ca3af;
+            font-size: 0.95rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .books-book-year {
+            display: inline-block;
+            background: rgba(245, 158, 11, 0.2);
+            color: #f59e0b;
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+        }
+
+        .books-book-actions {
+            display: flex;
+            gap: 0.75rem;
+        }
+
+        .books-read-btn {
+            flex: 1;
+            padding: 0.75rem;
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            border: none;
+            border-radius: 10px;
+            color: #fff;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .books-read-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 20px rgba(245, 158, 11, 0.3);
+        }
+
+        .books-download-btn {
+            padding: 0.75rem;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 10px;
+            color: #9ca3af;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .books-download-btn:hover {
+            background: rgba(255, 255, 255, 0.12);
+            color: #fff;
+        }
+
+        /* Books Reader Modal */
+        .books-reader-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.98);
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .books-reader-content {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            background: var(--dark);
+            overflow: hidden;
+        }
+
+        .books-reader-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem 2rem;
+            background: var(--primary);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            flex-shrink: 0;
+            min-height: 70px;
+        }
+
+        .books-reader-back-btn {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.25rem;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 10px;
+            color: #fff;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .books-reader-back-btn:hover {
+            background: rgba(255, 255, 255, 0.12);
+            transform: translateX(-2px);
+        }
+
+        .books-reader-title {
+            color: #fff;
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+
+        .books-reader-frame-container {
+            flex: 1;
+            width: 100%;
+            height: calc(100vh - 70px);
+            position: relative;
+            background: #fff;
+            overflow: hidden;
+        }
+
+        .books-reader-frame {
+            width: 100%;
+            height: 100%;
+            border: none;
+            background: #fff;
+            display: block;
+        }
+
+        /* Ensure no body scroll when reader is open */
+        body.books-reader-open {
+            overflow: hidden;
+        }
+
+        /* Server Selection Modal */
+        .server-selection-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.95);
+            z-index: 9998;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+            overflow-x: hidden;
+            scroll-behavior: smooth;
+        }
+
+        .server-selection-content {
+            width: 100%;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            background: var(--dark);
+            overflow: visible;
+        }
+
+        .server-selection-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem 2rem;
+            background: var(--primary);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            flex-shrink: 0;
+            min-height: 70px;
+        }
+
+        .server-selection-back-btn {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.25rem;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 10px;
+            color: #fff;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .server-selection-back-btn:hover {
+            background: rgba(255, 255, 255, 0.12);
+            transform: translateX(-2px);
+        }
+
+        .server-selection-title {
+            color: #fff;
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+
+        .server-selection-body {
+            flex: 1;
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+            max-width: 1000px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        .server-selection-info {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            padding: 1.5rem;
+        }
+
+        .media-info {
+            display: flex;
+            gap: 1.5rem;
+            align-items: flex-start;
+        }
+
+        .media-poster {
+            width: 120px;
+            height: 180px;
+            border-radius: 12px;
+            object-fit: cover;
+            background: linear-gradient(135deg, #374151, #1f2937);
+        }
+
+        .media-details {
+            flex: 1;
+        }
+
+        .media-details h4 {
+            font-size: 1.5rem;
+            color: #fff;
+            margin-bottom: 0.5rem;
+            font-weight: 700;
+        }
+
+        .media-details p {
+            color: #9ca3af;
+            font-size: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .media-meta {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .media-year {
+            background: rgba(168, 85, 247, 0.2);
+            color: #a855f7;
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .media-rating {
+            background: rgba(245, 158, 11, 0.2);
+            color: #f59e0b;
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .server-dropdown-section {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            padding: 2rem;
+        }
+
+        .server-dropdown-label {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: #fff;
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+        }
+
+        .server-dropdown-container {
+            position: relative;
+        }
+
+        .server-dropdown {
+            width: 100%;
+            padding: 1rem 1.5rem;
+            padding-right: 3rem;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 12px;
+            color: #fff;
+            font-size: 1rem;
+            font-weight: 500;
+            appearance: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .server-dropdown option {
+            background: var(--dark);
+            color: #fff;
+            padding: 0.5rem;
+        }
+
+        .server-dropdown:focus {
+            outline: none;
+            border-color: rgba(168, 85, 247, 0.5);
+            box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.15);
+        }
+
+        .server-dropdown option {
+            background: var(--primary);
+            color: #fff;
+            padding: 1rem;
+            font-weight: 500;
+        }
+
+        .server-dropdown-arrow {
+            position: absolute;
+            right: 1.25rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #9ca3af;
+            pointer-events: none;
+            transition: transform 0.3s ease;
+        }
+
+        .server-dropdown:focus + .server-dropdown-arrow {
+            transform: translateY(-50%) rotate(180deg);
+        }
+
+        .server-actions {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .server-watch-btn {
+            flex: 1;
+            padding: 1rem 2rem;
+            background: linear-gradient(135deg, #8b5cf6, #6d28d9);
+            border: none;
+            border-radius: 12px;
+            color: #fff;
+            font-weight: 600;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            min-width: 200px;
+        }
+
+        .server-watch-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(139, 92, 246, 0.3);
+        }
+
+        .server-torrent-btn {
+            padding: 1rem 2rem;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 12px;
+            color: #9ca3af;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            min-width: 180px;
+        }
+
+        .server-torrent-btn:hover {
+            background: rgba(255, 255, 255, 0.12);
+            color: #fff;
+        }
+
+        /* Embedded Video Player Section */
+        .server-video-section {
+            margin-top: 2rem;
+            background: var(--dark);
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .server-video-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 1.5rem;
+            background: var(--dark);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .server-video-header h4 {
+            color: #fff;
+            margin: 0;
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        .server-video-close {
+            background: none;
+            border: none;
+            color: #fff;
+            font-size: 1.2rem;
+            cursor: pointer;
+            padding: 0.5rem;
+            border-radius: 50%;
+            transition: all 0.3s ease;
+        }
+
+        .server-video-close:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: #e50914;
+        }
+
+        .server-video-container {
+            position: relative;
+            width: 100%;
+            height: 400px;
+            background: #000;
+        }
+
+        .server-video-iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        .server-video-controls {
+            padding: 1rem 1.5rem;
+            background: var(--dark);
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+        }
+
+        /* Video Player Modal */
+        .video-player-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.98);
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .video-player-content {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            background: var(--dark);
+            overflow: hidden;
+        }
+
+        .video-player-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1rem 2rem;
+            background: var(--primary);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            flex-shrink: 0;
+            min-height: 70px;
+        }
+
+        .video-player-back-btn {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.25rem;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 10px;
+            color: #fff;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .video-player-back-btn:hover {
+            background: rgba(255, 255, 255, 0.12);
+            transform: translateX(-2px);
+        }
+
+        .video-player-title {
+            color: #fff;
+            font-size: 1.2rem;
+            font-weight: 600;
+            flex: 1;
+            margin: 0 2rem;
+        }
+
+        .video-player-controls {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .video-player-control-btn {
+            padding: 0.75rem;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 8px;
+            color: #fff;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .video-player-control-btn:hover {
+            background: rgba(255, 255, 255, 0.12);
+        }
+
+        .video-player-frame-container {
+            flex: 1;
+            width: 100%;
+            height: calc(100vh - 70px);
+            position: relative;
+            background: #000;
+            overflow: hidden;
+        }
+
+        .video-player-frame {
+            width: 100%;
+            height: 100%;
+            border: none;
+            background: #000;
+            display: block;
+        }
+
+        /* Prevent body scroll when modals are open */
+        body.server-modal-open,
+        body.video-modal-open {
+            overflow: hidden;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
         /* VLC Player Styles */
@@ -3588,6 +4742,22 @@
         </div>
 
         <div class="settings-section" style="margin-top:1.25rem;">
+            <h3>Streaming Mode</h3>
+            <div style="margin-top:0.5rem; padding:1rem; border:1px solid rgba(255,255,255,0.15); border-radius:8px; background: rgba(255,255,255,0.05);">
+                <label style="display:flex; align-items:center; gap:0.6rem; cursor:pointer;">
+                    <input type="checkbox" id="useStreamingServersToggle" />
+                    <span>Use Streaming Servers instead of Torrents</span>
+                </label>
+                <div style="margin-top:0.5rem; color:#10b981; font-size:0.9rem;">
+                    Stream directly from web servers (faster startup, no downloads)
+                </div>
+                <div style="margin-top:0.25rem; color:#9ca3af; font-size:0.85rem;">
+                    When enabled, movies/shows will stream from online servers instead of torrent files
+                </div>
+            </div>
+        </div>
+
+        <div class="settings-section" style="margin-top:1.25rem;">
             <h3>Cache & Storage</h3>
             <div style="margin-top:0.5rem; padding:1rem; border:1px solid rgba(255,255,255,0.15); border-radius:8px; background: rgba(255,255,255,0.05);">
                 <div class="api-input-group">
@@ -3859,10 +5029,38 @@
     </div>
 </div>
 
-<!-- Floating Settings Button (Old UI Only, Home Page Only) -->
-<button class="floating-settings-btn" id="floatingSettingsBtn">
-    <i class="fas fa-cog"></i>
-</button>
+<!-- Floating Navigation Arrow (Old UI Only, Home Page Only) -->
+<div class="floating-nav-container" id="floatingNavContainer">
+    <button class="floating-nav-btn" id="floatingNavBtn">
+        <i class="fas fa-chevron-up" id="floatingNavIcon"></i>
+    </button>
+    <div class="floating-nav-menu" id="floatingNavMenu">
+        <div class="floating-nav-item" data-action="settings">
+            <i class="fas fa-cog"></i>
+            <span>Settings</span>
+        </div>
+        <div class="floating-nav-item" data-action="livetv">
+            <i class="fas fa-broadcast-tower"></i>
+            <span>Live TV</span>
+        </div>
+        <div class="floating-nav-item" data-action="iptv">
+            <i class="fas fa-tv"></i>
+            <span>IPTV</span>
+        </div>
+        <div class="floating-nav-item" data-action="books">
+            <i class="fas fa-book"></i>
+            <span>Books</span>
+        </div>
+        <div class="floating-nav-item" data-action="downloader">
+            <i class="fas fa-download"></i>
+            <span>Downloader</span>
+        </div>
+        <div class="floating-nav-item" data-action="trakt">
+            <i class="fab fa-trakt"></i>
+            <span>Trakt</span>
+        </div>
+    </div>
+</div>
 
 <!-- MPV Install Helper Modal removed -->
 
@@ -3902,6 +5100,21 @@
                 <i class="fas fa-tv" style="color: #ed1c24;"></i>
                 <span>Trakt</span>
                 <span class="nav-badge" style="background: #ed1c24;">Sync</span>
+            </div>
+            <div class="nav-item" data-page="livetv">
+                <i class="fas fa-broadcast-tower" style="color: #10b981;"></i>
+                <span>Live TV</span>
+                <span class="nav-badge" style="background: linear-gradient(135deg, #10b981, #059669);">Live</span>
+            </div>
+            <div class="nav-item" data-page="iptv">
+                <i class="fas fa-tv" style="color: #3b82f6;"></i>
+                <span>IPTV</span>
+                <span class="nav-badge" style="background: linear-gradient(135deg, #3b82f6, #2563eb);">M3U8</span>
+            </div>
+            <div class="nav-item" data-page="books">
+                <i class="fas fa-book" style="color: #f59e0b;"></i>
+                <span>Books</span>
+                <span class="nav-badge" style="background: linear-gradient(135deg, #f59e0b, #d97706);">Z-Lib</span>
             </div>
             <div class="nav-item" data-page="downloader">
                 <i class="fas fa-download" style="color: #a855f7;"></i>
@@ -4310,6 +5523,243 @@
         </div>
     </div>
 
+    <!-- Live TV Page -->
+    <div id="livetv-page" style="display: none;">
+        <div class="page-header-enhanced">
+            <div class="page-title-section">
+                <h2 class="section-title">
+                    <i class="fas fa-broadcast-tower" style="color: #10b981;"></i> <span>Live TV</span>
+                </h2>
+                <p class="page-subtitle">Watch live sports from around the world</p>
+            </div>
+        </div>
+
+        <div class="trakt-container">
+            <!-- Category Selector -->
+            <div class="trakt-card">
+                <div class="trakt-card-body">
+                    <div class="livetv-category-section">
+                        <label for="livetv-category-select" class="livetv-category-label">
+                            <i class="fas fa-filter"></i> Category
+                        </label>
+                        <select id="livetv-category-select" class="livetv-category-dropdown">
+                            <option value="football">⚽ Football</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Matches Grid -->
+            <div class="trakt-card">
+                <div class="trakt-card-body">
+                    <div id="livetv-grid" class="livetv-matches-grid"></div>
+                    <div id="livetv-empty" class="livetv-empty" style="display: none;">
+                        <i class="fas fa-tv" style="font-size: 3em; opacity: 0.3;"></i>
+                        <p>No matches available for this category</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Streams List Modal -->
+        <div id="livetv-streams-modal" class="livetv-streams-modal" style="display: none;">
+            <div class="livetv-streams-content">
+                <div class="livetv-streams-header">
+                    <h3 id="livetv-streams-title"></h3>
+                    <button id="livetv-streams-close" class="livetv-close-btn">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div id="livetv-streams-list" class="livetv-streams-list"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- IPTV Page -->
+    <div id="iptv-page" style="display: none;">
+        <div class="page-header-enhanced">
+            <div class="page-title-section">
+                <h2 class="section-title">
+                    <i class="fas fa-tv" style="color: #3b82f6;"></i> <span>IPTV</span>
+                </h2>
+                <p class="page-subtitle">Watch live TV channels from around the world</p>
+            </div>
+        </div>
+
+        <div class="page-content" style="padding: 0; height: calc(100vh - 140px);">
+            <iframe 
+                id="iptv-iframe" 
+                src="https://taupe-florentine-9c4193.netlify.app/routes/countries.html" 
+                style="width: 100%; height: 100%; border: none; border-radius: 8px;"
+                allowfullscreen>
+            </iframe>
+        </div>
+    </div>
+
+    <!-- Books Page -->
+    <div id="books-page" style="display: none;">
+        <div class="page-header-enhanced">
+            <div class="page-title-section">
+                <h2 class="section-title">
+                    <i class="fas fa-book" style="color: #f59e0b;"></i> <span>Books</span>
+                </h2>
+                <p class="page-subtitle">Search and read books from Z-Library</p>
+            </div>
+        </div>
+
+        <div class="page-content">
+            <!-- Search Section -->
+            <div class="books-search-section">
+                <div class="books-search-container">
+                    <div class="books-search-bar">
+                        <i class="fas fa-search books-search-icon"></i>
+                        <input 
+                            type="text" 
+                            id="books-search-input" 
+                            placeholder="Search for books, authors, or titles..."
+                            autocomplete="off"
+                        />
+                        <button id="books-search-btn" class="books-search-button">
+                            <i class="fas fa-search"></i>
+                            Search
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Loading State -->
+            <div id="books-loading" class="books-loading" style="display: none;">
+                <div class="books-loading-spinner">
+                    <i class="fas fa-spinner fa-spin"></i>
+                </div>
+                <p>Searching Z-Library...</p>
+            </div>
+
+            <!-- Empty State -->
+            <div id="books-empty" class="books-empty">
+                <div class="books-empty-icon">
+                    <i class="fas fa-book-open"></i>
+                </div>
+                <h3>Welcome to Z-Library Search</h3>
+                <p>Search for any book, author, or topic to get started.</p>
+            </div>
+
+            <!-- Results Section -->
+            <div id="books-results" class="books-results" style="display: none;">
+                <div class="books-results-header">
+                    <h3 id="books-results-title">Search Results</h3>
+                    <div id="books-results-count" class="books-results-count"></div>
+                </div>
+                <div id="books-results-grid" class="books-results-grid">
+                    <!-- Results will be populated here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Books Reader Modal -->
+    <div id="books-reader-modal" class="books-reader-modal" style="display: none;">
+        <div class="books-reader-content">
+            <div class="books-reader-header">
+                <button id="books-reader-back" class="books-reader-back-btn">
+                    <i class="fas fa-arrow-left"></i>
+                    Back
+                </button>
+                <h3 id="books-reader-title">Reading...</h3>
+            </div>
+            <div class="books-reader-frame-container">
+                <iframe id="books-reader-frame" class="books-reader-frame"></iframe>
+            </div>
+        </div>
+    </div>
+
+    <!-- Server Selection Modal -->
+    <div id="server-selection-modal" class="server-selection-modal" style="display: none;">
+        <div class="server-selection-content">
+            <div class="server-selection-header">
+                <button id="server-selection-back" class="server-selection-back-btn">
+                    <i class="fas fa-arrow-left"></i>
+                    Back
+                </button>
+                <h3 id="server-selection-title">Select Streaming Server</h3>
+            </div>
+            <div class="server-selection-body">
+                <div class="server-selection-info">
+                    <div class="media-info">
+                        <img id="server-media-poster" class="media-poster" src="" alt="Media Poster">
+                        <div class="media-details">
+                            <h4 id="server-media-title">Movie/Show Title</h4>
+                            <p id="server-media-subtitle">Episode details</p>
+                            <div class="media-meta">
+                                <span id="server-media-year" class="media-year"></span>
+                                <span id="server-media-rating" class="media-rating"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="server-dropdown-section">
+                    <label for="server-dropdown" class="server-dropdown-label">
+                        <i class="fas fa-server"></i>
+                        Choose Streaming Server:
+                    </label>
+                    <div class="server-dropdown-container">
+                        <select id="server-dropdown" class="server-dropdown">
+                            <!-- Options will be populated by JavaScript -->
+                        </select>
+                        <i class="fas fa-chevron-down server-dropdown-arrow"></i>
+                    </div>
+                </div>
+                <div class="server-actions">
+                    <button id="server-watch-btn" class="server-watch-btn">
+                        <i class="fas fa-play"></i>
+                        Start Watching
+                    </button>
+                    <button id="server-torrent-btn" class="server-torrent-btn">
+                        <i class="fas fa-download"></i>
+                        Use Torrent Instead
+                    </button>
+                </div>
+                
+                <!-- Embedded Video Player Section -->
+                <div id="server-video-section" class="server-video-section" style="display: none;">
+                    <div class="server-video-header">
+                        <h4 id="server-video-title">Now Playing</h4>
+                        <button id="server-video-close" class="server-video-close">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div class="server-video-container">
+                        <iframe id="server-video-frame" class="server-video-iframe" 
+                                src="" 
+                                allowfullscreen>
+                        </iframe>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Video Player Modal -->
+    <div id="video-player-modal" class="video-player-modal" style="display: none;">
+        <div class="video-player-content">
+            <div class="video-player-header">
+                <button id="video-player-back" class="video-player-back-btn">
+                    <i class="fas fa-arrow-left"></i>
+                    Back to Servers
+                </button>
+                <h3 id="video-player-title">Now Playing</h3>
+                <div class="video-player-controls">
+                    <button id="video-player-fullscreen" class="video-player-control-btn">
+                        <i class="fas fa-expand"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="video-player-frame-container">
+                <iframe id="video-player-frame" class="video-player-frame"></iframe>
+            </div>
+        </div>
+    </div>
+
     <!-- Downloader Page -->
     <div id="downloader-page" style="display: none;">
         <div class="page-header-enhanced">
@@ -4693,6 +6143,12 @@ Your browser does not support the video tag.
         // API configuration
         const TMDB_API_KEY = 'b3556f3b206e16f82df4d1f6fd4545e6';
         const API_BASE_URL = 'http://localhost:3000/api';
+        
+        // Streaming Settings (Global)
+        let useStreamingServers = localStorage.getItem('useStreamingServers') === 'true';
+        let selectedServer = localStorage.getItem('selectedServer') || 'Videasy';
+        
+        console.log('[DEBUG] JavaScript loaded, useStreamingServers:', useStreamingServers);
         
         // DOM elements - Home
         const moviesGrid = document.getElementById('moviesGrid');
@@ -6750,9 +8206,285 @@ Your browser does not support the video tag.
             window.location.hash = '#/trakt';
         }
         
+        function showLiveTvPage() {
+            window.location.hash = '#/livetv';
+        }
+        
+        function showIptvPage() {
+            window.location.hash = '#/iptv';
+        }
+        
+        function reloadIptvPage() {
+            const iptvIframe = document.getElementById('iptv-iframe');
+            if (iptvIframe) {
+                // Store the original src
+                const originalSrc = 'https://taupe-florentine-9c4193.netlify.app/routes/countries.html';
+                // Clear the src first to force a complete reload
+                iptvIframe.src = 'about:blank';
+                // Use a timeout to ensure the blank page loads before setting the new src
+                setTimeout(() => {
+                    iptvIframe.src = originalSrc;
+                    // Auto-scroll the IPTV page itself (not the iframe content) to show the iframe
+                    setTimeout(() => {
+                        const iptvPageEl = document.getElementById('iptv-page');
+                        if (iptvPageEl) {
+                            // Scroll the main page to focus on the iframe area
+                            iptvIframe.scrollIntoView({ 
+                                behavior: 'smooth',
+                                block: 'start'
+                            });
+                            console.log('[IPTV] Auto-scrolled IPTV page to show iframe');
+                        }
+                    }, 300); // Quick scroll after iframe starts loading
+                }, 100);
+                console.log('[IPTV] Page reloaded fresh');
+            }
+        }
+        
+        function clearIptvPage() {
+            const iptvIframe = document.getElementById('iptv-iframe');
+            if (iptvIframe) {
+                // Clear the iframe to stop any ongoing streams
+                iptvIframe.src = 'about:blank';
+                console.log('[IPTV] Page cleared - stopping all streams');
+            }
+        }
+        
+        function showBooksPage() {
+            window.location.hash = '#/books';
+        }
+        
         function showDownloaderPage() {
             window.location.hash = '#/downloader';
         }
+        
+        // Live TV Functionality
+        let liveTvMatches = [];
+        let liveTvCategories = [];
+        
+        async function initLiveTv() {
+            const categorySelect = document.getElementById('livetv-category-select');
+            const grid = document.getElementById('livetv-grid');
+            const empty = document.getElementById('livetv-empty');
+            
+            if (!categorySelect) return;
+            
+            try {
+                // Show loading
+                if (empty) {
+                    empty.style.display = '';
+                    empty.innerHTML = '<div class="livetv-loading"><i class="fas fa-spinner"></i><p>Loading matches...</p></div>';
+                }
+                if (grid) grid.innerHTML = '';
+                
+                // Fetch matches
+                const response = await fetch('https://streamed.pk/api/matches/all');
+                liveTvMatches = await response.json();
+                
+                // Extract unique categories
+                const categoriesSet = new Set();
+                liveTvMatches.forEach(match => {
+                    if (match.category) categoriesSet.add(match.category.toLowerCase());
+                });
+                liveTvCategories = Array.from(categoriesSet).sort();
+                
+                // Populate dropdown
+                categorySelect.innerHTML = '';
+                liveTvCategories.forEach(cat => {
+                    const option = document.createElement('option');
+                    option.value = cat;
+                    const icons = {
+                        'football': '⚽',
+                        'tennis': '🎾',
+                        'basketball': '🏀',
+                        'hockey': '🏒',
+                        'baseball': '⚾',
+                        'rugby': '🏉',
+                        'cricket': '🏏',
+                        'other': '📺'
+                    };
+                    const icon = icons[cat] || '📺';
+                    option.textContent = `${icon} ${cat.charAt(0).toUpperCase() + cat.slice(1)}`;
+                    categorySelect.appendChild(option);
+                });
+                
+                // Set default to football if available
+                if (liveTvCategories.includes('football')) {
+                    categorySelect.value = 'football';
+                }
+                
+                // Load matches for default category
+                loadLiveTvMatches(categorySelect.value);
+            } catch (error) {
+                console.error('Error loading Live TV:', error);
+                if (empty) {
+                    empty.style.display = '';
+                    empty.innerHTML = '<i class="fas fa-exclamation-triangle" style="font-size: 3em; opacity: 0.3; color: #ef4444;"></i><p>Failed to load matches. Please try again.</p>';
+                }
+            }
+        }
+        
+        function loadLiveTvMatches(category) {
+            const grid = document.getElementById('livetv-grid');
+            const empty = document.getElementById('livetv-empty');
+            
+            if (!grid || !empty) return;
+            
+            // Filter matches by category
+            const filtered = liveTvMatches.filter(m => m.category && m.category.toLowerCase() === category.toLowerCase());
+            
+            if (filtered.length === 0) {
+                grid.innerHTML = '';
+                empty.style.display = '';
+                empty.innerHTML = `<i class="fas fa-tv" style="font-size: 3em; opacity: 0.3;"></i><p>No matches available for ${category}</p>`;
+                return;
+            }
+            
+            empty.style.display = 'none';
+            grid.innerHTML = '';
+            
+            // Render match cards
+            filtered.forEach(match => {
+                const card = document.createElement('div');
+                card.className = 'livetv-match-card';
+                
+                const posterUrl = match.poster ? `https://streamed.pk${match.poster}` : '';
+                const posterHTML = posterUrl 
+                    ? `<img src="${posterUrl}" alt="${match.title}" class="livetv-poster" onerror="this.parentElement.querySelector('.livetv-poster-placeholder').style.display='flex'; this.style.display='none';">
+                       <div class="livetv-poster-placeholder" style="display:none;"><i class="fas fa-play-circle"></i></div>`
+                    : `<div class="livetv-poster-placeholder"><i class="fas fa-play-circle"></i></div>`;
+                
+                card.innerHTML = `
+                    ${posterHTML}
+                    <div class="livetv-match-info">
+                        <h4 class="livetv-match-title">${match.title}</h4>
+                        <span class="livetv-match-category">${match.category}</span>
+                        <button class="livetv-watch-btn">
+                            <i class="fas fa-play"></i> Watch Now
+                        </button>
+                    </div>
+                `;
+                
+                const watchBtn = card.querySelector('.livetv-watch-btn');
+                watchBtn.addEventListener('click', () => openStreamsModal(match));
+                
+                grid.appendChild(card);
+            });
+        }
+        
+        async function openStreamsModal(match) {
+            const modal = document.getElementById('livetv-streams-modal');
+            const title = document.getElementById('livetv-streams-title');
+            const list = document.getElementById('livetv-streams-list');
+            
+            if (!modal || !title || !list) return;
+            
+            title.textContent = match.title;
+            list.innerHTML = '<div class="livetv-loading"><i class="fas fa-spinner"></i><p>Loading streams...</p></div>';
+            modal.style.display = 'flex';
+            
+            try {
+                const allStreams = [];
+                
+                // Fetch streams from all sources
+                if (match.sources && Array.isArray(match.sources)) {
+                    for (const source of match.sources) {
+                        try {
+                            const response = await fetch(`https://streamed.pk/api/stream/${source.source}/${source.id}`);
+                            const streams = await response.json();
+                            
+                            if (Array.isArray(streams)) {
+                                streams.forEach(stream => {
+                                    allStreams.push({
+                                        ...stream,
+                                        sourceName: source.source
+                                    });
+                                });
+                            }
+                        } catch (err) {
+                            console.warn(`Failed to fetch streams from ${source.source}:`, err);
+                        }
+                    }
+                }
+                
+                if (allStreams.length === 0) {
+                    list.innerHTML = '<div class="livetv-empty"><p>No streams available for this match</p></div>';
+                    return;
+                }
+                
+                // Render streams
+                list.innerHTML = '';
+                allStreams.forEach((stream, index) => {
+                    const streamItem = document.createElement('div');
+                    streamItem.className = 'livetv-stream-item';
+                    
+                    const language = stream.language || 'Unknown';
+                    const viewers = stream.viewers || 0;
+                    const hdBadge = stream.hd ? '<span class="livetv-stream-badge hd">HD</span>' : '';
+                    
+                    streamItem.innerHTML = `
+                        <div class="livetv-stream-info">
+                            <div class="livetv-stream-source">
+                                <i class="fas fa-broadcast-tower"></i> ${stream.sourceName.toUpperCase()} - Stream ${stream.streamNo || index + 1}
+                            </div>
+                            <div class="livetv-stream-details">
+                                ${hdBadge}
+                                <span class="livetv-stream-badge language">
+                                    <i class="fas fa-language"></i> ${language}
+                                </span>
+                                <span class="livetv-stream-badge viewers">
+                                    <i class="fas fa-users"></i> ${viewers} viewers
+                                </span>
+                            </div>
+                        </div>
+                        <div class="livetv-stream-actions">
+                            <button class="livetv-copy-link-btn">
+                                <i class="fas fa-copy"></i> Copy Link
+                            </button>
+                            <button class="livetv-open-browser-btn">
+                                <i class="fas fa-external-link-alt"></i> Open in Browser
+                            </button>
+                        </div>
+                    `;
+                    
+                    const copyBtn = streamItem.querySelector('.livetv-copy-link-btn');
+                    copyBtn.addEventListener('click', async (e) => {
+                        e.stopPropagation();
+                        try {
+                            await navigator.clipboard.writeText(stream.embedUrl);
+                            const originalHTML = copyBtn.innerHTML;
+                            copyBtn.innerHTML = '<i class="fas fa-check"></i> Copied!';
+                            copyBtn.style.background = 'linear-gradient(135deg, #10b981, #059669)';
+                            
+                            setTimeout(() => {
+                                copyBtn.innerHTML = originalHTML;
+                                copyBtn.style.background = '';
+                            }, 2000);
+                        } catch (err) {
+                            console.error('Failed to copy:', err);
+                        }
+                    });
+                    
+                    const openBtn = streamItem.querySelector('.livetv-open-browser-btn');
+                    openBtn.addEventListener('click', async (e) => {
+                        e.stopPropagation();
+                        try {
+                            // Use Electron's shell.openExternal to open in default browser
+                            await window.electronAPI.openExternal(stream.embedUrl);
+                        } catch (err) {
+                            console.error('Failed to open in browser:', err);
+                        }
+                    });
+                    
+                    list.appendChild(streamItem);
+                });
+            } catch (error) {
+                console.error('Error loading streams:', error);
+                list.innerHTML = '<div class="livetv-empty"><p>Failed to load streams. Please try again.</p></div>';
+            }
+        }
+        
+
         
     function setupEventListeners() {
             // Initialize Video.js player
@@ -7294,7 +9026,14 @@ Your browser does not support the video tag.
             closeCustomPlayer.addEventListener('click', closeCustomPlayer_);
             
             // Watch now button
-            watchNowBtn.addEventListener('click', (e) => showTorrents(e));
+            watchNowBtn.addEventListener('click', (e) => {
+                console.log('[DEBUG] Watch button clicked!');
+                try {
+                    showTorrents(e);
+                } catch (error) {
+                    console.error('[DEBUG] Error in showTorrents:', error);
+                }
+            });
             
             // Refresh torrents
             refreshTorrents.addEventListener('click', () => fetchTorrents());
@@ -7679,6 +9418,12 @@ Your browser does not support the video tag.
                         showDoneWatchingPage();
                     } else if (page === 'trakt') {
                         showTraktPage();
+                    } else if (page === 'livetv') {
+                        showLiveTvPage();
+                    } else if (page === 'iptv') {
+                        showIptvPage();
+                    } else if (page === 'books') {
+                        showBooksPage();
                     } else if (page === 'downloader') {
                         showDownloaderPage();
                     }
@@ -7700,11 +9445,932 @@ Your browser does not support the video tag.
                 sidebarSettings.addEventListener('click', showSettingsModal);
             }
 
-            // Floating settings button (Old UI)
-            const floatingSettingsBtn = document.getElementById('floatingSettingsBtn');
-            if (floatingSettingsBtn) {
-                floatingSettingsBtn.addEventListener('click', showSettingsModal);
+            // Floating navigation (Old UI)
+            const floatingNavContainer = document.getElementById('floatingNavContainer');
+            const floatingNavBtn = document.getElementById('floatingNavBtn');
+            const floatingNavMenu = document.getElementById('floatingNavMenu');
+            
+            if (floatingNavBtn) {
+                floatingNavBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    floatingNavContainer.classList.toggle('active');
+                });
             }
+
+            // Handle floating nav menu item clicks
+            if (floatingNavMenu) {
+                floatingNavMenu.addEventListener('click', (e) => {
+                    const item = e.target.closest('.floating-nav-item');
+                    if (item) {
+                        const action = item.getAttribute('data-action');
+                        floatingNavContainer.classList.remove('active');
+                        
+                        switch (action) {
+                            case 'settings':
+                                showSettingsModal();
+                                break;
+                            case 'livetv':
+                                showLiveTvPage();
+                                break;
+                            case 'iptv':
+                                showIptvPage();
+                                break;
+                            case 'books':
+                                showBooksPage();
+                                break;
+                            case 'downloader':
+                                showDownloaderPage();
+                                break;
+                            case 'trakt':
+                                showTraktPage();
+                                break;
+                        }
+                    }
+                });
+            }
+
+            // Close floating nav when clicking outside
+            document.addEventListener('click', (e) => {
+                if (floatingNavContainer && !floatingNavContainer.contains(e.target)) {
+                    floatingNavContainer.classList.remove('active');
+                }
+            });
+
+            // Books Functionality
+            let booksSearchResults = [];
+            
+            // Books search input and button
+            const booksSearchInput = document.getElementById('books-search-input');
+            const booksSearchBtn = document.getElementById('books-search-btn');
+            const booksLoading = document.getElementById('books-loading');
+            const booksEmpty = document.getElementById('books-empty');
+            const booksResults = document.getElementById('books-results');
+            const booksResultsGrid = document.getElementById('books-results-grid');
+            const booksResultsTitle = document.getElementById('books-results-title');
+            const booksResultsCount = document.getElementById('books-results-count');
+            
+            // Books reader modal
+            const booksReaderModal = document.getElementById('books-reader-modal');
+            const booksReaderBack = document.getElementById('books-reader-back');
+            const booksReaderTitle = document.getElementById('books-reader-title');
+            const booksReaderFrame = document.getElementById('books-reader-frame');
+            
+            // Search functionality
+            async function searchBooks(query) {
+                if (!query || query.trim().length === 0) {
+                    showNotification('Please enter a search term', 'warning');
+                    return;
+                }
+                
+                const searchTerm = query.trim();
+                console.log('[BOOKS] Searching for:', searchTerm);
+                
+                // Show loading state
+                booksEmpty.style.display = 'none';
+                booksResults.style.display = 'none';
+                booksLoading.style.display = 'block';
+                
+                try {
+                    const encodedQuery = encodeURIComponent(searchTerm);
+                    const response = await fetch(`http://localhost:3004/search/${encodedQuery}`);
+                    const data = await response.json();
+                    
+                    console.log('[BOOKS] Search results:', data);
+                    
+                    booksLoading.style.display = 'none';
+                    
+                    if (data.results && data.results.length > 0) {
+                        booksSearchResults = data.results;
+                        displayBooksResults(data.results, searchTerm);
+                        showNotification(`Found ${data.results.length} books`, 'success');
+                    } else {
+                        booksResults.style.display = 'none';
+                        booksEmpty.style.display = 'block';
+                        booksEmpty.innerHTML = `
+                            <div class="books-empty-icon">
+                                <i class="fas fa-search"></i>
+                            </div>
+                            <h3>No Books Found</h3>
+                            <p>No results found for "${searchTerm}". Try a different search term.</p>
+                        `;
+                        showNotification('No books found for your search', 'info');
+                    }
+                } catch (error) {
+                    console.error('[BOOKS] Search error:', error);
+                    booksLoading.style.display = 'none';
+                    booksResults.style.display = 'none';
+                    booksEmpty.style.display = 'block';
+                    booksEmpty.innerHTML = `
+                        <div class="books-empty-icon">
+                            <i class="fas fa-exclamation-triangle"></i>
+                        </div>
+                        <h3>Search Error</h3>
+                        <p>Failed to search books. Please check your connection and try again.</p>
+                    `;
+                    showNotification('Failed to search books', 'error');
+                }
+            }
+            
+            function displayBooksResults(books, query) {
+                booksResultsTitle.textContent = `Search Results for "${query}"`;
+                booksResultsCount.textContent = `${books.length} book${books.length !== 1 ? 's' : ''} found`;
+                
+                booksResultsGrid.innerHTML = '';
+                
+                books.forEach(book => {
+                    const bookCard = document.createElement('div');
+                    bookCard.className = 'books-book-card';
+                    
+                    bookCard.innerHTML = `
+                        <div class="books-book-cover">
+                            <img src="${book.photo}" alt="${book.title}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                            <div class="books-book-cover-placeholder" style="display: none;">
+                                <i class="fas fa-book"></i>
+                            </div>
+                            <div class="books-book-format">${book.format}</div>
+                        </div>
+                        <div class="books-book-info">
+                            <h3 class="books-book-title">${book.title}</h3>
+                            <p class="books-book-author">by ${book.author}</p>
+                            ${book.year ? `<span class="books-book-year">${book.year}</span>` : ''}
+                            <div class="books-book-actions">
+                                <button class="books-read-btn" data-read-link="${book.readLink}" data-title="${book.title}">
+                                    <i class="fas fa-book-open"></i>
+                                    Read Now
+                                </button>
+                                <button class="books-download-btn" data-book-url="${book.bookUrl}" title="View on Z-Library">
+                                    <i class="fas fa-external-link-alt"></i>
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                    
+                    booksResultsGrid.appendChild(bookCard);
+                });
+                
+                // Add event listeners to Read Now buttons
+                const readButtons = booksResultsGrid.querySelectorAll('.books-read-btn');
+                readButtons.forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const readLink = e.currentTarget.getAttribute('data-read-link');
+                        const title = e.currentTarget.getAttribute('data-title');
+                        openBookReader(readLink, title);
+                    });
+                });
+                
+                // Add event listeners to download buttons
+                const downloadButtons = booksResultsGrid.querySelectorAll('.books-download-btn');
+                downloadButtons.forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const bookUrl = e.currentTarget.getAttribute('data-book-url');
+                        if (bookUrl) {
+                            window.electronAPI.openExternal(bookUrl);
+                        }
+                    });
+                });
+                
+                booksEmpty.style.display = 'none';
+                booksResults.style.display = 'block';
+            }
+            
+            function openBookReader(readLink, title) {
+                console.log('[BOOKS] Opening reader for:', title, readLink);
+                booksReaderTitle.textContent = title;
+                booksReaderFrame.src = readLink;
+                booksReaderModal.style.display = 'flex';
+                document.body.classList.add('books-reader-open');
+            }
+            
+            function closeBooksReader() {
+                booksReaderModal.style.display = 'none';
+                booksReaderFrame.src = '';
+                document.body.classList.remove('books-reader-open');
+            }
+            
+            // Event listeners for books
+            if (booksSearchBtn) {
+                booksSearchBtn.addEventListener('click', () => {
+                    const query = booksSearchInput.value;
+                    searchBooks(query);
+                });
+            }
+            
+            if (booksSearchInput) {
+                booksSearchInput.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') {
+                        const query = booksSearchInput.value;
+                        searchBooks(query);
+                    }
+                });
+            }
+            
+            if (booksReaderBack) {
+                booksReaderBack.addEventListener('click', closeBooksReader);
+            }
+            
+            // Close reader modal when clicking outside
+            booksReaderModal?.addEventListener('click', (e) => {
+                if (e.target === booksReaderModal) {
+                    closeBooksReader();
+                }
+            });
+
+            // Streaming Server Configuration
+            const serverConfig = [
+                {
+                    name: 'Videasy',
+                    getUrl: (type, id, season, episode) =>
+                        type === 'movie'
+                            ? `https://player.videasy.net/movie/${id}`
+                            : `https://player.videasy.net/tv/${id}/${season}/${episode}`
+                },
+                {
+                    name: 'VidRock',
+                    getUrl: (type, id, season, episode) =>
+                        type === 'movie'
+                            ? `https://vidrock.net/movie/${id}`
+                            : `https://vidrock.net/tv/${id}/${season}/${episode}`
+                },
+                {
+                    name: 'HexaWatch',
+                    getUrl: (type, id, season, episode) =>
+                        type === 'movie'
+                            ? `https://hexa.watch/watch/movie/${id}`
+                            : `https://hexa.watch/watch/tv/${id}/${season}/${episode}`
+                },
+                {
+                    name: 'FMovies',
+                    getUrl: (type, id, season, episode) =>
+                        type === 'movie'
+                            ? `https://www.fmovies.gd/watch/movie/${id}`
+                            : `https://www.fmovies.gd/watch/tv/${id}/${season}/${episode}`
+                },
+                {
+                    name: 'Xprime',
+                    getUrl: (type, id, season, episode) =>
+                        type === 'movie'
+                            ? `https://xprime.tv/watch/${id}`
+                            : `https://xprime.tv/watch/${id}/${season}/${episode}`
+                },
+                {
+                    name: 'Vidnest',
+                    getUrl: (type, id, season, episode) =>
+                        type === 'movie'
+                            ? `https://vidnest.fun/movie/${id}`
+                            : `https://vidnest.fun/tv/${id}/${season}/${episode}`
+                },
+                {
+                    name: 'veloratv',
+                    getUrl: (type, id, season, episode) =>
+                        type === 'movie'
+                            ? `https://veloratv.ru/watch/movie/${id}`
+                            : `https://veloratv.ru/watch/tv/${id}/${season}/${episode}`
+                },
+                {
+                    name: 'Vidfast',
+                    getUrl: (type, id, season, episode) =>
+                        type === 'movie'
+                            ? `https://vidfast.pro/movie/${id}`
+                            : `https://vidfast.pro/tv/${id}/${season}/${episode}`
+                },
+                {
+                    name: '111Movies',
+                    getUrl: (type, id, season, episode) =>
+                        type === 'movie'
+                            ? `https://111movies.com/movie/${id}`
+                            : `https://111movies.com/tv/${id}/${season}/${episode}`
+                },
+                {
+                    name: 'VidJoy',
+                    getUrl: (type, id, season, episode) =>
+                        type === 'movie'
+                            ? `https://vidjoy.pro/embed/movie/${id}`
+                            : `https://vidjoy.pro/embed/tv/${id}/${season}/${episode}`
+                },
+                {
+                    name: 'MovieClub',
+                    getUrl: (type, id, season, episode) =>
+                        type === 'movie'
+                            ? `https://moviesapi.club/movie/${id}`
+                            : `https://moviesapi.club/tv/${id}-${season}-${episode}`
+                },
+                {
+                    name: 'MapleTV',
+                    getUrl: (type, id, season, episode) =>
+                        type === 'movie'
+                            ? `https://mappletv.uk/watch/movie/${id}`
+                            : `https://mappletv.uk/watch/tv/${id}-${season}-${episode}`
+                },
+                {
+                    name: 'VidSrc PRO',
+                    getUrl: (type, id, season, episode) =>
+                        type === 'movie'
+                            ? `https://vidsrc.pro/embed/movie/${id}`
+                            : `https://vidsrc.pro/embed/tv/${id}/${season}/${episode}`
+                },
+                {
+                    name: '2Embed',
+                    getUrl: (type, id, season, episode) =>
+                        type === 'movie'
+                            ? `https://2embed.cc/embed/${id}`
+                            : `https://2embed.cc/embed/tv/${id}&s=${season}&e=${episode}`
+                },
+                {
+                    name: 'SuperEmbed',
+                    getUrl: (type, id, season, episode) =>
+                        `https://multiembed.mov/?video_id=${id}&tmdb=1&media_type=${type}${type === 'tv' ? `&season=${season}&episode=${episode}` : ''}`
+                },
+                {
+                    name: 'SmashyStream',
+                    getUrl: (type, id, season, episode) =>
+                        `https://embed.smashystream.com/playere.php?tmdb=${id}${type === 'tv' ? `&season=${season}&episode=${episode}` : ''}`
+                },
+                {
+                    name: 'Autoembed',
+                    getUrl: (type, id, season, episode) =>
+                        type === 'movie'
+                            ? `https://player.autoembed.cc/embed/movie/${id}`
+                            : `https://player.autoembed.cc/embed/tv/${id}/${season}/${episode}`
+                },
+                {
+                    name: 'GoDrivePlayer',
+                    getUrl: (type, id, season, episode) =>
+                        type === 'movie'
+                            ? `https://godriveplayer.com/player.php?imdb=${id}`
+                            : `https://godriveplayer.com/player.php?type=tv&tmdb=${id}&season=${season}&episode=${episode}`
+                },
+                {
+                    name: 'VidWTF Premium',
+                    getUrl: (type, id, season, episode) =>
+                        type === 'movie'
+                            ? `https://vidsrc.wtf/api/4/movie/?id=${id}&color=e01621`
+                            : `https://vidsrc.wtf/api/4/tv/?id=${id}&s=${season}&e=${episode}&color=e01621`
+                }
+            ];
+
+            // Server Selection Modal Elements
+            const serverSelectionModal = document.getElementById('server-selection-modal');
+            const serverSelectionBack = document.getElementById('server-selection-back');
+            const serverSelectionTitle = document.getElementById('server-selection-title');
+            const serverMediaPoster = document.getElementById('server-media-poster');
+            const serverMediaTitle = document.getElementById('server-media-title');
+            const serverMediaSubtitle = document.getElementById('server-media-subtitle');
+            const serverMediaYear = document.getElementById('server-media-year');
+            const serverMediaRating = document.getElementById('server-media-rating');
+            const serverDropdown = document.getElementById('server-dropdown');
+            const serverWatchBtn = document.getElementById('server-watch-btn');
+            const serverTorrentBtn = document.getElementById('server-torrent-btn');
+
+            // Video Player Modal Elements
+            const videoPlayerModal = document.getElementById('video-player-modal');
+            const videoPlayerBack = document.getElementById('video-player-back');
+            const videoPlayerTitle = document.getElementById('video-player-title');
+            const videoPlayerFrame = document.getElementById('video-player-frame');
+            const videoPlayerFullscreen = document.getElementById('video-player-fullscreen');
+
+            // Media Data
+            let currentMediaData = null;
+
+            // Initialize server dropdown
+            function initServerDropdown() {
+                serverDropdown.innerHTML = '';
+                serverConfig.forEach(server => {
+                    const option = document.createElement('option');
+                    option.value = server.name;
+                    option.textContent = server.name;
+                    if (server.name === selectedServer) {
+                        option.selected = true;
+                    }
+                    serverDropdown.appendChild(option);
+                });
+            }
+
+            // Show server selection modal
+            function showServerSelection(mediaData) {
+                currentMediaData = mediaData;
+                console.log('[SERVERS] Showing server selection for:', mediaData);
+
+                // Populate media info
+                serverMediaTitle.textContent = mediaData.title;
+                serverMediaSubtitle.textContent = mediaData.subtitle || '';
+                serverMediaYear.textContent = mediaData.year || '';
+                serverMediaRating.textContent = mediaData.rating ? `★ ${mediaData.rating}` : '';
+                serverMediaPoster.src = mediaData.poster || '';
+
+                // Initialize dropdown
+                initServerDropdown();
+
+                // Show modal
+                serverSelectionModal.style.display = 'flex';
+                document.body.classList.add('server-modal-open');
+            }
+
+            // Hide server selection modal
+            function hideServerSelection() {
+                console.log('[SERVERS] Hiding server selection modal');
+                
+                // Close any active video player first
+                const serverVideoSection = document.getElementById('server-video-section');
+                if (serverVideoSection && serverVideoSection.style.display !== 'none') {
+                    console.log('[SERVERS] Closing active video player before hiding modal');
+                    closeVideoPlayer();
+                }
+                
+                // Hide the modal
+                serverSelectionModal.style.display = 'none';
+                document.body.classList.remove('server-modal-open');
+                currentMediaData = null;
+                
+                console.log('[SERVERS] Server selection modal hidden and video stopped');
+            }
+            
+            // Debug: Test if showServerSelection is accessible
+            console.log('[DEBUG] showServerSelection function exists:', typeof showServerSelection);
+
+            // Show embedded video player
+            function showVideoPlayer(url, title) {
+                console.log('[SERVERS] Opening embedded video player for:', title, url);
+                
+                // Get embedded video elements
+                const serverVideoSection = document.getElementById('server-video-section');
+                const serverVideoTitle = document.getElementById('server-video-title');
+                const serverVideoFrame = document.getElementById('server-video-frame');
+                
+                if (serverVideoSection && serverVideoTitle && serverVideoFrame) {
+                    // Update title and URL
+                    serverVideoTitle.textContent = title;
+                    serverVideoFrame.removeAttribute('sandbox');
+                    
+                    // Store the expected URL pattern for monitoring
+                    serverVideoFrame.expectedUrl = url;
+                    serverVideoFrame.originalDomain = new URL(url).origin;
+                    
+                    // Set up URL monitoring
+                    setupUrlMonitoring(serverVideoFrame, url);
+                    
+                    // Set the iframe source
+                    serverVideoFrame.src = url;
+                    
+                    // Show the video section
+                    serverVideoSection.style.display = 'block';
+                    
+                    // Auto-scroll to video player after a brief delay
+                    setTimeout(() => {
+                        serverVideoSection.scrollIntoView({ 
+                            behavior: 'smooth', 
+                            block: 'start' 
+                        });
+                    }, 500);
+                    
+                    console.log('[SERVERS] Embedded video player displayed successfully');
+                } else {
+                    console.error('[SERVERS] Embedded video elements not found, falling back to fullscreen');
+                    // Fallback to original fullscreen method
+                    videoPlayerTitle.textContent = title;
+                    videoPlayerFrame.removeAttribute('sandbox');
+                    videoPlayerFrame.src = url;
+                    videoPlayerModal.style.display = 'flex';
+                    document.body.classList.add('video-modal-open');
+                    hideServerSelection();
+                }
+            }
+
+            // Setup URL monitoring for iframe
+            function setupUrlMonitoring(iframe, expectedUrl) {
+                // Extract expected URL patterns for validation - STRICT MATCHING
+                const urlPatterns = {
+                    'vidrock.net': /^https:\/\/vidrock\.net\/(movie|tv)\/\d+(\?.*)?$/,
+                    'hexa.watch': /^https:\/\/hexa\.watch\/watch\/(movie|tv)\/\d+(\?.*)?$/,
+                    'www.fmovies.gd': /^https:\/\/www\.fmovies\.gd\/watch\/(movie|tv)\/\d+(\?.*)?$/,
+                    'xprime.tv': /^https:\/\/xprime\.tv\/watch\/\d+(\?.*)?$/,
+                    'vidnest.fun': /^https:\/\/vidnest\.fun\/(movie|tv)\/\d+(\?.*)?$/,
+                    'player.videasy.net': /^https:\/\/player\.videasy\.net\/(movie|tv)\/\d+(\?.*)?$/,
+                    'veloratv.ru': /^https:\/\/veloratv\.ru\/watch\/(movie|tv)\/\d+(\?.*)?$/,
+                    'vidfast.pro': /^https:\/\/vidfast\.pro\/(movie|tv)\/\d+(\?.*)?$/,
+                    '111movies.com': /^https:\/\/111movies\.com\/(movie|tv)\/\d+(\?.*)?$/,
+                    'vidjoy.pro': /^https:\/\/vidjoy\.pro\/embed\/(movie|tv)\/\d+(\?.*)?$/,
+                    'moviesapi.club': /^https:\/\/moviesapi\.club\/(movie\/\d+|tv\/\d+-\d+-\d+)(\?.*)?$/,
+                    'mappletv.uk': /^https:\/\/mappletv\.uk\/watch\/(movie\/\d+|tv\/\d+-\d+-\d+)(\?.*)?$/,
+                    'vidsrc.pro': /^https:\/\/vidsrc\.pro\/embed\/(movie|tv)\/\d+(\?.*)?$/,
+                    '2embed.cc': /^https:\/\/2embed\.cc\/embed\/(tv\/)?[\d&se=]+(\?.*)?$/,
+                    'multiembed.mov': /^https:\/\/multiembed\.mov\/\?video_id=\d+&tmdb=1&media_type=(movie|tv)(\&.*)?$/,
+                    'embed.smashystream.com': /^https:\/\/embed\.smashystream\.com\/playere\.php\?tmdb=\d+(\&.*)?$/,
+                    'player.autoembed.cc': /^https:\/\/player\.autoembed\.cc\/embed\/(movie|tv)\/\d+(\?.*)?$/,
+                    'godriveplayer.com': /^https:\/\/godriveplayer\.com\/player\.php\?(imdb=\d+|type=tv&tmdb=\d+&season=\d+&episode=\d+)(\&.*)?$/,
+                    'vidsrc.wtf': /^https:\/\/vidsrc\.wtf\/api\/4\/(movie|tv)\/\?id=\d+(\&.*)?$/
+                };
+                
+                // Get the domain from the expected URL
+                const expectedDomain = new URL(expectedUrl).hostname;
+                const pattern = urlPatterns[expectedDomain];
+                
+                if (!pattern) {
+                    console.warn('[SERVERS] No URL pattern defined for domain:', expectedDomain);
+                    return;
+                }
+                
+                console.log('[SERVERS] Setting up URL monitoring for domain:', expectedDomain);
+                console.log('[SERVERS] Expected URL pattern:', pattern);
+                console.log('[SERVERS] Initial URL:', expectedUrl);
+                
+                // Monitor iframe load events
+                iframe.addEventListener('load', function() {
+                    try {
+                        // Try to access iframe location (may be blocked by CORS)
+                        const currentUrl = iframe.contentWindow.location.href;
+                        console.log('[SERVERS] Iframe loaded URL:', currentUrl);
+                        
+                        // Check if current URL matches expected pattern
+                        if (!pattern.test(currentUrl)) {
+                            console.error('[SERVERS] ❌ URL VIOLATION DETECTED!');
+                            console.error('[SERVERS] Current URL:', currentUrl);
+                            console.error('[SERVERS] Expected pattern:', pattern.toString());
+                            console.error('[SERVERS] Closing player immediately!');
+                            
+                            closeVideoPlayer();
+                            return;
+                        } else {
+                            console.log('[SERVERS] ✅ URL pattern valid:', currentUrl);
+                        }
+                    } catch (e) {
+                        // CORS restriction - iframe is on different domain
+                        console.log('[SERVERS] Iframe access blocked (CORS) - this is normal for streaming sites');
+                    }
+                });
+                
+                // More aggressive monitoring - check on any iframe activity
+                iframe.addEventListener('beforeunload', function() {
+                    console.log('[SERVERS] Iframe beforeunload detected - page changing');
+                });
+                
+                // Periodic URL checking (backup method) - more frequent
+                const monitorInterval = setInterval(() => {
+                    try {
+                        if (!iframe || !iframe.contentWindow || !iframe.parentNode) {
+                            console.log('[SERVERS] Iframe no longer exists, clearing monitor');
+                            clearInterval(monitorInterval);
+                            return;
+                        }
+                        
+                        const currentUrl = iframe.contentWindow.location.href;
+                        
+                        // If we can access the URL and it doesn't match pattern, close player
+                        if (currentUrl && !pattern.test(currentUrl)) {
+                            console.error('[SERVERS] ❌ PERIODIC CHECK: URL violation detected!');
+                            console.error('[SERVERS] Current URL:', currentUrl);
+                            console.error('[SERVERS] Expected pattern:', pattern.toString());
+                            
+                            clearInterval(monitorInterval);
+                            
+                            // Show alert to user
+                            alert('Player closed: Detected navigation away from streaming content');
+                            closeVideoPlayer();
+                            return;
+                        }
+                        
+                        console.log('[SERVERS] 🔍 Periodic check: URL monitoring active');
+                    } catch (e) {
+                        // Expected - CORS protection means iframe is still on streaming site
+                        console.log('[SERVERS] 🔍 Periodic check: CORS blocked (streaming site active)');
+                    }
+                }, 1000); // Check every 1 second (more frequent)
+                
+                // Store interval for cleanup
+                iframe.monitorInterval = monitorInterval;
+            }
+
+            // Close video player function
+            function closeVideoPlayer() {
+                console.log('[SERVERS] Closing video player due to URL violation');
+                const serverVideoSection = document.getElementById('server-video-section');
+                const serverVideoFrame = document.getElementById('server-video-frame');
+                
+                if (serverVideoSection) {
+                    // Hide the video player box
+                    serverVideoSection.style.display = 'none';
+                    console.log('[SERVERS] Video player box hidden');
+                }
+                
+                if (serverVideoFrame) {
+                    // Clear monitoring interval
+                    if (serverVideoFrame.monitorInterval) {
+                        clearInterval(serverVideoFrame.monitorInterval);
+                        console.log('[SERVERS] URL monitoring interval cleared');
+                    }
+                    
+                    // Remove the server content from iframe
+                    serverVideoFrame.src = 'about:blank';
+                    serverVideoFrame.removeAttribute('expectedUrl');
+                    serverVideoFrame.removeAttribute('originalDomain');
+                    
+                    console.log('[SERVERS] Iframe cleared and server removed');
+                }
+                
+                // Also clear the video title
+                const serverVideoTitle = document.getElementById('server-video-title');
+                if (serverVideoTitle) {
+                    serverVideoTitle.textContent = 'Player Closed';
+                }
+                
+                console.log('[SERVERS] Video player completely shut down');
+            }
+
+            // Hide video player
+            function hideVideoPlayer() {
+                videoPlayerModal.style.display = 'none';
+                videoPlayerFrame.src = '';
+                document.body.classList.remove('video-modal-open');
+            }
+
+            // Get streaming URL for current media
+            function getStreamingUrl(mediaData, serverName) {
+                console.log('[SERVERS] Generating URL for server:', serverName, 'media:', mediaData);
+                
+                // Define server configurations inline (serverConfig not accessible from this scope)
+                const servers = {
+                    'Videasy': (type, id, season, episode) =>
+                        type === 'movie'
+                            ? `https://player.videasy.net/movie/${id}`
+                            : `https://player.videasy.net/tv/${id}/${season}/${episode}`,
+                    'VidRock': (type, id, season, episode) =>
+                        type === 'movie'
+                            ? `https://vidrock.net/movie/${id}`
+                            : `https://vidrock.net/tv/${id}/${season}/${episode}`,
+                    'HexaWatch': (type, id, season, episode) =>
+                        type === 'movie'
+                            ? `https://hexa.watch/watch/movie/${id}`
+                            : `https://hexa.watch/watch/tv/${id}/${season}/${episode}`,
+                    'FMovies': (type, id, season, episode) =>
+                        type === 'movie'
+                            ? `https://www.fmovies.gd/watch/movie/${id}`
+                            : `https://www.fmovies.gd/watch/tv/${id}/${season}/${episode}`,
+                    'Xprime': (type, id, season, episode) =>
+                        type === 'movie'
+                            ? `https://xprime.tv/watch/${id}`
+                            : `https://xprime.tv/watch/${id}/${season}/${episode}`,
+                    'Vidnest': (type, id, season, episode) =>
+                        type === 'movie'
+                            ? `https://vidnest.fun/movie/${id}`
+                            : `https://vidnest.fun/tv/${id}/${season}/${episode}`,
+                    'veloratv': (type, id, season, episode) =>
+                        type === 'movie'
+                            ? `https://veloratv.ru/watch/movie/${id}`
+                            : `https://veloratv.ru/watch/tv/${id}/${season}/${episode}`,
+                    'Vidfast': (type, id, season, episode) =>
+                        type === 'movie'
+                            ? `https://vidfast.pro/movie/${id}`
+                            : `https://vidfast.pro/tv/${id}/${season}/${episode}`,
+                    '111Movies': (type, id, season, episode) =>
+                        type === 'movie'
+                            ? `https://111movies.com/movie/${id}`
+                            : `https://111movies.com/tv/${id}/${season}/${episode}`,
+                    'VidJoy': (type, id, season, episode) =>
+                        type === 'movie'
+                            ? `https://vidjoy.pro/embed/movie/${id}`
+                            : `https://vidjoy.pro/embed/tv/${id}/${season}/${episode}`,
+                    'MovieClub': (type, id, season, episode) =>
+                        type === 'movie'
+                            ? `https://moviesapi.club/movie/${id}`
+                            : `https://moviesapi.club/tv/${id}-${season}-${episode}`,
+                    'MapleTV': (type, id, season, episode) =>
+                        type === 'movie'
+                            ? `https://mappletv.uk/watch/movie/${id}`
+                            : `https://mappletv.uk/watch/tv/${id}-${season}-${episode}`,
+                    'VidSrc PRO': (type, id, season, episode) =>
+                        type === 'movie'
+                            ? `https://vidsrc.pro/embed/movie/${id}`
+                            : `https://vidsrc.pro/embed/tv/${id}/${season}/${episode}`,
+                    '2Embed': (type, id, season, episode) =>
+                        type === 'movie'
+                            ? `https://2embed.cc/embed/${id}`
+                            : `https://2embed.cc/embed/tv/${id}&s=${season}&e=${episode}`,
+                    'SuperEmbed': (type, id, season, episode) =>
+                        `https://multiembed.mov/?video_id=${id}&tmdb=1&media_type=${type}${type === 'tv' ? `&season=${season}&episode=${episode}` : ''}`,
+                    'SmashyStream': (type, id, season, episode) =>
+                        `https://embed.smashystream.com/playere.php?tmdb=${id}${type === 'tv' ? `&season=${season}&episode=${episode}` : ''}`,
+                    'Autoembed': (type, id, season, episode) =>
+                        type === 'movie'
+                            ? `https://player.autoembed.cc/embed/movie/${id}`
+                            : `https://player.autoembed.cc/embed/tv/${id}/${season}/${episode}`,
+                    'GoDrivePlayer': (type, id, season, episode) =>
+                        type === 'movie'
+                            ? `https://godriveplayer.com/player.php?imdb=${id}`
+                            : `https://godriveplayer.com/player.php?type=tv&tmdb=${id}&season=${season}&episode=${episode}`,
+                    'VidWTF Premium': (type, id, season, episode) =>
+                        type === 'movie'
+                            ? `https://vidsrc.wtf/api/4/movie/?id=${id}&color=e01621`
+                            : `https://vidsrc.wtf/api/4/tv/?id=${id}&s=${season}&e=${episode}&color=e01621`
+                };
+
+                const serverFunction = servers[serverName];
+                if (!serverFunction) {
+                    console.error('[SERVERS] Server not found:', serverName);
+                    return null;
+                }
+
+                const url = serverFunction(
+                    mediaData.type,
+                    mediaData.id,
+                    mediaData.season,
+                    mediaData.episode
+                );
+                
+                console.log('[SERVERS] Generated URL:', url);
+                return url;
+            }
+
+            // Event listeners for server selection
+            if (serverSelectionBack) {
+                serverSelectionBack.addEventListener('click', hideServerSelection);
+            }
+
+            if (serverDropdown) {
+                serverDropdown.addEventListener('change', (e) => {
+                    selectedServer = e.target.value;
+                    localStorage.setItem('selectedServer', selectedServer);
+                    console.log('[SERVERS] Selected server:', selectedServer);
+                });
+            }
+
+            if (serverWatchBtn) {
+                serverWatchBtn.addEventListener('click', () => {
+                    console.log('[SERVERS] Start Watching button clicked!');
+                    
+                    // Try to get media data from multiple sources
+                    const mediaData = currentMediaData || window.currentMediaData;
+                    console.log('[SERVERS] currentMediaData:', currentMediaData);
+                    console.log('[SERVERS] window.currentMediaData:', window.currentMediaData);
+                    console.log('[SERVERS] Using mediaData:', mediaData);
+                    
+                    if (!mediaData) {
+                        console.error('[SERVERS] No media data available');
+                        alert('No media selected. Please select a movie or show first.');
+                        return;
+                    }
+                    
+                    // Get current selected server from dropdown
+                    const currentSelectedServer = serverDropdown ? serverDropdown.value : (localStorage.getItem('selectedServer') || 'Videasy');
+                    console.log('[SERVERS] Selected server:', currentSelectedServer);
+                    
+                    const streamUrl = getStreamingUrl(mediaData, currentSelectedServer);
+                    console.log('[SERVERS] Generated stream URL:', streamUrl);
+                    
+                    if (streamUrl) {
+                        const title = `${mediaData.title} - ${currentSelectedServer}`;
+                        console.log('[SERVERS] Calling showVideoPlayer with:', title);
+                        showVideoPlayer(streamUrl, title);
+                    } else {
+                        showNotification('Failed to generate streaming URL', 'error');
+                    }
+                });
+            }
+
+            if (serverTorrentBtn) {
+                serverTorrentBtn.addEventListener('click', () => {
+                    console.log('[SERVERS] Use Torrent Instead button clicked!');
+                    
+                    // Turn off streaming servers mode
+                    localStorage.setItem('useStreamingServers', 'false');
+                    console.log('[SERVERS] Disabled streaming servers mode');
+                    
+                    // Update toggle in settings if it exists
+                    const useStreamingServersToggle = document.getElementById('useStreamingServersToggle');
+                    if (useStreamingServersToggle) {
+                        useStreamingServersToggle.checked = false;
+                    }
+                    
+                    // Update button text
+                    updateWatchButtonText();
+                    
+                    // Hide server selection modal
+                    hideServerSelection();
+                    
+                    // Fall back to torrent mode
+                    if (currentMediaData && currentMediaData.fallbackToTorrent) {
+                        console.log('[SERVERS] Calling fallback function');
+                        currentMediaData.fallbackToTorrent();
+                    } else {
+                        console.log('[SERVERS] No fallback function, manually showing torrents');
+                        // Manually trigger torrent display
+                        const streamingMode = localStorage.getItem('useStreamingServers') === 'true';
+                        console.log('[SERVERS] Streaming mode after toggle:', streamingMode);
+                        if (!streamingMode && typeof showTorrents === 'function') {
+                            showTorrents(null, currentMediaData?.season, currentMediaData?.episode);
+                        }
+                    }
+                });
+            }
+
+            // Embedded video player event handlers
+            const serverVideoClose = document.getElementById('server-video-close');
+            const serverVideoFrame = document.getElementById('server-video-frame');
+
+            if (serverVideoClose) {
+                serverVideoClose.addEventListener('click', () => {
+                    closeVideoPlayer();
+                });
+            }
+
+            // Server switching while watching
+            if (serverDropdown) {
+                serverDropdown.addEventListener('change', (e) => {
+                    const newServer = e.target.value;
+                    const serverVideoSection = document.getElementById('server-video-section');
+                    
+                    // Only switch if video is currently playing
+                    if (serverVideoSection && serverVideoSection.style.display !== 'none' && currentMediaData) {
+                        console.log('[SERVERS] Switching to server:', newServer);
+                        
+                        // Update selected server
+                        localStorage.setItem('selectedServer', newServer);
+                        
+                        // Generate new streaming URL
+                        const newStreamUrl = getStreamingUrl(currentMediaData, newServer);
+                        
+                        if (newStreamUrl && serverVideoFrame) {
+                            // Update iframe source
+                            serverVideoFrame.src = newStreamUrl;
+                            
+                            // Update title to show new server
+                            const serverVideoTitle = document.getElementById('server-video-title');
+                            if (serverVideoTitle) {
+                                serverVideoTitle.textContent = `${currentMediaData.title} - ${newServer}`;
+                            }
+                            
+                            console.log('[SERVERS] Successfully switched to:', newServer);
+                        } else {
+                            console.error('[SERVERS] Failed to generate URL for server:', newServer);
+                            // Revert dropdown selection
+                            const oldServer = localStorage.getItem('selectedServer') || 'Videasy';
+                            e.target.value = oldServer;
+                        }
+                    }
+                });
+            }
+
+            // Video player event listeners
+            if (videoPlayerBack) {
+                videoPlayerBack.addEventListener('click', () => {
+                    hideVideoPlayer();
+                    if (currentMediaData) {
+                        showServerSelection(currentMediaData);
+                    }
+                });
+            }
+
+            if (videoPlayerFullscreen) {
+                videoPlayerFullscreen.addEventListener('click', () => {
+                    const frame = videoPlayerFrame;
+                    if (frame.requestFullscreen) {
+                        frame.requestFullscreen();
+                    } else if (frame.webkitRequestFullscreen) {
+                        frame.webkitRequestFullscreen();
+                    } else if (frame.msRequestFullscreen) {
+                        frame.msRequestFullscreen();
+                    }
+                });
+            }
+
+            // Close modals when clicking outside
+            serverSelectionModal?.addEventListener('click', (e) => {
+                if (e.target === serverSelectionModal) {
+                    hideServerSelection();
+                }
+            });
+
+            videoPlayerModal?.addEventListener('click', (e) => {
+                if (e.target === videoPlayerModal) {
+                    hideVideoPlayer();
+                }
+            });
+
+            // Update watch button text based on streaming mode
+            function updateWatchButtonText() {
+                const watchBtn = document.getElementById('watchNowBtn');
+                if (watchBtn) {
+                    const streamingMode = localStorage.getItem('useStreamingServers') === 'true';
+                    if (streamingMode) {
+                        watchBtn.innerHTML = '<i class="fas fa-play"></i> Watch Now';
+                    } else {
+                        watchBtn.innerHTML = '<i class="fas fa-play"></i> Find Torrents';
+                    }
+                }
+            }
+
+            // Initialize streaming servers setting
+            const useStreamingServersToggle = document.getElementById('useStreamingServersToggle');
+            if (useStreamingServersToggle) {
+                const currentSetting = localStorage.getItem('useStreamingServers') === 'true';
+                useStreamingServersToggle.checked = currentSetting;
+                useStreamingServersToggle.addEventListener('change', (e) => {
+                    localStorage.setItem('useStreamingServers', e.target.checked);
+                    console.log('[SERVERS] Streaming servers mode:', e.target.checked ? 'enabled' : 'disabled');
+                    updateWatchButtonText(); // Update button text when mode changes
+                });
+            }
+
+            // Set initial button text
+            updateWatchButtonText();
 
             // Downloader wiring (top-level)
             const downloaderQuery = document.getElementById('downloaderQuery');
@@ -8146,6 +10812,67 @@ Your browser does not support the video tag.
                     refreshDisplay();
                 });
             }
+            
+            // Live TV Event Listeners
+            const liveTvCategorySelect = document.getElementById('livetv-category-select');
+            if (liveTvCategorySelect) {
+                liveTvCategorySelect.addEventListener('change', () => {
+                    loadLiveTvMatches(liveTvCategorySelect.value);
+                });
+            }
+            
+            const liveTvStreamsClose = document.getElementById('livetv-streams-close');
+            if (liveTvStreamsClose) {
+                liveTvStreamsClose.addEventListener('click', () => {
+                    const modal = document.getElementById('livetv-streams-modal');
+                    if (modal) modal.style.display = 'none';
+                });
+            }
+            
+            const liveTvModalBack = document.getElementById('livetv-modal-back');
+            if (liveTvModalBack) {
+                liveTvModalBack.addEventListener('click', () => {
+                    const modal = document.getElementById('livetv-stream-modal');
+                    const iframe = document.getElementById('livetv-stream-iframe');
+                    if (modal) modal.style.display = 'none';
+                    if (iframe) iframe.src = ''; // Stop stream
+                });
+            }
+            
+            const liveTvCopyBtn = document.getElementById('livetv-copy-stream-btn');
+            if (liveTvCopyBtn) {
+                liveTvCopyBtn.addEventListener('click', async () => {
+                    const modal = document.getElementById('livetv-stream-modal');
+                    const streamUrl = modal?.dataset.currentStreamUrl;
+                    
+                    if (streamUrl) {
+                        try {
+                            await navigator.clipboard.writeText(streamUrl);
+                            const originalText = liveTvCopyBtn.innerHTML;
+                            liveTvCopyBtn.innerHTML = '<i class="fas fa-check"></i> Copied!';
+                            liveTvCopyBtn.style.background = 'linear-gradient(135deg, #10b981, #059669)';
+                            
+                            setTimeout(() => {
+                                liveTvCopyBtn.innerHTML = originalText;
+                                liveTvCopyBtn.style.background = 'linear-gradient(135deg, #3b82f6, #2563eb)';
+                            }, 2000);
+                        } catch (err) {
+                            console.error('Failed to copy:', err);
+                            showNotification('Failed to copy link', 'error');
+                        }
+                    }
+                });
+            }
+            
+            // Close modals on background click
+            const liveTvStreamsModal = document.getElementById('livetv-streams-modal');
+            if (liveTvStreamsModal) {
+                liveTvStreamsModal.addEventListener('click', (e) => {
+                    if (e.target === liveTvStreamsModal) {
+                        liveTvStreamsModal.style.display = 'none';
+                    }
+                });
+            }
         }
 
         // Router handler
@@ -8191,6 +10918,20 @@ Your browser does not support the video tag.
     activeRoute = 'trakt';
     showSection('trakt');
     return;
+} else if (hash === '#/livetv') {
+    activeRoute = 'livetv';
+    showSection('livetv');
+    await initLiveTv();
+    return;
+} else if (hash === '#/iptv') {
+    activeRoute = 'iptv';
+    showSection('iptv');
+    reloadIptvPage();
+    return;
+} else if (hash === '#/books') {
+    activeRoute = 'books';
+    showSection('books');
+    return;
 } else if (hash === '#/downloader') {
     activeRoute = 'downloader';
     showSection('downloader');
@@ -8222,6 +10963,18 @@ Your browser does not support the video tag.
             }
             const downloaderPageEl = document.getElementById('downloader-page');
             if (downloaderPageEl) downloaderPageEl.style.display = section === 'downloader' ? '' : 'none';
+            const liveTvPageEl = document.getElementById('livetv-page');
+            if (liveTvPageEl) liveTvPageEl.style.display = section === 'livetv' ? '' : 'none';
+            const iptvPageEl = document.getElementById('iptv-page');
+            if (iptvPageEl) {
+                // Clear IPTV iframe when leaving the page
+                if (iptvPageEl.style.display !== 'none' && section !== 'iptv') {
+                    clearIptvPage();
+                }
+                iptvPageEl.style.display = section === 'iptv' ? '' : 'none';
+            }
+            const booksPageEl = document.getElementById('books-page');
+            if (booksPageEl) booksPageEl.style.display = section === 'books' ? '' : 'none';
             // Update navigation states
             updateNavigationStates(section);
             // Update floating settings button visibility (Old UI only, Home page only)
@@ -8233,13 +10986,14 @@ Your browser does not support the video tag.
         }
 
         function updateFloatingSettingsButton(section) {
-            const floatingBtn = document.getElementById('floatingSettingsBtn');
-            if (floatingBtn) {
+            const floatingNav = document.getElementById('floatingNavContainer');
+            if (floatingNav) {
                 // Show only on home page in old UI
                 if (section === 'home') {
-                    floatingBtn.classList.add('show-on-home');
+                    floatingNav.classList.add('show-on-home');
                 } else {
-                    floatingBtn.classList.remove('show-on-home');
+                    floatingNav.classList.remove('show-on-home');
+                    floatingNav.classList.remove('active'); // Close menu when leaving home
                 }
             }
         }
@@ -8764,9 +11518,16 @@ Your browser does not support the video tag.
                     // Don't select if clicking on the done button
                     if (e.target.closest('.episode-done-btn')) return;
                     
+                    console.log('[DEBUG] Episode card clicked! Season:', currentSeason, 'Episode:', episode.episode_number);
+                    
                     document.querySelectorAll('.episode-card').forEach(c => c.classList.remove('selected'));
                     card.classList.add('selected');
-                    showTorrents(e, currentSeason, episode.episode_number);
+                    
+                    try {
+                        showTorrents(e, currentSeason, episode.episode_number);
+                    } catch (error) {
+                        console.error('[DEBUG] Error in episode showTorrents:', error);
+                    }
                 });
                 episodesGrid.appendChild(card);
             });
@@ -8906,6 +11667,19 @@ Your browser does not support the video tag.
 
         // Show torrents for the current content
         function showTorrents(event, season = null, episode = null) {
+            // Safely check streaming servers setting
+            const streamingMode = localStorage.getItem('useStreamingServers') === 'true';
+            console.log('[SERVERS] showTorrents called with streaming mode:', streamingMode);
+            console.log('[SERVERS] Season:', season, 'Episode:', episode);
+            
+            // Check if streaming servers mode is enabled
+            if (streamingMode) {
+                console.log('[SERVERS] Streaming servers enabled, showing server selection');
+                showStreamingServerSelection(season, episode);
+                return;
+            }
+            
+            console.log('[SERVERS] Streaming servers disabled, showing torrents');
             if (!hasApiKey && !useTorrentless) {
                 showApiSetupModal();
                 return;
@@ -8914,6 +11688,126 @@ Your browser does not support the video tag.
             // Reset loaded state for new searches
             torrentsLoaded = false;
             fetchTorrents(season, episode);
+        }
+
+        // Show streaming server selection instead of torrents
+        function showStreamingServerSelection(season = null, episode = null) {
+            console.log('[SERVERS] showStreamingServerSelection called with:', { season, episode });
+            
+            if (!currentContent) {
+                console.error('[SERVERS] No currentContent available');
+                showNotification('No content selected', 'error');
+                return;
+            }
+
+            console.log('[SERVERS] Current content:', currentContent);
+            console.log('[SERVERS] Current media type:', currentMediaType);
+
+            const mediaData = {
+                type: currentMediaType,
+                id: currentContent.id,
+                title: currentContent.title || currentContent.name,
+                season: season,
+                episode: episode,
+                year: currentMediaType === 'movie' ? 
+                    (currentContent.release_date || '').substring(0, 4) : 
+                    (currentContent.first_air_date || '').substring(0, 4),
+                rating: currentContent.vote_average ? parseFloat(currentContent.vote_average).toFixed(1) : null,
+                poster: currentContent.poster_path ? 
+                    `https://image.tmdb.org/t/p/w500${currentContent.poster_path}` : 
+                    null,
+                subtitle: season && episode ? 
+                    `Season ${season}, Episode ${episode}` : 
+                    (currentMediaType === 'tv' ? 'TV Show' : 'Movie'),
+                fallbackToTorrent: () => {
+                    // Fallback to torrent mode if user clicks "Use Torrent Instead"
+                    useStreamingServers = false;
+                    localStorage.setItem('useStreamingServers', 'false');
+                    updateWatchButtonText();
+                    showTorrents(null, season, episode);
+                }
+            };
+
+            console.log('[SERVERS] Media data prepared:', mediaData);
+            
+            // Show server selection modal directly
+            try {
+                // Set current media data globally
+                window.currentMediaData = mediaData;
+                currentMediaData = mediaData;
+                
+                // Get modal elements
+                const serverSelectionModal = document.getElementById('server-selection-modal');
+                const serverMediaTitle = document.getElementById('server-media-title');
+                const serverMediaSubtitle = document.getElementById('server-media-subtitle');
+                const serverMediaYear = document.getElementById('server-media-year');
+                const serverMediaRating = document.getElementById('server-media-rating');
+                const serverMediaPoster = document.getElementById('server-media-poster');
+                const serverDropdown = document.getElementById('server-dropdown');
+                
+                if (!serverSelectionModal) {
+                    throw new Error('Server selection modal not found in DOM');
+                }
+                
+                // Populate media info
+                if (serverMediaTitle) serverMediaTitle.textContent = mediaData.title;
+                if (serverMediaSubtitle) serverMediaSubtitle.textContent = mediaData.subtitle || '';
+                if (serverMediaYear) serverMediaYear.textContent = mediaData.year || '';
+                if (serverMediaRating) serverMediaRating.textContent = mediaData.rating ? `★ ${mediaData.rating}` : '';
+                if (serverMediaPoster) serverMediaPoster.src = mediaData.poster || '';
+                
+                // Initialize dropdown
+                if (serverDropdown) {
+                    const currentSelectedServer = localStorage.getItem('selectedServer') || 'Videasy';
+                    serverDropdown.innerHTML = '';
+                    
+                    // Define servers inline (serverConfig not accessible from this scope)
+                    const servers = [
+                        { name: 'Videasy' },
+                        { name: 'VidRock' },
+                        { name: 'HexaWatch' },
+                        { name: 'FMovies' },
+                        { name: 'Xprime' },
+                        { name: 'Vidnest' },
+                        { name: 'veloratv' },
+                        { name: 'Vidfast' },
+                        { name: '111Movies' },
+                        { name: 'VidJoy' },
+                        { name: 'MovieClub' },
+                        { name: 'MapleTV' },
+                        { name: 'VidSrc PRO' },
+                        { name: '2Embed' },
+                        { name: 'SuperEmbed' },
+                        { name: 'SmashyStream' },
+                        { name: 'Autoembed' },
+                        { name: 'GoDrivePlayer' },
+                        { name: 'VidWTF Premium' }
+                    ];
+                    
+                    console.log('[SERVERS] Using servers array with length:', servers.length);
+                    
+                    servers.forEach(server => {
+                        const option = document.createElement('option');
+                        option.value = server.name;
+                        option.textContent = server.name;
+                        if (server.name === currentSelectedServer) {
+                            option.selected = true;
+                        }
+                        serverDropdown.appendChild(option);
+                    });
+                    
+                    console.log('[SERVERS] Dropdown populated with', serverDropdown.options.length, 'options');
+                }
+                
+                // Show modal
+                serverSelectionModal.style.display = 'flex';
+                document.body.classList.add('server-modal-open');
+                
+                console.log('[SERVERS] Server selection modal displayed successfully');
+            } catch (error) {
+                console.error('[SERVERS] Error showing server selection:', error);
+                alert('Error loading streaming servers: ' + error.message);
+            }
         }
 
         // Fetch torrents from the backend
