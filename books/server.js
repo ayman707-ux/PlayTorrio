@@ -30,14 +30,27 @@ const USER_AGENTS = [
 ];
 
 // Z-Library domains to try
-const ZLIB_DOMAINS = [
-    'z-lib.gd',
+// Allow forcing a specific mirror via environment variable for stability.
+// If ZLIB_FORCE_DOMAIN is set (e.g., "z-lib.gd" or "https://z-lib.gd/"),
+// the server will try that first, then fall back to the rest in order.
+const FORCE_DOMAIN = (process.env.ZLIB_FORCE_DOMAIN || '').trim();
+const normalizedForce = FORCE_DOMAIN
+    ? FORCE_DOMAIN.replace(/^https?:\/\//i, '').replace(/\/$/, '')
+    : '';
+const DEFAULT_ZLIB_DOMAINS = [
+    'z-lib.gd',        // Primary
+    'z-library.sk',    // Fallback 1
+    'z-lib.fm',        // Fallback 2
     'z-lib.io',
     'z-lib.se', 
     'zlibrary.to',
     'singlelogin.re',
     'z-library.se'
 ];
+
+const ZLIB_DOMAINS = normalizedForce
+    ? [normalizedForce, ...DEFAULT_ZLIB_DOMAINS.filter(d => d !== normalizedForce)]
+    : DEFAULT_ZLIB_DOMAINS;
 
 // Helper function to get random user agent
 function getRandomUserAgent() {
@@ -528,6 +541,7 @@ app.get('/search/:query', async (req, res) => {
         console.log(`Successfully processed ${booksWithReadLinks.length} books with read links`);
         res.json({
             query: query,
+            domainUsed: workingDomain,
             results: booksWithReadLinks
         });
 
