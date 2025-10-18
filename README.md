@@ -84,7 +84,7 @@ PlayTorrio connects to Jackett using your personal API key.
 
 <img width="902" height="923" alt="image" src="https://github.com/user-attachments/assets/f26f2987-0f64-4a47-b141-b9aba4c535bb" />
 
-- In PlayTorrio, paste the API key in the initial setup or later in Settings (top-right).
+- In PlayTorrio, paste the API key in the initial setup or later in Settings (bottom-left).
 
 ---
 
