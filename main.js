@@ -16,6 +16,7 @@ let webtorrentClient;
 let mainWindow;
 let torrentlessProc = null;
 let svc111477Proc = null;
+let booksProc = null;
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -260,10 +261,46 @@ function createWindow() {
             preload: path.join(__dirname, 'preload.js'),
             nodeIntegration: false,
             contextIsolation: true,
+            webSecurity: false, // Disable web security to allow iframes from different origins
+            allowRunningInsecureContent: true, // Allow mixed content
+            experimentalFeatures: true, // Enable experimental features for better iframe support
         },
     });
     // Remove default application menu (File/Edit/View/Help)
     try { Menu.setApplicationMenu(null); } catch(_) {}
+
+    // Enable all permissions for iframe content
+    win.webContents.session.setPermissionRequestHandler((webContents, permission, callback) => {
+        // Allow all permissions (autoplay, media, etc.)
+        callback(true);
+    });
+
+    // Block popup windows and new tabs to prevent ads
+    win.webContents.setWindowOpenHandler(({ url }) => {
+        console.log('Blocked popup attempt:', url);
+        return { action: 'deny' };
+    });
+
+    // Prevent navigation away from the app
+    win.webContents.on('will-navigate', (event, url) => {
+        // Allow navigation within our app
+        if (url.startsWith('http://127.0.0.1:3000') || url.startsWith('http://localhost:3000')) {
+            return;
+        }
+        // Block all other navigation attempts
+        console.log('Blocked navigation attempt:', url);
+        event.preventDefault();
+    });
+
+    // Allow iframes to load
+    win.webContents.session.webRequest.onHeadersReceived((details, callback) => {
+        callback({
+            responseHeaders: {
+                ...details.responseHeaders,
+                'Content-Security-Policy': ['default-src * \'unsafe-inline\' \'unsafe-eval\' data: blob:;']
+            }
+        });
+    });
 
     // Always load the local server so all API and subtitle URLs are same-origin HTTP
     setTimeout(() => win.loadURL('http://localhost:3000'), app.isPackaged ? 500 : 2000);
@@ -520,6 +557,128 @@ function start111477() {
     }
 }
 
+// Launch the Books (Z-Library) search server
+function startBooks() {
+    try {
+        // Resolve script path in both dev and packaged environments
+        const candidates = [];
+        if (app.isPackaged && process.resourcesPath) {
+            candidates.push(path.join(process.resourcesPath, 'books', 'server.js'));
+            candidates.push(path.join(process.resourcesPath, 'app.asar.unpacked', 'books', 'server.js'));
+        }
+        candidates.push(path.join(__dirname, 'books', 'server.js'));
+        
+        let entry = null;
+        for (const p of candidates) {
+            try { if (p && fs.existsSync(p)) { entry = p; break; } } catch {}
+        }
+        if (!entry) {
+            console.warn('Books server entry not found. Ensure the books folder is packaged.');
+            return;
+        }
+        console.log('[Books] Using entry:', entry);
+
+        // Compute NODE_PATH so the child can resolve dependencies from the app's node_modules
+        const nodePathCandidates = [
+            path.join(process.resourcesPath || '', 'app.asar', 'node_modules'),
+            path.join(process.resourcesPath || '', 'node_modules'),
+            path.join(process.resourcesPath || '', 'app.asar.unpacked', 'node_modules'),
+            path.join(__dirname, 'node_modules'),
+            path.join(path.dirname(entry), 'node_modules'),
+        ];
+        const existingNodePaths = nodePathCandidates.filter(p => { try { return fs.existsSync(p); } catch { return false; } });
+        const NODE_PATH_VALUE = existingNodePaths.join(path.delimiter);
+
+        // Spawn Electron binary in Node mode to run server.js
+        const logPath = path.join(app.getPath('userData'), 'books.log');
+        const logStream = fs.createWriteStream(logPath, { flags: 'a' });
+        const childEnv = { ...process.env, PORT: '3004', ELECTRON_RUN_AS_NODE: '1', NODE_PATH: NODE_PATH_VALUE };
+        booksProc = spawn(process.execPath, [entry], {
+            stdio: ['ignore', 'pipe', 'pipe'],
+            env: childEnv,
+            cwd: path.dirname(entry),
+        });
+
+        // Pipe logs for diagnostics
+        try {
+            booksProc.stdout.on('data', (d) => { try { logStream.write(d); } catch(_) {} });
+            booksProc.stderr.on('data', (d) => { try { logStream.write(d); } catch(_) {} });
+        } catch (_) {}
+
+        booksProc.on('exit', (code, signal) => {
+            console.log(`Books server exited code=${code} signal=${signal}`);
+            try { logStream.end(); } catch(_) {}
+            // On unexpected exit during runtime, attempt a single restart
+            if (!app.isQuitting) {
+                setTimeout(() => { try { startBooks(); } catch(_) {} }, 1000);
+            }
+        });
+
+        booksProc.on('error', (err) => {
+            console.error('Failed to start Books server process:', err);
+            try { logStream.write(String(err?.stack || err) + '\n'); } catch(_) {}
+        });
+
+        // Probe /health to confirm the service is up
+        try {
+            let attempts = 0;
+            let healthy = false;
+            const maxAttempts = 25; // ~10s @ 400ms
+            const timer = setInterval(() => {
+                attempts++;
+                try {
+                    const req = http.get({ hostname: '127.0.0.1', port: 3004, path: '/health', timeout: 350 }, (res) => {
+                        if (res.statusCode === 200) {
+                            healthy = true;
+                            console.log('Books server is up on http://127.0.0.1:3004');
+                            clearInterval(timer);
+                            try { res.resume(); } catch(_) {}
+                        } else {
+                            try { res.resume(); } catch(_) {}
+                        }
+                    });
+                    req.on('timeout', () => { try { req.destroy(); } catch(_) {} });
+                    req.on('error', () => {});
+                } catch(_) {}
+                if (attempts >= maxAttempts) {
+                    clearInterval(timer);
+                    if (!healthy && !app.isQuitting) {
+                        // Attempt fallback using system Node if available (dev only)
+                        if (!app.isPackaged) {
+                            try {
+                                console.warn('Books server did not respond; attempting to start with system Node (dev)...');
+                                try { booksProc && booksProc.kill('SIGTERM'); } catch(_) {}
+                                const nodeCmd = process.platform === 'win32' ? 'node.exe' : 'node';
+                                booksProc = spawn(nodeCmd, [entry], {
+                                    stdio: ['ignore', 'pipe', 'pipe'],
+                                    env: { ...process.env, PORT: '3004' },
+                                    cwd: path.dirname(entry),
+                                    shell: false
+                                });
+                                try {
+                                    booksProc.stdout.on('data', (d) => { try { logStream.write(d); } catch(_) {} });
+                                    booksProc.stderr.on('data', (d) => { try { logStream.write(d); } catch(_) {} });
+                                    booksProc.on('error', (err) => {
+                                        console.error('System Node fallback failed (Books):', err?.message || err);
+                                        try { logStream.write('System Node fallback error: ' + String(err?.stack || err) + '\n'); } catch(_) {}
+                                    });
+                                } catch(_) {}
+                            } catch (e) {
+                                console.error('Fallback start with system Node failed (Books):', e);
+                                try { logStream.write('Fallback failed: ' + String(e?.stack || e) + '\n'); } catch(_) {}
+                            }
+                        } else {
+                            console.warn('Skipping system Node fallback in packaged build (Books).');
+                        }
+                    }
+                }
+            }, 400);
+        } catch(_) {}
+    } catch (e) {
+        console.error('Failed to start Books server:', e);
+    }
+}
+
 // Enforce single instance with a friendly error on second run
 const gotLock = app.requestSingleInstanceLock();
 if (!gotLock) {
@@ -546,6 +705,9 @@ if (!gotLock) {
 
     // Start the 111477 service (port 3003)
     start111477();
+
+    // Start the Books (Z-Library) search server (port 3004)
+    startBooks();
 
         mainWindow = createWindow();
 
@@ -742,6 +904,11 @@ app.on('will-quit', () => {
     if (svc111477Proc) {
         try { svc111477Proc.kill('SIGTERM'); } catch(_) {}
         svc111477Proc = null;
+    }
+    // Stop Books child process
+    if (booksProc) {
+        try { booksProc.kill('SIGTERM'); } catch(_) {}
+        booksProc = null;
     }
 });
 
