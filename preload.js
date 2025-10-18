@@ -21,6 +21,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   restartApp: () => ipcRenderer.invoke('restart-app'),
   openExternal: (url) => ipcRenderer.invoke('open-external', url),
   copyToClipboard: (text) => ipcRenderer.invoke('copy-to-clipboard', text),
+  // Books server URL helpers
+  booksGetUrl: () => ipcRenderer.invoke('books-get-url'),
+  onBooksUrl: (cb) => ipcRenderer.on('books-url', (_e, payload) => cb && cb(payload)),
   // Updater bridge (events only + install trigger)
   onUpdateChecking: (cb) => ipcRenderer.on('update-checking', (_e, info) => cb && cb(info)),
   onUpdateAvailable: (cb) => ipcRenderer.on('update-available', (_e, info) => cb && cb(info)),
@@ -61,5 +64,13 @@ contextBridge.exposeInMainWorld('electronAPI', {
         return null;
       }
     }
+  }
+  ,
+  // Window controls
+  windowControls: {
+    minimize: () => ipcRenderer.invoke('window-minimize'),
+    maximizeToggle: () => ipcRenderer.invoke('window-maximize-toggle'),
+    close: () => ipcRenderer.invoke('window-close'),
+    onMaximizeChanged: (cb) => ipcRenderer.on('window-maximize-changed', (_e, payload) => cb && cb(payload))
   }
 });
