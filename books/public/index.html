@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Z-Lib Book Search</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #6e8efb, #a777e3);
+            color: #333;
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .container {
+            width: 100%;
+            max-width: 800px;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+            margin-top: 20px;
+        }
+        
+        h1 {
+            text-align: center;
+            margin-bottom: 25px;
+            color: #2c3e50;
+            font-size: 2.5rem;
+        }
+        
+        .search-container {
+            display: flex;
+            margin-bottom: 30px;
+        }
+        
+        #search-input {
+            flex: 1;
+            padding: 15px;
+            border: 2px solid #ddd;
+            border-radius: 8px 0 0 8px;
+            font-size: 16px;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+        
+        #search-input:focus {
+            border-color: #6e8efb;
+        }
+        
+        #search-button {
+            padding: 15px 25px;
+            background: #6e8efb;
+            color: white;
+            border: none;
+            border-radius: 0 8px 8px 0;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: background 0.3s;
+        }
+        
+        #search-button:hover:not(:disabled) {
+            background: #5a7de0;
+        }
+        
+        #search-button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        
+        .loader {
+            text-align: center;
+            margin: 30px 0;
+            display: none;
+        }
+        
+        .loader .spinner {
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #6e8efb;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .results-container {
+            display: none;
+            margin-top: 20px;
+        }
+        
+        .book-item {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+            transition: transform 0.3s ease;
+        }
+        
+        .book-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.15);
+        }
+        
+        .book-content {
+            display: flex;
+            align-items: flex-start;
+        }
+        
+        .book-cover {
+            width: 120px;
+            height: 160px;
+            object-fit: cover;
+            border-radius: 5px;
+            margin-right: 20px;
+            background: #f0f0f0;
+            flex-shrink: 0;
+        }
+        
+        .book-cover.no-image {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #aaa;
+            font-size: 12px;
+            text-align: center;
+        }
+        
+        .book-details {
+            flex: 1;
+        }
+        
+        .book-item h3 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+            font-size: 1.3rem;
+        }
+        
+        .book-item p {
+            color: #7f8c8d;
+            margin-bottom: 5px;
+        }
+        
+        .book-actions {
+            margin-top: 15px;
+            display: flex;
+            gap: 10px;
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            text-decoration: none;
+            display: inline-block;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary {
+            background: #6e8efb;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #5a7de0;
+        }
+        
+        .btn-secondary {
+            background: #e9ecef;
+            color: #495057;
+        }
+        
+        .btn-secondary:hover {
+            background: #dee2e6;
+        }
+        
+        .error {
+            color: #e74c3c;
+            text-align: center;
+            padding: 15px;
+            background: #ffebee;
+            border-radius: 8px;
+            margin-top: 20px;
+            display: none;
+        }
+        
+        .success {
+            color: #27ae60;
+            text-align: center;
+            padding: 15px;
+            background: #e8f5e8;
+            border-radius: 8px;
+            margin-top: 20px;
+            display: none;
+        }
+        
+        .status-info {
+            background: #e3f2fd;
+            color: #1976d2;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            font-size: 0.9rem;
+        }
+        
+        .book-metadata {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .metadata-item {
+            background: #f8f9fa;
+            padding: 8px;
+            border-radius: 4px;
+            font-size: 0.85rem;
+        }
+        
+        .metadata-label {
+            font-weight: 600;
+            color: #495057;
+        }
+        
+        .reader-link {
+            background: linear-gradient(45deg, #28a745, #20c997);
+            color: white !important;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            margin-top: 10px;
+        }
+        
+        .reader-link:hover {
+            background: linear-gradient(45deg, #218838, #1ea085);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+        }
+        
+        .no-reader {
+            color: #dc3545;
+            font-style: italic;
+            padding: 10px;
+            background: #f8d7da;
+            border-radius: 5px;
+            margin-top: 10px;
+        }
+        
+        @media (max-width: 768px) {
+            .book-content {
+                flex-direction: column;
+            }
+            
+            .book-cover {
+                margin-right: 0;
+                margin-bottom: 15px;
+                align-self: center;
+            }
+            
+            .book-actions {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>Z-Lib Book Search</h1>
+    
+    <div class="container">
+        <div class="status-info">
+            <strong>Server Status:</strong> <span id="server-status">Checking...</span>
+        </div>
+        
+        <div class="search-container">
+            <input type="text" id="search-input" placeholder="Enter book title, author, or keyword...">
+            <button id="search-button">Search</button>
+        </div>
+        
+        <div class="loader">
+            <div class="spinner"></div>
+            <p id="loader-text">Searching Z-Library...</p>
+        </div>
+        
+        <div class="error" id="error-message"></div>
+        <div class="success" id="success-message"></div>
+        
+        <div class="results-container" id="results-container">
+            <h2>Search Results</h2>
+            <div id="results-list"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = window.location.origin; // Use same origin as the HTML file
+        
+        let searchTimeout;
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            const searchInput = document.getElementById('search-input');
+            const searchButton = document.getElementById('search-button');
+            const loader = document.querySelector('.loader');
+            const loaderText = document.getElementById('loader-text');
+            const errorMessage = document.getElementById('error-message');
+            const successMessage = document.getElementById('success-message');
+            const resultsContainer = document.getElementById('results-container');
+            const resultsList = document.getElementById('results-list');
+            const serverStatus = document.getElementById('server-status');
+            
+            // Check server status on load
+            checkServerStatus();
+            
+            // Focus search input
+            searchInput.focus();
+            
+            // Event listeners
+            searchButton.addEventListener('click', performSearch);
+            searchInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    performSearch();
+                }
+            });
+            
+            // Real-time search (debounced)
+            searchInput.addEventListener('input', function() {
+                clearTimeout(searchTimeout);
+                const query = this.value.trim();
+                
+                if (query.length >= 3) {
+                    searchTimeout = setTimeout(() => {
+                        performSearch();
+                    }, 1000);
+                }
+            });
+            
+            async function checkServerStatus() {
+                try {
+                    const response = await fetch(`${API_BASE}/api/test`);
+                    if (response.ok) {
+                        const data = await response.json();
+                        serverStatus.textContent = '✅ Connected';
+                        serverStatus.style.color = '#28a745';
+                    } else {
+                        throw new Error('Server error');
+                    }
+                } catch (error) {
+                    serverStatus.textContent = '❌ Server not running';
+                    serverStatus.style.color = '#dc3545';
+                    showError('Server is not running. Please start the Node.js server first.');
+                }
+            }
+            
+            async function performSearch() {
+                const query = searchInput.value.trim();
+                
+                if (!query) {
+                    showError('Please enter a search term');
+                    return;
+                }
+                
+                if (query.length < 2) {
+                    showError('Search term must be at least 2 characters long');
+                    return;
+                }
+                
+                // Show loading state
+                showLoader('Searching Z-Library...');
+                hideMessages();
+                resultsContainer.style.display = 'none';
+                searchButton.disabled = true;
+                searchButton.textContent = 'Searching...';
+                
+                try {
+                    const response = await fetch(`${API_BASE}/api/search/${encodeURIComponent(query)}`);
+                    const data = await response.json();
+                    
+                    if (!response.ok) {
+                        throw new Error(data.error || 'Search failed');
+                    }
+                    
+                    if (data.success && data.books && data.books.length > 0) {
+                        showResults(data);
+                        showSuccess(`Found ${data.books.length} books using ${data.domain_used}`);
+                    } else {
+                        showError(data.error || 'No books found');
+                    }
+                    
+                } catch (error) {
+                    console.error('Search error:', error);
+                    showError(`Search failed: ${error.message}`);
+                } finally {
+                    hideLoader();
+                    searchButton.disabled = false;
+                    searchButton.textContent = 'Search';
+                }
+            }
+            
+            function showResults(data) {
+                resultsList.innerHTML = '';
+                
+                data.books.forEach((book, index) => {
+                    const bookElement = createBookElement(book, index);
+                    resultsList.appendChild(bookElement);
+                });
+                
+                resultsContainer.style.display = 'block';
+            }
+            
+            function createBookElement(book, index) {
+                const bookDiv = document.createElement('div');
+                bookDiv.className = 'book-item';
+                bookDiv.style.animationDelay = `${index * 0.1}s`;
+                
+                const coverImg = book.coverUrl ? 
+                    `<img src="${book.coverUrl}" alt="Book cover" class="book-cover" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
+                     <div class="book-cover no-image" style="display: none;">No Cover</div>` :
+                    `<div class="book-cover no-image">No Cover</div>`;
+                
+                bookDiv.innerHTML = `
+                    <div class="book-content">
+                        ${coverImg}
+                        <div class="book-details">
+                            <h3>${escapeHtml(book.title)}</h3>
+                            <p><strong>Author:</strong> ${escapeHtml(book.author)}</p>
+                            
+                            <div class="book-metadata">
+                                <div class="metadata-item">
+                                    <div class="metadata-label">Year</div>
+                                    <div>${escapeHtml(book.year)}</div>
+                                </div>
+                                <div class="metadata-item">
+                                    <div class="metadata-label">Language</div>
+                                    <div>${escapeHtml(book.language)}</div>
+                                </div>
+                                <div class="metadata-item">
+                                    <div class="metadata-label">Pages</div>
+                                    <div>${escapeHtml(book.pages)}</div>
+                                </div>
+                                <div class="metadata-item">
+                                    <div class="metadata-label">Format</div>
+                                    <div>${escapeHtml(book.format)}</div>
+                                </div>
+                            </div>
+                            
+                            <div class="book-actions">
+                                <button class="btn btn-primary" onclick="getBookDetails('${escapeHtml(book.bookUrl)}', this)">
+                                    📖 Get Read Link
+                                </button>
+                                <a href="${book.bookUrl}" target="_blank" class="btn btn-secondary">
+                                    🔗 View on Z-Lib
+                                </a>
+                            </div>
+                            
+                            <div class="reader-container" id="reader-${index}"></div>
+                        </div>
+                    </div>
+                `;
+                
+                return bookDiv;
+            }
+            
+            // Make getBookDetails globally available
+            window.getBookDetails = async function(bookUrl, button) {
+                const originalText = button.textContent;
+                const readerId = button.closest('.book-item').querySelector('.reader-container').id;
+                const readerContainer = document.getElementById(readerId);
+                
+                button.disabled = true;
+                button.textContent = '⏳ Getting link...';
+                
+                try {
+                    const response = await fetch(`${API_BASE}/api/book/details?url=${encodeURIComponent(bookUrl)}`);
+                    const data = await response.json();
+                    
+                    if (!response.ok) {
+                        throw new Error(data.error || 'Failed to get book details');
+                    }
+                    
+                    if (data.success && data.readerUrl) {
+                        readerContainer.innerHTML = `
+                            <a href="${data.readerUrl}" target="_blank" class="reader-link">
+                                📖 Read Online Now
+                            </a>
+                        `;
+                        button.style.display = 'none';
+                    } else {
+                        readerContainer.innerHTML = `
+                            <div class="no-reader">
+                                📵 Read online option not available for this book. Try the "View on Z-Lib" link above.
+                            </div>
+                        `;
+                    }
+                    
+                } catch (error) {
+                    console.error('Book details error:', error);
+                    readerContainer.innerHTML = `
+                        <div class="no-reader">
+                            ❌ Error getting read link: ${error.message}
+                        </div>
+                    `;
+                } finally {
+                    button.disabled = false;
+                    button.textContent = originalText;
+                }
+            };
+            
+            function showLoader(text) {
+                loaderText.textContent = text;
+                loader.style.display = 'block';
+            }
+            
+            function hideLoader() {
+                loader.style.display = 'none';
+            }
+            
+            function showError(message) {
+                errorMessage.textContent = message;
+                errorMessage.style.display = 'block';
+                successMessage.style.display = 'none';
+            }
+            
+            function showSuccess(message) {
+                successMessage.textContent = message;
+                successMessage.style.display = 'block';
+                errorMessage.style.display = 'none';
+            }
+            
+            function hideMessages() {
+                errorMessage.style.display = 'none';
+                successMessage.style.display = 'none';
+            }
+            
+            function escapeHtml(text) {
+                const map = {
+                    '&': '&amp;',
+                    '<': '&lt;',
+                    '>': '&gt;',
+                    '"': '&quot;',
+                    "'": '&#039;'
+                };
+                return text.replace(/[&<>"']/g, function(m) { return map[m]; });
+            }
+        });
+    </script>
+</body>
+</html>
