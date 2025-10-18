@@ -17,6 +17,8 @@ let mainWindow;
 let torrentlessProc = null;
 let svc111477Proc = null;
 let booksProc = null;
+let booksDesiredPort = 3004;
+let booksBaseUrl = 'http://127.0.0.1:3004';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -255,8 +257,10 @@ function openInMPV(win, streamUrl, infoHash, startSeconds) {
 
 function createWindow() {
     const win = new BrowserWindow({
-        width: 1200,
-        height: 800,
+        width: 1440,
+        height: 900,
+        minWidth: 1200,
+        minHeight: 800,
         webPreferences: {
             preload: path.join(__dirname, 'preload.js'),
             nodeIntegration: false,
@@ -265,6 +269,10 @@ function createWindow() {
             allowRunningInsecureContent: true, // Allow mixed content
             experimentalFeatures: true, // Enable experimental features for better iframe support
         },
+        // Enable custom title bar (frameless) and set background to match purple theme
+        frame: false,
+        backgroundColor: '#120a1f',
+        titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'hidden',
     });
     // Remove default application menu (File/Edit/View/Help)
     try { Menu.setApplicationMenu(null); } catch(_) {}
@@ -592,7 +600,14 @@ function startBooks() {
         // Spawn Electron binary in Node mode to run server.js
         const logPath = path.join(app.getPath('userData'), 'books.log');
         const logStream = fs.createWriteStream(logPath, { flags: 'a' });
-        const childEnv = { ...process.env, PORT: '3004', ELECTRON_RUN_AS_NODE: '1', NODE_PATH: NODE_PATH_VALUE };
+        const childEnv = { 
+            ...process.env, 
+            PORT: String(booksDesiredPort), 
+            ELECTRON_RUN_AS_NODE: '1', 
+            NODE_PATH: NODE_PATH_VALUE,
+            // Force the Books server to use z-lib.gd as the primary/only mirror
+            ZLIB_FORCE_DOMAIN: 'z-lib.gd'
+        };
         booksProc = spawn(process.execPath, [entry], {
             stdio: ['ignore', 'pipe', 'pipe'],
             env: childEnv,
@@ -627,12 +642,18 @@ function startBooks() {
             const timer = setInterval(() => {
                 attempts++;
                 try {
-                    const req = http.get({ hostname: '127.0.0.1', port: 3004, path: '/health', timeout: 350 }, (res) => {
+                    const req = http.get({ hostname: '127.0.0.1', port: booksDesiredPort, path: '/health', timeout: 350 }, (res) => {
                         if (res.statusCode === 200) {
                             healthy = true;
-                            console.log('Books server is up on http://127.0.0.1:3004');
+                            booksBaseUrl = `http://127.0.0.1:${booksDesiredPort}`;
+                            console.log('Books server is up on ' + booksBaseUrl);
                             clearInterval(timer);
                             try { res.resume(); } catch(_) {}
+                            try {
+                                if (mainWindow && !mainWindow.isDestroyed()) {
+                                    mainWindow.webContents.send('books-url', { url: booksBaseUrl });
+                                }
+                            } catch(_) {}
                         } else {
                             try { res.resume(); } catch(_) {}
                         }
@@ -643,33 +664,14 @@ function startBooks() {
                 if (attempts >= maxAttempts) {
                     clearInterval(timer);
                     if (!healthy && !app.isQuitting) {
-                        // Attempt fallback using system Node if available (dev only)
-                        if (!app.isPackaged) {
-                            try {
-                                console.warn('Books server did not respond; attempting to start with system Node (dev)...');
-                                try { booksProc && booksProc.kill('SIGTERM'); } catch(_) {}
-                                const nodeCmd = process.platform === 'win32' ? 'node.exe' : 'node';
-                                booksProc = spawn(nodeCmd, [entry], {
-                                    stdio: ['ignore', 'pipe', 'pipe'],
-                                    env: { ...process.env, PORT: '3004' },
-                                    cwd: path.dirname(entry),
-                                    shell: false
-                                });
-                                try {
-                                    booksProc.stdout.on('data', (d) => { try { logStream.write(d); } catch(_) {} });
-                                    booksProc.stderr.on('data', (d) => { try { logStream.write(d); } catch(_) {} });
-                                    booksProc.on('error', (err) => {
-                                        console.error('System Node fallback failed (Books):', err?.message || err);
-                                        try { logStream.write('System Node fallback error: ' + String(err?.stack || err) + '\n'); } catch(_) {}
-                                    });
-                                } catch(_) {}
-                            } catch (e) {
-                                console.error('Fallback start with system Node failed (Books):', e);
-                                try { logStream.write('Fallback failed: ' + String(e?.stack || e) + '\n'); } catch(_) {}
-                            }
-                        } else {
-                            console.warn('Skipping system Node fallback in packaged build (Books).');
-                        }
+                        // Try a different local port and restart the books server for reliability
+                        const fallbackPorts = [43004, 53004];
+                        const nextPort = fallbackPorts.find(p => p !== booksDesiredPort) || 43004;
+                        console.warn(`[Books] Health check failed on port ${booksDesiredPort}. Retrying on port ${nextPort}...`);
+                        try { booksProc && booksProc.kill('SIGTERM'); } catch(_) {}
+                        booksDesiredPort = nextPort;
+                        // Restart fresh
+                        setTimeout(() => { try { startBooks(); } catch(_) {} }, 300);
                     }
                 }
             }, 400);
@@ -756,6 +758,44 @@ if (!gotLock) {
         app.exit(0);
     });
 
+    // Window control IPC handlers
+    ipcMain.handle('window-minimize', () => {
+        try { if (mainWindow && !mainWindow.isDestroyed()) mainWindow.minimize(); } catch(_) {}
+        return { success: true };
+    });
+    ipcMain.handle('window-maximize-toggle', () => {
+        try {
+            if (mainWindow && !mainWindow.isDestroyed()) {
+                if (mainWindow.isMaximized()) {
+                    mainWindow.restore();
+                } else {
+                    mainWindow.maximize();
+                }
+                return { success: true, isMaximized: mainWindow.isMaximized() };
+            }
+        } catch(_) {}
+        return { success: false };
+    });
+    ipcMain.handle('window-close', () => {
+        try {
+            app.isQuitting = true;
+            if (mainWindow && !mainWindow.isDestroyed()) mainWindow.close();
+        } catch(_) {}
+        return { success: true };
+    });
+
+    // Notify renderer about maximize state changes (to swap icons)
+    try {
+        if (mainWindow) {
+            mainWindow.on('maximize', () => {
+                try { mainWindow.webContents.send('window-maximize-changed', { isMaximized: true }); } catch(_) {}
+            });
+            mainWindow.on('unmaximize', () => {
+                try { mainWindow.webContents.send('window-maximize-changed', { isMaximized: false }); } catch(_) {}
+            });
+        }
+    } catch(_) {}
+
     // IPC handler: Open external URL in default browser
     ipcMain.handle('open-external', async (event, url) => {
         try {
@@ -767,6 +807,11 @@ if (!gotLock) {
         } catch (err) {
             return { success: false, message: err?.message || 'Failed to open URL' };
         }
+    });
+
+    // IPC: get current Books base URL (dynamic port safe)
+    ipcMain.handle('books-get-url', async () => {
+        try { return { success: true, url: booksBaseUrl }; } catch(e) { return { success: false, url: 'http://127.0.0.1:3004' }; }
     });
 
     // IPC: copy text to clipboard
@@ -788,7 +833,14 @@ if (!gotLock) {
         try {
             // Install update and do not run after install
             // electron-updater: quitAndInstall(isSilent=false, isForceRunAfter=false)
-            autoUpdater.quitAndInstall(false, false);
+            try {
+                autoUpdater.quitAndInstall(false, false);
+            } catch (e) {
+                // Fallback: force exit if updater throws
+                app.exit(0);
+            }
+            // Safety: if app still hasn't exited in 3s (edge cases), force exit
+            setTimeout(() => { try { app.exit(0); } catch(_) {} }, 3000);
             return { success: true };
         } catch (e) {
             return { success: false, message: e?.message || 'Failed to install update' };
