@@ -35,13 +35,61 @@
             color: var(--light);
             overflow-x: hidden;
         }
-        
+
+        /* Custom title bar (frameless window controls) */
+        .titlebar {
+            -webkit-app-region: drag;
+            height: 36px;
+            background: linear-gradient(90deg, #2a1847 0%, #3b1c6a 100%);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 6px 0 10px;
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+        .titlebar .app-title {
+            color: #e9d5ff;
+            font-weight: 600;
+            font-size: 13px;
+            letter-spacing: .3px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .titlebar .window-buttons { -webkit-app-region: no-drag; display: flex; align-items: center; gap: 4px; pointer-events: auto; }
+        .win-btn {
+            -webkit-app-region: no-drag;
+            pointer-events: auto;
+            width: 46px;
+            height: 28px;
+            border-radius: 6px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 28px;
+            color: #e9d5ff;
+            background: transparent;
+            border: 1px solid rgba(255,255,255,0.06);
+            cursor: pointer;
+            transition: transform .12s ease, background .15s ease, border-color .15s ease, color .15s ease;
+        }
+        .win-btn * { pointer-events: none; }
+        .win-btn:hover { transform: translateY(-1px) scale(1.06); background: rgba(139,92,246,0.22); border-color: rgba(168,85,247,0.5); color: #fff; }
+        .win-btn:active { transform: translateY(0) scale(0.97); }
+        .win-btn.win-close:hover { background: rgba(244,63,94,0.28); border-color: rgba(244,63,94,0.6); }
+        .win-btn.win-close i { color: #fecaca; }
+        .win-btn.win-min i { transform: scale(1.12); }
+        .win-btn.win-max i { transform: scale(1.05); }
+
         header {
             background-color: var(--primary);
             padding: 1rem 2rem;
             position: sticky;
-            top: 0;
-            z-index: 100;
+            top: 36px; /* sit below the titlebar */
+            z-index: 900;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
         }
         
@@ -4643,6 +4691,47 @@
     </style>
 </head>
 <body>
+    <!-- Custom purple title bar for frameless window -->
+    <div class="titlebar">
+        <div class="app-title">
+            <i class="fa-solid fa-film" style="color:#c084fc"></i>
+            <span>PlayTorrio</span>
+        </div>
+        <div class="window-buttons">
+            <button class="win-btn win-min" id="btnMin" title="Minimize"><i class="fa-solid fa-minus"></i></button>
+            <button class="win-btn win-max" id="btnMax" title="Maximize"><i class="fa-regular fa-square"></i></button>
+            <button class="win-btn win-close" id="btnClose" title="Close"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+    </div>
+    <script>
+        // Window controls binding
+        (function() {
+            const $ = (s) => document.querySelector(s);
+            const btnMin = $('#btnMin');
+            const btnMax = $('#btnMax');
+            const btnClose = $('#btnClose');
+            const iconSquare = '<i class="fa-regular fa-square"></i>';
+            const iconRestore = '<i class="fa-regular fa-clone"></i>';
+            function updateMaxIcon(isMax) {
+                if (!btnMax) return;
+                btnMax.innerHTML = isMax ? iconRestore : iconSquare;
+                btnMax.title = isMax ? 'Restore' : 'Maximize';
+            }
+            if (window.electronAPI && window.electronAPI.windowControls) {
+                btnMin && btnMin.addEventListener('click', () => window.electronAPI.windowControls.minimize());
+                btnMax && btnMax.addEventListener('click', async () => {
+                    try {
+                        const res = await window.electronAPI.windowControls.maximizeToggle();
+                        if (res && typeof res.isMaximized === 'boolean') updateMaxIcon(res.isMaximized);
+                    } catch(_) {}
+                });
+                btnClose && btnClose.addEventListener('click', () => window.electronAPI.windowControls.close());
+                try {
+                    window.electronAPI.windowControls.onMaximizeChanged(({ isMaximized }) => updateMaxIcon(!!isMaximized));
+                } catch(_) {}
+            }
+        })();
+    </script>
 <!-- API Setup Modal -->
 <div class="api-setup-modal" id="apiSetupModal">
     <div class="api-setup-content">
@@ -7248,6 +7337,8 @@ Your browser does not support the video tag.
 
                     // Update action grid with stats
                     await loadTraktStats();
+                    // One-time import from Trakt into local caches
+                    importTraktDataOnceIfNeeded();
                     
                 } else {
                     // Disconnected state
@@ -7860,6 +7951,186 @@ Your browser does not support the video tag.
 
             if (watchlistToggle && traktWatchlistSyncToggle) {
                 watchlistToggle.checked = traktWatchlistSyncToggle.checked;
+            }
+        }
+
+        // ===== TRAKT IMPORT (My List + Done Watching) =====
+        let traktImportedOnce = false;
+
+        async function fetchTmdbDetailsById(type, tmdbId) {
+            try {
+                if (!tmdbId) return null;
+                const base = 'https://api.themoviedb.org/3';
+                const endpoint = type === 'tv' ? `/tv/${tmdbId}` : `/movie/${tmdbId}`;
+                const url = `${base}${endpoint}?api_key=${TMDB_API_KEY}`;
+                const resp = await fetch(url);
+                if (!resp.ok) return null;
+                const j = await resp.json();
+                return j;
+            } catch(_) { return null; }
+        }
+
+        function normalizeYear(from) {
+            try { return (from || '').substring(0, 4) || ''; } catch { return ''; }
+        }
+
+        async function importTraktWatchlistToMyList() {
+            try {
+                const res = await fetch('/api/trakt/watchlist?type=mixed');
+                const data = await res.json();
+                if (!data.success || !Array.isArray(data.watchlist)) return 0;
+
+                // Ensure current list loaded
+                await loadMyList();
+
+                let added = 0;
+                for (const entry of data.watchlist) {
+                    const isMovie = !!entry.movie;
+                    const isShow = !!entry.show;
+                    const type = isMovie ? 'movie' : (isShow ? 'tv' : null);
+                    const ids = (entry.movie?.ids || entry.show?.ids || {});
+                    const tmdbId = ids.tmdb || null;
+                    if (!type || !tmdbId) continue;
+
+                    // Skip if already present
+                    if (myListCache.some(it => it.id === tmdbId && it.media_type === type)) continue;
+
+                    // Fetch TMDB details to enrich poster/year/rating/title
+                    const details = await fetchTmdbDetailsById(type, tmdbId);
+                    const title = type === 'tv' ? (details?.name || entry.show?.title || '') : (details?.title || entry.movie?.title || '');
+                    const poster_path = details?.poster_path || '';
+                    const year = type === 'tv' ? normalizeYear(details?.first_air_date || entry.show?.year) : normalizeYear(details?.release_date || entry.movie?.year);
+                    const vote_average = Number(details?.vote_average || 0);
+                    const listItem = {
+                        id: tmdbId,
+                        media_type: type,
+                        title,
+                        poster_path,
+                        year,
+                        vote_average,
+                        added_date: entry.listed_at || new Date().toISOString()
+                    };
+                    myListCache.unshift(listItem);
+                    added++;
+                }
+
+                if (added > 0) {
+                    await saveMyList();
+                    // Refresh page if open
+                    if (document.getElementById('myListPage')?.style.display !== 'none') {
+                        await displayMyList();
+                    }
+                }
+                return added;
+            } catch (e) {
+                console.log('[TRAKT IMPORT] My List failed:', e?.message);
+                return 0;
+            }
+        }
+
+        async function importTraktHistoryToDoneWatching(maxPages = 20, pageSize = 100) {
+            try {
+                await loadDoneWatching();
+                let totalAdded = 0;
+                for (let page = 1; page <= maxPages; page++) {
+                    const res = await fetch(`/api/trakt/history?type=mixed&page=${page}&limit=${pageSize}`);
+                    const data = await res.json();
+                    if (!data.success || !Array.isArray(data.history) || data.history.length === 0) break;
+
+                    for (const h of data.history) {
+                        const watchedAt = h.watched_at || new Date().toISOString();
+                        if (h.movie) {
+                            const ids = h.movie.ids || {};
+                            const tmdbId = ids.tmdb || null;
+                            if (!tmdbId) continue;
+                            // Skip if already have movie marked done (whole title)
+                            if (doneWatchingCache.some(it => it.id === tmdbId && it.media_type === 'movie' && !it.season && !it.episode)) continue;
+                            const details = await fetchTmdbDetailsById('movie', tmdbId);
+                            const item = {
+                                id: tmdbId,
+                                media_type: 'movie',
+                                title: details?.title || h.movie.title || '',
+                                poster_path: details?.poster_path || '',
+                                year: normalizeYear(details?.release_date || h.movie.year),
+                                vote_average: Number(details?.vote_average || 0),
+                                completed_date: watchedAt
+                            };
+                            doneWatchingCache.unshift(item);
+                            totalAdded++;
+                        } else if (h.episode && h.show) {
+                            const ids = h.show.ids || {};
+                            const tmdbId = ids.tmdb || null;
+                            if (!tmdbId) continue;
+                            const season = h.episode.season;
+                            const episode = h.episode.number;
+                            // Skip if this exact episode already present
+                            if (doneWatchingCache.some(it => it.id === tmdbId && it.media_type === 'tv' && it.season === season && it.episode === episode)) continue;
+                            const details = await fetchTmdbDetailsById('tv', tmdbId);
+                            const item = {
+                                id: tmdbId,
+                                media_type: 'tv',
+                                title: details?.name || h.show.title || '',
+                                poster_path: details?.poster_path || '',
+                                year: normalizeYear(details?.first_air_date || h.show.year),
+                                vote_average: Number(details?.vote_average || 0),
+                                completed_date: watchedAt,
+                                season,
+                                episode,
+                                episode_title: h.episode.title || `S${season}E${episode}`
+                            };
+                            doneWatchingCache.unshift(item);
+                            totalAdded++;
+                        }
+                    }
+
+                    // If we received less than requested, we reached the end
+                    if (data.history.length < pageSize) break;
+                }
+
+                if (totalAdded > 0) {
+                    await saveDoneWatching();
+                    if (document.getElementById('doneWatchingPage')?.style.display !== 'none') {
+                        await displayDoneWatching();
+                    }
+                }
+                return totalAdded;
+            } catch (e) {
+                console.log('[TRAKT IMPORT] Done Watching failed:', e?.message);
+                return 0;
+            }
+        }
+
+        async function importTraktDataOnceIfNeeded() {
+            try {
+                if (traktImportedOnce) return;
+                if (localStorage.getItem('traktImportedOnce') === 'true') { traktImportedOnce = true; return; }
+                showNotification('Importing your Trakt data (watchlist & history)...', 'info');
+                const [addedList, addedDone] = await Promise.all([
+                    importTraktWatchlistToMyList(),
+                    importTraktHistoryToDoneWatching(),
+                ]);
+                traktImportedOnce = true;
+                localStorage.setItem('traktImportedOnce', 'true');
+                const msg = `Imported ${addedList} in My List and ${addedDone} in Done Watching from Trakt`;
+                showNotification(msg, 'success');
+                // Optionally update visible cards' buttons state
+                try {
+                    document.querySelectorAll('.movie-card').forEach(card => {
+                        // Attempt to extract id/mediaType from onclick attributes
+                        const addBtn = card.querySelector('.add-to-list-btn');
+                        const doneBtn = card.querySelector('.done-watching-btn');
+                        const attr = (addBtn?.getAttribute('onclick') || doneBtn?.getAttribute('onclick') || '') + '';
+                        const idMatch = attr.match(/,(\s*)(\d+)(\s*),\s*'(movie|tv)'/);
+                        if (idMatch) {
+                            const id = parseInt(idMatch[2], 10);
+                            const mediaType = idMatch[4];
+                            updateCardListStatus(card, id, mediaType);
+                            updateCardDoneStatus(card, id, mediaType);
+                        }
+                    });
+                } catch(_) {}
+            } catch (e) {
+                console.log('[TRAKT IMPORT] unexpected error:', e?.message);
             }
         }
 
@@ -9532,7 +9803,15 @@ Your browser does not support the video tag.
                 
                 try {
                     const encodedQuery = encodeURIComponent(searchTerm);
-                    const response = await fetch(`http://localhost:3004/search/${encodedQuery}`);
+                    // Resolve Books server base URL dynamically from main process (port may vary)
+                    let booksBase = 'http://127.0.0.1:3004';
+                    try {
+                        if (window.electronAPI?.booksGetUrl) {
+                            const r = await window.electronAPI.booksGetUrl();
+                            if (r?.success && r?.url) booksBase = r.url;
+                        }
+                    } catch(_) {}
+                    const response = await fetch(`${booksBase}/search/${encodedQuery}`);
                     const data = await response.json();
                     
                     console.log('[BOOKS] Search results:', data);
@@ -11165,13 +11444,17 @@ Your browser does not support the video tag.
                 const title = item.title || item.name || 'Untitled';
                 const year = (item.release_date || item.first_air_date || '').substring(0, 4);
                 const rating = (item.vote_average || 0).toFixed(1);
+                // Only show Done Watching button for movies (not TV shows)
+                const doneBtnHTML = mediaType === 'movie'
+                    ? `<button class="done-watching-btn" onclick="toggleDoneWatching(event, ${item.id}, '${mediaType}', '${title.replace(/'/g, "\\'")}', '${item.poster_path}', '${year}', ${item.vote_average || 0})">
+                        <i class="fas fa-check"></i>
+                      </button>`
+                    : '';
                 card.innerHTML = `
                     <button class="add-to-list-btn" onclick="toggleMyList(event, ${item.id}, '${mediaType}', '${title.replace(/'/g, "\\'")}', '${item.poster_path}', '${year}', ${item.vote_average || 0})">
                         <i class="fas fa-plus"></i>
                     </button>
-                    <button class="done-watching-btn" onclick="toggleDoneWatching(event, ${item.id}, '${mediaType}', '${title.replace(/'/g, "\\'")}', '${item.poster_path}', '${year}', ${item.vote_average || 0})">
-                        <i class="fas fa-check"></i>
-                    </button>
+                    ${doneBtnHTML}
                     <img src="https://image.tmdb.org/t/p/w500${item.poster_path}" alt="${title}" class="movie-poster">
                     <div class="movie-info">
                         <h3 class="movie-title">${title}</h3>
@@ -11270,13 +11553,18 @@ Your browser does not support the video tag.
                 card.className = 'movie-card';
                 card.dataset.rating = movie.vote_average || 0;
                 card.dataset.date = movie.release_date || movie.first_air_date || '';
+                const mediaType = movie.media_type || 'movie';
+                // Only show Done Watching button for movies
+                const doneBtnHTML = mediaType === 'movie'
+                    ? `<button class="done-watching-btn" onclick="toggleDoneWatching(event, ${movie.id}, '${mediaType}', '${(movie.title || movie.name || '').replace(/'/g, "\\'")}', '${movie.poster_path}', '${(movie.release_date || movie.first_air_date || '').substring(0, 4)}', ${movie.vote_average || 0})">
+                        <i class="fas fa-check"></i>
+                      </button>`
+                    : '';
                 card.innerHTML = `
-                    <button class="add-to-list-btn" onclick="toggleMyList(event, ${movie.id}, '${movie.media_type || 'movie'}', '${(movie.title || movie.name || '').replace(/'/g, "\\'")}', '${movie.poster_path}', '${(movie.release_date || movie.first_air_date || '').substring(0, 4)}', ${movie.vote_average || 0})">
+                    <button class="add-to-list-btn" onclick="toggleMyList(event, ${movie.id}, '${mediaType}', '${(movie.title || movie.name || '').replace(/'/g, "\\'")}', '${movie.poster_path}', '${(movie.release_date || movie.first_air_date || '').substring(0, 4)}', ${movie.vote_average || 0})">
                         <i class="fas fa-plus"></i>
                     </button>
-                    <button class="done-watching-btn" onclick="toggleDoneWatching(event, ${movie.id}, '${movie.media_type || 'movie'}', '${(movie.title || movie.name || '').replace(/'/g, "\\'")}', '${movie.poster_path}', '${(movie.release_date || movie.first_air_date || '').substring(0, 4)}', ${movie.vote_average || 0})">
-                        <i class="fas fa-check"></i>
-                    </button>
+                    ${doneBtnHTML}
                     <img src="https://image.tmdb.org/t/p/w500${movie.poster_path}" alt="${movie.title || movie.name}" class="movie-poster">
                     <div class="movie-info">
                         <h3 class="movie-title">${movie.title || movie.name}</h3>
@@ -12492,6 +12780,7 @@ Your browser does not support the video tag.
 
         // Persistent update notification that stays until user restarts
         let persistentUpdateNotification = null;
+        let persistentDownloadNotification = null;
         
         function showPersistentUpdateNotification() {
             // Remove any existing persistent notification
@@ -12552,12 +12841,67 @@ Your browser does not support the video tag.
                 persistentUpdateNotification.remove();
                 persistentUpdateNotification = null;
             }
+            if (persistentDownloadNotification) {
+                persistentDownloadNotification.remove();
+                persistentDownloadNotification = null;
+            }
         }
         
         function restartForUpdate() {
             hideUpdateNotification();
             // Trigger restart via the existing restart button in the overlay
             document.getElementById('updateRestartBtn')?.click();
+        }
+
+        // Persistent downloading notification (sticks during download)
+        function showPersistentDownloadNotification(percent = 0) {
+            // Remove old download notification if any
+            if (persistentDownloadNotification) {
+                try { persistentDownloadNotification.remove(); } catch(_) {}
+                persistentDownloadNotification = null;
+            }
+            persistentDownloadNotification = document.createElement('div');
+            persistentDownloadNotification.id = 'persistentDownloadNotification';
+            persistentDownloadNotification.innerHTML = `
+                <div style="
+                    position: fixed;
+                    top: 20px;
+                    right: 20px;
+                    background: linear-gradient(135deg, #a855f7 0%, #7c3aed 100%);
+                    color: white;
+                    padding: 16px 20px;
+                    border-radius: 12px;
+                    box-shadow: 0 8px 32px rgba(124, 58, 237, 0.35);
+                    z-index: 10000;
+                    font-weight: 600;
+                    font-size: 14px;
+                    max-width: 340px;
+                    min-width: 280px;
+                    backdrop-filter: blur(10px);
+                    border: 1px solid rgba(255, 255, 255, 0.12);
+                    animation: slideInRight 0.4s ease-out;
+                ">
+                    <div style="display:flex; align-items:center; gap:12px;">
+                        <i class="fas fa-download" style="font-size:18px; color:#ede9fe;"></i>
+                        <div style="flex:1;">
+                            <div style="font-size:15px; margin-bottom:6px;">Downloading update...</div>
+                            <div id="dlNotifText" style="font-size:13px; opacity:0.95;">${percent}% complete</div>
+                            <div style="margin-top:10px; height:6px; background:rgba(255,255,255,0.2); border-radius:6px; overflow:hidden;">
+                                <div id="dlNotifBar" style="height:100%; width:${percent}%; background:#c4b5fd; transition:width .2s ease;"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(persistentDownloadNotification);
+        }
+
+        function updatePersistentDownloadNotification(percent = 0) {
+            if (!persistentDownloadNotification) return;
+            const text = persistentDownloadNotification.querySelector('#dlNotifText');
+            const bar = persistentDownloadNotification.querySelector('#dlNotifBar');
+            if (text) text.textContent = `${percent}% complete`;
+            if (bar) bar.style.width = `${percent}%`;
         }
 
         // --- Custom Player Logic ---
@@ -13572,8 +13916,8 @@ Your browser does not support the video tag.
                     const warningText = document.getElementById('updateWarningText');
                     if (warningText) warningText.textContent = '⚠️ Downloading update - please keep the app open';
                     
-                    // Show persistent notification that update download started
-                    showNotification('📥 Update found! Download starting...', 'info', 8000); // Show for 8 seconds
+                    // Show persistent download notification that stays until completion
+                    showPersistentDownloadNotification(0);
                 });
                 
                 // Progress updates - keep overlay visible throughout download
@@ -13583,15 +13927,15 @@ Your browser does not support the video tag.
                     if (pct) pct.textContent = percent + '%';
                     if (text) text.textContent = `Downloading update... ${percent}% complete`;
                     if (icon) { icon.className = 'fas fa-download'; icon.style.animation = 'pulse 1.5s ease-in-out infinite'; }
+                    updatePersistentDownloadNotification(percent);
                     
-                    // Show progress notification every 25%
-                    if (percent > 0 && percent % 25 === 0) {
-                        showNotification(`📥 Download progress: ${percent}%`, 'info', 3000);
-                    }
+                    // Optional: throttle additional toasts if desired; persistent notif covers it
                 });
                 
                 // Download finished - keep overlay visible and show persistent restart notification
                 window.electronAPI.onUpdateDownloaded?.((_info) => {
+                    // Switch from download notification to restart-ready notification
+                    hideUpdateNotification();
                     if (icon) { icon.className = 'fas fa-check-circle'; icon.style.animation = 'none'; icon.style.color = '#22c55e'; }
                     if (text) text.textContent = 'Update downloaded successfully! Click "Restart Now" to complete the update.';
                     if (bar) bar.style.width = '100%';
@@ -13606,11 +13950,6 @@ Your browser does not support the video tag.
                     
                     // Show persistent restart notification that stays until user restarts
                     showPersistentUpdateNotification();
-                    
-                    // Auto-dismiss overlay after 10 seconds, but keep persistent notification
-                    setTimeout(() => {
-                        hideOverlay();
-                    }, 10000);
                 });
                 
                 // Restart button
@@ -14016,9 +14355,10 @@ Your browser does not support the video tag.
                         <button class="add-to-list-btn" onclick="toggleMyList(event, ${item.id}, '${item.media_type}', '${item.title.replace(/'/g, "\\'")}', '${item.poster_path}', '${item.year}', ${item.vote_average})">
                             <i class="fas fa-plus"></i>
                         </button>
-                        <button class="done-watching-btn is-done" onclick="toggleDoneWatching(event, ${item.id}, '${item.media_type}', '${item.title.replace(/'/g, "\\'")}', '${item.poster_path}', '${item.year}', ${item.vote_average}, ${item.season || 'null'}, ${item.episode || 'null'})">
+                        ${item.media_type === 'movie' ? `
+                        <button class="done-watching-btn is-done" onclick="toggleDoneWatching(event, ${item.id}, '${item.media_type}', '${item.title.replace(/'/g, "\\'")}', '${item.poster_path}', '${item.year}', ${item.vote_average})">
                             <i class="fas fa-check-circle"></i>
-                        </button>
+                        </button>` : ''}
                         ${episodeBadge}
                         <img src="https://image.tmdb.org/t/p/w500${item.poster_path}" alt="${displayTitle}" class="movie-poster">
                         <div class="movie-info">
