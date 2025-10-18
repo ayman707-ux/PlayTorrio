@@ -1,6 +1,6 @@
 # ⚡ PlayTorrio
 
-**Playtorrio** is a clean and efficient **torrent streaming app** that uses [Jackett](https://github.com/Jackett/Jackett) to fetch torrent results and stream magnet links directly — all in one interface.
+**PlayTorrio** is a clean and efficient media center and torrent streaming app that uses [Jackett](https://github.com/Jackett/Jackett) and built-in scrapers to fetch torrent results and stream magnet links directly — all in one interface.
 
 Built with ❤️ by **Ayman Marwan**.
 PlayTorrio's official [website](https://playtorrio.netlify.app/)
@@ -9,101 +9,92 @@ PlayTorrio's official [website](https://playtorrio.netlify.app/)
 
 ## 🧩 Features
 - 🔍 Fetch torrents from multiple sources via Jackett  
--Or use the inapp scraper
+  - Or use the in‑app scraper
 - 🎥 Stream magnet links instantly without full download  
 - 💾 Lightweight and fast UI  
 - ⚙️ Customizable Jackett URL and API key  
 - 🌙 Simple, dark-themed interface  
 - 🚀 Cross-platform support (Windows / Soon Linux / Soon macOS)
-- Debrid support (Real-Debrid, AllDebrid, TorBox, premiumize)
-- resume where you left off
-- Build-in subtitles
-- Customizable subtitles
-- 2 UI's modern and classic (can be switched in the settings)
-- in app downloader
-- in app custom made 111477 api to get download links from
+- 🌐 Debrid support (Real-Debrid, AllDebrid, TorBox, Premiumize)
+- ⏯️ Resume where you left off
+- 📝 Built-in subtitles with customization
+- 🧭 Two UIs: modern and classic (switch in Settings)
+- ⬇️ In-app downloader
+- 🔗 In-app custom 111477 API to get download links
+- 📚 Built-in Books search (Z‑Library mirrors) with reader
+- 📺 Live TV/IPTV section
+- ✅ Trakt integration: import Watchlist to My List and History to Done Watching
+- 🗂️ My List and Done Watching, with episode-level tracking
+- 🧰 Integrated microservices (Torrentless, 111477, Books) auto-start with health checks
+- 🔄 Auto-updater with persistent progress
+- 🖥️ Custom frameless title bar with pretty window controls
+
 ---
 
 ## 🛠️ Tech Stack
 - **Backend:** Node.js / Electron  
 - **Frontend:** HTML, CSS, JavaScript  
-- **APIs:** Jackett API  
-- **Streaming:** WebTorrent or similar engine
+- **APIs:** Jackett API, TMDB, Trakt, Z‑Library scraping, 111477 api, torrentless api
+- **Streaming:** WebTorrent (integrated HTTP server), MPV optional but recommended, normal stream servers (check settings)
 
 ---
 
 ## ⚙️ Jackett Setup & Installation
 
-Video Tutorial [here](https://www.youtube.com/watch?v=3igLReZFFzg) 
+Video Tutorial [here](https://www.youtube.com/watch?v=3igLReZFFzg)
 
 ---
 
-Step 1: Install Jackett
-Go to the official [Jackett](https://github.com/Jackett/Jackett/releases) release page
-Download the latest Windows x64 Installer (Jackett.Installer.Windows.exe)
-Run the installer and complete setup.
-Run jackett by double clicking on it in the icon trey
+### Step 1: Install Jackett
+1. Go to the official [Jackett releases](https://github.com/Jackett/Jackett/releases)
+2. Download the latest Windows x64 Installer (Jackett.Installer.Windows.exe)
+3. Run the installer and complete setup.
+4. Start Jackett from the system tray.
 
 <img width="237" height="219" alt="image" src="https://github.com/user-attachments/assets/7c650fb0-9f70-497c-8d71-91d1b59017d3" />
 
----
-Note that jackett has to be running in order to use PlayTorrio
-You can make jackett automatically start by right clicking on it then click on auto start on boot
----
+> Note: Jackett must be running to use PlayTorrio. You can enable "Start on boot" from the tray menu.
 
 <img width="489" height="184" alt="image" src="https://github.com/user-attachments/assets/5efc5588-dc1a-4e13-a13a-86334a51e5d8" />
 
-After running Jackett go to http://127.0.0.1:9117/UI/Dashboard
-or http://localhost:9117/UI/Dashboard
-in any browser
+Open Jackett in a browser:
+- http://127.0.0.1:9117/UI/Dashboard or http://localhost:9117/UI/Dashboard
 
-Step 2: Add Indexers
+### Step 2: Add Indexers
 Indexers are the torrent sources Jackett searches through.
 
-In Jackett’s dashboard, click “Add Indexer”.
+- In Jackett’s dashboard, click “Add Indexer”.
 
 <img width="908" height="948" alt="image" src="https://github.com/user-attachments/assets/7b412338-5faf-4a2d-b492-60efd56650a5" />
 
-
-Search for your favorite torrent sites (like RARBG, 1337x, ThePirateBay, etc.).
-
-Click the + icon to add each one. or just tick it and then you can scroll down and click add selected to add all of them in one go
-
-Some indexers may require login credentials — enter them if you have accounts.
+- Search for your favorite torrent sites (e.g., RARBG, 1337x, ThePirateBay, etc.).
+- Click the + icon to add each one, or tick multiple and click "Add Selected" at the bottom.
+- Some indexers may require login credentials.
 
 <img width="893" height="870" alt="image" src="https://github.com/user-attachments/assets/408a7faf-e44e-4935-b347-a994025acb4b" />
 
+Scroll to the bottom and click "Add Selected":
 
-Then scroll all the way down after selecting your Torrent sites and click add selected
 <img width="894" height="304" alt="image" src="https://github.com/user-attachments/assets/c4531d56-a5b7-4415-9790-21c014fdbea3" />
 
-Step 3: Get Your Jackett API Key
-
+### Step 3: Get Your Jackett API Key
 PlayTorrio connects to Jackett using your personal API key.
 
-Go to Jackett’s Dashboard.
-
-At the top right corner, you’ll see your API Key.
-
-Copy it.
+- In Jackett’s Dashboard, find the API Key at the top right and copy it.
 
 <img width="902" height="923" alt="image" src="https://github.com/user-attachments/assets/f26f2987-0f64-4a47-b141-b9aba4c535bb" />
 
+- In PlayTorrio, paste the API key in the initial setup or later in Settings (top-right).
 
+---
 
-Go to PlayTorrio and either add the jackett api key in the initial setup or from the settings at the top right
-
-
-🧑‍💻 Author
-
-Ayman Marwan
-GitHub Profile
-https://github.com/ayman707-ux
+## 🧑‍💻 Author
+**Ayman Marwan**  
+GitHub: https://github.com/ayman707-ux  
 Built for the open-source community ⚙️
 
-Playtorrio and Jackett are intended for educational and legal use only.
-You are solely responsible for the content you access.
+PlayTorrio and Jackett are intended for educational and legal use only. You are solely responsible for the content you access.
 
 If you enjoy PlayTorrio, please give it a ⭐ on GitHub to show support!
 
-LISENCE INCLUDES THE TORRENT SCRAPER! AND EVERYTHING ON THIS GITHUB REPOSITORY
+License: The repository’s license covers the torrent scraper and all code within this repo.
