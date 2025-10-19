@@ -23,6 +23,9 @@ let booksBaseUrl = 'http://127.0.0.1:3004';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+// Ensure a stable AppUserModelID to prevent Windows taskbar/shortcut icon issues after updates
+try { app.setAppUserModelId('com.ayman.PlayTorrio'); } catch(_) {}
+
 // ----------------------
 // Auto Update (Main-only)
 // ----------------------
@@ -283,19 +286,45 @@ function createWindow() {
         callback(true);
     });
 
-    // Block popup windows and new tabs to prevent ads
+    // Helper: allow-list for external reader/login domains
+    const ALLOWED_READER_HOSTS = new Set([
+        'reader.z-lib.gd',
+        'reader.z-library.sk',
+        'reader.z-lib.fm'
+    ]);
+    const isAllowedReaderDomain = (url) => {
+        try {
+            const { hostname } = new URL(url);
+            const h = hostname.toLowerCase();
+            if (ALLOWED_READER_HOSTS.has(h)) return true;
+            // Allow SingleLogin for auth redirects if reader requires it
+            if (h.includes('singlelogin')) return true;
+            return false;
+        } catch (_) { return false; }
+    };
+
+    // Intercept new windows (target=_blank) and open allowed reader domains externally
     win.webContents.setWindowOpenHandler(({ url }) => {
+        if (isAllowedReaderDomain(url)) {
+            console.log('[Books] Opening reader in external browser:', url);
+            try { shell.openExternal(url); } catch(_) {}
+            return { action: 'deny' };
+        }
         console.log('Blocked popup attempt:', url);
         return { action: 'deny' };
     });
 
-    // Prevent navigation away from the app
+    // Prevent navigation away from the app, but open allowed reader domains externally
     win.webContents.on('will-navigate', (event, url) => {
-        // Allow navigation within our app
         if (url.startsWith('http://127.0.0.1:3000') || url.startsWith('http://localhost:3000')) {
+            return; // internal app navigation
+        }
+        if (isAllowedReaderDomain(url)) {
+            event.preventDefault();
+            console.log('[Books] Opening reader via navigation in external browser:', url);
+            try { shell.openExternal(url); } catch(_) {}
             return;
         }
-        // Block all other navigation attempts
         console.log('Blocked navigation attempt:', url);
         event.preventDefault();
     });
@@ -834,9 +863,10 @@ if (!gotLock) {
             // Install update and do not run after install
             // electron-updater: quitAndInstall(isSilent=false, isForceRunAfter=false)
             try {
-                autoUpdater.quitAndInstall(false, false);
+                // Relaunch automatically after install to reduce user friction
+                autoUpdater.quitAndInstall(false, true);
             } catch (e) {
-                // Fallback: force exit if updater throws
+                // Fallback: force exit if updater throws; Electron/installer should relaunch
                 app.exit(0);
             }
             // Safety: if app still hasn't exited in 3s (edge cases), force exit
