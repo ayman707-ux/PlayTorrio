@@ -749,16 +749,26 @@ export function startServer(userDataPath) {
     app.get('/api/debrid/rd/device-code', async (req, res) => {
         try {
             const s = readSettings();
-            const clientId = (req.query.client_id || s.rdClientId || '').toString();
+            const clientId = (req.query.client_id || s.rdClientId || '').toString().trim();
             if (!clientId) return res.status(400).json({ error: 'Missing Real-Debrid client_id' });
             console.log('[RD][device-code] start', { clientId: mask(clientId) });
-            const body = new URLSearchParams({ client_id: clientId, new_credentials: 'yes' });
-            const r = await fetch('https://api.real-debrid.com/oauth/v2/device/code', {
-                method: 'POST',
-                headers: { 'Accept': 'application/json', 'Content-Type': 'application/x-www-form-urlencoded' },
-                body
+            
+            // Real-Debrid device code endpoint requires GET with query parameters
+            const url = new URL('https://api.real-debrid.com/oauth/v2/device/code');
+            url.searchParams.append('client_id', clientId);
+            url.searchParams.append('new_credentials', 'yes');
+            
+            const r = await fetch(url.toString(), {
+                method: 'GET',
+                headers: { 'Accept': 'application/json' }
             });
-            if (!r.ok) return res.status(r.status).json({ error: await r.text() });
+            
+            if (!r.ok) {
+                const errorText = await r.text();
+                console.error('[RD][device-code] error response:', errorText);
+                return res.status(r.status).json({ error: errorText });
+            }
+            
             const j = await r.json();
             console.log('[RD][device-code] response', { verification_url: j?.verification_url, interval: j?.interval, expires_in: j?.expires_in });
             res.json(j); // { device_code, user_code, interval, expires_in, verification_url }
@@ -772,21 +782,32 @@ export function startServer(userDataPath) {
     app.post('/api/debrid/rd/poll', async (req, res) => {
         try {
             const s = readSettings();
-            const clientId = (req.body?.client_id || s.rdClientId || '').toString();
-            const deviceCode = (req.body?.device_code || '').toString();
+            const clientId = (req.body?.client_id || s.rdClientId || '').toString().trim();
+            const deviceCode = (req.body?.device_code || '').toString().trim();
             if (!clientId || !deviceCode) return res.status(400).json({ error: 'Missing client_id or device_code' });
             console.log('[RD][poll] begin', { clientId: mask(clientId), deviceCode: mask(deviceCode) });
 
             // Step 1: obtain client credentials
-            const credsBody = new URLSearchParams({ client_id: clientId, code: deviceCode });
-            const credsRes = await fetch('https://api.real-debrid.com/oauth/v2/device/credentials', {
-                method: 'POST',
-                headers: { 'Accept': 'application/json', 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: credsBody
+            const credsUrl = new URL('https://api.real-debrid.com/oauth/v2/device/credentials');
+            credsUrl.searchParams.append('client_id', clientId);
+            credsUrl.searchParams.append('code', deviceCode);
+            
+            const credsRes = await fetch(credsUrl.toString(), {
+                method: 'GET',
+                headers: { 'Accept': 'application/json' }
             });
-            if (!credsRes.ok) return res.status(credsRes.status).json({ error: await credsRes.text() });
+            
+            if (!credsRes.ok) {
+                const errorText = await credsRes.text();
+                console.error('[RD][poll] credentials error:', errorText);
+                return res.status(credsRes.status).json({ error: errorText });
+            }
+            
             const creds = await credsRes.json(); // { client_id, client_secret }
-            if (!creds.client_id || !creds.client_secret) return res.status(500).json({ error: 'Invalid credentials response' });
+            if (!creds.client_id || !creds.client_secret) {
+                console.error('[RD][poll] invalid credentials response:', creds);
+                return res.status(500).json({ error: 'Invalid credentials response' });
+            }
             console.log('[RD][poll] creds ok');
 
             // Step 2: exchange for access token
@@ -794,22 +815,32 @@ export function startServer(userDataPath) {
                 client_id: creds.client_id,
                 client_secret: creds.client_secret,
                 code: deviceCode,
-                grant_type: 'http://oauth.net/grant_type/device/1.0.0'
+                grant_type: 'http://oauth.net/grant_type/device/1.0'
             });
             const tokenRes = await fetch('https://api.real-debrid.com/oauth/v2/token', {
                 method: 'POST',
                 headers: { 'Accept': 'application/json', 'Content-Type': 'application/x-www-form-urlencoded' },
                 body: tokenBody
             });
-            if (!tokenRes.ok) return res.status(tokenRes.status).json({ error: await tokenRes.text() });
+            
+            if (!tokenRes.ok) {
+                const errorText = await tokenRes.text();
+                console.error('[RD][poll] token error:', errorText);
+                return res.status(tokenRes.status).json({ error: errorText });
+            }
+            
             const token = await tokenRes.json();
-            if (!token.access_token) return res.status(500).json({ error: 'No access_token returned' });
+            if (!token.access_token) {
+                console.error('[RD][poll] no access_token in response:', token);
+                return res.status(500).json({ error: 'No access_token returned' });
+            }
+            
             const next = { ...s, rdToken: token.access_token, rdRefresh: token.refresh_token || null, rdCredId: creds.client_id, rdCredSecret: creds.client_secret };
             writeSettings(next);
             console.log('[RD][poll] token saved', { hasRefresh: !!token.refresh_token });
             res.json({ success: true });
         } catch (e) {
-            console.error('[RD][poll] error', e?.message);
+            console.error('[RD][poll] error', e?.message, e?.stack);
             res.status(502).json({ error: e?.message || 'Device code poll failed' });
         }
     });
