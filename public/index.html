@@ -6813,6 +6813,7 @@ Your browser does not support the video tag.
                     const isRD = prov === 'realdebrid';
                     const isAD = prov === 'alldebrid';
                     const isTB = prov === 'torbox';
+                    const isPM = prov === 'premiumize';
                     if (rdClientIdGroup) rdClientIdGroup.style.display = isRD ? '' : 'none';
                     if (rdButtons) rdButtons.style.display = isRD ? '' : 'none';
                     if (rdTokenGroup) rdTokenGroup.style.display = isRD ? '' : 'none';
@@ -6820,6 +6821,7 @@ Your browser does not support the video tag.
                     if (rdCodePanel) rdCodePanel.style.display = 'none';
                     if (adSection) adSection.style.display = isAD ? '' : 'none';
                     if (tbSection) tbSection.style.display = isTB ? '' : 'none';
+                    if (pmSection) pmSection.style.display = isPM ? '' : 'none';
                 }
             } catch(_) {}
         }
