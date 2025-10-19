@@ -2175,6 +2175,62 @@
             overflow: hidden;
         }
 
+        /* IPTV Source Selector */
+        .iptv-source-selector {
+            background: #1a0f2e;
+            padding: 15px 20px;
+            border-bottom: 1px solid #2d1b4e;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .iptv-source-label {
+            color: #a78bfa;
+            font-size: 14px;
+            font-weight: 600;
+            min-width: 80px;
+        }
+
+        .iptv-source-dropdown {
+            background: #2d1b4e;
+            border: 1px solid #4c1d95;
+            border-radius: 8px;
+            color: #e5e7eb;
+            padding: 8px 12px;
+            font-size: 14px;
+            min-width: 300px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .iptv-source-dropdown:hover {
+            border-color: #7c3aed;
+            background: #362159;
+        }
+
+        .iptv-source-dropdown:focus {
+            outline: none;
+            border-color: #a78bfa;
+            box-shadow: 0 0 0 3px rgba(167, 139, 250, 0.1);
+        }
+
+        .iptv-source-dropdown option {
+            background: #2d1b4e;
+            color: #e5e7eb;
+            padding: 8px 12px;
+            border: none;
+        }
+
+        .iptv-source-dropdown option:hover {
+            background: #4c1d95;
+        }
+
+        .iptv-source-dropdown option:selected {
+            background: #7c3aed;
+            color: #ffffff;
+        }
+
         /* Server Selection Modal */
         .server-selection-modal {
             position: fixed;
@@ -6574,6 +6630,7 @@ Your browser does not support the video tag.
             await checkApiKeyStatus();
             await ensureDebridState();
             setupEventListeners();
+            initIptvSourceSelector(); // Initialize IPTV dropdown
             handleRoute(); // route-aware initial load
             checkFirstLaunch(); // Show donate modal on first launch
         }
@@ -8487,14 +8544,15 @@ Your browser does not support the video tag.
         
         function reloadIptvPage() {
             const iptvIframe = document.getElementById('iptv-iframe');
+            const iptvSelector = document.getElementById('iptv-source-select');
             if (iptvIframe) {
-                // Store the original src
-                const originalSrc = 'https://taupe-florentine-9c4193.netlify.app/routes/countries.html';
+                // Get current selected source URL
+                const currentSrc = iptvSelector ? iptvSelector.value : 'https://taupe-florentine-9c4193.netlify.app/routes/countries.html';
                 // Clear the src first to force a complete reload
                 iptvIframe.src = 'about:blank';
                 // Use a timeout to ensure the blank page loads before setting the new src
                 setTimeout(() => {
-                    iptvIframe.src = originalSrc;
+                    iptvIframe.src = currentSrc;
                     // Auto-scroll the IPTV page itself (not the iframe content) to show the iframe
                     setTimeout(() => {
                         const iptvPageEl = document.getElementById('iptv-page');
@@ -8508,7 +8566,60 @@ Your browser does not support the video tag.
                         }
                     }, 300); // Quick scroll after iframe starts loading
                 }, 100);
-                console.log('[IPTV] Page reloaded fresh');
+                console.log('[IPTV] Page reloaded fresh with source:', currentSrc);
+            }
+        }
+
+        // IPTV source selector handler
+        function initIptvSourceSelector() {
+            const iptvSelector = document.getElementById('iptv-source-select');
+            const iptvIframe = document.getElementById('iptv-iframe');
+            
+            if (iptvSelector && iptvIframe) {
+                iptvSelector.addEventListener('change', (event) => {
+                    const selectedUrl = event.target.value;
+                    const selectedOption = event.target.selectedOptions[0];
+                    const isExternal = selectedOption.hasAttribute('data-external');
+                    
+                    console.log('[IPTV] Switching to source:', selectedUrl, 'external:', isExternal);
+                    
+                    if (isExternal) {
+                        // Open in external browser for sites that don't allow embedding
+                        if (window.electronAPI?.openExternal) {
+                            window.electronAPI.openExternal(selectedUrl);
+                            showNotification('Opening IPTV Web App in browser...', 'info');
+                            // Reset dropdown to previous working option
+                            setTimeout(() => {
+                                iptvSelector.value = 'https://taupe-florentine-9c4193.netlify.app/routes/countries.html';
+                            }, 100);
+                        }
+                    } else {
+                        // Show loading indication
+                        iptvIframe.style.opacity = '0.5';
+                        
+                        // Clear and load new source
+                        iptvIframe.src = 'about:blank';
+                        setTimeout(() => {
+                            iptvIframe.src = selectedUrl;
+                            iptvIframe.style.opacity = '1';
+                            showNotification('Loading IPTV source...', 'info');
+                        }, 100);
+                    }
+                });
+
+                // Add error handling for iframe loading
+                iptvIframe.addEventListener('load', () => {
+                    console.log('[IPTV] Iframe loaded successfully');
+                    iptvIframe.style.opacity = '1';
+                });
+
+                iptvIframe.addEventListener('error', (e) => {
+                    console.error('[IPTV] Iframe failed to load:', e);
+                    showNotification('Failed to load IPTV source. Site may block embedding.', 'error');
+                    iptvIframe.style.opacity = '1';
+                });
+                
+                console.log('[IPTV] Source selector initialized');
             }
         }
         
@@ -9893,7 +10004,12 @@ Your browser does not support the video tag.
                     btn.addEventListener('click', (e) => {
                         const readLink = e.currentTarget.getAttribute('data-read-link');
                         const title = e.currentTarget.getAttribute('data-title');
-                        openBookReader(readLink, title);
+                        // Open in default browser instead of iframe
+                        if (readLink && window.electronAPI?.openExternal) {
+                            console.log('[BOOKS] Opening book reader in browser:', title, readLink);
+                            window.electronAPI.openExternal(readLink);
+                            showNotification(`Opening "${title}" in browser...`, 'success');
+                        }
                     });
                 });
                 
@@ -13953,11 +14069,37 @@ Your browser does not support the video tag.
                 });
                 
                 // Restart button
-                restartBtn?.addEventListener('click', async () => {
-                    try { 
-                        hideUpdateNotification(); // Hide the persistent notification
-                        await window.electronAPI.installUpdateNow?.(); 
-                    } catch(_) {}
+                restartBtn?.addEventListener('click', async (ev) => {
+                    try {
+                        ev.stopPropagation?.();
+                        // Visual feedback: disable button and show restarting state
+                        restartBtn.disabled = true;
+                        const originalHtml = restartBtn.innerHTML;
+                        restartBtn.innerHTML = '<i class="fas fa-sync fa-spin"></i> Restarting...';
+                        restartBtn.style.opacity = '0.85';
+
+                        // Trigger updater installation (main will relaunch automatically)
+                        const res = await window.electronAPI.installUpdateNow?.();
+                        // Optionally hide the notification right after invoking install
+                        // (App should quit almost immediately.)
+                        setTimeout(() => { try { hideUpdateNotification(); } catch(_) {} }, 200);
+
+                        // If for some reason it didn't return success, keep overlay visible
+                        if (!res || res.success !== true) {
+                            restartBtn.disabled = false;
+                            restartBtn.innerHTML = originalHtml;
+                            restartBtn.style.opacity = '1';
+                            showNotification('Update install failed to start. Please try again.', 'error', 4000);
+                        }
+                    } catch (e) {
+                        // Restore button and keep the overlay so user can retry
+                        try {
+                            restartBtn.disabled = false;
+                            restartBtn.innerHTML = '<i class="fas fa-sync-alt"></i> Restart Now to Complete Update';
+                            restartBtn.style.opacity = '1';
+                        } catch(_) {}
+                        showNotification('Could not trigger restart. Please try again.', 'error', 4000);
+                    }
                 });
             }
         } catch(_){ }
