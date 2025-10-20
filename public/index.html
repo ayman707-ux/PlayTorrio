@@ -854,6 +854,44 @@
             gap: 0.5rem;
         }
         
+        /* Anime dropdown and button styles */
+        #animeSeasonSelector:hover,
+        #animeEpisodeSelector:hover {
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.25), rgba(37, 99, 235, 0.25));
+            border-color: rgba(59, 130, 246, 0.5);
+        }
+        
+        #animeSeasonSelector:focus,
+        #animeEpisodeSelector:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+        }
+        
+        #animeSeasonSelector option,
+        #animeEpisodeSelector option {
+            background: #1a1a2e;
+            color: var(--light);
+            padding: 0.5rem;
+            font-weight: 500;
+        }
+        
+        #animeCustomSearchBtn:hover {
+            background: linear-gradient(135deg, #2563eb, #1d4ed8);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+        }
+        
+        #animeCustomSearchBtn:active {
+            transform: translateY(0);
+        }
+        
+        #animeCustomSearchInput:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+        }
+        
         .modal-overview {
             margin-bottom: 2rem;
             line-height: 1.6;
@@ -1409,6 +1447,58 @@
             outline: none;
             border-color: var(--vlc-orange);
             background-color: rgba(255, 255, 255, 0.15);
+        }
+        
+        #torrentSourceSelect {
+            appearance: none;
+            background-image: linear-gradient(45deg, transparent 50%, var(--primary) 50%),
+                              linear-gradient(135deg, var(--primary) 50%, transparent 50%);
+            background-position: calc(100% - 20px) calc(50% - 2px),
+                                 calc(100% - 15px) calc(50% - 2px);
+            background-size: 5px 5px, 5px 5px;
+            background-repeat: no-repeat;
+        }
+        
+        #torrentSourceSelect:hover {
+            background-color: rgba(255,255,255,0.12);
+            border-color: rgba(255,255,255,0.3);
+            transform: translateY(-1px);
+        }
+        
+        #torrentSourceSelect:focus {
+            outline: none;
+            border-color: var(--primary);
+            background-color: rgba(255,255,255,0.12);
+            box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.2);
+        }
+        
+        #torrentSourceSelect option {
+            background: #1a1a1a;
+            color: #fff;
+            padding: 0.75rem;
+            font-weight: 500;
+        }
+
+        .torrent-source-btn {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .torrent-source-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+
+        .torrent-source-btn.active {
+            background: rgba(76, 175, 80, 0.2) !important;
+            border-color: #4CAF50 !important;
+            color: #4CAF50 !important;
+            box-shadow: 0 0 20px rgba(76, 175, 80, 0.3);
+        }
+
+        .torrent-source-btn:not(.active):hover {
+            background: rgba(255,255,255,0.15);
+            border-color: rgba(255,255,255,0.4);
         }
         
         .api-setup-buttons {
@@ -5252,6 +5342,22 @@
                     <input type="checkbox" id="useTorrentlessToggle" />
                     <span>Watch without Jackett (use built-in sources)</span>
                 </label>
+                <div style="margin-top:0.75rem;">
+                    <label style="display:block; margin-bottom:0.75rem; color:var(--text); font-weight:500; font-size:0.95rem;">
+                        <i class="fas fa-server" style="margin-right:0.3rem; color:var(--primary);"></i>
+                        Torrent Source:
+                    </label>
+                    <div style="display:flex; gap:1rem;">
+                        <button id="torrentioBtn" class="torrent-source-btn active" data-source="torrentio" style="flex:1; padding:0.75rem 1rem; background: rgba(76, 175, 80, 0.2); border:2px solid #4CAF50; border-radius:8px; color:#fff; font-size:0.95rem; font-weight:600; cursor:pointer; transition: all 0.3s ease; display:flex; align-items:center; justify-content:center; gap:0.5rem;">
+                            <i class="fas fa-rocket"></i>
+                            <span>Torrentio</span>
+                        </button>
+                        <button id="inAppScraperBtn" class="torrent-source-btn" data-source="in-app-scraper" style="flex:1; padding:0.75rem 1rem; background: rgba(255,255,255,0.08); border:2px solid rgba(255,255,255,0.2); border-radius:8px; color:var(--text); font-size:0.95rem; font-weight:600; cursor:pointer; transition: all 0.3s ease; display:flex; align-items:center; justify-content:center; gap:0.5rem;">
+                            <i class="fas fa-tools"></i>
+                            <span>In-App Scraper</span>
+                        </button>
+                    </div>
+                </div>
                 <div style="margin-top:0.5rem; color:#ffc107; font-size:0.9rem;">
                     Warning: may result in fewer sources and slower buffering.
                 </div>
@@ -5642,6 +5748,11 @@
                 <i class="fas fa-book-open" style="color: #06b6d4;"></i>
                 <span>BookTorrio</span>
                 <span class="nav-badge" style="background: linear-gradient(135deg, #06b6d4, #0891b2);">EPUB</span>
+            </div>
+            <div class="nav-item" data-page="anime">
+                <i class="fas fa-dragon" style="color: #3b82f6;"></i>
+                <span>Anime</span>
+                <span class="nav-badge" style="background: linear-gradient(135deg, #3b82f6, #2563eb);">Nyaa</span>
             </div>
             <div class="nav-item" data-page="manga">
                 <i class="fas fa-book-reader" style="color: #ec4899;"></i>
@@ -6394,6 +6505,35 @@
         </div>
     </div>
 
+    <!-- Anime Page -->
+    <div id="anime-page" style="display: none;">
+        <div class="page-header-enhanced">
+            <div class="page-title-section">
+                <h2 class="section-title">
+                    <i class="fas fa-dragon" style="color: #3b82f6;"></i> <span>Anime</span>
+                </h2>
+                <p class="page-subtitle">Discover and watch anime with torrents</p>
+            </div>
+        </div>
+
+        <!-- Search Section -->
+        <div style="max-width: 900px; margin: 0 auto 2rem;">
+            <div style="background: rgba(255,255,255,0.1); border-radius: 12px; padding: 1rem; box-shadow: 0 4px 12px rgba(0,0,0,0.3); position: relative;">
+                <i class="fas fa-search" style="position: absolute; left: 1.5rem; top: 50%; transform: translateY(-50%); color: #3b82f6; font-size: 1.2rem; pointer-events: none;"></i>
+                <input id="animeSearchInput" placeholder="Search for anime..." type="text" style="width: 100%; padding: 1rem 1rem 1rem 3rem; background: rgba(0,0,0,0.4); border: 2px solid rgba(59, 130, 246, 0.3); border-radius: 10px; color: var(--light); font-size: 1.1rem; transition: all 0.3s ease; box-sizing: border-box;" />
+            </div>
+        </div>
+
+        <!-- Anime Grid -->
+        <div id="animeGrid" class="movies-grid" style="margin-top: 2rem;">
+            <!-- Anime cards will be loaded here -->
+        </div>
+        <div class="loading" id="animeLoadingIndicator" style="display: none;">
+            <div class="spinner"></div>
+            <p>Loading anime...</p>
+        </div>
+    </div>
+
     <!-- Manga Page -->
     <div id="manga-page" style="display: none;">
         <div class="page-header-enhanced">
@@ -6505,6 +6645,107 @@
 </main>
     </div> <!-- End app-main -->
 </div> <!-- End app-container -->
+
+<!-- Anime Details Modal -->
+<div class="modal" id="animeDetailsModal">
+<div class="modal-content">
+<button class="modal-close" id="animeModalClose">
+<i class="fas fa-times"></i>
+</button>
+<div class="modal-header">
+<img alt="Backdrop" class="modal-backdrop" id="animeModalBackdrop" src=""/>
+<div class="modal-header-content">
+<img alt="Poster" class="modal-poster" id="animeModalPoster" src=""/>
+<div>
+<h1 class="modal-title" id="animeModalTitle">Anime Title</h1>
+<div class="modal-info">
+<div class="modal-rating">
+<i class="fas fa-star"></i> <span id="animeModalRating">0.0</span>
+</div>
+<div class="modal-year" id="animeModalYear">2023</div>
+<div class="modal-runtime" id="animeModalEpisodes">24 Episodes</div>
+</div>
+<p class="modal-tagline" id="animeModalGenres">Action, Adventure</p>
+<div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+    <button class="btn btn-primary" id="animeFindTorrentsBtn">
+        <i class="fas fa-magnet"></i> Find Torrents
+    </button>
+</div>
+</div>
+</div>
+</div>
+<div class="modal-body">
+<h3 class="modal-section-title">
+<i class="fas fa-book-open"></i> Synopsis
+</h3>
+<p class="modal-overview" id="animeModalOverview">Synopsis goes here...</p>
+
+<!-- Season/Episode Selector (only for series, not movies) -->
+<div id="animeSeasonEpisodeContainer" style="display: none; margin: 1.5rem 0;">
+<h3 class="modal-section-title">
+<i class="fas fa-film"></i> Select Season & Episode
+</h3>
+<div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+    <div style="flex: 1; min-width: 200px;">
+        <label style="display: block; margin-bottom: 0.5rem; color: var(--light); font-weight: 500; font-size: 0.95rem;">
+            <i class="fas fa-layer-group"></i> Season
+        </label>
+        <select id="animeSeasonSelector" style="width: 100%; padding: 0.75rem; background: linear-gradient(135deg, rgba(59, 130, 246, 0.15), rgba(37, 99, 235, 0.15)); border: 1px solid rgba(59, 130, 246, 0.3); border-radius: 8px; color: var(--light); font-size: 1rem; cursor: pointer; font-weight: 500; transition: all 0.3s ease;">
+            <option value="" style="background: #1a1a2e; color: var(--light);">All Seasons</option>
+        </select>
+    </div>
+    <div style="flex: 1; min-width: 200px;">
+        <label style="display: block; margin-bottom: 0.5rem; color: var(--light); font-weight: 500; font-size: 0.95rem;">
+            <i class="fas fa-play-circle"></i> Episode
+        </label>
+        <select id="animeEpisodeSelector" style="width: 100%; padding: 0.75rem; background: linear-gradient(135deg, rgba(59, 130, 246, 0.15), rgba(37, 99, 235, 0.15)); border: 1px solid rgba(59, 130, 246, 0.3); border-radius: 8px; color: var(--light); font-size: 1rem; cursor: pointer; font-weight: 500; transition: all 0.3s ease;">
+            <option value="" style="background: #1a1a2e; color: var(--light);">All Episodes</option>
+        </select>
+    </div>
+</div>
+<div style="background: rgba(59, 130, 246, 0.1); border-left: 3px solid #3b82f6; padding: 0.75rem 1rem; margin-top: 1rem; border-radius: 6px; font-size: 0.9rem; color: var(--light);">
+<i class="fas fa-info-circle" style="color: #3b82f6; margin-right: 0.5rem;"></i>
+<strong>Tip:</strong> Select "All Seasons" or "All Episodes" to find complete packs, or choose a specific season/episode for targeted results.
+</div>
+</div>
+
+<!-- Torrents section -->
+<div class="torrents-container" id="animeTorrentsContainer" style="display: none;">
+<div class="torrents-header">
+<h3 class="modal-section-title">
+<i class="fas fa-magnet"></i> Available Torrents from Nyaa
+</h3>
+<div class="torrent-actions">
+<button class="btn btn-outline" id="animeRefreshTorrents">
+<i class="fas fa-sync"></i> Refresh
+</button>
+</div>
+</div>
+
+<!-- Custom Search Section -->
+<div style="margin-bottom: 1.5rem; padding-bottom: 1.5rem; border-bottom: 1px solid rgba(255,255,255,0.1);">
+<h4 style="color: var(--light); font-size: 0.95rem; margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem;">
+<i class="fas fa-search" style="color: #3b82f6;"></i>
+Can't find what you're looking for? Try a custom search
+</h4>
+<div style="display: flex; gap: 0.5rem; align-items: stretch;">
+<input type="text" id="animeCustomSearchInput" placeholder="Enter your own search query (e.g., 'Dragon Ball S02E01 1080p')" style="flex: 1; padding: 0.75rem 1rem; background: rgba(255,255,255,0.1); border: 1px solid rgba(59, 130, 246, 0.3); border-radius: 8px; color: var(--light); font-size: 0.95rem;">
+<button id="animeCustomSearchBtn" style="padding: 0.75rem 1.5rem; background: linear-gradient(135deg, #3b82f6, #2563eb); border: none; border-radius: 8px; color: white; font-weight: 500; cursor: pointer; display: flex; align-items: center; gap: 0.5rem; transition: all 0.3s ease;">
+<i class="fas fa-search"></i> Search
+</button>
+</div>
+</div>
+
+<div style="margin-bottom: 1rem;">
+<input type="text" id="animeTorrentKeywordFilter" placeholder="Filter torrents by keyword (e.g., 1080p, BluRay, SubsPlease)..." style="width: 100%; padding: 0.6rem; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; color: var(--light); font-size: 0.95rem;">
+</div>
+<div class="torrents-list" id="animeTorrentsList">
+<!-- Torrents will be loaded here -->
+</div>
+</div>
+</div>
+</div>
+</div>
 
 <!-- Movie/Show Details Modal -->
 <div class="modal" id="detailsModal">
@@ -6651,11 +6892,6 @@
 <i class="fas fa-play-circle"></i>
 <span>Custom Player</span> <span class="source-badge webtorrent" id="customSourceBadge" title="Streaming source">WebTorrent</span>
 </div>
-<div class="player-actions">
-<button class="close-player-btn" id="closeCustomPlayer">
-<i class="fas fa-times"></i> Close
-</button>
-</div>
 </div>
 
 
@@ -6696,6 +6932,9 @@ Your browser does not support the video tag.
         </div>
         <button class="control-btn" id="htmlSubsBtn" title="Subtitles"><i class="fas fa-closed-captioning"></i></button>
         <button class="control-btn" id="fullscreenBtn" title="Fullscreen"><i class="fas fa-expand"></i></button>
+        <button class="close-player-btn" id="closeCustomPlayer" title="Close Player (Esc)">
+            <i class="fas fa-times"></i> Close
+        </button>
     </div>
 </div>
 </div>
@@ -7239,6 +7478,7 @@ Your browser does not support the video tag.
             setupEventListeners();
             initIptvSourceSelector(); // Initialize IPTV dropdown
             initializeBookTorrio(); // Initialize BookTorrio functionality
+            initializeAnime(); // Initialize Anime functionality
             initializeManga(); // Initialize Manga functionality
             handleRoute(); // route-aware initial load
             checkFirstLaunch(); // Show donate modal on first launch
@@ -7401,8 +7641,25 @@ Your browser does not support the video tag.
                 const res = await fetch(`${API_BASE_URL}/settings`);
                 if (res.ok) {
                     const s = await res.json();
+                    console.log('[Settings] Loaded settings:', s);
                     useTorrentless = !!s.useTorrentless;
                     if (useTorrentlessToggle) useTorrentlessToggle.checked = useTorrentless;
+                    // Load torrent source preference (default to 'torrentio')
+                    const currentSource = s.torrentSource || 'torrentio';
+                    console.log('[Settings] Set torrent source to:', currentSource);
+                    
+                    // Update button states
+                    const torrentioBtn = document.getElementById('torrentioBtn');
+                    const inAppScraperBtn = document.getElementById('inAppScraperBtn');
+                    if (torrentioBtn && inAppScraperBtn) {
+                        if (currentSource === 'torrentio') {
+                            torrentioBtn.classList.add('active');
+                            inAppScraperBtn.classList.remove('active');
+                        } else {
+                            torrentioBtn.classList.remove('active');
+                            inAppScraperBtn.classList.add('active');
+                        }
+                    }
                     // Load Jackett URL
                     if (jackettUrlInput && s.jackettUrl) {
                         jackettUrlInput.value = s.jackettUrl;
@@ -9251,6 +9508,10 @@ Your browser does not support the video tag.
             window.location.hash = '#/booktorrio';
         }
         
+        function showAnimePage() {
+            window.location.hash = '#/anime';
+        }
+        
         function showMangaPage() {
             window.location.hash = '#/manga';
         }
@@ -9606,6 +9867,53 @@ Your browser does not support the video tag.
                         showNotification('Failed to update setting.');
                     }
                 });
+            }
+            
+            // Torrent source buttons
+            const torrentioBtn = document.getElementById('torrentioBtn');
+            const inAppScraperBtn = document.getElementById('inAppScraperBtn');
+            
+            if (torrentioBtn && inAppScraperBtn) {
+                const handleSourceChange = async (source) => {
+                    console.log('=================================');
+                    console.log('[Settings] Button clicked! Changing source to:', source);
+                    try {
+                        const res = await fetch(`${API_BASE_URL}/settings`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ torrentSource: source })
+                        });
+                        const responseData = await res.json();
+                        console.log('[Settings] Server response:', responseData);
+                        
+                        if (res.ok) {
+                            // Update UI immediately
+                            if (source === 'torrentio') {
+                                torrentioBtn.classList.add('active');
+                                inAppScraperBtn.classList.remove('active');
+                                console.log('[Settings] UI updated: Torrentio active');
+                            } else {
+                                torrentioBtn.classList.remove('active');
+                                inAppScraperBtn.classList.add('active');
+                                console.log('[Settings] UI updated: In-App Scraper active');
+                            }
+                            console.log('[Settings] SUCCESS! Setting saved:', source);
+                            console.log('=================================');
+                            showNotification(`Torrent source changed to ${source === 'torrentio' ? 'Torrentio' : 'In-App Scraper'}`);
+                        } else {
+                            console.error('[Settings] FAILED to save setting');
+                            console.log('=================================');
+                            showNotification('Failed to update torrent source.');
+                        }
+                    } catch (err) {
+                        console.error('[Settings] ERROR:', err);
+                        console.log('=================================');
+                        showNotification('Failed to update torrent source.');
+                    }
+                };
+                
+                torrentioBtn.addEventListener('click', () => handleSourceChange('torrentio'));
+                inAppScraperBtn.addEventListener('click', () => handleSourceChange('in-app-scraper'));
             }
 
             // Debrid settings
@@ -10435,6 +10743,8 @@ Your browser does not support the video tag.
                         showBooksPage();
                     } else if (page === 'booktorrio') {
                         showBookTorrioPage();
+                    } else if (page === 'anime') {
+                        showAnimePage();
                     } else if (page === 'manga') {
                         showMangaPage();
                     } else if (page === 'downloader') {
@@ -11962,6 +12272,10 @@ Your browser does not support the video tag.
     activeRoute = 'booktorrio';
     showSection('booktorrio');
     return;
+} else if (hash === '#/anime') {
+    activeRoute = 'anime';
+    showSection('anime');
+    return;
 } else if (hash === '#/manga') {
     activeRoute = 'manga';
     showSection('manga');
@@ -12011,6 +12325,8 @@ Your browser does not support the video tag.
             if (booksPageEl) booksPageEl.style.display = section === 'books' ? '' : 'none';
             const bookTorrioPageEl = document.getElementById('booktorrio-page');
             if (bookTorrioPageEl) bookTorrioPageEl.style.display = section === 'booktorrio' ? '' : 'none';
+            const animePageEl = document.getElementById('anime-page');
+            if (animePageEl) animePageEl.style.display = section === 'anime' ? '' : 'none';
             const mangaPageEl = document.getElementById('manga-page');
             if (mangaPageEl) mangaPageEl.style.display = section === 'manga' ? '' : 'none';
             // Update navigation states
@@ -12861,6 +13177,201 @@ Your browser does not support the video tag.
         async function fetchTorrents(season = null, episode = null) {
             if (!currentContent) return;
 
+            // Check if Watch without Jackett is enabled and which source to use
+            let torrentSource = 'torrentio'; // default
+            let useTorrentless = false;
+            try {
+                const res = await fetch(`${API_BASE_URL}/settings`);
+                if (res.ok) {
+                    const settings = await res.json();
+                    useTorrentless = !!settings.useTorrentless;
+                    torrentSource = settings.torrentSource || 'torrentio';
+                    console.log('=================================');
+                    console.log('[Torrents] Settings loaded:');
+                    console.log('  useTorrentless:', useTorrentless);
+                    console.log('  torrentSource:', torrentSource);
+                    console.log('  Mode Decision:');
+                    if (!useTorrentless) {
+                        console.log('  → Will use JACKETT (useTorrentless is false)');
+                    } else if (torrentSource === 'torrentio') {
+                        console.log('  → Will use TORRENTIO (useTorrentless=true, source=torrentio)');
+                    } else if (torrentSource === 'in-app-scraper') {
+                        console.log('  → Will use IN-APP SCRAPER (useTorrentless=true, source=in-app-scraper)');
+                    }
+                    console.log('=================================');
+                }
+            } catch (e) {
+                console.error('[Torrents] Failed to load settings:', e);
+            }
+
+            torrentsList.innerHTML = '<div class="loading"><i class="fas fa-spinner"></i> Searching...</div>';
+            torrentsLoaded = true;
+
+            // If Watch without Jackett is enabled
+            if (useTorrentless) {
+                // TORRENTIO MODE: Use IMDB ID
+                if (torrentSource === 'torrentio') {
+                    console.log('[Torrentio] Using Torrentio API');
+                    try {
+                        // Get IMDB ID from TMDB
+                        const tmdbId = currentContent.id;
+                        const mediaType = currentMediaType; // 'movie' or 'tv'
+                        
+                        console.log('[Torrentio] Fetching IMDB ID for:', { tmdbId, mediaType });
+                        
+                        // Fetch external IDs from TMDB
+                        const externalIdsUrl = `https://api.themoviedb.org/3/${mediaType}/${tmdbId}/external_ids?api_key=${TMDB_API_KEY}`;
+                        console.log('[Torrentio] External IDs URL:', externalIdsUrl);
+                        
+                        const externalIdsRes = await fetch(externalIdsUrl);
+                        if (!externalIdsRes.ok) throw new Error('Failed to get IMDB ID from TMDB');
+                        
+                        const externalIds = await externalIdsRes.json();
+                        const imdbId = externalIds.imdb_id;
+                        
+                        console.log('[Torrentio] Got IMDB ID:', imdbId);
+                        
+                        if (!imdbId) {
+                            throw new Error('No IMDB ID found for this content');
+                        }
+
+                        let torrentioUrl;
+                        if (mediaType === 'movie') {
+                            // Movies: http://localhost:5500/api/tt5950044
+                            torrentioUrl = `http://localhost:5500/api/${imdbId}`;
+                            console.log('[Torrentio] Movie URL:', torrentioUrl);
+                        } else if (season && episode) {
+                            // TV Shows: http://localhost:5500/api/tt13159924/2/1
+                            torrentioUrl = `http://localhost:5500/api/${imdbId}/${season}/${episode}`;
+                            console.log('[Torrentio] TV Show URL:', torrentioUrl);
+                        } else {
+                            throw new Error('Season and episode required for TV shows');
+                        }
+
+                        console.log('[Torrentio] Fetching from:', torrentioUrl);
+
+                        const response = await fetch(torrentioUrl);
+                        if (!response.ok) throw new Error(`Torrentio error: ${response.statusText}`);
+                        
+                        const data = await response.json();
+                        console.log('[Torrentio] Received data:', data);
+                        
+                        const streams = data.streams || [];
+                        console.log('[Torrentio] Found', streams.length, 'streams');
+                        
+                        // Convert Torrentio format to our torrent format
+                        const torrents = streams.map(stream => {
+                            // Extract magnet link (Torrentio might return magnetLink or construct it from infoHash)
+                            const magnetLink = stream.magnetLink || 
+                                (stream.infoHash ? `magnet:?xt=urn:btih:${stream.infoHash}` : null);
+                            
+                            if (!magnetLink) return null;
+                            
+                            // Extract seeders and size from title
+                            const titleMatch = stream.title.match(/👤\s*(\d+)/);
+                            const sizeMatch = stream.title.match(/💾\s*([\d.]+\s*[KMGT]B)/i);
+                            const seeders = titleMatch ? parseInt(titleMatch[1]) : 0;
+                            const sizeStr = sizeMatch ? sizeMatch[1] : '0 B';
+                            
+                            // Convert size string to bytes
+                            const sizeParts = sizeStr.match(/([\d.]+)\s*([KMGT]?B)/i);
+                            let sizeBytes = 0;
+                            if (sizeParts) {
+                                const num = parseFloat(sizeParts[1]);
+                                const unit = sizeParts[2].toUpperCase();
+                                const multipliers = { 'B': 1, 'KB': 1024, 'MB': 1024**2, 'GB': 1024**3, 'TB': 1024**4 };
+                                sizeBytes = Math.round(num * (multipliers[unit] || 1));
+                            }
+                            
+                            return {
+                                title: stream.title.split('\n')[0] || stream.name, // First line of title
+                                magnet: magnetLink,
+                                seeders: seeders,
+                                size: sizeBytes
+                            };
+                        }).filter(Boolean);
+                        
+                        console.log('[Torrentio] Converted', torrents.length, 'torrents');
+                        displayTorrents(torrents, season, episode);
+                        return;
+                    } catch (error) {
+                        console.error('[Torrentio] Error:', error);
+                        torrentsList.innerHTML = `<div class="error-message"><i class="fas fa-exclamation-triangle"></i> Torrentio Error: ${error.message}</div>`;
+                        return;
+                    }
+                } 
+                // IN-APP SCRAPER MODE: Use search query (same format as Jackett)
+                else if (torrentSource === 'in-app-scraper') {
+                    console.log('[Torrentless] Using In-App Scraper API');
+                    try {
+                        // Build search query - SAME FORMAT AS JACKETT
+                        let query = currentContent.title || currentContent.name;
+                        
+                        if (currentMediaType === 'movie') {
+                            const year = (currentContent.release_date || '').substring(0, 4);
+                            if (year) {
+                                query = `${query} ${year}`;
+                            }
+                        } else if (currentMediaType === 'tv') {
+                            if (season && episode) {
+                                const seasonStr = String(season).padStart(2, '0');
+                                const episodeStr = String(episode).padStart(2, '0');
+                                query = `${query} S${seasonStr}.E${episodeStr}`; // Same as Jackett format with dot
+                            } else if (season) {
+                                const seasonStr = String(season).padStart(2, '0');
+                                query = `${query} S${seasonStr}`;
+                            }
+                        }
+                        
+                        // Use Torrentless API: http://localhost:3002/api/search?q=Superman&page=1
+                        const torrentlessUrl = `http://localhost:3002/api/search?q=${encodeURIComponent(query)}&page=1`;
+                        console.log('[Torrentless] Query:', query);
+                        console.log('[Torrentless] Fetching from:', torrentlessUrl);
+                        
+                        const response = await fetch(torrentlessUrl);
+                        if (!response.ok) throw new Error(`In-App Scraper error: ${response.statusText}`);
+                        
+                        const data = await response.json();
+                        console.log('[Torrentless] Raw response:', data);
+                        
+                        // Torrentless returns { query, page, items: [...] }
+                        const items = data.items || [];
+                        console.log('[Torrentless] Found', items.length, 'items');
+                        
+                        // Convert Torrentless format to our torrent format
+                        const torrents = items.map(item => {
+                            // Parse size string to bytes
+                            const sizeStr = item.size || '0 B';
+                            const sizeParts = sizeStr.match(/([\d.]+)\s*([KMGT]?B)/i);
+                            let sizeBytes = 0;
+                            if (sizeParts) {
+                                const num = parseFloat(sizeParts[1]);
+                                const unit = sizeParts[2].toUpperCase();
+                                const multipliers = { 'B': 1, 'KB': 1024, 'MB': 1024**2, 'GB': 1024**3, 'TB': 1024**4 };
+                                sizeBytes = Math.round(num * (multipliers[unit] || 1));
+                            }
+                            
+                            return {
+                                title: item.title,
+                                magnet: item.magnet,
+                                seeders: item.seeds || 0, // Torrentless uses 'seeds' not 'seeders'
+                                size: sizeBytes
+                            };
+                        });
+                        
+                        console.log('[Torrentless] Converted', torrents.length, 'torrents');
+                        displayTorrents(torrents, season, episode);
+                        return;
+                    } catch (error) {
+                        console.error('[Torrentless] Error:', error);
+                        torrentsList.innerHTML = `<div class="error-message"><i class="fas fa-exclamation-triangle"></i> In-App Scraper Error: ${error.message}</div>`;
+                        return;
+                    }
+                }
+            }
+
+            // JACKETT MODE (default when useTorrentless is false)
+            console.log('[Torrents] Using Jackett mode');
             let query = currentContent.title || currentContent.name;
             if (currentMediaType === 'movie') {
                 const year = (currentContent.release_date || '').substring(0, 4);
@@ -12878,9 +13389,6 @@ Your browser does not support the video tag.
                 }
             }
 
-            torrentsList.innerHTML = '<div class="loading"><i class="fas fa-spinner"></i> Searching...</div>';
-            torrentsLoaded = true;
-
             try {
                 const response = await fetch(`${API_BASE_URL}/torrents?q=${encodeURIComponent(query)}`);
                 if (!response.ok) {
@@ -12890,7 +13398,7 @@ Your browser does not support the video tag.
                 const torrents = await response.json();
                 displayTorrents(torrents, season, episode);
             } catch (error) {
-                console.error('Error fetching torrents:', error);
+                console.error('[Jackett] Error fetching torrents:', error);
                 torrentsList.innerHTML = `<div class="error-message"><i class="fas fa-exclamation-triangle"></i> ${error.message}</div>`;
             }
         }
@@ -14981,6 +15489,656 @@ Your browser does not support the video tag.
                     }
                 }
             });
+        }
+
+        // ---- Anime functionality ----
+        let animeList = [];
+        let currentAnime = null;
+        let animeOffset = 0;
+        let animeIsLoading = false;
+        let animeHasMore = true;
+        let animeIsSearching = false;
+        let animeSearchQuery = '';
+        let animeBaseUrl = 'http://127.0.0.1:7000';
+        
+        async function initializeAnime() {
+            const animeSearchInput = document.getElementById('animeSearchInput');
+            const animeGrid = document.getElementById('animeGrid');
+            const animeLoadingIndicator = document.getElementById('animeLoadingIndicator');
+            const animeDetailsModal = document.getElementById('animeDetailsModal');
+            const animeModalClose = document.getElementById('animeModalClose');
+            const animeFindTorrentsBtn = document.getElementById('animeFindTorrentsBtn');
+            const animeTorrentsContainer = document.getElementById('animeTorrentsContainer');
+            const animeRefreshTorrents = document.getElementById('animeRefreshTorrents');
+            const animeTorrentKeywordFilter = document.getElementById('animeTorrentKeywordFilter');
+            
+            let searchTimeout = null;
+            
+            // Load trending anime on init
+            loadTrendingAnime();
+            
+            // Setup infinite scroll
+            const mainElement = document.querySelector('main');
+            mainElement.addEventListener('scroll', () => {
+                const animePage = document.getElementById('anime-page');
+                if (animePage.style.display === 'none') return;
+                
+                const scrollBottom = mainElement.scrollTop + mainElement.clientHeight;
+                const threshold = mainElement.scrollHeight - 300;
+                
+                if (scrollBottom >= threshold && !animeIsLoading && animeHasMore) {
+                    if (animeIsSearching) {
+                        searchAnime(animeSearchQuery, true);
+                    } else {
+                        loadTrendingAnime(true);
+                    }
+                }
+            });
+            
+            // Search functionality
+            animeSearchInput.addEventListener('input', () => {
+                clearTimeout(searchTimeout);
+                const query = animeSearchInput.value.trim();
+                
+                if (!query) {
+                    animeIsSearching = false;
+                    animeSearchQuery = '';
+                    animeOffset = 0;
+                    animeHasMore = true;
+                    loadTrendingAnime();
+                    return;
+                }
+                
+                searchTimeout = setTimeout(() => {
+                    animeIsSearching = true;
+                    animeSearchQuery = query;
+                    animeOffset = 0;
+                    animeHasMore = true;
+                    searchAnime(query);
+                }, 500);
+            });
+            
+            animeSearchInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    const query = animeSearchInput.value.trim();
+                    if (query) {
+                        animeIsSearching = true;
+                        animeSearchQuery = query;
+                        animeOffset = 0;
+                        animeHasMore = true;
+                        searchAnime(query);
+                    }
+                }
+            });
+            
+            // Modal close
+            animeModalClose.addEventListener('click', () => {
+                animeDetailsModal.classList.remove('active');
+                animeTorrentsContainer.style.display = 'none';
+            });
+            
+            animeDetailsModal.addEventListener('click', (e) => {
+                if (e.target === animeDetailsModal) {
+                    animeDetailsModal.classList.remove('active');
+                    animeTorrentsContainer.style.display = 'none';
+                }
+            });
+            
+            // Find torrents button
+            animeFindTorrentsBtn.addEventListener('click', async () => {
+                if (!currentAnime) return;
+                animeTorrentsContainer.style.display = 'block';
+                await loadAnimeTorrents(currentAnime.title.romaji || currentAnime.title.english);
+            });
+            
+            // Refresh torrents
+            animeRefreshTorrents.addEventListener('click', async () => {
+                if (!currentAnime) return;
+                await loadAnimeTorrents(currentAnime.title.romaji || currentAnime.title.english);
+            });
+            
+            // Torrent keyword filter
+            animeTorrentKeywordFilter.addEventListener('input', () => {
+                filterAnimeTorrents();
+            });
+            
+            // Custom search functionality
+            const animeCustomSearchInput = document.getElementById('animeCustomSearchInput');
+            const animeCustomSearchBtn = document.getElementById('animeCustomSearchBtn');
+            
+            animeCustomSearchBtn.addEventListener('click', async () => {
+                const query = animeCustomSearchInput.value.trim();
+                if (query) {
+                    await searchAnimeCustomQuery(query);
+                }
+            });
+            
+            animeCustomSearchInput.addEventListener('keypress', async (e) => {
+                if (e.key === 'Enter') {
+                    const query = animeCustomSearchInput.value.trim();
+                    if (query) {
+                        await searchAnimeCustomQuery(query);
+                    }
+                }
+            });
+        }
+        
+        async function loadTrendingAnime(append = false) {
+            if (animeIsLoading) return;
+            animeIsLoading = true;
+            
+            const animeGrid = document.getElementById('animeGrid');
+            const animeLoadingIndicator = document.getElementById('animeLoadingIndicator');
+            
+            if (!append) {
+                animeGrid.innerHTML = '';
+                animeOffset = 0;
+            }
+            
+            animeLoadingIndicator.style.display = 'block';
+            
+            try {
+                const query = `
+                    query ($page: Int, $perPage: Int) {
+                        Page(page: $page, perPage: $perPage) {
+                            media(type: ANIME, sort: TRENDING_DESC) {
+                                id
+                                title {
+                                    romaji
+                                    english
+                                }
+                                coverImage {
+                                    large
+                                }
+                                bannerImage
+                                averageScore
+                                episodes
+                                format
+                                genres
+                                seasonYear
+                                description
+                            }
+                        }
+                    }
+                `;
+                
+                const page = Math.floor(animeOffset / 20) + 1;
+                const variables = { page, perPage: 20 };
+                
+                const response = await fetch('https://graphql.anilist.co', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                    },
+                    body: JSON.stringify({ query, variables })
+                });
+                
+                const data = await response.json();
+                const anime = data.data.Page.media;
+                
+                if (append) {
+                    animeList = [...animeList, ...anime];
+                } else {
+                    animeList = anime;
+                }
+                
+                if (anime.length < 20) {
+                    animeHasMore = false;
+                }
+                
+                anime.forEach(item => {
+                    const card = createAnimeCard(item);
+                    animeGrid.appendChild(card);
+                });
+                
+                animeOffset += anime.length;
+            } catch (error) {
+                console.error('Error loading trending anime:', error);
+            } finally {
+                animeLoadingIndicator.style.display = 'none';
+                animeIsLoading = false;
+            }
+        }
+        
+        async function searchAnime(query, append = false) {
+            if (animeIsLoading) return;
+            animeIsLoading = true;
+            
+            const animeGrid = document.getElementById('animeGrid');
+            const animeLoadingIndicator = document.getElementById('animeLoadingIndicator');
+            
+            if (!append) {
+                animeGrid.innerHTML = '';
+                animeOffset = 0;
+            }
+            
+            animeLoadingIndicator.style.display = 'block';
+            
+            try {
+                const graphqlQuery = `
+                    query ($search: String, $page: Int, $perPage: Int) {
+                        Page(page: $page, perPage: $perPage) {
+                            media(type: ANIME, search: $search, sort: POPULARITY_DESC) {
+                                id
+                                title {
+                                    romaji
+                                    english
+                                }
+                                coverImage {
+                                    large
+                                }
+                                bannerImage
+                                averageScore
+                                episodes
+                                format
+                                genres
+                                seasonYear
+                                description
+                            }
+                        }
+                    }
+                `;
+                
+                const page = Math.floor(animeOffset / 20) + 1;
+                const variables = { search: query, page, perPage: 20 };
+                
+                const response = await fetch('https://graphql.anilist.co', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                    },
+                    body: JSON.stringify({ query: graphqlQuery, variables })
+                });
+                
+                const data = await response.json();
+                const anime = data.data.Page.media;
+                
+                if (append) {
+                    animeList = [...animeList, ...anime];
+                } else {
+                    animeList = anime;
+                }
+                
+                if (anime.length < 20) {
+                    animeHasMore = false;
+                }
+                
+                anime.forEach(item => {
+                    const card = createAnimeCard(item);
+                    animeGrid.appendChild(card);
+                });
+                
+                animeOffset += anime.length;
+            } catch (error) {
+                console.error('Error searching anime:', error);
+            } finally {
+                animeLoadingIndicator.style.display = 'none';
+                animeIsLoading = false;
+            }
+        }
+        
+        function createAnimeCard(anime) {
+            const card = document.createElement('div');
+            card.className = 'movie-card';
+            card.style.cursor = 'pointer';
+            
+            const title = anime.title.english || anime.title.romaji;
+            const coverImage = anime.coverImage.large || '/placeholder.jpg';
+            const rating = anime.averageScore ? (anime.averageScore / 10).toFixed(1) : 'N/A';
+            const year = anime.seasonYear || 'N/A';
+            
+            card.innerHTML = `
+                <div class="movie-poster-container">
+                    <img src="${coverImage}" alt="${title}" class="movie-poster" loading="lazy" />
+                    <div class="movie-overlay">
+                        <i class="fas fa-info-circle"></i>
+                    </div>
+                </div>
+                <div class="movie-info">
+                    <div class="movie-title">${title}</div>
+                    <div class="movie-meta">
+                        <span class="movie-year">${year}</span>
+                        <span class="movie-rating">
+                            <i class="fas fa-star"></i> ${rating}
+                        </span>
+                    </div>
+                </div>
+            `;
+            
+            card.addEventListener('click', () => showAnimeDetails(anime));
+            return card;
+        }
+        
+        function showAnimeDetails(anime) {
+            currentAnime = anime;
+            const animeDetailsModal = document.getElementById('animeDetailsModal');
+            const animeModalTitle = document.getElementById('animeModalTitle');
+            const animeModalPoster = document.getElementById('animeModalPoster');
+            const animeModalBackdrop = document.getElementById('animeModalBackdrop');
+            const animeModalRating = document.getElementById('animeModalRating');
+            const animeModalYear = document.getElementById('animeModalYear');
+            const animeModalEpisodes = document.getElementById('animeModalEpisodes');
+            const animeModalGenres = document.getElementById('animeModalGenres');
+            const animeModalOverview = document.getElementById('animeModalOverview');
+            const animeTorrentsContainer = document.getElementById('animeTorrentsContainer');
+            const animeSeasonEpisodeContainer = document.getElementById('animeSeasonEpisodeContainer');
+            
+            const title = anime.title.english || anime.title.romaji;
+            const rating = anime.averageScore ? (anime.averageScore / 10).toFixed(1) : 'N/A';
+            const year = anime.seasonYear || 'N/A';
+            const episodes = anime.episodes ? `${anime.episodes} Episodes` : 'N/A';
+            const genres = anime.genres ? anime.genres.join(', ') : 'N/A';
+            const description = anime.description ? anime.description.replace(/<[^>]*>/g, '') : 'No description available.';
+            
+            animeModalTitle.textContent = title;
+            animeModalPoster.src = anime.coverImage.large || '/placeholder.jpg';
+            animeModalBackdrop.src = anime.bannerImage || anime.coverImage.large || '/placeholder.jpg';
+            animeModalRating.textContent = rating;
+            animeModalYear.textContent = year;
+            animeModalEpisodes.textContent = episodes;
+            animeModalGenres.textContent = genres;
+            animeModalOverview.textContent = description;
+            
+            // Check if it's a series (has episodes) or a movie
+            const isMovie = !anime.episodes || anime.episodes === 1 || anime.format === 'MOVIE';
+            
+            if (isMovie) {
+                // Hide season/episode selector for movies
+                animeSeasonEpisodeContainer.style.display = 'none';
+            } else {
+                // Show season/episode selector for series
+                animeSeasonEpisodeContainer.style.display = 'block';
+                setupAnimeSeasonEpisodeSelectors(anime.episodes);
+            }
+            
+            animeTorrentsContainer.style.display = 'none';
+            animeDetailsModal.classList.add('active');
+        }
+        
+        function setupAnimeSeasonEpisodeSelectors(totalEpisodes) {
+            const seasonSelector = document.getElementById('animeSeasonSelector');
+            const episodeSelector = document.getElementById('animeEpisodeSelector');
+            
+            // Clear existing options
+            seasonSelector.innerHTML = '<option value="">All Seasons</option>';
+            episodeSelector.innerHTML = '<option value="">All Episodes</option>';
+            
+            // Remove old event listeners by cloning and replacing
+            const newSeasonSelector = seasonSelector.cloneNode(false);
+            const newEpisodeSelector = episodeSelector.cloneNode(false);
+            const defaultSeasonOption = document.createElement('option');
+            defaultSeasonOption.value = '';
+            defaultSeasonOption.textContent = 'All Seasons';
+            defaultSeasonOption.style.background = '#1a1a2e';
+            defaultSeasonOption.style.color = 'var(--light)';
+            newSeasonSelector.appendChild(defaultSeasonOption);
+            
+            const defaultEpisodeOption = document.createElement('option');
+            defaultEpisodeOption.value = '';
+            defaultEpisodeOption.textContent = 'All Episodes';
+            defaultEpisodeOption.style.background = '#1a1a2e';
+            defaultEpisodeOption.style.color = 'var(--light)';
+            newEpisodeSelector.appendChild(defaultEpisodeOption);
+            
+            seasonSelector.parentNode.replaceChild(newSeasonSelector, seasonSelector);
+            episodeSelector.parentNode.replaceChild(newEpisodeSelector, episodeSelector);
+            
+            // Estimate number of seasons (typical anime season is ~12-13 or 24-26 episodes)
+            // Let's assume max 4 seasons for safety
+            const estimatedSeasons = totalEpisodes ? Math.min(Math.ceil(totalEpisodes / 12), 4) : 1;
+            
+            // Populate season selector
+            for (let i = 1; i <= estimatedSeasons; i++) {
+                const option = document.createElement('option');
+                option.value = i;
+                option.textContent = `Season ${i}`;
+                option.style.background = '#1a1a2e';
+                option.style.color = 'var(--light)';
+                option.style.fontWeight = '500';
+                newSeasonSelector.appendChild(option);
+            }
+            
+            // Populate episode selector (up to total episodes or 100, whichever is smaller)
+            const maxEpisodes = totalEpisodes ? Math.min(totalEpisodes, 100) : 50;
+            for (let i = 1; i <= maxEpisodes; i++) {
+                const option = document.createElement('option');
+                option.value = i;
+                option.textContent = `Episode ${i}`;
+                option.style.background = '#1a1a2e';
+                option.style.color = 'var(--light)';
+                option.style.fontWeight = '500';
+                newEpisodeSelector.appendChild(option);
+            }
+            
+            // Add event listeners (only once per new selector)
+            newSeasonSelector.addEventListener('change', () => {
+                if (document.getElementById('animeTorrentsContainer').style.display !== 'none') {
+                    loadAnimeTorrents(currentAnime.title.romaji || currentAnime.title.english);
+                }
+            });
+            
+            newEpisodeSelector.addEventListener('change', () => {
+                if (document.getElementById('animeTorrentsContainer').style.display !== 'none') {
+                    loadAnimeTorrents(currentAnime.title.romaji || currentAnime.title.english);
+                }
+            });
+        }
+        
+        async function loadAnimeTorrents(animeTitle) {
+            const animeTorrentsList = document.getElementById('animeTorrentsList');
+            const seasonSelector = document.getElementById('animeSeasonSelector');
+            const episodeSelector = document.getElementById('animeEpisodeSelector');
+            
+            const selectedSeason = seasonSelector.value;
+            const selectedEpisode = episodeSelector.value;
+            
+            // Generate search queries with multiple variants
+            const searchQueries = generateAnimeSearchQueries(animeTitle, selectedSeason, selectedEpisode);
+            
+            // Show loading state and lock the display
+            animeTorrentsList.innerHTML = `<div class="loading"><div class="spinner"></div><p>Searching Nyaa with ${searchQueries.length} query variants...</p></div>`;
+            
+            try {
+                // Collect all results first
+                const allTorrents = [];
+                const seenMagnets = new Set();
+                
+                // Execute all searches in parallel and wait for ALL to complete
+                const searchResults = await Promise.all(
+                    searchQueries.map(async (query) => {
+                        try {
+                            const response = await fetch(`${animeBaseUrl}/api/${encodeURIComponent(query)}`);
+                            const data = await response.json();
+                            return data.results || [];
+                        } catch (err) {
+                            console.error(`Error searching for "${query}":`, err);
+                            return [];
+                        }
+                    })
+                );
+                
+                // Now combine all results (this happens AFTER all searches complete)
+                searchResults.forEach(results => {
+                    results.forEach(torrent => {
+                        if (!seenMagnets.has(torrent.magnetLink)) {
+                            seenMagnets.add(torrent.magnetLink);
+                            allTorrents.push(torrent);
+                        }
+                    });
+                });
+                
+                // Check if we found anything
+                if (allTorrents.length === 0) {
+                    animeTorrentsList.innerHTML = '<p style="text-align: center; color: var(--light); padding: 2rem;">No torrents found. Try selecting different season/episode options.</p>';
+                    return;
+                }
+                
+                // Sort by seeders (highest first)
+                allTorrents.sort((a, b) => (b.seeders || 0) - (a.seeders || 0));
+                
+                // Store original torrents for filtering
+                animeTorrentsList.dataset.allTorrents = JSON.stringify(allTorrents);
+                
+                // Display all results at once
+                displayAnimeTorrents(allTorrents);
+                
+            } catch (error) {
+                console.error('Error loading anime torrents:', error);
+                animeTorrentsList.innerHTML = '<p style="text-align: center; color: #ff4444; padding: 2rem;">Error loading torrents. Make sure the Nyaa server is running.</p>';
+            }
+        }
+        
+        function generateAnimeSearchQueries(animeTitle, season, episode) {
+            const queries = [];
+            const baseTitle = animeTitle.trim();
+            
+            // If no season/episode selected, just search for the anime title
+            if (!season && !episode) {
+                queries.push(baseTitle);
+                return queries;
+            }
+            
+            // If only season selected (no specific episode)
+            if (season && !episode) {
+                // Season variants
+                queries.push(`${baseTitle} S${season}`);
+                queries.push(`${baseTitle} S${season.padStart(2, '0')}`);
+                queries.push(`${baseTitle} Season ${season}`);
+                queries.push(`${baseTitle} Season${season}`);
+                queries.push(`${baseTitle} Season ${season.padStart(2, '0')}`);
+                queries.push(`${baseTitle} Season${season.padStart(2, '0')}`);
+                return queries;
+            }
+            
+            // If only episode selected (no season)
+            if (!season && episode) {
+                // Episode only variants
+                queries.push(`${baseTitle} E${episode}`);
+                queries.push(`${baseTitle} E${episode.padStart(2, '0')}`);
+                queries.push(`${baseTitle} EP${episode}`);
+                queries.push(`${baseTitle} EP${episode.padStart(2, '0')}`);
+                queries.push(`${baseTitle} Episode ${episode}`);
+                queries.push(`${baseTitle} Episode${episode}`);
+                queries.push(`${baseTitle} - ${episode.padStart(2, '0')}`);
+                return queries;
+            }
+            
+            // Both season and episode selected
+            const s = season;
+            const e = episode;
+            const s2 = season.padStart(2, '0');
+            const e2 = episode.padStart(2, '0');
+            
+            // Combined season+episode variants
+            queries.push(`${baseTitle} S${s2}E${e2}`);
+            queries.push(`${baseTitle} S${s}E${e}`);
+            queries.push(`${baseTitle} S${s2}E${e}`);
+            queries.push(`${baseTitle} S${s}E${e2}`);
+            queries.push(`${baseTitle} S${s2} E${e2}`);
+            queries.push(`${baseTitle} Season ${s} Episode ${e}`);
+            queries.push(`${baseTitle} Season${s} Episode${e}`);
+            queries.push(`${baseTitle} Season ${s} Ep ${e}`);
+            queries.push(`${baseTitle} ${s2}x${e2}`);
+            queries.push(`${baseTitle} - ${s2}x${e2}`);
+            queries.push(`${baseTitle} - S${s2}E${e2}`);
+            
+            return queries;
+        }
+        
+        function displayAnimeTorrents(torrents) {
+            const animeTorrentsList = document.getElementById('animeTorrentsList');
+            animeTorrentsList.innerHTML = '';
+            
+            torrents.forEach(torrent => {
+                const torrentItem = document.createElement('div');
+                torrentItem.className = 'torrent-item';
+                
+                torrentItem.innerHTML = `
+                    <div class="torrent-info">
+                        <div class="torrent-title">${torrent.title}</div>
+                        <div class="torrent-meta">
+                            <span class="torrent-size">
+                                <i class="fas fa-hdd"></i> ${torrent.size}
+                            </span>
+                            <span class="torrent-seeders">
+                                <i class="fas fa-arrow-up"></i> ${torrent.seeders} seeders
+                            </span>
+                        </div>
+                    </div>
+                    <div class="torrent-actions">
+                        <button class="btn btn-primary" onclick="playAnimeTorrent('${torrent.magnetLink.replace(/'/g, "\\'")}', '${torrent.title.replace(/'/g, "\\'")}')">
+                            <i class="fas fa-play"></i> Play
+                        </button>
+                    </div>
+                `;
+                
+                animeTorrentsList.appendChild(torrentItem);
+            });
+        }
+        
+        function filterAnimeTorrents() {
+            const animeTorrentsList = document.getElementById('animeTorrentsList');
+            const filterInput = document.getElementById('animeTorrentKeywordFilter');
+            const keyword = filterInput.value.toLowerCase();
+            
+            const allTorrentsData = animeTorrentsList.dataset.allTorrents;
+            if (!allTorrentsData) return;
+            
+            const allTorrents = JSON.parse(allTorrentsData);
+            
+            if (!keyword) {
+                displayAnimeTorrents(allTorrents);
+                return;
+            }
+            
+            const filtered = allTorrents.filter(t => t.title.toLowerCase().includes(keyword));
+            displayAnimeTorrents(filtered);
+        }
+        
+        async function searchAnimeCustomQuery(customQuery) {
+            const animeTorrentsList = document.getElementById('animeTorrentsList');
+            const animeTorrentsContainer = document.getElementById('animeTorrentsContainer');
+            
+            // Show torrents container if hidden
+            animeTorrentsContainer.style.display = 'block';
+            
+            // Show loading
+            animeTorrentsList.innerHTML = '<div class="loading"><div class="spinner"></div><p>Searching Nyaa with your custom query...</p></div>';
+            
+            try {
+                const response = await fetch(`${animeBaseUrl}/api/${encodeURIComponent(customQuery)}`);
+                const data = await response.json();
+                
+                if (!data.results || data.results.length === 0) {
+                    animeTorrentsList.innerHTML = '<p style="text-align: center; color: var(--light); padding: 2rem;">No torrents found for your custom query. Try different keywords.</p>';
+                    return;
+                }
+                
+                // Sort by seeders
+                const torrents = data.results.sort((a, b) => (b.seeders || 0) - (a.seeders || 0));
+                
+                // Store and display
+                animeTorrentsList.dataset.allTorrents = JSON.stringify(torrents);
+                displayAnimeTorrents(torrents);
+                
+                // Show notification
+                showNotification(`Found ${torrents.length} torrents for "${customQuery}"`, 'success');
+                
+            } catch (error) {
+                console.error('Error with custom search:', error);
+                animeTorrentsList.innerHTML = '<p style="text-align: center; color: #ff4444; padding: 2rem;">Error searching. Make sure the Nyaa server is running.</p>';
+            }
+        }
+        
+        function playAnimeTorrent(magnetLink, title) {
+            // Close the anime modal
+            const animeDetailsModal = document.getElementById('animeDetailsModal');
+            animeDetailsModal.classList.remove('active');
+            
+            // Use the same startStream function as movies/shows
+            startStream(magnetLink);
         }
 
         // ---- Manga functionality ----
