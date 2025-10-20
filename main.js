@@ -19,6 +19,9 @@ let svc111477Proc = null;
 let booksProc = null;
 let booksDesiredPort = 3004;
 let booksBaseUrl = 'http://127.0.0.1:3004';
+let randomBookProc = null;
+let randomBookDesiredPort = 5000;
+let randomBookBaseUrl = 'http://127.0.0.1:5000';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -272,10 +275,7 @@ function createWindow() {
             allowRunningInsecureContent: true, // Allow mixed content
             experimentalFeatures: true, // Enable experimental features for better iframe support
         },
-        // Enable custom title bar (frameless) and set background to match purple theme
-        frame: false,
         backgroundColor: '#120a1f',
-        titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'hidden',
     });
     // Remove default application menu (File/Edit/View/Help)
     try { Menu.setApplicationMenu(null); } catch(_) {}
@@ -710,6 +710,119 @@ function startBooks() {
     }
 }
 
+// Start RandomBook server
+function startRandomBook() {
+    if (randomBookProc) {
+        console.log('RandomBook server already running');
+        return;
+    }
+
+    try {
+        console.log('Starting RandomBook server...');
+        
+        // Resolve script path in both dev and packaged environments
+        const candidates = [];
+        if (app.isPackaged && process.resourcesPath) {
+            candidates.push(path.join(process.resourcesPath, 'RandomBook', 'server.js'));
+            candidates.push(path.join(process.resourcesPath, 'app.asar.unpacked', 'RandomBook', 'server.js'));
+        }
+        candidates.push(path.join(__dirname, 'RandomBook', 'server.js'));
+        
+        let entry = null;
+        for (const p of candidates) {
+            try { if (p && fs.existsSync(p)) { entry = p; break; } } catch {}
+        }
+        if (!entry) {
+            console.warn('RandomBook server entry not found. Ensure the RandomBook folder is packaged.');
+            return;
+        }
+
+        // Compute NODE_PATH so the child can resolve dependencies from the app's node_modules
+        const nodePathCandidates = [
+            path.join(process.resourcesPath || '', 'app.asar', 'node_modules'),
+            path.join(process.resourcesPath || '', 'node_modules'),
+            path.join(process.resourcesPath || '', 'app.asar.unpacked', 'node_modules'),
+            path.join(__dirname, 'node_modules'),
+            path.join(path.dirname(entry), 'node_modules'),
+        ];
+        const existingNodePaths = nodePathCandidates.filter(p => { try { return fs.existsSync(p); } catch { return false; } });
+        const NODE_PATH_VALUE = existingNodePaths.join(path.delimiter);
+
+        // Spawn Electron binary in Node mode to run server.js
+        const logPath = path.join(app.getPath('userData'), 'randombook.log');
+        const logStream = fs.createWriteStream(logPath, { flags: 'a' });
+        const childEnv = { 
+            ...process.env, 
+            PORT: String(randomBookDesiredPort), 
+            ELECTRON_RUN_AS_NODE: '1', 
+            NODE_PATH: NODE_PATH_VALUE
+        };
+        randomBookProc = spawn(process.execPath, [entry], {
+            stdio: ['ignore', 'pipe', 'pipe'],
+            env: childEnv,
+            cwd: path.dirname(entry),
+        });
+
+        // Pipe logs for diagnostics
+        try {
+            randomBookProc.stdout.on('data', (d) => { try { logStream.write(d); } catch(_) {} });
+            randomBookProc.stderr.on('data', (d) => { try { logStream.write(d); } catch(_) {} });
+        } catch (_) {}
+
+        randomBookProc.on('exit', (code, signal) => {
+            console.log(`RandomBook server exited code=${code} signal=${signal}`);
+            try { logStream.end(); } catch(_) {}
+            // On unexpected exit during runtime, attempt a single restart
+            if (!app.isQuitting) {
+                setTimeout(() => { try { startRandomBook(); } catch(_) {} }, 1000);
+            }
+        });
+
+        randomBookProc.on('error', (err) => {
+            console.error('Failed to start RandomBook server process:', err);
+            try { logStream.write(String(err?.stack || err) + '\n'); } catch(_) {}
+        });
+
+        // Test if the server is up by checking port response
+        try {
+            let attempts = 0;
+            let healthy = false;
+            const maxAttempts = 25; // ~10s @ 400ms
+            const timer = setInterval(() => {
+                attempts++;
+                try {
+                    const req = http.get({ hostname: '127.0.0.1', port: randomBookDesiredPort, path: '/', timeout: 350 }, (res) => {
+                        if (res.statusCode === 200 || res.statusCode === 404) {
+                            healthy = true;
+                            randomBookBaseUrl = `http://127.0.0.1:${randomBookDesiredPort}`;
+                            console.log('RandomBook server is up on ' + randomBookBaseUrl);
+                            clearInterval(timer);
+                            try { res.resume(); } catch(_) {}
+                            try {
+                                if (mainWindow && !mainWindow.isDestroyed()) {
+                                    mainWindow.webContents.send('randombook-url', { url: randomBookBaseUrl });
+                                }
+                            } catch(_) {}
+                        } else {
+                            try { res.resume(); } catch(_) {}
+                        }
+                    });
+                    req.on('timeout', () => { try { req.destroy(); } catch(_) {} });
+                    req.on('error', () => {});
+                } catch(_) {}
+                if (attempts >= maxAttempts) {
+                    clearInterval(timer);
+                    if (!healthy && !app.isQuitting) {
+                        console.warn(`[RandomBook] Failed to start server on port ${randomBookDesiredPort}`);
+                    }
+                }
+            }, 400);
+        } catch(_) {}
+    } catch (e) {
+        console.error('Failed to start RandomBook server:', e);
+    }
+}
+
 // Enforce single instance with a friendly error on second run
 const gotLock = app.requestSingleInstanceLock();
 if (!gotLock) {
@@ -739,6 +852,9 @@ if (!gotLock) {
 
     // Start the Books (Z-Library) search server (port 3004)
     startBooks();
+
+    // Start the RandomBook search server (port 3000)
+    startRandomBook();
 
         mainWindow = createWindow();
 
@@ -957,6 +1073,195 @@ if (!gotLock) {
         }
     });
 
+    // EPUB Library functionality
+    ipcMain.handle('get-epub-folder', async () => {
+        try {
+            const epubFolder = path.join(app.getPath('userData'), 'epub');
+            // Create folder if it doesn't exist
+            if (!fs.existsSync(epubFolder)) {
+                fs.mkdirSync(epubFolder, { recursive: true });
+            }
+            return { success: true, path: epubFolder };
+        } catch (error) {
+            console.error('Error getting EPUB folder:', error);
+            return { success: false, message: error.message };
+        }
+    });
+
+    ipcMain.handle('download-epub', async (event, { url, bookData }) => {
+        try {
+            const epubFolder = path.join(app.getPath('userData'), 'epub');
+            // Create folder if it doesn't exist
+            if (!fs.existsSync(epubFolder)) {
+                fs.mkdirSync(epubFolder, { recursive: true });
+            }
+
+            // Clean filename for the book
+            const safeBook = bookData || {};
+            const titleRaw = typeof safeBook.title === 'string' ? safeBook.title : (safeBook.name || 'Unknown Title');
+            const cleanTitle = titleRaw.replace(/[<>:"/\\|?*]/g, '').trim() || 'Unknown Title';
+            const authorRaw = Array.isArray(safeBook.author)
+                ? (safeBook.author[0] || 'Unknown Author')
+                : (typeof safeBook.author === 'string' ? safeBook.author : 'Unknown Author');
+            const cleanAuthor = String(authorRaw).replace(/[<>:"/\\|?*]/g, '').trim() || 'Unknown Author';
+            const filename = `${cleanTitle} - ${cleanAuthor}.epub`;
+            const filePath = path.join(epubFolder, filename);
+
+            // Persist cover URL and basic metadata so Library can show covers
+            try {
+                const metadataPath = path.join(epubFolder, 'covers.json');
+                let covers = {};
+                if (fs.existsSync(metadataPath)) {
+                    try {
+                        covers = JSON.parse(fs.readFileSync(metadataPath, 'utf8')) || {};
+                    } catch (_) {
+                        covers = {};
+                    }
+                }
+                // Helper to normalize title/author for indexing
+                const normalize = (s) => String(s || '')
+                    .toLowerCase()
+                    .replace(/[^a-z0-9\s]/g, ' ')
+                    .replace(/\s+/g, ' ')
+                    .trim();
+
+                const indexKey = `${normalize(cleanTitle)}|${normalize(cleanAuthor)}`;
+
+                covers[filename] = {
+                    title: cleanTitle,
+                    author: cleanAuthor,
+                    coverUrl: typeof safeBook.coverUrl === 'string' ? safeBook.coverUrl : null,
+                    sourceUrl: url || null,
+                    savedAt: new Date().toISOString()
+                };
+                // Maintain a reverse index for fuzzy lookup by title+author
+                covers._index = covers._index || {};
+                covers._index[indexKey] = covers._index[indexKey] || [];
+                if (!covers._index[indexKey].includes(filename)) {
+                    covers._index[indexKey].push(filename);
+                }
+                fs.writeFileSync(metadataPath, JSON.stringify(covers, null, 2), 'utf8');
+            } catch (metaErr) {
+                console.warn('Could not persist EPUB cover metadata:', metaErr);
+            }
+
+            return { 
+                success: true, 
+                path: filePath,
+                folder: epubFolder,
+                filename,
+                url: url,
+                bookData: safeBook
+            };
+        } catch (error) {
+            console.error('Error preparing EPUB download:', error);
+            return { success: false, message: error.message };
+        }
+    });
+
+    ipcMain.handle('get-epub-library', async () => {
+        try {
+            const epubFolder = path.join(app.getPath('userData'), 'epub');
+            
+            if (!fs.existsSync(epubFolder)) {
+                return { success: true, books: [] };
+            }
+
+            // Scan for .epub files
+            const files = fs.readdirSync(epubFolder);
+            const epubFiles = files.filter(file => file.toLowerCase().endsWith('.epub'));
+            
+            // Load cover metadata if present
+            let covers = {};
+            const metadataPath = path.join(epubFolder, 'covers.json');
+            if (fs.existsSync(metadataPath)) {
+                try {
+                    covers = JSON.parse(fs.readFileSync(metadataPath, 'utf8')) || {};
+                } catch (_) {
+                    covers = {};
+                }
+            }
+            
+            const books = epubFiles.map(filename => {
+                const filePath = path.join(epubFolder, filename);
+                const stats = fs.statSync(filePath);
+                
+                // Try to extract title and author from filename
+                const nameWithoutExt = filename.replace(/\.epub$/i, '');
+                let title = nameWithoutExt;
+                let author = 'Unknown Author';
+                
+                // Check if filename has " - " pattern for author
+                const parts = nameWithoutExt.split(' - ');
+                if (parts.length >= 2) {
+                    title = parts[0].trim();
+                    author = parts.slice(1).join(' - ').trim();
+                }
+
+                // Merge in any saved cover from metadata (filename match first)
+                let meta = covers[filename] || {};
+                let coverUrl = typeof meta.coverUrl === 'string' ? meta.coverUrl : null;
+                
+                // If no cover via filename, try fuzzy match via normalized title|author
+                if (!coverUrl && covers._index) {
+                    const normalize = (s) => String(s || '')
+                        .toLowerCase()
+                        .replace(/[^a-z0-9\s]/g, ' ')
+                        .replace(/\s+/g, ' ')
+                        .trim();
+                    const idxKey = `${normalize(title)}|${normalize(author)}`;
+                    const possibleFiles = covers._index[idxKey];
+                    if (Array.isArray(possibleFiles) && possibleFiles.length > 0) {
+                        const first = possibleFiles[0];
+                        const metaAlt = covers[first] || {};
+                        if (typeof metaAlt.coverUrl === 'string' && metaAlt.coverUrl) {
+                            coverUrl = metaAlt.coverUrl;
+                            // Also adopt stored title/author if present
+                            if (typeof metaAlt.title === 'string' && metaAlt.title.trim()) title = metaAlt.title;
+                            if (typeof metaAlt.author === 'string' && metaAlt.author.trim()) author = metaAlt.author;
+                        }
+                    }
+                }
+                // Prefer saved title/author if present
+                title = typeof meta.title === 'string' && meta.title.trim() ? meta.title : title;
+                author = typeof meta.author === 'string' && meta.author.trim() ? meta.author : author;
+                
+                return {
+                    id: filename,
+                    title: title,
+                    author: [author],
+                    filename: filename,
+                    localPath: filePath,
+                    fileSize: stats.size,
+                    downloadedAt: stats.mtime.toISOString(),
+                    fileExtension: 'epub',
+                    // Cover URL from metadata or placeholder
+                    coverUrl: coverUrl || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjMDZiNmQ0Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNHB4IiBmaWxsPSJ3aGl0ZSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPkVQVUI8L3RleHQ+PC9zdmc+'
+                };
+            });
+
+            return { success: true, books: books };
+        } catch (error) {
+            console.error('Error getting EPUB library:', error);
+            return { success: false, message: error.message, books: [] };
+        }
+    });
+
+    // Read an EPUB file and return base64 so renderer can load it with epub.js
+    ipcMain.handle('read-epub-file', async (event, filePath) => {
+        try {
+            if (!filePath || !fs.existsSync(filePath)) {
+                return { success: false, message: 'File not found' };
+            }
+            const data = fs.readFileSync(filePath);
+            const base64 = data.toString('base64');
+            return { success: true, base64, mime: 'application/epub+zip' };
+        } catch (err) {
+            console.error('Error reading EPUB file:', err);
+            return { success: false, message: err.message };
+        }
+    });
+
         // Initialize the auto-updater (main-process only, no renderer changes)
         setupAutoUpdater();
     });
@@ -991,6 +1296,11 @@ app.on('will-quit', () => {
     if (booksProc) {
         try { booksProc.kill('SIGTERM'); } catch(_) {}
         booksProc = null;
+    }
+    // Stop RandomBook child process
+    if (randomBookProc) {
+        try { randomBookProc.kill('SIGTERM'); } catch(_) {}
+        randomBookProc = null;
     }
 });
 
