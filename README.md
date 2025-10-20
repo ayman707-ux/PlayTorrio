@@ -29,6 +29,7 @@ PlayTorrio's official [website](https://playtorrio.netlify.app/)
 - 🔄 Auto-updater with persistent progress
 - Online Z-Lib book reader
 -In-App Book downloader and reader (BookTorrio)
+-manga
 
 ---
 
