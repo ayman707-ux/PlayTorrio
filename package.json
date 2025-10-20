@@ -1,6 +1,6 @@
 {
   "name": "playtorrio",
-  "version": "1.2.2",
+  "version": "1.2.3",
   "description": "A sophisticated application designed to seamlessly interface with Jackett for fetching torrents and provide high-performance streaming directly through an integrated API.",
   "author": {
     "name": "ayman",
@@ -12,23 +12,25 @@
   "scripts": {
     "start": "electron .",
     "serve": "node server.mjs",
-    "prebuild": "node -e \"const cp=require('child_process');const npm=process.platform==='win32'?'npm.cmd':'npm';cp.spawnSync(npm,['install','--production'],{stdio:'inherit',cwd:'./Torrentless'});cp.spawnSync(npm,['install','--production'],{stdio:'inherit',cwd:'./111477'});cp.spawnSync(npm,['install','--production'],{stdio:'inherit',cwd:'./books'});\"",
+    "prebuild": "node -e \"const cp=require('child_process');const npm=process.platform==='win32'?'npm.cmd':'npm';cp.spawnSync(npm,['install','--production'],{stdio:'inherit',cwd:'./Torrentless'});cp.spawnSync(npm,['install','--production'],{stdio:'inherit',cwd:'./111477'});cp.spawnSync(npm,['install','--production'],{stdio:'inherit',cwd:'./books'});cp.spawnSync(npm,['install','--production'],{stdio:'inherit',cwd:'./RandomBook'});\"",
     "build": "electron-builder"
   },
   "dependencies": {
     "axios": "^1.7.4",
     "cheerio": "^1.0.0",
     "cors": "^2.8.5",
+    "electron-updater": "^6.6.2",
+    "epubjs": "^0.3.93",
     "express": "^4.21.2",
     "ffmpeg-static": "^5.2.0",
     "got": "^14.4.7",
+    "jszip": "^3.10.1",
     "mime-types": "^2.1.35",
     "multer": "^2.0.1",
     "node-fetch": "^3.3.2",
     "parse-torrent": "^9.0.3",
     "webtorrent": "^2.6.8",
-    "xml2js": "^0.6.2",
-    "electron-updater": "^6.6.2"
+    "xml2js": "^0.6.2"
   },
   "devDependencies": {
     "electron": "^38.2.2",
@@ -59,13 +61,15 @@
       "mpv/**",
       "Torrentless/**/*",
       "111477/**/*",
-      "books/**/*"
+      "books/**/*",
+      "RandomBook/**/*"
     ],
     "asarUnpack": [
       "mpv/**",
       "Torrentless/**",
       "111477/**",
-      "books/**"
+      "books/**",
+      "RandomBook/**"
     ],
     "extraResources": [
       {
@@ -83,6 +87,10 @@
       {
         "from": "books",
         "to": "books"
+      },
+      {
+        "from": "RandomBook",
+        "to": "RandomBook"
       }
     ],
     "win": {
