@@ -3046,6 +3046,8 @@ export function startServer(userDataPath) {
         if (!API_KEY) loadAPIKey();
     if (!API_KEY) return res.status(400).json({ error: 'API key not configured' });
         try {
+            // Exclude adult/XXX categories (category IDs: 6000-6999 are adult categories in Jackett/Newznab)
+            // Also exclude specific category codes: XXX (6000), Other XXX (6010-6090)
             const url = `${JACKETT_URL}?apikey=${API_KEY}&t=search&q=${encodeURIComponent(query)}`;
             const response = await fetch(url);
             if (!response.ok) throw new Error(`Jackett error: ${response.statusText}`);
@@ -3057,7 +3059,25 @@ export function startServer(userDataPath) {
                     if (!item || (!item.link && !item.guid)) return null;
                     const magnet = item.link?.startsWith('magnet:') ? item.link : item.guid;
                     if (!magnet || !magnet.startsWith('magnet:')) return null;
+                    
+                    // Check for adult categories
                     const attrs = Array.isArray(item['torznab:attr']) ? item['torznab:attr'] : [item['torznab:attr']];
+                    const categoryAttr = attrs.find(attr => attr?.name === 'category');
+                    if (categoryAttr) {
+                        const catValue = String(categoryAttr.value || '');
+                        // Exclude adult categories (6000-6999) and check title for adult keywords
+                        if (catValue.startsWith('6') && parseInt(catValue) >= 6000 && parseInt(catValue) < 7000) {
+                            return null; // Skip adult content
+                        }
+                    }
+                    
+                    // Additional title-based filtering for common adult keywords
+                    const title = String(item.title || '').toLowerCase();
+                    const adultKeywords = ['xxx', 'porn', 'adult', '18+', 'hentai', 'erotic', 'nsfw'];
+                    if (adultKeywords.some(kw => title.includes(kw))) {
+                        return null; // Skip if title contains adult keywords
+                    }
+                    
                     const seeders = attrs.find(attr => attr?.name === 'seeders')?.value || 0;
                     return { title: item.title, magnet, seeders: +seeders, size: +(item.enclosure?.length || 0) };
                 })
