@@ -40,6 +40,22 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // Fullscreen API
   setFullscreen: (isFullscreen) => ipcRenderer.invoke('set-fullscreen', isFullscreen),
   getFullscreen: () => ipcRenderer.invoke('get-fullscreen'),
+  // EPUB Library API
+  getEpubFolder: () => ipcRenderer.invoke('get-epub-folder'),
+  // Accept both call styles:
+  // 1) downloadEpub(url, bookData)
+  // 2) downloadEpub({ url, bookData })
+  downloadEpub: (arg1, arg2) => {
+    let payload;
+    if (arg1 && typeof arg1 === 'object' && 'url' in arg1) {
+      payload = arg1;
+    } else {
+      payload = { url: arg1, bookData: arg2 };
+    }
+    return ipcRenderer.invoke('download-epub', payload);
+  },
+  getEpubLibrary: () => ipcRenderer.invoke('get-epub-library'),
+  readEpubFile: (filePath) => ipcRenderer.invoke('read-epub-file', filePath),
   // WebChimera exposure (optional, may be null if not installed)
   wcjs: {
     available: Boolean(wcRendererMod),
