@@ -36,59 +36,11 @@
             overflow-x: hidden;
         }
 
-        /* Custom title bar (frameless window controls) */
-        .titlebar {
-            -webkit-app-region: drag;
-            height: 36px;
-            background: linear-gradient(90deg, #2a1847 0%, #3b1c6a 100%);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 0 6px 0 10px;
-            border-bottom: 1px solid rgba(255,255,255,0.06);
-            position: sticky;
-            top: 0;
-            z-index: 1000;
-        }
-        .titlebar .app-title {
-            color: #e9d5ff;
-            font-weight: 600;
-            font-size: 13px;
-            letter-spacing: .3px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        .titlebar .window-buttons { -webkit-app-region: no-drag; display: flex; align-items: center; gap: 4px; pointer-events: auto; }
-        .win-btn {
-            -webkit-app-region: no-drag;
-            pointer-events: auto;
-            width: 46px;
-            height: 28px;
-            border-radius: 6px;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            line-height: 28px;
-            color: #e9d5ff;
-            background: transparent;
-            border: 1px solid rgba(255,255,255,0.06);
-            cursor: pointer;
-            transition: transform .12s ease, background .15s ease, border-color .15s ease, color .15s ease;
-        }
-        .win-btn * { pointer-events: none; }
-        .win-btn:hover { transform: translateY(-1px) scale(1.06); background: rgba(139,92,246,0.22); border-color: rgba(168,85,247,0.5); color: #fff; }
-        .win-btn:active { transform: translateY(0) scale(0.97); }
-        .win-btn.win-close:hover { background: rgba(244,63,94,0.28); border-color: rgba(244,63,94,0.6); }
-        .win-btn.win-close i { color: #fecaca; }
-        .win-btn.win-min i { transform: scale(1.12); }
-        .win-btn.win-max i { transform: scale(1.05); }
-
         header {
             background-color: var(--primary);
             padding: 1rem 2rem;
             position: sticky;
-            top: 36px; /* sit below the titlebar */
+            top: 0;
             z-index: 900;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
         }
@@ -2656,6 +2608,472 @@
             to { opacity: 1; transform: translateY(0); }
         }
 
+        /* BookTorrio Page Styles */
+        .booktorrio-nav {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            justify-content: center;
+        }
+
+        /* EPUB Reader Styles */
+        #epubReaderOverlay {
+            position: fixed;
+            inset: 0;
+            background: var(--bg);
+            z-index: 2000;
+            display: flex;
+            flex-direction: column;
+        }
+        .reader-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            padding: 0.75rem 1rem;
+            background: rgba(0,0,0,0.15);
+            backdrop-filter: blur(8px);
+            position: sticky;
+            top: 0;
+            z-index: 2100;
+        }
+        .reader-esc-hint {
+            color: var(--text);
+            font-size: 0.85rem;
+            opacity: 0.7;
+            white-space: nowrap;
+        }
+        .reader-title { 
+            text-align: center; 
+            color: var(--text); 
+            font-weight: 600; 
+            flex: 1;
+        }
+        #readerContainer { 
+            flex: 1; 
+            overflow-y: auto; 
+            overflow-x: hidden;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        /* Bottom navigation bar */
+        .reader-footer {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            padding: 0.75rem 1rem;
+            background: rgba(0,0,0,0.15);
+            backdrop-filter: blur(8px);
+            position: sticky;
+            bottom: 0;
+            z-index: 2100;
+        }
+        .reader-nav-controls {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            flex: 1;
+            justify-content: center;
+        }
+        .reader-nav-btn, .reader-gear, .reader-back-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 44px; 
+            height: 44px;
+            padding: 0 1rem;
+            border-radius: 8px;
+            border: 1px solid rgba(255,255,255,0.12);
+            background: rgba(255,255,255,0.06);
+            color: var(--text);
+            cursor: pointer;
+            transition: all 0.2s;
+            gap: 0.5rem;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+        .reader-nav-btn {
+            min-width: 44px;
+            padding: 0;
+        }
+        .reader-nav-btn:hover:not(:disabled), .reader-gear:hover, .reader-back-btn:hover {
+            background: rgba(168,85,247,0.22);
+            border-color: rgba(168,85,247,0.5);
+            transform: translateY(-2px);
+        }
+        .reader-back-btn:hover {
+            background: rgba(244,63,94,0.22);
+            border-color: rgba(244,63,94,0.5);
+        }
+        .reader-nav-btn:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+        .reader-settings {
+            position: fixed;
+            bottom: 60px; /* above footer */
+            right: 0;
+            width: 320px;
+            max-height: 400px;
+            background: rgba(20,20,20,0.95);
+            color: #eee;
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 12px 0 0 0;
+            transform: translateX(0);
+            transition: transform 0.2s ease;
+            padding: 1rem;
+            z-index: 2050;
+        }
+        .reader-settings.hidden { transform: translateX(100%); }
+        .settings-section { margin-bottom: 1rem; }
+        .settings-row { display: flex; gap: 0.5rem; }
+        .theme-btn { padding: 0.5rem 0.75rem; border-radius: 6px; border: 1px solid rgba(255,255,255,0.15); background: rgba(255,255,255,0.06); color: #eee; cursor: pointer; }
+
+        /* Themes for overlay container */
+        .theme-light { --bg: #ffffff; --text: #111111; }
+        .theme-dark  { --bg: #202225; --text: #f2f2f2; }
+        .theme-night { --bg: #000000; --text: #e5e7eb; }
+        
+        .booktorrio-tab-btn {
+            padding: 1rem 2rem;
+            border-radius: 12px;
+            border: 2px solid rgba(168, 85, 247, 0.3);
+            background: rgba(42, 24, 71, 0.4);
+            color: var(--light);
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            backdrop-filter: blur(10px);
+        }
+        
+        .booktorrio-tab-btn:hover {
+            border-color: #06b6d4;
+            background: rgba(6, 182, 212, 0.1);
+        }
+        
+        .booktorrio-tab-btn.active {
+            border-color: #06b6d4;
+            background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
+            color: white;
+        }
+        
+        .booktorrio-tab {
+            display: block;
+        }
+        
+        .search-container-books {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        
+        .search-input-books {
+            flex: 1;
+            padding: 1rem 1.5rem;
+            border-radius: 12px;
+            border: 2px solid rgba(168, 85, 247, 0.3);
+            background: rgba(42, 24, 71, 0.4);
+            color: var(--light);
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+        
+        .search-input-books:focus {
+            outline: none;
+            border-color: var(--vlc-orange);
+            box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.2);
+        }
+        
+        .search-btn-books {
+            padding: 1rem 2rem;
+            border-radius: 12px;
+            border: none;
+            background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .search-btn-books:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(6, 182, 212, 0.4);
+        }
+        
+        .books-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+        
+        .book-card {
+            background: rgba(42, 24, 71, 0.4);
+            border: 1px solid rgba(168, 85, 247, 0.2);
+            border-radius: 16px;
+            padding: 1.5rem;
+            backdrop-filter: blur(15px);
+            transition: all 0.3s ease;
+        }
+        
+        .book-card:hover {
+            transform: translateY(-4px);
+            border-color: #06b6d4;
+            box-shadow: 0 8px 25px rgba(6, 182, 212, 0.2);
+        }
+        
+        .book-cover {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            border-radius: 12px;
+            margin-bottom: 1rem;
+            background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
+        }
+        
+        .book-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--light);
+            margin-bottom: 0.5rem;
+            line-height: 1.3;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        
+        .book-author {
+            color: #06b6d4;
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+        
+        .book-details {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+        
+        .book-tag {
+            background: rgba(6, 182, 212, 0.2);
+            color: #06b6d4;
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            border: 1px solid rgba(6, 182, 212, 0.3);
+        }
+        
+        .book-tag.epub-highlight {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            border-color: #10b981;
+        }
+        
+        .download-btn {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border-radius: 12px;
+            border: none;
+            background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+        
+        .download-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(6, 182, 212, 0.4);
+        }
+        
+        .search-placeholder {
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 3rem;
+            color: var(--gray);
+        }
+        
+        .search-placeholder h3 {
+            color: var(--light);
+            margin-bottom: 0.5rem;
+        }
+        
+        /* Spinner for loading */
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid rgba(6, 182, 212, 0.3);
+            border-left-color: #06b6d4;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+        
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* EPUB Download Modal Styles */
+        .epub-download-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            backdrop-filter: blur(5px);
+        }
+        
+        .epub-modal-content {
+            background: linear-gradient(135deg, var(--primary) 0%, #1a0d2e 100%);
+            border-radius: 16px;
+            border: 1px solid rgba(168, 85, 247, 0.3);
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+        }
+        
+        .epub-modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.5rem;
+            border-bottom: 1px solid rgba(168, 85, 247, 0.2);
+        }
+        
+        .epub-modal-header h3 {
+            color: var(--light);
+            margin: 0;
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .epub-modal-close {
+            background: none;
+            border: none;
+            color: var(--gray);
+            font-size: 1.2rem;
+            cursor: pointer;
+            padding: 0.5rem;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+        
+        .epub-modal-close:hover {
+            background: rgba(168, 85, 247, 0.2);
+            color: var(--light);
+        }
+        
+        .epub-modal-body {
+            padding: 1.5rem;
+        }
+        
+        .epub-download-instruction {
+            margin-bottom: 1.5rem;
+        }
+        
+        .epub-download-instruction p {
+            color: var(--light);
+            margin-bottom: 1rem;
+            line-height: 1.6;
+        }
+        
+        .epub-path-container {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 1rem;
+            border-radius: 8px;
+            border: 1px solid rgba(168, 85, 247, 0.2);
+            margin-bottom: 1rem;
+        }
+        
+        .epub-path-container code {
+            flex: 1;
+            color: #06b6d4;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            word-break: break-all;
+        }
+        
+        .copy-path-btn {
+            background: rgba(6, 182, 212, 0.2);
+            border: 1px solid #06b6d4;
+            color: #06b6d4;
+            padding: 0.5rem;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .copy-path-btn:hover {
+            background: #06b6d4;
+            color: white;
+        }
+        
+        .epub-note {
+            font-size: 0.9rem;
+            color: var(--gray);
+            font-style: italic;
+        }
+        
+        .epub-modal-actions {
+            display: flex;
+            justify-content: center;
+        }
+        
+        .epub-download-btn {
+            background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
+            color: white;
+            border: none;
+            padding: 1rem 2rem;
+            border-radius: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 1rem;
+        }
+        
+        .epub-download-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(6, 182, 212, 0.4);
+        }
+
         /* VLC Player Styles */
         .vlc-player-container {
             position: fixed;
@@ -4747,47 +5165,6 @@
     </style>
 </head>
 <body>
-    <!-- Custom purple title bar for frameless window -->
-    <div class="titlebar">
-        <div class="app-title">
-            <i class="fa-solid fa-film" style="color:#c084fc"></i>
-            <span>PlayTorrio</span>
-        </div>
-        <div class="window-buttons">
-            <button class="win-btn win-min" id="btnMin" title="Minimize"><i class="fa-solid fa-minus"></i></button>
-            <button class="win-btn win-max" id="btnMax" title="Maximize"><i class="fa-regular fa-square"></i></button>
-            <button class="win-btn win-close" id="btnClose" title="Close"><i class="fa-solid fa-xmark"></i></button>
-        </div>
-    </div>
-    <script>
-        // Window controls binding
-        (function() {
-            const $ = (s) => document.querySelector(s);
-            const btnMin = $('#btnMin');
-            const btnMax = $('#btnMax');
-            const btnClose = $('#btnClose');
-            const iconSquare = '<i class="fa-regular fa-square"></i>';
-            const iconRestore = '<i class="fa-regular fa-clone"></i>';
-            function updateMaxIcon(isMax) {
-                if (!btnMax) return;
-                btnMax.innerHTML = isMax ? iconRestore : iconSquare;
-                btnMax.title = isMax ? 'Restore' : 'Maximize';
-            }
-            if (window.electronAPI && window.electronAPI.windowControls) {
-                btnMin && btnMin.addEventListener('click', () => window.electronAPI.windowControls.minimize());
-                btnMax && btnMax.addEventListener('click', async () => {
-                    try {
-                        const res = await window.electronAPI.windowControls.maximizeToggle();
-                        if (res && typeof res.isMaximized === 'boolean') updateMaxIcon(res.isMaximized);
-                    } catch(_) {}
-                });
-                btnClose && btnClose.addEventListener('click', () => window.electronAPI.windowControls.close());
-                try {
-                    window.electronAPI.windowControls.onMaximizeChanged(({ isMaximized }) => updateMaxIcon(!!isMaximized));
-                } catch(_) {}
-            }
-        })();
-    </script>
 <!-- API Setup Modal -->
 <div class="api-setup-modal" id="apiSetupModal">
     <div class="api-setup-content">
@@ -5260,6 +5637,11 @@
                 <i class="fas fa-book" style="color: #f59e0b;"></i>
                 <span>Books</span>
                 <span class="nav-badge" style="background: linear-gradient(135deg, #f59e0b, #d97706);">Z-Lib</span>
+            </div>
+            <div class="nav-item" data-page="booktorrio">
+                <i class="fas fa-book-open" style="color: #06b6d4;"></i>
+                <span>BookTorrio</span>
+                <span class="nav-badge" style="background: linear-gradient(135deg, #06b6d4, #0891b2);">EPUB</span>
             </div>
             <div class="nav-item" data-page="downloader">
                 <i class="fas fa-download" style="color: #a855f7;"></i>
@@ -5905,6 +6287,108 @@
         </div>
     </div>
 
+    <!-- BookTorrio Page -->
+    <div id="booktorrio-page" style="display: none;">
+        <div class="page-header-enhanced">
+            <div class="page-title-section">
+                <h2 class="section-title">
+                    <i class="fas fa-book-open" style="color: #06b6d4;"></i> <span>BookTorrio</span>
+                </h2>
+                <p class="page-subtitle">Search and download EPUB books</p>
+            </div>
+        </div>
+
+        <div class="page-content">
+            <!-- Navigation Buttons -->
+            <div class="booktorrio-nav" style="margin-bottom: 2rem;">
+                <button id="searchTabBtn" class="booktorrio-tab-btn active">
+                    <i class="fas fa-search"></i> Search
+                </button>
+                <button id="libraryTabBtn" class="booktorrio-tab-btn">
+                    <i class="fas fa-bookmark"></i> Library
+                </button>
+            </div>
+
+            <!-- Search Tab -->
+            <div id="searchTab" class="booktorrio-tab">
+                <div class="search-section" style="margin-bottom: 2rem;">
+                    <div class="search-container-books">
+                        <input type="text" id="bookSearchInput" placeholder="Search for books..." class="search-input-books">
+                        <button id="searchBooksBtn" class="search-btn-books">
+                            <i class="fas fa-search"></i> Search
+                        </button>
+                    </div>
+                </div>
+
+                <div id="bookSearchResults" class="books-grid">
+                    <div class="search-placeholder">
+                        <i class="fas fa-book-open" style="font-size: 3rem; color: #06b6d4; margin-bottom: 1rem;"></i>
+                        <h3>Search for Books</h3>
+                        <p>Enter a book title above to find EPUB books</p>
+                    </div>
+                </div>
+
+                <div id="bookSearchLoading" style="display: none; text-align: center; padding: 2rem;">
+                    <div class="spinner"></div>
+                    <p>Searching for books...</p>
+                </div>
+            </div>
+
+            <!-- Library Tab (Empty for now) -->
+            <div id="libraryTab" class="booktorrio-tab" style="display: none;">
+                <div class="search-placeholder">
+                    <i class="fas fa-bookmark" style="font-size: 3rem; color: #06b6d4; margin-bottom: 1rem;"></i>
+                    <h3>Library</h3>
+                    <p>Your saved books will appear here</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- EPUB Reader Overlay -->
+    <div id="epubReaderOverlay" style="display:none;">
+        <div class="reader-header">
+            <div class="reader-esc-hint">Press ESC to exit</div>
+            <div class="reader-title" id="readerTitle"></div>
+            <div style="width: 120px;"></div> <!-- Spacer for symmetry -->
+        </div>
+        <div id="readerContainer"></div>
+        <div class="reader-footer">
+            <button id="readerBackBtn" class="reader-back-btn" title="Exit reader">
+                <i class="fas fa-arrow-left"></i>
+                <span>Back</span>
+            </button>
+            <div class="reader-nav-controls">
+                <button id="readerPrevBtn" class="reader-nav-btn" title="Previous page"><i class="fas fa-chevron-left"></i></button>
+                <button id="readerNextBtn" class="reader-nav-btn" title="Next page"><i class="fas fa-chevron-right"></i></button>
+            </div>
+            <button id="readerSettingsBtn" class="reader-gear" aria-label="Settings"><i class="fas fa-cog"></i></button>
+        </div>
+        <div id="readerSettingsPanel" class="reader-settings hidden">
+            <div class="settings-section">
+                <label>Theme</label>
+                <div class="settings-row">
+                    <button class="theme-btn" data-theme="light">Light</button>
+                    <button class="theme-btn" data-theme="dark">Dark</button>
+                    <button class="theme-btn" data-theme="night">Night</button>
+                </div>
+            </div>
+            <div class="settings-section">
+                <label>Font</label>
+                <select id="readerFont">
+                    <option value="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif">System Default</option>
+                    <option value="Georgia, Cambria, 'Times New Roman', Times, serif">Serif</option>
+                    <option value="Arial, Helvetica, sans-serif">Sans-Serif</option>
+                    <option value="'Courier New', Courier, monospace">Monospace</option>
+                </select>
+            </div>
+            <div class="settings-section">
+                <label>Text size</label>
+                <input id="readerFontSize" type="range" min="12" max="28" step="1" value="16"/>
+            </div>
+        </div>
+    </div>
+
     <!-- Downloader Page -->
     <div id="downloader-page" style="display: none;">
         <div class="page-header-enhanced">
@@ -5979,6 +6463,10 @@
 <h3 class="modal-section-title">
 <i class="fas fa-tv"></i> Seasons
                     </h3>
+<div style="background: rgba(139, 92, 246, 0.1); border-left: 3px solid var(--secondary); padding: 0.75rem 1rem; margin-bottom: 1rem; border-radius: 6px; font-size: 0.9rem; color: var(--light);">
+<i class="fas fa-info-circle" style="color: var(--secondary); margin-right: 0.5rem;"></i>
+<strong>Tip:</strong> Click a <strong>Season</strong> button to find torrents for the entire season, or click a specific <strong>Episode</strong> to find torrents for just that episode.
+</div>
 <div class="season-selector" id="seasonSelector">
 <!-- Seasons buttons will be loaded here -->
 </div>
@@ -6015,6 +6503,9 @@
 <i class="fas fa-sync"></i> Refresh
                             </button>
 </div>
+</div>
+<div style="margin-bottom: 1rem;">
+<input type="text" id="torrentKeywordFilter" placeholder="Filter torrents by keyword..." style="width: 100%; padding: 0.6rem; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; color: var(--light); font-size: 0.95rem;">
 </div>
 <div class="torrents-list" id="torrentsList">
 <!-- Torrents will be loaded here -->
@@ -6267,6 +6758,36 @@ Your browser does not support the video tag.
 <!-- Notification -->
 <div class="notification" id="notification">Action completed!</div>
 
+<!-- EPUB Download Modal -->
+<div id="epubDownloadModal" class="epub-download-modal" style="display: none;">
+    <div class="epub-modal-content">
+        <div class="epub-modal-header">
+            <h3><i class="fas fa-download"></i> Download EPUB Book</h3>
+            <button class="epub-modal-close" onclick="closeEpubDownloadModal()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="epub-modal-body">
+            <div class="epub-download-instruction">
+                <p><strong>Please download the EPUB file to this exact location:</strong></p>
+                <div class="epub-path-container">
+                    <code id="epubDownloadPath"></code>
+                    <button class="copy-path-btn" onclick="copyEpubPath()">
+                        <i class="fas fa-copy"></i>
+                    </button>
+                </div>
+                <p class="epub-note">After downloading, the book will automatically appear in your Library tab.</p>
+            </div>
+            <div class="epub-modal-actions">
+                <button class="epub-download-btn" onclick="openDownloadLink()">
+                    <i class="fas fa-external-link-alt"></i>
+                    Download from Browser
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
 <!-- Video.js JavaScript -->
 <script src="https://vjs.zencdn.net/8.10.0/video.min.js"></script>
@@ -6337,6 +6858,7 @@ Your browser does not support the video tag.
         const episodesGrid = document.getElementById('episodesGrid');
         const refreshTorrents = document.getElementById('refreshTorrents');
         const torrentsContainer = document.getElementById('torrentsContainer');
+        const torrentKeywordFilter = document.getElementById('torrentKeywordFilter');
         
         // API Setup Modal elements
         const apiSetupModal = document.getElementById('apiSetupModal');
@@ -6631,6 +7153,7 @@ Your browser does not support the video tag.
             await ensureDebridState();
             setupEventListeners();
             initIptvSourceSelector(); // Initialize IPTV dropdown
+            initializeBookTorrio(); // Initialize BookTorrio functionality
             handleRoute(); // route-aware initial load
             checkFirstLaunch(); // Show donate modal on first launch
         }
@@ -8638,6 +9161,10 @@ Your browser does not support the video tag.
             window.location.hash = '#/books';
         }
         
+        function showBookTorrioPage() {
+            window.location.hash = '#/booktorrio';
+        }
+        
         function showDownloaderPage() {
             window.location.hash = '#/downloader';
         }
@@ -9422,6 +9949,14 @@ Your browser does not support the video tag.
             // Refresh torrents
             refreshTorrents.addEventListener('click', () => fetchTorrents());
             
+            // Keyword filter for torrents
+            if (torrentKeywordFilter) {
+                torrentKeywordFilter.addEventListener('input', () => {
+                    torrentsPage = 1; // Reset to first page when filtering
+                    renderTorrentsPage();
+                });
+            }
+            
             // MPV Controls
             // Resume modal elements
             const resumeModal = document.getElementById('resumeModal');
@@ -9808,6 +10343,8 @@ Your browser does not support the video tag.
                         showIptvPage();
                     } else if (page === 'books') {
                         showBooksPage();
+                    } else if (page === 'booktorrio') {
+                        showBookTorrioPage();
                     } else if (page === 'downloader') {
                         showDownloaderPage();
                     }
@@ -10419,8 +10956,8 @@ Your browser does not support the video tag.
                             
                             clearInterval(monitorInterval);
                             
-                            // Show alert to user
-                            alert('Player closed: Detected navigation away from streaming content');
+                            // Close player silently when navigation is detected
+                            console.log('[SERVERS] Player closed: Detected navigation away from streaming content');
                             closeVideoPlayer();
                             return;
                         }
@@ -11329,6 +11866,10 @@ Your browser does not support the video tag.
     activeRoute = 'books';
     showSection('books');
     return;
+} else if (hash === '#/booktorrio') {
+    activeRoute = 'booktorrio';
+    showSection('booktorrio');
+    return;
 } else if (hash === '#/downloader') {
     activeRoute = 'downloader';
     showSection('downloader');
@@ -11372,6 +11913,8 @@ Your browser does not support the video tag.
             }
             const booksPageEl = document.getElementById('books-page');
             if (booksPageEl) booksPageEl.style.display = section === 'books' ? '' : 'none';
+            const bookTorrioPageEl = document.getElementById('booktorrio-page');
+            if (bookTorrioPageEl) bookTorrioPageEl.style.display = section === 'booktorrio' ? '' : 'none';
             // Update navigation states
             updateNavigationStates(section);
             // Update floating settings button visibility (Old UI only, Home page only)
@@ -12247,30 +12790,96 @@ Your browser does not support the video tag.
                     throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
                 }
                 const torrents = await response.json();
-                displayTorrents(torrents);
+                displayTorrents(torrents, season, episode);
             } catch (error) {
                 console.error('Error fetching torrents:', error);
                 torrentsList.innerHTML = `<div class="error-message"><i class="fas fa-exclamation-triangle"></i> ${error.message}</div>`;
             }
         }
 
+        // Helper function to check if torrent title matches specific season/episode
+        function getEpisodeMatchScore(title, season, episode) {
+            if (!season || !episode || !title) return 0;
+            
+            const titleLower = title.toLowerCase();
+            const s = parseInt(season);
+            const e = parseInt(episode);
+            
+            // Create patterns for different episode naming formats
+            const patterns = [
+                // S01E01 format (most common)
+                new RegExp(`s0*${s}[\\s._-]*e0*${e}(?!\\d)`, 'i'),
+                // S01.E01 format
+                new RegExp(`s0*${s}\\.e0*${e}(?!\\d)`, 'i'),
+                // 1x01 format
+                new RegExp(`(?:^|\\D)${s}x0*${e}(?!\\d)`, 'i'),
+                // Season 1 Episode 1 format (written out)
+                new RegExp(`season[\\s._-]*0*${s}[\\s._-]*episode[\\s._-]*0*${e}(?!\\d)`, 'i'),
+                // Ep1S1 or E1S1 format
+                new RegExp(`e(?:p)?0*${e}s0*${s}(?!\\d)`, 'i'),
+                // S1Ep1 format
+                new RegExp(`s0*${s}ep0*${e}(?!\\d)`, 'i'),
+                // [1-01] or (1-01) format
+                new RegExp(`[\\[\\(]0*${s}[\\s._-]0*${e}[\\]\\)]`, 'i')
+            ];
+            
+            // Check if any pattern matches
+            for (let i = 0; i < patterns.length; i++) {
+                if (patterns[i].test(titleLower)) {
+                    // Return higher score for exact matches (based on pattern priority)
+                    // First pattern (S01E01) gets highest bonus
+                    return 1000 - (i * 10);
+                }
+            }
+            
+            return 0; // No match
+        }
+
         // Display torrents
-        function displayTorrents(torrents) {
-            allTorrents = (torrents || []).sort((a, b) => b.seeders - a.seeders);
+        function displayTorrents(torrents, season = null, episode = null) {
+            // Smart sorting: exact episode matches first, then by seeders
+            if (season && episode && currentMediaType === 'tv') {
+                allTorrents = (torrents || []).map(t => ({
+                    ...t,
+                    episodeMatchScore: getEpisodeMatchScore(t.title, season, episode)
+                })).sort((a, b) => {
+                    // First sort by episode match score
+                    if (b.episodeMatchScore !== a.episodeMatchScore) {
+                        return b.episodeMatchScore - a.episodeMatchScore;
+                    }
+                    // Then by seeders
+                    return b.seeders - a.seeders;
+                });
+            } else {
+                // For movies or full seasons, just sort by seeders
+                allTorrents = (torrents || []).sort((a, b) => b.seeders - a.seeders);
+            }
             torrentsPage = 1;
             renderTorrentsPage();
         }
 
         function renderTorrentsPage() {
             torrentsList.innerHTML = '';
-            if (allTorrents.length === 0) {
-                torrentsList.innerHTML = '<p>No torrents found.</p>';
+            
+            // Apply keyword filter
+            let filteredTorrents = allTorrents;
+            const keyword = torrentKeywordFilter ? torrentKeywordFilter.value.trim().toLowerCase() : '';
+            if (keyword) {
+                filteredTorrents = allTorrents.filter(t => 
+                    (t.title || '').toLowerCase().includes(keyword)
+                );
+            }
+            
+            if (filteredTorrents.length === 0) {
+                torrentsList.innerHTML = keyword 
+                    ? '<p>No torrents match your filter.</p>' 
+                    : '<p>No torrents found. Try enabling <strong>Streaming Servers</strong> in the app settings for more sources.</p>';
                 return;
             }
 
             const start = (torrentsPage - 1) * torrentsPerPage;
             const end = start + torrentsPerPage;
-            const paginatedTorrents = allTorrents.slice(start, end);
+            const paginatedTorrents = filteredTorrents.slice(start, end);
 
             let rdAvailChecked = 0;
             const rdAvailBudget = 12; // cap RD availability checks per render
@@ -12332,7 +12941,16 @@ Your browser does not support the video tag.
         }
 
         function renderTorrentPagination() {
-            const totalPages = Math.ceil(allTorrents.length / torrentsPerPage);
+            // Apply same keyword filter for pagination count
+            let filteredTorrents = allTorrents;
+            const keyword = torrentKeywordFilter ? torrentKeywordFilter.value.trim().toLowerCase() : '';
+            if (keyword) {
+                filteredTorrents = allTorrents.filter(t => 
+                    (t.title || '').toLowerCase().includes(keyword)
+                );
+            }
+            
+            const totalPages = Math.ceil(filteredTorrents.length / torrentsPerPage);
             if (totalPages <= 1) {
                 return;
             }
@@ -13948,10 +14566,588 @@ Your browser does not support the video tag.
             }
         }
 
+        // ---- BookTorrio functionality ----
+        async function initializeBookTorrio() {
+            const searchInput = document.getElementById('bookSearchInput');
+            const searchBtn = document.getElementById('searchBooksBtn');
+            const resultsContainer = document.getElementById('bookSearchResults');
+            const loadingDiv = document.getElementById('bookSearchLoading');
+            const searchTabBtn = document.getElementById('searchTabBtn');
+            const libraryTabBtn = document.getElementById('libraryTabBtn');
+            const searchTab = document.getElementById('searchTab');
+            const libraryTab = document.getElementById('libraryTab');
+
+            if (!searchInput || !searchBtn || !resultsContainer || !loadingDiv) return;
+
+            // Show EPUB folder location to user
+            try {
+                const folderResult = await window.electronAPI.getEpubFolder();
+                if (folderResult.success) {
+                    console.log('EPUB books will be downloaded to:', folderResult.path);
+                    // You could add a small info message on the page if needed
+                }
+            } catch (error) {
+                console.warn('Could not get EPUB folder path:', error);
+            }
+
+            // Tab switching functionality
+            if (searchTabBtn && libraryTabBtn && searchTab && libraryTab) {
+                searchTabBtn.addEventListener('click', () => {
+                    searchTabBtn.classList.add('active');
+                    libraryTabBtn.classList.remove('active');
+                    searchTab.style.display = 'block';
+                    libraryTab.style.display = 'none';
+                });
+
+                libraryTabBtn.addEventListener('click', () => {
+                    libraryTabBtn.classList.add('active');
+                    searchTabBtn.classList.remove('active');
+                    libraryTab.style.display = 'block';
+                    searchTab.style.display = 'none';
+                    // Load library when tab is opened
+                    loadEpubLibrary();
+                });
+            }
+
+            // Load EPUB library function
+            async function loadEpubLibrary() {
+                try {
+                    const result = await window.electronAPI.getEpubLibrary();
+                    const libraryContent = document.getElementById('libraryTab');
+                    
+                    if (result.success && result.books.length > 0) {
+                        libraryContent.innerHTML = `
+                            <div class="books-grid">
+                                ${result.books.map(book => `
+                                    <div class="book-card">
+                                        <img src="${book.coverUrl || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjMDZiNmQ0Ci8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNHB4IiBmaWxsPSJ3aGl0ZSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPkJvb2s8L3RleHQ+PC9zdmc+'}" 
+                                             alt="${book.title}" 
+                                             class="book-cover"
+                                             onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjMDZiNmQ0Ci8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNHB4IiBmaWxsPSJ3aGl0ZSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPkJvb2s8L3RleHQ+PC9zdmc+'">
+                                        <div class="book-title">${book.title}</div>
+                                        <div class="book-author">${Array.isArray(book.author) ? book.author.join(', ') : book.author}</div>
+                                        <div class="book-details">
+                                            <span class="book-tag epub-highlight"><i class="fas fa-file"></i> EPUB</span>
+                                            <span class="book-tag"><i class="fas fa-calendar"></i> ${book.year}</span>
+                                            <span class="book-tag"><i class="fas fa-download"></i> Downloaded</span>
+                                        </div>
+                                        <div style="margin-top: 0.5rem;">
+                                            <button class="download-btn read-btn" data-local-path="${book.localPath}" data-title="${book.title}">
+                                                <i class="fas fa-book-open"></i> Read Now
+                                            </button>
+                                        </div>
+                                        <div style="font-size: 0.8rem; color: var(--gray); margin-top: 0.5rem;">
+                                            Downloaded: ${new Date(book.downloadedAt).toLocaleDateString()}
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        `;
+                        // Wire up Read Now buttons
+                        libraryContent.querySelectorAll('.read-btn').forEach(btn => {
+                            btn.addEventListener('click', () => {
+                                const p = btn.getAttribute('data-local-path');
+                                const t = btn.getAttribute('data-title');
+                                openEpubReader(p, t);
+                            });
+                        });
+                    } else {
+                        libraryContent.innerHTML = `
+                            <div class="search-placeholder">
+                                <i class="fas fa-bookmark" style="font-size: 3rem; color: #06b6d4; margin-bottom: 1rem;"></i>
+                                <h3>No Books in Library</h3>
+                                <p>Downloaded EPUB books will appear here. Search and download some books to get started!</p>
+                            </div>
+                        `;
+                    }
+                } catch (error) {
+                    console.error('Error loading library:', error);
+                    const libraryContent = document.getElementById('libraryTab');
+                    libraryContent.innerHTML = `
+                        <div class="search-placeholder">
+                            <i class="fas fa-exclamation-triangle" style="font-size: 3rem; color: #dc3545; margin-bottom: 1rem;"></i>
+                            <h3>Error Loading Library</h3>
+                            <p>Could not load your EPUB library. Please try again.</p>
+                        </div>
+                    `;
+                }
+            }
+
+            // Search function
+            async function searchBooks(query) {
+                if (!query.trim()) return;
+
+                try {
+                    loadingDiv.style.display = 'block';
+                    resultsContainer.innerHTML = '';
+
+                    const response = await fetch(`http://localhost:5000/api/search/${encodeURIComponent(query)}`);
+                    if (!response.ok) {
+                        throw new Error('Search failed');
+                    }
+
+                    const data = await response.json();
+                    loadingDiv.style.display = 'none';
+
+                    if (data.books && data.books.length > 0) {
+                        // Filter to show only EPUB files
+                        const epubBooks = data.books.filter(book => 
+                            book.fileExtension && book.fileExtension.toLowerCase() === 'epub'
+                        );
+
+                        if (epubBooks.length === 0) {
+                            resultsContainer.innerHTML = `
+                                <div class="search-placeholder">
+                                    <i class="fas fa-file-alt" style="font-size: 3rem; color: #06b6d4; margin-bottom: 1rem;"></i>
+                                    <h3>No EPUB Books Found</h3>
+                                    <p>No EPUB books found for "${query}". Try a different search term.</p>
+                                </div>
+                            `;
+                            return;
+                        }
+
+                        resultsContainer.innerHTML = epubBooks.map(book => `
+                            <div class="book-card">
+                                <img src="${book.coverUrl || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjMDZiNmQ0Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNHB4IiBmaWxsPSJ3aGl0ZSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPkJvb2s8L3RleHQ+PC9zdmc+'}" 
+                                     alt="${book.title}" 
+                                     class="book-cover"
+                                     onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjMDZiNmQ0Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNHB4IiBmaWxsPSJ3aGl0ZSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPkJvb2s8L3RleHQ+PC9zdmc+'">
+                                <div class="book-title">${book.title}</div>
+                                <div class="book-author">${Array.isArray(book.author) ? book.author.join(', ') : book.author}</div>
+                                <div class="book-details">
+                                    <span class="book-tag"><i class="fas fa-calendar"></i> ${book.year}</span>
+                                    <span class="book-tag"><i class="fas fa-language"></i> ${book.language}</span>
+                                    <span class="book-tag ${book.fileExtension && book.fileExtension.toLowerCase() === 'epub' ? 'epub-highlight' : ''}">
+                                        <i class="fas fa-file"></i> ${book.fileExtension ? book.fileExtension.toUpperCase() : 'Unknown'}
+                                    </span>
+                                    <span class="book-tag"><i class="fas fa-hdd"></i> ${formatFileSize(book.fileSize)}</span>
+                                </div>
+                                <button class="download-btn" 
+                                        data-download-url="${book.downloadlink}"
+                                        data-book="${encodeURIComponent(JSON.stringify(book))}">
+                                    <i class="fas fa-download"></i>
+                                    Download Now
+                                </button>
+                            </div>
+                        `).join('');
+
+                        // Wire click handlers after rendering to avoid inline JS and quoting issues
+                        const downloadButtons = resultsContainer.querySelectorAll('.download-btn');
+                        downloadButtons.forEach(btn => {
+                            btn.addEventListener('click', () => {
+                                const url = btn.getAttribute('data-download-url');
+                                const encoded = btn.getAttribute('data-book');
+                                let bookObj = {};
+                                try {
+                                    bookObj = JSON.parse(decodeURIComponent(encoded));
+                                } catch (e) {
+                                    console.warn('Failed to parse book data from button:', e);
+                                }
+                                if (!url) {
+                                    alert('No download URL available for this book.');
+                                    return;
+                                }
+                                window.downloadBook(url, bookObj);
+                            });
+                        });
+                    } else {
+                        resultsContainer.innerHTML = `
+                            <div class="search-placeholder">
+                                <i class="fas fa-search" style="font-size: 3rem; color: #06b6d4; margin-bottom: 1rem;"></i>
+                                <h3>No Books Found</h3>
+                                <p>No books found for "${query}". Try a different search term.</p>
+                            </div>
+                        `;
+                    }
+                } catch (error) {
+                    console.error('Search error:', error);
+                    loadingDiv.style.display = 'none';
+                    resultsContainer.innerHTML = `
+                        <div class="search-placeholder">
+                            <i class="fas fa-exclamation-triangle" style="font-size: 3rem; color: #dc3545; margin-bottom: 1rem;"></i>
+                            <h3>Search Error</h3>
+                            <p>Failed to search for books. Make sure the RandomBook server is running on port 5000.</p>
+                        </div>
+                    `;
+                }
+            }
+
+            // Format file size helper
+            function formatFileSize(bytes) {
+                if (!bytes) return 'Unknown';
+                const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+                const i = Math.floor(Math.log(bytes) / Math.log(1024));
+                return Math.round(bytes / Math.pow(1024, i) * 100) / 100 + ' ' + sizes[i];
+            }
+
+            // Download book function
+            window.downloadBook = async function(downloadUrl, bookData) {
+                console.log('downloadBook called with:', downloadUrl, bookData);
+                
+                if (downloadUrl && bookData) {
+                    try {
+                        console.log('Calling electronAPI.downloadEpub...');
+                        // Get EPUB folder path and prepare download
+                        const result = await window.electronAPI.downloadEpub({
+                            url: downloadUrl,
+                            bookData: bookData
+                        });
+                        
+                        console.log('Download result:', result);
+                        
+                        if (result.success) {
+                            // Show download modal
+                            console.log('Showing download modal...');
+                            showDownloadModal(result);
+                        } else {
+                            alert('Error preparing download: ' + result.message);
+                        }
+                    } catch (error) {
+                        console.error('Download error:', error);
+                        alert('Error preparing download. Please try again.');
+                    }
+                } else {
+                    console.error('Invalid parameters:', { downloadUrl, bookData });
+                    alert('Invalid download link or book data.');
+                }
+            };
+
+            // Modal functions
+            let currentDownload = null;
+
+            function showDownloadModal(downloadInfo) {
+                const modal = document.getElementById('epubDownloadModal');
+                const pathText = document.getElementById('epubDownloadPath');
+                
+                // Store download info for modal functions
+                currentDownload = downloadInfo;
+                
+                // Show only the folder path per user preference
+                pathText.textContent = downloadInfo.folder;
+                modal.style.display = 'flex';
+            }
+
+            function closeEpubDownloadModal() {
+                const modal = document.getElementById('epubDownloadModal');
+                modal.style.display = 'none';
+                currentDownload = null;
+            }
+
+            function copyEpubPath() {
+                if (currentDownload) {
+                    // Copy only the folder path per user preference
+                    navigator.clipboard.writeText(currentDownload.folder).then(() => {
+                        // Show feedback
+                        const button = document.querySelector('.copy-path-btn');
+                        const originalText = button.textContent;
+                        button.textContent = 'Copied!';
+                        button.style.background = '#059669';
+                        setTimeout(() => {
+                            button.textContent = originalText;
+                            button.style.background = '';
+                        }, 2000);
+                    });
+                }
+            }
+
+            function openDownloadLink() {
+                if (currentDownload && currentDownload.url) {
+                    // Use electron shell to open URL in default browser
+                    if (window.electronAPI && window.electronAPI.openExternal) {
+                        window.electronAPI.openExternal(currentDownload.url);
+                    } else {
+                        // Fallback
+                        window.open(currentDownload.url, '_blank');
+                    }
+                }
+            }
+
+            // Make functions globally available
+            window.closeEpubDownloadModal = closeEpubDownloadModal;
+            window.copyEpubPath = copyEpubPath;
+            window.openDownloadLink = openDownloadLink;
+
+            // Event listeners
+            searchBtn.addEventListener('click', () => {
+                const query = searchInput.value.trim();
+                if (query) {
+                    searchBooks(query);
+                }
+            });
+
+            searchInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    const query = searchInput.value.trim();
+                    if (query) {
+                        searchBooks(query);
+                    }
+                }
+            });
+        }
+
         // Initialize the app on DOMContentLoaded
         document.addEventListener('DOMContentLoaded', init);
 
         // ---- Resume helpers ----
+
+        // ---- EPUB Reader Logic ----
+        let rendition = null;
+        let bookInstance = null;
+
+        async function openEpubReader(localPath, title) {
+            try {
+                console.log('[EPUB] Opening:', localPath);
+                const overlay = document.getElementById('epubReaderOverlay');
+                const titleEl = document.getElementById('readerTitle');
+                const container = document.getElementById('readerContainer');
+                const prevBtn = document.getElementById('readerPrevBtn');
+                const nextBtn = document.getElementById('readerNextBtn');
+
+                titleEl.textContent = title || 'EPUB Reader';
+                overlay.classList.add('theme-dark');
+                overlay.classList.remove('theme-light', 'theme-night');
+                overlay.style.display = 'flex';
+
+                // Clear previous
+                container.innerHTML = '';
+                rendition = null;
+                bookInstance = null;
+                prevBtn.disabled = true;
+                nextBtn.disabled = false;
+
+                // Load epub.js and JSZip first
+                if (!window.ePub || !window.JSZip) {
+                    console.log('[EPUB] Loading libraries...');
+                    
+                    if (!window.JSZip) {
+                        const jszipScript = document.createElement('script');
+                        jszipScript.src = 'https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js';
+                        await new Promise((resolve, reject) => {
+                            jszipScript.onload = resolve;
+                            jszipScript.onerror = reject;
+                            document.head.appendChild(jszipScript);
+                        });
+                        console.log('[EPUB] JSZip loaded');
+                    }
+
+                    if (!window.ePub) {
+                        const epubScript = document.createElement('script');
+                        epubScript.src = 'https://cdn.jsdelivr.net/npm/epubjs@0.3.93/dist/epub.min.js';
+                        await new Promise((resolve, reject) => {
+                            epubScript.onload = resolve;
+                            epubScript.onerror = reject;
+                            document.head.appendChild(epubScript);
+                        });
+                        console.log('[EPUB] epub.js loaded');
+                    }
+                }
+
+                // Read the file from main
+                console.log('[EPUB] Reading file...');
+                const res = await window.electronAPI.readEpubFile(localPath);
+                console.log('[EPUB] Read result:', res.success, res.base64 ? `${res.base64.length} bytes` : 'no data');
+                if (!res.success) {
+                    alert('Failed to open book: ' + res.message);
+                    overlay.style.display = 'none';
+                    return;
+                }
+
+                // Convert base64 to ArrayBuffer for better compatibility
+                console.log('[EPUB] Converting to ArrayBuffer...');
+                const binaryString = atob(res.base64);
+                const bytes = new Uint8Array(binaryString.length);
+                for (let i = 0; i < binaryString.length; i++) {
+                    bytes[i] = binaryString.charCodeAt(i);
+                }
+                console.log('[EPUB] ArrayBuffer size:', bytes.length);
+
+                console.log('[EPUB] Creating book instance...');
+                bookInstance = window.ePub(bytes.buffer);
+                
+                console.log('[EPUB] Rendering to container...');
+                rendition = bookInstance.renderTo(container, { 
+                    width: '100%', 
+                    height: '100%',
+                    spread: 'none',
+                    flow: 'paginated'
+                });
+                
+                // Create a unique key for this book based on its path
+                const bookKey = 'epub_position_' + encodeURIComponent(localPath);
+                
+                // Wire navigation and save position on page change
+                rendition.on('relocated', (location) => {
+                    console.log('[EPUB] Relocated:', location.atStart, location.atEnd);
+                    prevBtn.disabled = location.atStart;
+                    nextBtn.disabled = location.atEnd;
+                    
+                    // Save current position to localStorage
+                    if (location && location.start && location.start.cfi) {
+                        try {
+                            localStorage.setItem(bookKey, location.start.cfi);
+                            console.log('[EPUB] Saved position:', location.start.cfi);
+                        } catch (e) {
+                            console.warn('[EPUB] Could not save position:', e);
+                        }
+                    }
+                });
+
+                // Try to restore last position
+                let restored = false;
+                try {
+                    const savedPosition = localStorage.getItem(bookKey);
+                    if (savedPosition) {
+                        console.log('[EPUB] Restoring position:', savedPosition);
+                        await rendition.display(savedPosition);
+                        restored = true;
+                        console.log('[EPUB] Position restored successfully');
+                    }
+                } catch (e) {
+                    console.warn('[EPUB] Could not restore position:', e);
+                }
+                
+                // If no saved position or restore failed, display from beginning
+                if (!restored) {
+                    console.log('[EPUB] Displaying from beginning...');
+                    await rendition.display();
+                }
+                
+                console.log('[EPUB] Book opened successfully');
+
+                // Apply initial theme/font/size
+                applyReaderPrefs();
+            } catch (err) {
+                console.error('[EPUB] Error:', err);
+                alert('Could not open the EPUB: ' + err.message);
+                const overlay = document.getElementById('epubReaderOverlay');
+                overlay.style.display = 'none';
+            }
+        }
+
+        function closeEpubReader() {
+            const overlay = document.getElementById('epubReaderOverlay');
+            const settingsPanel = document.getElementById('readerSettingsPanel');
+            overlay.style.display = 'none';
+            settingsPanel.classList.add('hidden');
+            // Cleanup
+            if (rendition) { try { rendition.destroy(); } catch(_){} }
+            rendition = null;
+            bookInstance = null;
+        }
+
+        // Escape key to close reader
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                const overlay = document.getElementById('epubReaderOverlay');
+                if (overlay && overlay.style.display === 'flex') {
+                    closeEpubReader();
+                }
+            }
+        });
+
+        // Settings handling
+        function applyReaderPrefs() {
+            const overlay = document.getElementById('epubReaderOverlay');
+            const theme = localStorage.getItem('reader.theme') || 'dark';
+            const font = localStorage.getItem('reader.font') || "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif";
+            const size = parseInt(localStorage.getItem('reader.size') || '16', 10);
+
+            overlay.classList.remove('theme-light', 'theme-dark', 'theme-night');
+            overlay.classList.add(`theme-${theme}`);
+
+            if (rendition) {
+                // Map explicit colors for the iframe
+                let fg = '#f2f2f2', bg = '#202225';
+                if (theme === 'light') { fg = '#111111'; bg = '#ffffff'; }
+                else if (theme === 'night') { fg = '#e5e7eb'; bg = '#000000'; }
+                
+                // Register and select theme with font
+                try { 
+                    rendition.themes.register('custom', { 
+                        'body': { 
+                            'font-family': `${font} !important`, 
+                            'color': fg, 
+                            'background': bg 
+                        },
+                        '*': {
+                            'font-family': `${font} !important`
+                        }
+                    }); 
+                } catch(e){ console.log('[EPUB] Theme register error:', e); }
+                try { rendition.themes.select('custom'); } catch(e){ console.log('[EPUB] Theme select error:', e); }
+                try { rendition.themes.fontSize(`${size}px`); } catch(e){ console.log('[EPUB] Font size error:', e); }
+                
+                // Force font update
+                try {
+                    rendition.themes.default({
+                        'body': { 'font-family': `${font} !important` },
+                        'p': { 'font-family': `${font} !important` },
+                        'div': { 'font-family': `${font} !important` },
+                        'span': { 'font-family': `${font} !important` }
+                    });
+                } catch(e){ }
+            }
+        }
+
+        // Header buttons
+        document.addEventListener('click', (e) => {
+            if (e.target.closest('#readerPrevBtn')) {
+                if (rendition) {
+                    console.log('[EPUB] Going to previous page');
+                    rendition.prev();
+                }
+            }
+            if (e.target.closest('#readerNextBtn')) {
+                if (rendition) {
+                    console.log('[EPUB] Going to next page');
+                    rendition.next();
+                }
+            }
+            if (e.target.closest('#readerSettingsBtn')) {
+                const panel = document.getElementById('readerSettingsPanel');
+                const wasHidden = panel.classList.contains('hidden');
+                panel.classList.toggle('hidden');
+                
+                // Restore current values when opening settings
+                if (wasHidden) {
+                    const fontSelect = document.getElementById('readerFont');
+                    const fontSizeInput = document.getElementById('readerFontSize');
+                    const currentFont = localStorage.getItem('reader.font') || "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif";
+                    const currentSize = localStorage.getItem('reader.size') || '16';
+                    
+                    if (fontSelect) fontSelect.value = currentFont;
+                    if (fontSizeInput) fontSizeInput.value = currentSize;
+                }
+                
+                console.log('[EPUB] Settings panel toggled:', wasHidden ? 'now visible' : 'now hidden');
+            }
+            if (e.target.closest('#readerBackBtn')) {
+                console.log('[EPUB] Back button clicked');
+                closeEpubReader();
+            }
+        });
+
+        // Settings controls
+        document.addEventListener('click', (e) => {
+            const themeBtn = e.target.closest('.theme-btn');
+            if (themeBtn) {
+                const theme = themeBtn.getAttribute('data-theme');
+                localStorage.setItem('reader.theme', theme);
+                applyReaderPrefs();
+            }
+        });
+        document.addEventListener('input', (e) => {
+            if (e.target.id === 'readerFont') {
+                localStorage.setItem('reader.font', e.target.value);
+                applyReaderPrefs();
+            } else if (e.target.id === 'readerFontSize') {
+                localStorage.setItem('reader.size', e.target.value);
+                applyReaderPrefs();
+            }
+        });
+
+        // Expose open function if needed elsewhere
+        window.openEpubReader = openEpubReader;
         async function fetchResume(key) {
             if (!key) return null;
             try {
