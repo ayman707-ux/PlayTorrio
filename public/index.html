@@ -5643,6 +5643,11 @@
                 <span>BookTorrio</span>
                 <span class="nav-badge" style="background: linear-gradient(135deg, #06b6d4, #0891b2);">EPUB</span>
             </div>
+            <div class="nav-item" data-page="manga">
+                <i class="fas fa-book-reader" style="color: #ec4899;"></i>
+                <span>Manga</span>
+                <span class="nav-badge" style="background: linear-gradient(135deg, #ec4899, #db2777);">MangaDex</span>
+            </div>
             <div class="nav-item" data-page="downloader">
                 <i class="fas fa-download" style="color: #a855f7;"></i>
                 <span>Downloader</span>
@@ -6385,6 +6390,86 @@
             <div class="settings-section">
                 <label>Text size</label>
                 <input id="readerFontSize" type="range" min="12" max="28" step="1" value="16"/>
+            </div>
+        </div>
+    </div>
+
+    <!-- Manga Page -->
+    <div id="manga-page" style="display: none;">
+        <div class="page-header-enhanced">
+            <div class="page-title-section">
+                <h2 class="section-title">
+                    <i class="fas fa-book-reader" style="color: #ec4899;"></i> <span>Manga</span>
+                </h2>
+                <p class="page-subtitle">Read manga from MangaDex</p>
+            </div>
+        </div>
+
+        <!-- Search Section -->
+        <div style="max-width: 900px; margin: 0 auto 2rem;">
+            <div style="background: rgba(255,255,255,0.1); border-radius: 12px; padding: 1rem; box-shadow: 0 4px 12px rgba(0,0,0,0.3); position: relative;">
+                <i class="fas fa-search" style="position: absolute; left: 1.5rem; top: 50%; transform: translateY(-50%); color: #ec4899; font-size: 1.2rem; pointer-events: none;"></i>
+                <input id="mangaSearchInput" placeholder="Search for manga..." type="text" style="width: 100%; padding: 1rem 1rem 1rem 3rem; background: rgba(0,0,0,0.4); border: 2px solid rgba(236, 72, 153, 0.3); border-radius: 10px; color: var(--light); font-size: 1.1rem; transition: all 0.3s ease; box-sizing: border-box;" />
+            </div>
+        </div>
+
+        <!-- Manga Grid -->
+        <div id="mangaGrid" class="movies-grid" style="margin-top: 2rem;">
+            <!-- Manga cards will be loaded here -->
+        </div>
+        <div class="loading" id="mangaLoadingIndicator" style="display: none;">
+            <i class="fas fa-spinner"></i> Loading manga...
+        </div>
+    </div>
+
+    <!-- Manga Reader Page -->
+    <div id="manga-reader-page" style="display: none; background: #000; min-height: 100vh;">
+        <div style="position: sticky; top: 0; z-index: 100; background: rgba(0,0,0,0.9); padding: 1rem; backdrop-filter: blur(10px); box-shadow: 0 2px 10px rgba(0,0,0,0.5);">
+            <button id="mangaReaderBack" style="background: var(--secondary); border: none; padding: 0.75rem 1.5rem; border-radius: 8px; color: white; font-size: 1rem; cursor: pointer; display: flex; align-items: center; gap: 0.5rem; transition: all 0.3s ease;">
+                <i class="fas fa-arrow-left"></i> Back
+            </button>
+        </div>
+        <div id="mangaReaderTitle" style="text-align: center; padding: 1rem; color: white; font-size: 1.5rem; font-weight: 600;">
+            <!-- Chapter title will be here -->
+        </div>
+        <div id="mangaReaderPages" style="max-width: 1200px; margin: 0 auto; padding: 1rem;">
+            <!-- Manga pages will be loaded here -->
+        </div>
+        <div id="mangaReaderLoading" style="text-align: center; padding: 3rem; color: white;">
+            <i class="fas fa-spinner fa-spin" style="font-size: 3rem; margin-bottom: 1rem;"></i>
+            <p style="font-size: 1.2rem;">Loading chapter...</p>
+        </div>
+    </div>
+
+    <!-- Manga Details Modal -->
+    <div id="mangaDetailsModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.95); z-index: 10000; overflow-y: auto;">
+        <div style="max-width: 1200px; margin: 2rem auto; padding: 2rem; position: relative;">
+            <button id="mangaDetailsClose" style="position: absolute; top: 1rem; right: 1rem; background: rgba(255,255,255,0.1); border: none; width: 40px; height: 40px; border-radius: 50%; color: white; font-size: 1.5rem; cursor: pointer; transition: all 0.3s ease;">
+                <i class="fas fa-times"></i>
+            </button>
+            
+            <div style="display: flex; gap: 2rem; margin-bottom: 2rem;">
+                <img id="mangaDetailsCover" src="" alt="Manga Cover" style="width: 300px; height: 450px; object-fit: cover; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.5);">
+                <div style="flex: 1; color: white;">
+                    <h2 id="mangaDetailsTitle" style="font-size: 2.5rem; margin-bottom: 1rem; color: #ec4899;"></h2>
+                    <p id="mangaDetailsAuthor" style="font-size: 1.1rem; margin-bottom: 0.5rem; color: #9ca3af;"></p>
+                    <p id="mangaDetailsStatus" style="font-size: 1rem; margin-bottom: 1rem; color: #9ca3af;"></p>
+                    <div id="mangaDetailsTags" style="display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1.5rem;">
+                        <!-- Tags will be here -->
+                    </div>
+                    <p id="mangaDetailsDescription" style="line-height: 1.6; color: #d1d5db; font-size: 1rem;">
+                        <!-- Description will be here -->
+                    </p>
+                </div>
+            </div>
+            
+            <div>
+                <h3 style="color: white; font-size: 1.5rem; margin-bottom: 1rem;">
+                    <i class="fas fa-list"></i> Chapters
+                </h3>
+                <div id="mangaChaptersList" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1rem; max-height: 500px; overflow-y: auto;">
+                    <!-- Chapters will be loaded here -->
+                </div>
             </div>
         </div>
     </div>
@@ -7154,6 +7239,7 @@ Your browser does not support the video tag.
             setupEventListeners();
             initIptvSourceSelector(); // Initialize IPTV dropdown
             initializeBookTorrio(); // Initialize BookTorrio functionality
+            initializeManga(); // Initialize Manga functionality
             handleRoute(); // route-aware initial load
             checkFirstLaunch(); // Show donate modal on first launch
         }
@@ -9165,6 +9251,10 @@ Your browser does not support the video tag.
             window.location.hash = '#/booktorrio';
         }
         
+        function showMangaPage() {
+            window.location.hash = '#/manga';
+        }
+        
         function showDownloaderPage() {
             window.location.hash = '#/downloader';
         }
@@ -10345,6 +10435,8 @@ Your browser does not support the video tag.
                         showBooksPage();
                     } else if (page === 'booktorrio') {
                         showBookTorrioPage();
+                    } else if (page === 'manga') {
+                        showMangaPage();
                     } else if (page === 'downloader') {
                         showDownloaderPage();
                     }
@@ -11870,6 +11962,10 @@ Your browser does not support the video tag.
     activeRoute = 'booktorrio';
     showSection('booktorrio');
     return;
+} else if (hash === '#/manga') {
+    activeRoute = 'manga';
+    showSection('manga');
+    return;
 } else if (hash === '#/downloader') {
     activeRoute = 'downloader';
     showSection('downloader');
@@ -11915,6 +12011,8 @@ Your browser does not support the video tag.
             if (booksPageEl) booksPageEl.style.display = section === 'books' ? '' : 'none';
             const bookTorrioPageEl = document.getElementById('booktorrio-page');
             if (bookTorrioPageEl) bookTorrioPageEl.style.display = section === 'booktorrio' ? '' : 'none';
+            const mangaPageEl = document.getElementById('manga-page');
+            if (mangaPageEl) mangaPageEl.style.display = section === 'manga' ? '' : 'none';
             // Update navigation states
             updateNavigationStates(section);
             // Update floating settings button visibility (Old UI only, Home page only)
@@ -14883,6 +14981,379 @@ Your browser does not support the video tag.
                     }
                 }
             });
+        }
+
+        // ---- Manga functionality ----
+        let mangaList = [];
+        let currentManga = null;
+        let mangaOffset = 0;
+        let mangaIsLoading = false;
+        let mangaHasMore = true;
+        let mangaIsSearching = false;
+        let mangaSearchQuery = '';
+        
+        async function initializeManga() {
+            const mangaSearchInput = document.getElementById('mangaSearchInput');
+            const mangaGrid = document.getElementById('mangaGrid');
+            const mangaLoadingIndicator = document.getElementById('mangaLoadingIndicator');
+            const mangaDetailsModal = document.getElementById('mangaDetailsModal');
+            const mangaDetailsClose = document.getElementById('mangaDetailsClose');
+            const mangaReaderPage = document.getElementById('manga-reader-page');
+            const mangaReaderBack = document.getElementById('mangaReaderBack');
+            
+            let searchTimeout = null;
+            
+            // Load trending manga on init
+            loadTrendingManga();
+            
+            // Setup infinite scroll
+            setupMangaInfiniteScroll();
+            
+            // Search functionality
+            mangaSearchInput.addEventListener('input', () => {
+                clearTimeout(searchTimeout);
+                const query = mangaSearchInput.value.trim();
+                
+                if (!query) {
+                    mangaIsSearching = false;
+                    mangaSearchQuery = '';
+                    mangaOffset = 0;
+                    mangaHasMore = true;
+                    loadTrendingManga();
+                    return;
+                }
+                
+                searchTimeout = setTimeout(() => {
+                    searchManga(query);
+                }, 500);
+            });
+            
+            mangaSearchInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    const query = mangaSearchInput.value.trim();
+                    if (query) {
+                        clearTimeout(searchTimeout);
+                        searchManga(query);
+                    }
+                }
+            });
+            
+            // Close details modal
+            mangaDetailsClose.addEventListener('click', () => {
+                mangaDetailsModal.style.display = 'none';
+            });
+            
+            // Back from reader
+            mangaReaderBack.addEventListener('click', () => {
+                mangaReaderPage.style.display = 'none';
+                document.getElementById('manga-page').style.display = '';
+            });
+            
+            function setupMangaInfiniteScroll() {
+                const mainElement = document.querySelector('main');
+                const mangaPage = document.getElementById('manga-page');
+                
+                mainElement.addEventListener('scroll', () => {
+                    // Only trigger if manga page is visible
+                    if (mangaPage.style.display === 'none') return;
+                    if (mangaIsLoading || !mangaHasMore) return;
+                    
+                    const scrollHeight = mainElement.scrollHeight;
+                    const scrollTop = mainElement.scrollTop;
+                    const clientHeight = mainElement.clientHeight;
+                    
+                    // Load more when user is 500px from bottom
+                    if (scrollHeight - scrollTop - clientHeight < 500) {
+                        if (mangaIsSearching) {
+                            searchManga(mangaSearchQuery, true); // true = append
+                        } else {
+                            loadTrendingManga(true); // true = append
+                        }
+                    }
+                });
+            }
+            
+            async function loadTrendingManga(append = false) {
+                if (mangaIsLoading) return;
+                
+                mangaIsLoading = true;
+                mangaLoadingIndicator.style.display = 'block';
+                
+                if (!append) {
+                    mangaGrid.innerHTML = '';
+                    mangaOffset = 0;
+                    mangaHasMore = true;
+                }
+                
+                try {
+                    const response = await fetch(`https://api.mangadex.org/manga?limit=20&offset=${mangaOffset}&order[followedCount]=desc&includes[]=cover_art&includes[]=author&includes[]=artist&contentRating[]=safe&contentRating[]=suggestive`);
+                    const data = await response.json();
+                    
+                    if (data.result === 'ok' && data.data) {
+                        if (append) {
+                            mangaList = [...mangaList, ...data.data];
+                        } else {
+                            mangaList = data.data;
+                        }
+                        
+                        displayManga(data.data, append);
+                        
+                        // Update pagination
+                        mangaOffset += data.data.length;
+                        mangaHasMore = data.data.length === 20; // If we got less than 20, no more results
+                    }
+                } catch (error) {
+                    console.error('Error loading trending manga:', error);
+                    if (!append) {
+                        mangaGrid.innerHTML = '<p style="text-align: center; color: var(--gray); grid-column: 1 / -1;">Failed to load manga. Please try again.</p>';
+                    }
+                } finally {
+                    mangaLoadingIndicator.style.display = 'none';
+                    mangaIsLoading = false;
+                }
+            }
+            
+            async function searchManga(query, append = false) {
+                if (mangaIsLoading) return;
+                
+                mangaIsLoading = true;
+                mangaLoadingIndicator.style.display = 'block';
+                mangaIsSearching = true;
+                mangaSearchQuery = query;
+                
+                if (!append) {
+                    mangaGrid.innerHTML = '';
+                    mangaOffset = 0;
+                    mangaHasMore = true;
+                }
+                
+                try {
+                    const response = await fetch(`https://api.mangadex.org/manga?title=${encodeURIComponent(query)}&limit=20&offset=${mangaOffset}&includes[]=cover_art&includes[]=author&includes[]=artist&contentRating[]=safe&contentRating[]=suggestive`);
+                    const data = await response.json();
+                    
+                    if (data.result === 'ok' && data.data) {
+                        if (append) {
+                            mangaList = [...mangaList, ...data.data];
+                        } else {
+                            mangaList = data.data;
+                        }
+                        
+                        if (!append && mangaList.length === 0) {
+                            mangaGrid.innerHTML = '<p style="text-align: center; color: var(--gray); grid-column: 1 / -1;">No manga found.</p>';
+                        } else {
+                            displayManga(data.data, append);
+                        }
+                        
+                        // Update pagination
+                        mangaOffset += data.data.length;
+                        mangaHasMore = data.data.length === 20;
+                    }
+                } catch (error) {
+                    console.error('Error searching manga:', error);
+                    if (!append) {
+                        mangaGrid.innerHTML = '<p style="text-align: center; color: var(--gray); grid-column: 1 / -1;">Search failed. Please try again.</p>';
+                    }
+                } finally {
+                    mangaLoadingIndicator.style.display = 'none';
+                    mangaIsLoading = false;
+                }
+            }
+            
+            function displayManga(mangaArray, append = false) {
+                if (!append) {
+                    mangaGrid.innerHTML = '';
+                }
+                
+                mangaArray.forEach(manga => {
+                    const title = manga.attributes.title.en || manga.attributes.title[Object.keys(manga.attributes.title)[0]] || 'Unknown Title';
+                    const coverRel = manga.relationships.find(rel => rel.type === 'cover_art');
+                    const coverFilename = coverRel?.attributes?.fileName || '';
+                    const coverUrl = coverFilename ? `https://uploads.mangadex.org/covers/${manga.id}/${coverFilename}.256.jpg` : '';
+                    
+                    const card = document.createElement('div');
+                    card.className = 'movie-card';
+                    card.style.cursor = 'pointer';
+                    
+                    card.innerHTML = `
+                        <img src="${coverUrl || 'https://via.placeholder.com/256x384?text=No+Cover'}" alt="${title}" class="movie-poster" style="object-fit: cover;">
+                        <div class="movie-info">
+                            <h3 class="movie-title">${title}</h3>
+                            <p class="movie-year">${manga.attributes.year || 'N/A'}</p>
+                        </div>
+                        <div class="movie-rating" style="background: #ec4899;">
+                            <i class="fas fa-book"></i> Manga
+                        </div>
+                    `;
+                    
+                    card.addEventListener('click', () => showMangaDetails(manga));
+                    mangaGrid.appendChild(card);
+                });
+            }
+            
+            async function showMangaDetails(manga) {
+                currentManga = manga;
+                const title = manga.attributes.title.en || manga.attributes.title[Object.keys(manga.attributes.title)[0]] || 'Unknown Title';
+                const description = manga.attributes.description.en || manga.attributes.description[Object.keys(manga.attributes.description)[0]] || 'No description available.';
+                const author = manga.relationships.find(rel => rel.type === 'author')?.attributes?.name || 'Unknown';
+                const status = manga.attributes.status || 'Unknown';
+                const coverRel = manga.relationships.find(rel => rel.type === 'cover_art');
+                const coverFilename = coverRel?.attributes?.fileName || '';
+                const coverUrl = coverFilename ? `https://uploads.mangadex.org/covers/${manga.id}/${coverFilename}` : '';
+                
+                document.getElementById('mangaDetailsTitle').textContent = title;
+                document.getElementById('mangaDetailsAuthor').textContent = `Author: ${author}`;
+                document.getElementById('mangaDetailsStatus').textContent = `Status: ${status.charAt(0).toUpperCase() + status.slice(1)}`;
+                document.getElementById('mangaDetailsDescription').textContent = description;
+                document.getElementById('mangaDetailsCover').src = coverUrl || 'https://via.placeholder.com/300x450?text=No+Cover';
+                
+                // Tags
+                const tagsContainer = document.getElementById('mangaDetailsTags');
+                tagsContainer.innerHTML = '';
+                (manga.attributes.tags || []).slice(0, 10).forEach(tag => {
+                    const tagEl = document.createElement('span');
+                    tagEl.style.cssText = 'padding: 0.25rem 0.75rem; background: rgba(236, 72, 153, 0.2); border: 1px solid #ec4899; border-radius: 999px; font-size: 0.85rem; color: #ec4899;';
+                    tagEl.textContent = tag.attributes.name.en;
+                    tagsContainer.appendChild(tagEl);
+                });
+                
+                // Load chapters
+                await loadMangaChapters(manga.id);
+                
+                mangaDetailsModal.style.display = 'block';
+            }
+            
+            async function loadMangaChapters(mangaId) {
+                const chaptersList = document.getElementById('mangaChaptersList');
+                chaptersList.innerHTML = '<p style="text-align: center; color: white; grid-column: 1 / -1;">Loading chapters...</p>';
+                
+                try {
+                    // First, try to fetch English chapters
+                    const englishResponse = await fetch(`https://api.mangadex.org/manga/${mangaId}/feed?limit=500&includes[]=scanlation_group&includes[]=user&order[volume]=desc&order[chapter]=desc&offset=0&contentRating[]=safe&contentRating[]=suggestive&contentRating[]=erotica&contentRating[]=pornographic&translatedLanguage[]=en`);
+                    const englishData = await englishResponse.json();
+                    
+                    let allChapters = [];
+                    
+                    // If we have English chapters, use them
+                    if (englishData.result === 'ok' && englishData.data && englishData.data.length > 0) {
+                        allChapters = englishData.data;
+                    } else {
+                        // No English chapters, fetch all languages
+                        const allResponse = await fetch(`https://api.mangadex.org/manga/${mangaId}/feed?limit=500&includes[]=scanlation_group&includes[]=user&order[volume]=desc&order[chapter]=desc&offset=0&contentRating[]=safe&contentRating[]=suggestive&contentRating[]=erotica&contentRating[]=pornographic`);
+                        const allData = await allResponse.json();
+                        
+                        if (allData.result === 'ok' && allData.data) {
+                            allChapters = allData.data;
+                        }
+                    }
+                    
+                    chaptersList.innerHTML = '';
+                    
+                    if (allChapters.length === 0) {
+                        chaptersList.innerHTML = '<p style="text-align: center; color: white; grid-column: 1 / -1;">No chapters available.</p>';
+                        return;
+                    }
+                    
+                    allChapters.forEach(chapter => {
+                            const chapterNum = chapter.attributes.chapter || '?';
+                            const chapterTitle = chapter.attributes.title || '';
+                            const externalUrl = chapter.attributes.externalUrl;
+                            const pages = chapter.attributes.pages;
+                            const language = chapter.attributes.translatedLanguage || 'N/A';
+                            const displayTitle = chapterTitle ? `Ch. ${chapterNum}: ${chapterTitle}` : `Chapter ${chapterNum}`;
+                            
+                            const chapterCard = document.createElement('div');
+                            chapterCard.style.cssText = 'background: rgba(255,255,255,0.1); padding: 1rem; border-radius: 8px; cursor: pointer; transition: all 0.3s ease; border: 1px solid rgba(236, 72, 153, 0.3);';
+                            
+                            // Language badge
+                            const langBadge = `<span style="color: #a78bfa; font-size: 0.75rem; margin-left: 0.5rem; text-transform: uppercase;">🌐 ${language}</span>`;
+                            
+                            // Add external link indicator if chapter has external URL, otherwise show if it's hosted
+                            const statusBadge = externalUrl 
+                                ? '<span style="color: #60a5fa; font-size: 0.75rem; margin-left: 0.5rem;">🔗 External</span>' 
+                                : (pages > 0 ? '<span style="color: #10b981; font-size: 0.75rem; margin-left: 0.5rem;">📖 ' + pages + ' pages</span>' : '');
+                            
+                            chapterCard.innerHTML = `
+                                <div style="font-weight: 600; color: #ec4899; margin-bottom: 0.25rem;">${displayTitle}${langBadge}${statusBadge}</div>
+                                <div style="font-size: 0.85rem; color: #9ca3af;">${new Date(chapter.attributes.publishAt).toLocaleDateString()}</div>
+                            `;
+                            
+                            chapterCard.addEventListener('mouseenter', () => {
+                                chapterCard.style.background = 'rgba(236, 72, 153, 0.2)';
+                                chapterCard.style.transform = 'translateX(4px)';
+                            });
+                            
+                            chapterCard.addEventListener('mouseleave', () => {
+                                chapterCard.style.background = 'rgba(255,255,255,0.1)';
+                                chapterCard.style.transform = 'translateX(0)';
+                            });
+                            
+                            chapterCard.addEventListener('click', async () => {
+                                if (externalUrl) {
+                                    // Open external URL in default browser
+                                    await window.electronAPI.openExternal(externalUrl);
+                                } else {
+                                    // Check if chapter has pages (hosted on MangaDex)
+                                    if (pages > 0) {
+                                        // Open in internal reader
+                                        readChapter(chapter.id, displayTitle);
+                                    } else {
+                                        // Open on MangaDex website
+                                        await window.electronAPI.openExternal(`https://mangadex.org/chapter/${chapter.id}`);
+                                    }
+                                }
+                            });
+                            
+                            chaptersList.appendChild(chapterCard);
+                        });
+                } catch (error) {
+                    console.error('Error loading chapters:', error);
+                    chaptersList.innerHTML = '<p style="text-align: center; color: white; grid-column: 1 / -1;">Failed to load chapters.</p>';
+                }
+            }
+            
+            async function readChapter(chapterId, chapterTitle) {
+                // Hide details modal and manga page
+                mangaDetailsModal.style.display = 'none';
+                document.getElementById('manga-page').style.display = 'none';
+                
+                // Show reader page
+                mangaReaderPage.style.display = 'block';
+                document.getElementById('mangaReaderTitle').textContent = chapterTitle;
+                document.getElementById('mangaReaderPages').innerHTML = '';
+                document.getElementById('mangaReaderLoading').style.display = 'block';
+                
+                try {
+                    // Get chapter pages
+                    const response = await fetch(`https://api.mangadex.org/at-home/server/${chapterId}`);
+                    const data = await response.json();
+                    
+                    if (data.result === 'ok') {
+                        const baseUrl = data.baseUrl;
+                        const chapterHash = data.chapter.hash;
+                        const pages = data.chapter.data; // Use high quality images
+                        
+                        document.getElementById('mangaReaderLoading').style.display = 'none';
+                        
+                        const pagesContainer = document.getElementById('mangaReaderPages');
+                        pages.forEach((page, index) => {
+                            const pageUrl = `${baseUrl}/data/${chapterHash}/${page}`;
+                            
+                            const img = document.createElement('img');
+                            img.src = pageUrl;
+                            img.alt = `Page ${index + 1}`;
+                            img.style.cssText = 'width: 100%; height: auto; margin-bottom: 0.5rem; border-radius: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.5);';
+                            img.loading = 'lazy';
+                            
+                            pagesContainer.appendChild(img);
+                        });
+                    } else {
+                        throw new Error('Failed to load chapter data');
+                    }
+                } catch (error) {
+                    console.error('Error reading chapter:', error);
+                    document.getElementById('mangaReaderLoading').innerHTML = '<p style="color: #ef4444;">Failed to load chapter. Please try again.</p>';
+                }
+            }
         }
 
         // Initialize the app on DOMContentLoaded
