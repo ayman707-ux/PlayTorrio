@@ -1,6 +1,6 @@
 {
   "name": "playtorrio",
-  "version": "1.2.3",
+  "version": "1.2.6",
   "description": "A sophisticated application designed to seamlessly interface with Jackett for fetching torrents and provide high-performance streaming directly through an integrated API.",
   "author": {
     "name": "ayman",
@@ -12,7 +12,7 @@
   "scripts": {
     "start": "electron .",
     "serve": "node server.mjs",
-    "prebuild": "node -e \"const cp=require('child_process');const npm=process.platform==='win32'?'npm.cmd':'npm';cp.spawnSync(npm,['install','--production'],{stdio:'inherit',cwd:'./Torrentless'});cp.spawnSync(npm,['install','--production'],{stdio:'inherit',cwd:'./111477'});cp.spawnSync(npm,['install','--production'],{stdio:'inherit',cwd:'./books'});cp.spawnSync(npm,['install','--production'],{stdio:'inherit',cwd:'./RandomBook'});\"",
+    "prebuild": "node -e \"const cp=require('child_process');const npm=process.platform==='win32'?'npm.cmd':'npm';cp.spawnSync(npm,['install','--production'],{stdio:'inherit',cwd:'./Torrentless'});cp.spawnSync(npm,['install','--production'],{stdio:'inherit',cwd:'./111477'});cp.spawnSync(npm,['install','--production'],{stdio:'inherit',cwd:'./books'});cp.spawnSync(npm,['install','--production'],{stdio:'inherit',cwd:'./RandomBook'});cp.spawnSync(npm,['install','--production'],{stdio:'inherit',cwd:'./anime'});cp.spawnSync(npm,['install','--production'],{stdio:'inherit',cwd:'./Torrentio'});\"",
     "build": "electron-builder"
   },
   "dependencies": {
@@ -62,14 +62,18 @@
       "Torrentless/**/*",
       "111477/**/*",
       "books/**/*",
-      "RandomBook/**/*"
+      "RandomBook/**/*",
+      "anime/**/*",
+      "Torrentio/**/*"
     ],
     "asarUnpack": [
       "mpv/**",
       "Torrentless/**",
       "111477/**",
       "books/**",
-      "RandomBook/**"
+      "RandomBook/**",
+      "anime/**",
+      "Torrentio/**"
     ],
     "extraResources": [
       {
@@ -91,6 +95,14 @@
       {
         "from": "RandomBook",
         "to": "RandomBook"
+      },
+      {
+        "from": "anime",
+        "to": "anime"
+      },
+      {
+        "from": "Torrentio",
+        "to": "Torrentio"
       }
     ],
     "win": {
