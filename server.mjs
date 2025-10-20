@@ -159,6 +159,7 @@ export function startServer(userDataPath) {
             const s = JSON.parse(fs.readFileSync(SETTINGS_PATH, 'utf8'));
             return {
                 useTorrentless: false,
+                torrentSource: 'torrentio',
                 useDebrid: false,
                 debridProvider: 'realdebrid',
                 rdToken: null,
@@ -172,7 +173,7 @@ export function startServer(userDataPath) {
                 ...s,
             };
         } catch {
-            return { useTorrentless: false, useDebrid: false, debridProvider: 'realdebrid', rdToken: null, rdRefresh: null, rdClientId: null, rdCredId: null, rdCredSecret: null, adApiKey: null, tbApiKey: null, pmApiKey: null };
+            return { useTorrentless: false, torrentSource: 'torrentio', useDebrid: false, debridProvider: 'realdebrid', rdToken: null, rdRefresh: null, rdClientId: null, rdCredId: null, rdCredSecret: null, adApiKey: null, tbApiKey: null, pmApiKey: null };
         }
     }
     function writeSettings(obj) {
@@ -202,6 +203,7 @@ export function startServer(userDataPath) {
             : !!s.rdToken;
         res.json({
             useTorrentless: !!s.useTorrentless,
+            torrentSource: s.torrentSource || 'torrentio',
             useDebrid: !!s.useDebrid,
             debridProvider: provider,
             debridAuth,
@@ -215,6 +217,7 @@ export function startServer(userDataPath) {
         const next = {
             ...s,
             useTorrentless: req.body.useTorrentless != null ? !!req.body.useTorrentless : !!s.useTorrentless,
+            torrentSource: req.body.torrentSource !== undefined ? req.body.torrentSource : (s.torrentSource || 'torrentio'),
             useDebrid: req.body.useDebrid != null ? !!req.body.useDebrid : !!s.useDebrid,
             debridProvider: req.body.debridProvider || s.debridProvider || 'realdebrid',
             rdClientId: typeof req.body.rdClientId === 'string' ? req.body.rdClientId.trim() || null : (s.rdClientId || null),
@@ -2673,7 +2676,14 @@ export function startServer(userDataPath) {
         }
     }));
 
-    const client = new WebTorrent();
+    const client = new WebTorrent({
+        maxConns: 100,        // Increase max connections for faster downloads
+        dht: true,            // Enable DHT for more peers
+        tracker: true,        // Enable trackers
+        webSeeds: true,       // Enable web seeds if available
+        uploadLimit: -1,      // No upload limit
+        downloadLimit: -1     // No download limit
+    });
     const activeTorrents = new Map();
     // OpenSubtitles API key (provided by user for this app)
     const OPEN_SUBTITLES_API_KEY = 'bAYQ53sQ01tx14QcOrPjGkdnTOUMjMC0';
@@ -2827,9 +2837,6 @@ export function startServer(userDataPath) {
         });
 
         const handleReady = (t) => {
-            // By default, prevent downloading everything; wait for explicit selection
-            try { t.files.forEach(f => f.deselect()); } catch {}
-            try { t.deselect(0, Math.max(0, t.pieces.length - 1), false); } catch {}
             // Build list preserving original torrent.files index
             const all = t.files.map((file, idx) => ({ index: idx, name: file.name, size: file.length }));
             const filtered = all.filter(f => /\.(mp4|mkv|avi|mov|srt|vtt|ass)$/i.test(f.name));
@@ -2839,6 +2846,15 @@ export function startServer(userDataPath) {
                 videoFiles: filtered.filter(f => f.name.match(/\.(mp4|mkv|avi|mov)$/i)).sort((a, b) => b.size - a.size),
                 subtitleFiles: filtered.filter(f => f.name.match(/\.(srt|vtt|ass)$/i)),
             });
+            
+            // NOW deselect everything after sending the response - prevent downloading until user selects
+            setTimeout(() => {
+                try { 
+                    t.files.forEach(f => f.deselect()); 
+                    console.log(`[Protection] Deselected all files for ${infoHash} after sending file list`);
+                } catch {}
+                try { t.deselect(0, Math.max(0, t.pieces.length - 1), false); } catch {}
+            }, 100);
         };
 
     torrent.once('ready', () => handleReady(torrent));
@@ -2870,12 +2886,31 @@ export function startServer(userDataPath) {
                 try { torrent.deselect(0, Math.max(0, torrent.pieces.length - 1), false); } catch {}
                 // Select the chosen video file
                 file.select();
-                // Also select its piece range explicitly to kick off download
+                
+                // OPTIMIZATION: Prioritize first pieces for faster playback start
+                const pieceLength = torrent.pieceLength;
+                const fileStart = Math.max(0, Math.floor(file.offset / pieceLength));
+                const fileEnd = Math.max(fileStart, Math.floor((file.offset + file.length - 1) / pieceLength));
+                
+                // Select the entire file range
                 try {
-                    const start = Math.max(0, Math.floor(file.offset / torrent.pieceLength));
-                    const end = Math.max(start, Math.floor((file.offset + file.length - 1) / torrent.pieceLength));
-                    torrent.select(start, end, 1);
+                    torrent.select(fileStart, fileEnd, 1);
                 } catch {}
+                
+                // CRITICAL: Prioritize first 5MB for immediate playback
+                const priorityBytes = 5 * 1024 * 1024; // 5MB
+                const priorityPieces = Math.ceil(priorityBytes / pieceLength);
+                const priorityEnd = Math.min(fileStart + priorityPieces, fileEnd);
+                
+                // Download first pieces with highest priority
+                for (let i = fileStart; i <= priorityEnd; i++) {
+                    try {
+                        torrent.critical(i, i);
+                    } catch {}
+                }
+                
+                console.log(`[Streaming] Prioritizing pieces ${fileStart}-${priorityEnd} of ${fileStart}-${fileEnd} for ${file.name}`);
+                
                 // Select all subtitle files so they download alongside
                 torrent.files.forEach(f => {
                     if (/\.(srt|vtt|ass)$/i.test(f.name)) {
@@ -2945,12 +2980,31 @@ export function startServer(userDataPath) {
                 torrent.files.forEach(f => f.deselect());
                 try { torrent.deselect(0, Math.max(0, torrent.pieces.length - 1), false); } catch {}
                 file.select();
-                // Explicitly select its piece range to kick off download immediately
+                
+                // OPTIMIZATION: Prioritize first pieces for faster playback start
+                const pieceLength = torrent.pieceLength;
+                const fileStart = Math.max(0, Math.floor(file.offset / pieceLength));
+                const fileEnd = Math.max(fileStart, Math.floor((file.offset + file.length - 1) / pieceLength));
+                
+                // Select the entire file range
                 try {
-                    const start = Math.max(0, Math.floor(file.offset / torrent.pieceLength));
-                    const end = Math.max(start, Math.floor((file.offset + file.length - 1) / torrent.pieceLength));
-                    torrent.select(start, end, 1);
+                    torrent.select(fileStart, fileEnd, 1);
                 } catch {}
+                
+                // CRITICAL: Prioritize first 10MB for pre-buffering
+                const priorityBytes = 10 * 1024 * 1024; // 10MB for prepare (more buffer than stream)
+                const priorityPieces = Math.ceil(priorityBytes / pieceLength);
+                const priorityEnd = Math.min(fileStart + priorityPieces, fileEnd);
+                
+                // Download first pieces with highest priority
+                for (let i = fileStart; i <= priorityEnd; i++) {
+                    try {
+                        torrent.critical(i, i);
+                    } catch {}
+                }
+                
+                console.log(`[Prepare] Pre-buffering pieces ${fileStart}-${priorityEnd} of ${fileStart}-${fileEnd} for ${file.name}`);
+                
                 // Also preselect all subtitle files
                 torrent.files.forEach(f => {
                     if (/\.(srt|vtt|ass)$/i.test(f.name)) {
