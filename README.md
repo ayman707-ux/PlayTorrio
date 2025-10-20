@@ -9,7 +9,7 @@ PlayTorrio's official [website](https://playtorrio.netlify.app/)
 
 ## 🧩 Features
 - 🔍 Fetch torrents from multiple sources via Jackett  
-  - Or use the in‑app scraper
+- 🔍 If you Dont want to use jackett, Torrentio and a private scraper are both bundled in the app
 - 🎥 Stream magnet links instantly without full download  
 - 💾 Lightweight and fast UI  
 - ⚙️ Customizable Jackett URL and API key  
@@ -30,7 +30,8 @@ PlayTorrio's official [website](https://playtorrio.netlify.app/)
 - Online Z-Lib book reader
 -In-App Book downloader and reader (BookTorrio)
 -manga
-
+- in-app nyaa.si anime torrent scraper and streamer
+-anime
 ---
 
 ## 🛠️ Tech Stack
