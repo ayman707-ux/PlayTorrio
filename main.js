@@ -22,6 +22,12 @@ let booksBaseUrl = 'http://127.0.0.1:3004';
 let randomBookProc = null;
 let randomBookDesiredPort = 5000;
 let randomBookBaseUrl = 'http://127.0.0.1:5000';
+let animeProc = null;
+let animeDesiredPort = 7000;
+let animeBaseUrl = 'http://127.0.0.1:7000';
+let torrentioProc = null;
+let torrentioDesiredPort = 5500;
+let torrentioBaseUrl = 'http://127.0.0.1:5500';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -823,6 +829,229 @@ function startRandomBook() {
     }
 }
 
+// Start Anime (Nyaa) server
+function startAnime() {
+    if (animeProc) {
+        console.log('Anime server already running');
+        return;
+    }
+
+    try {
+        console.log('Starting Anime server...');
+        
+        // Resolve script path in both dev and packaged environments
+        const candidates = [];
+        if (app.isPackaged && process.resourcesPath) {
+            candidates.push(path.join(process.resourcesPath, 'anime', 'server.js'));
+            candidates.push(path.join(process.resourcesPath, 'app.asar.unpacked', 'anime', 'server.js'));
+        }
+        candidates.push(path.join(__dirname, 'anime', 'server.js'));
+        
+        let entry = null;
+        for (const p of candidates) {
+            try { if (p && fs.existsSync(p)) { entry = p; break; } } catch {}
+        }
+        if (!entry) {
+            console.warn('Anime server entry not found. Ensure the anime folder is packaged.');
+            return;
+        }
+
+        // Compute NODE_PATH so the child can resolve dependencies from the app's node_modules
+        const nodePathCandidates = [
+            path.join(process.resourcesPath || '', 'app.asar', 'node_modules'),
+            path.join(process.resourcesPath || '', 'node_modules'),
+            path.join(process.resourcesPath || '', 'app.asar.unpacked', 'node_modules'),
+            path.join(__dirname, 'node_modules'),
+            path.join(path.dirname(entry), 'node_modules'),
+        ];
+        const existingNodePaths = nodePathCandidates.filter(p => { try { return fs.existsSync(p); } catch { return false; } });
+        const NODE_PATH_VALUE = existingNodePaths.join(path.delimiter);
+
+        // Spawn Electron binary in Node mode to run server.js
+        const logPath = path.join(app.getPath('userData'), 'anime.log');
+        const logStream = fs.createWriteStream(logPath, { flags: 'a' });
+        const childEnv = { 
+            ...process.env, 
+            PORT: String(animeDesiredPort), 
+            ELECTRON_RUN_AS_NODE: '1', 
+            NODE_PATH: NODE_PATH_VALUE
+        };
+        animeProc = spawn(process.execPath, [entry], {
+            stdio: ['ignore', 'pipe', 'pipe'],
+            env: childEnv,
+            cwd: path.dirname(entry),
+        });
+
+        // Pipe logs for diagnostics
+        try {
+            animeProc.stdout.on('data', (d) => { try { logStream.write(d); } catch(_) {} });
+            animeProc.stderr.on('data', (d) => { try { logStream.write(d); } catch(_) {} });
+        } catch (_) {}
+
+        animeProc.on('exit', (code, signal) => {
+            console.log(`Anime server exited code=${code} signal=${signal}`);
+            try { logStream.end(); } catch(_) {}
+            // On unexpected exit during runtime, attempt a single restart
+            if (!app.isQuitting) {
+                setTimeout(() => { try { startAnime(); } catch(_) {} }, 1000);
+            }
+        });
+
+        animeProc.on('error', (err) => {
+            console.error('Failed to start Anime server process:', err);
+            try { logStream.write(String(err?.stack || err) + '\n'); } catch(_) {}
+        });
+
+        // Probe /api/test to confirm the service is up
+        try {
+            let attempts = 0;
+            let healthy = false;
+            const maxAttempts = 25; // ~10s @ 400ms
+            const timer = setInterval(() => {
+                attempts++;
+                try {
+                    const req = http.get({ hostname: '127.0.0.1', port: animeDesiredPort, path: '/health', timeout: 350 }, (res) => {
+                        if (res.statusCode === 200) {
+                            healthy = true;
+                            animeBaseUrl = `http://127.0.0.1:${animeDesiredPort}`;
+                            console.log('Anime server is up on ' + animeBaseUrl);
+                            clearInterval(timer);
+                            try { res.resume(); } catch(_) {}
+                            try {
+                                if (mainWindow && !mainWindow.isDestroyed()) {
+                                    mainWindow.webContents.send('anime-url', { url: animeBaseUrl });
+                                }
+                            } catch(_) {}
+                        } else {
+                            try { res.resume(); } catch(_) {}
+                        }
+                    });
+                    req.on('timeout', () => { try { req.destroy(); } catch(_) {} });
+                    req.on('error', () => {});
+                } catch(_) {}
+                if (attempts >= maxAttempts) {
+                    clearInterval(timer);
+                    if (!healthy && !app.isQuitting) {
+                        console.warn(`[Anime] Failed to start server on port ${animeDesiredPort}`);
+                    }
+                }
+            }, 400);
+        } catch(_) {}
+    } catch (e) {
+        console.error('Failed to start Anime server:', e);
+    }
+}
+
+function startTorrentio() {
+    if (torrentioProc) {
+        console.log('Torrentio server already running');
+        return;
+    }
+
+    try {
+        console.log('Starting Torrentio server...');
+        
+        // Resolve script path in both dev and packaged environments
+        const candidates = [];
+        if (app.isPackaged && process.resourcesPath) {
+            candidates.push(path.join(process.resourcesPath, 'Torrentio', 'server.js'));
+            candidates.push(path.join(process.resourcesPath, 'app.asar.unpacked', 'Torrentio', 'server.js'));
+        }
+        candidates.push(path.join(__dirname, 'Torrentio', 'server.js'));
+        
+        let entry = null;
+        for (const p of candidates) {
+            try { if (p && fs.existsSync(p)) { entry = p; break; } } catch {}
+        }
+        if (!entry) {
+            console.warn('Torrentio server entry not found. Ensure the Torrentio folder is packaged.');
+            return;
+        }
+
+        // Compute NODE_PATH so the child can resolve dependencies from the app's node_modules
+        const nodePathCandidates = [
+            path.join(process.resourcesPath || '', 'app.asar', 'node_modules'),
+            path.join(process.resourcesPath || '', 'node_modules'),
+            path.join(process.resourcesPath || '', 'app.asar.unpacked', 'node_modules'),
+            path.join(__dirname, 'node_modules'),
+            path.join(path.dirname(entry), 'node_modules'),
+        ];
+        const existingNodePaths = nodePathCandidates.filter(p => { try { return fs.existsSync(p); } catch { return false; } });
+        const NODE_PATH_VALUE = existingNodePaths.join(path.delimiter);
+
+        // Spawn Electron binary in Node mode to run server.js
+        const logPath = path.join(app.getPath('userData'), 'torrentio.log');
+        const logStream = fs.createWriteStream(logPath, { flags: 'a' });
+        const childEnv = { 
+            ...process.env, 
+            PORT: String(torrentioDesiredPort), 
+            ELECTRON_RUN_AS_NODE: '1', 
+            NODE_PATH: NODE_PATH_VALUE
+        };
+        torrentioProc = spawn(process.execPath, [entry], {
+            stdio: ['ignore', 'pipe', 'pipe'],
+            env: childEnv,
+            cwd: path.dirname(entry),
+        });
+
+        // Pipe logs for diagnostics
+        try {
+            torrentioProc.stdout.on('data', (d) => { try { logStream.write(d); } catch(_) {} });
+            torrentioProc.stderr.on('data', (d) => { try { logStream.write(d); } catch(_) {} });
+        } catch (_) {}
+
+        torrentioProc.on('exit', (code, signal) => {
+            console.log(`Torrentio server exited code=${code} signal=${signal}`);
+            try { logStream.end(); } catch(_) {}
+            // On unexpected exit during runtime, attempt a single restart
+            if (!app.isQuitting) {
+                setTimeout(() => { try { startTorrentio(); } catch(_) {} }, 1000);
+            }
+        });
+
+        torrentioProc.on('error', (err) => {
+            console.error('Failed to start Torrentio server process:', err);
+            try { logStream.write(String(err?.stack || err) + '\n'); } catch(_) {}
+        });
+
+        // Probe / (root endpoint) to confirm the service is up
+        try {
+            let attempts = 0;
+            let healthy = false;
+            const maxAttempts = 25; // ~10s @ 400ms
+            const timer = setInterval(() => {
+                attempts++;
+                try {
+                    const req = http.get({ hostname: '127.0.0.1', port: torrentioDesiredPort, path: '/', timeout: 350 }, (res) => {
+                        if (res.statusCode === 200) {
+                            healthy = true;
+                            clearInterval(timer);
+                            console.log(`Torrentio is up on ${torrentioBaseUrl}`);
+                            try {
+                                if (mainWindow && !mainWindow.isDestroyed()) {
+                                    mainWindow.webContents.send('torrentio-url', { url: torrentioBaseUrl });
+                                }
+                            } catch(_) {}
+                        } else {
+                            try { res.resume(); } catch(_) {}
+                        }
+                    });
+                    req.on('timeout', () => { try { req.destroy(); } catch(_) {} });
+                    req.on('error', () => {});
+                } catch(_) {}
+                if (attempts >= maxAttempts) {
+                    clearInterval(timer);
+                    if (!healthy && !app.isQuitting) {
+                        console.warn(`[Torrentio] Failed to start server on port ${torrentioDesiredPort}`);
+                    }
+                }
+            }, 400);
+        } catch(_) {}
+    } catch (e) {
+        console.error('Failed to start Torrentio server:', e);
+    }
+}
+
 // Enforce single instance with a friendly error on second run
 const gotLock = app.requestSingleInstanceLock();
 if (!gotLock) {
@@ -853,8 +1082,14 @@ if (!gotLock) {
     // Start the Books (Z-Library) search server (port 3004)
     startBooks();
 
-    // Start the RandomBook search server (port 3000)
+    // Start the RandomBook search server (port 5000)
     startRandomBook();
+
+    // Start the Anime (Nyaa) search server (port 7000)
+    startAnime();
+
+    // Start the Torrentio server (port 7001)
+    startTorrentio();
 
         mainWindow = createWindow();
 
