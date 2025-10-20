@@ -27,13 +27,15 @@ PlayTorrio's official [website](https://playtorrio.netlify.app/)
 - 🗂️ My List and Done Watching, with episode-level tracking
 - 🧰 Integrated microservices (Torrentless, 111477, Books, BookDownloader) auto-start with health checks
 - 🔄 Auto-updater with persistent progress
+- Online Z-Lib book reader
+-In-App Book downloader and reader (BookTorrio)
 
 ---
 
 ## 🛠️ Tech Stack
 - **Backend:** Node.js / Electron  
 - **Frontend:** HTML, CSS, JavaScript  
-- **APIs:** Jackett API, TMDB, Trakt, Z‑Library scraping, 111477 api, torrentless api
+- **APIs:** Jackett API, TMDB, Trakt, Z‑Library scraping, 111477 api, torrentless api, LibGen Api
 - **Streaming:** WebTorrent (integrated HTTP server), MPV optional but recommended, normal stream servers (check settings)
 
 ---
