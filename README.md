@@ -25,9 +25,8 @@ PlayTorrio's official [website](https://playtorrio.netlify.app/)
 - 📺 Live TV/IPTV section
 - ✅ Trakt integration: import Watchlist to My List and History to Done Watching
 - 🗂️ My List and Done Watching, with episode-level tracking
-- 🧰 Integrated microservices (Torrentless, 111477, Books) auto-start with health checks
+- 🧰 Integrated microservices (Torrentless, 111477, Books, BookDownloader) auto-start with health checks
 - 🔄 Auto-updater with persistent progress
-- 🖥️ Custom frameless title bar with pretty window controls
 
 ---
 
