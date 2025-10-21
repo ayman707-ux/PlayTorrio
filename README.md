@@ -32,6 +32,7 @@ PlayTorrio's official [website](https://playtorrio.netlify.app/)
 -manga
 - in-app nyaa.si anime torrent scraper and streamer
 -anime
+-Music
 ---
 
 ## 🛠️ Tech Stack
