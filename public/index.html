@@ -9,7 +9,6 @@
 <link href="https://vjs.zencdn.net/8.10.0/video-js.css" rel="stylesheet" />
 <style>
         :root {
-            /* Purple theme */
             --primary: #2a1847;    /* header/cards */
             --secondary: #8b5cf6;  /* subtle accents */
             --tertiary: #c084fc;   /* highlights/pills */
@@ -374,6 +373,7 @@
             overflow: hidden;
             text-overflow: ellipsis;
             display: -webkit-box;
+            line-clamp: 2;
             -webkit-line-clamp: 2;
             -webkit-box-orient: vertical;
             line-height: 1.3;
@@ -1904,7 +1904,7 @@
             font-size: 1.1rem;
         }
 
-        #books-search-input {
+        #books-search-input, #music-search-input {
             flex: 1;
             padding: 1rem 1.5rem;
             padding-left: 3rem;
@@ -1915,7 +1915,7 @@
             outline: none;
         }
 
-        #books-search-input::placeholder {
+        #books-search-input::placeholder, #music-search-input::placeholder {
             color: #9ca3af;
         }
 
@@ -2004,6 +2004,62 @@
             gap: 1.5rem;
         }
 
+        /* Music (compact) overrides using books classes */
+        #music-page .books-results-grid {
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 1rem;
+        }
+        #music-page .books-book-card {
+            cursor: default;
+        }
+        .music-card {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 14px;
+            overflow: hidden;
+            transition: all 0.25s ease;
+        }
+        .music-card:hover {
+            transform: translateY(-4px);
+            border-color: rgba(236, 72, 153, 0.45);
+            box-shadow: 0 10px 30px rgba(236, 72, 153, 0.15);
+        }
+        .music-cover {
+            width: 100%;
+            aspect-ratio: 1 / 1;
+            background: linear-gradient(135deg, #374151, #1f2937);
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .music-cover img { width: 100%; height: 100%; object-fit: cover; }
+        .music-info { padding: 0.75rem 0.85rem; }
+        .music-title { font-size: 0.95rem; font-weight: 700; color: #fff; margin: 0 0 0.25rem 0; line-height: 1.25; }
+        .music-artist { font-size: 0.85rem; color: #ec4899; margin: 0 0 0.5rem 0; }
+        .music-actions { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
+        .music-play-btn {
+            flex: 1;
+            display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem;
+            padding: 0.5rem 0.75rem;
+            background: linear-gradient(135deg, #ec4899, #a855f7);
+            border: none; border-radius: 10px; color: #fff; font-weight: 700; cursor: pointer;
+        }
+        .music-open-btn {
+            width: 38px; height: 38px; display: inline-flex; align-items: center; justify-content: center;
+            border-radius: 10px; border: 1px solid rgba(236,72,153,0.35); background: rgba(236,72,153,0.12); color: #ec4899; cursor: pointer;
+        }
+        .music-add-btn {
+            width: 38px; height: 38px; display: inline-flex; align-items: center; justify-content: center;
+            border-radius: 10px; border: 1px solid rgba(16,185,129,0.35); background: rgba(16,185,129,0.12); color: #10b981; cursor: pointer;
+        }
+        .music-add-btn.added {
+            border-color: rgba(34,197,94,0.6);
+            background: rgba(34,197,94,0.18);
+            color: #22c55e;
+        }
+
         .books-book-card {
             background: rgba(255, 255, 255, 0.06);
             border: 1px solid rgba(255, 255, 255, 0.08);
@@ -2070,6 +2126,7 @@
             margin-bottom: 0.5rem;
             line-height: 1.4;
             display: -webkit-box;
+            line-clamp: 2;
             -webkit-line-clamp: 2;
             -webkit-box-orient: vertical;
             overflow: hidden;
@@ -2146,17 +2203,29 @@
             background: rgba(0, 0, 0, 0.98);
             z-index: 9999;
             display: flex;
-            flex-direction: column;
+            flex-direction: row;
+            align-items: center;
+            justify-content: center;
             overflow: hidden;
         }
 
         .books-reader-content {
             width: 100%;
             height: 100%;
+            max-width: none;
+            max-height: none;
             display: flex;
             flex-direction: column;
             background: var(--dark);
             overflow: hidden;
+        }
+        
+        /* Music player modal gets constrained size */
+        #music-player-modal .books-reader-content {
+            width: 90%;
+            max-width: 560px;
+            height: auto;
+            max-height: 90vh;
         }
 
         .books-reader-header {
@@ -2942,6 +3011,7 @@
             margin-bottom: 0.5rem;
             line-height: 1.3;
             display: -webkit-box;
+            line-clamp: 2;
             -webkit-line-clamp: 2;
             -webkit-box-orient: vertical;
             overflow: hidden;
@@ -5744,6 +5814,11 @@
                 <span>Books</span>
                 <span class="nav-badge" style="background: linear-gradient(135deg, #f59e0b, #d97706);">Z-Lib</span>
             </div>
+            <div class="nav-item" data-page="music">
+                <i class="fas fa-music" style="color: #ec4899;"></i>
+                <span>Music</span>
+                <span class="nav-badge" style="background: linear-gradient(135deg, #ec4899, #db2777);">HiFi</span>
+            </div>
             <div class="nav-item" data-page="booktorrio">
                 <i class="fas fa-book-open" style="color: #06b6d4;"></i>
                 <span>BookTorrio</span>
@@ -5874,6 +5949,128 @@
         </div>
     </div>
 
+    <!-- Music Page -->
+    <div id="music-page" style="display: none;">
+        <div class="page-header-enhanced">
+            <div class="page-title-section">
+                <h2 class="section-title">
+                    <i class="fas fa-music" style="color: #ec4899;"></i> <span>Music</span>
+                </h2>
+                <p class="page-subtitle">Search and stream high-quality music</p>
+            </div>
+            <div class="page-actions">
+                <button class="action-btn" id="music-my-btn" title="Open My Music">
+                    <i class="fas fa-heart"></i>
+                    <span>My Music</span>
+                </button>
+            </div>
+        </div>
+
+        <div class="page-content">
+            <!-- Search Section -->
+            <div class="books-search-section">
+                <div class="books-search-container">
+                    <div class="books-search-bar">
+                        <i class="fas fa-search books-search-icon"></i>
+                        <input 
+                            type="text" 
+                            id="music-search-input" 
+                            placeholder="Search for songs, artists, or albums..."
+                            autocomplete="off"
+                        />
+                        <button id="music-search-btn" class="books-search-button">
+                            <i class="fas fa-search"></i>
+                            Search
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Loading State -->
+            <div id="music-loading" class="books-loading" style="display: none;">
+                <div class="books-loading-spinner">
+                    <i class="fas fa-spinner fa-spin"></i>
+                </div>
+                <p>Searching HiFi...</p>
+            </div>
+
+            <!-- Empty State -->
+            <div id="music-empty" class="books-empty">
+                <div class="books-empty-icon">
+                    <i class="fas fa-music"></i>
+                </div>
+                <h3>Welcome to HiFi Music</h3>
+                <p>Search for any song, artist, or album to get started.</p>
+            </div>
+
+            <!-- Results Section -->
+            <div id="music-results" class="books-results" style="display: none;">
+                <div class="books-results-header">
+                    <h3 id="music-results-title">Search Results</h3>
+                    <div id="music-results-count" class="books-results-count"></div>
+                </div>
+                <div id="music-results-grid" class="books-results-grid">
+                    <!-- Results will be populated here -->
+                </div>
+            </div>
+
+            <!-- My Music Section -->
+            <div id="my-music" class="books-results" style="display: none;">
+                <div class="books-results-header">
+                    <h3><i class="fas fa-heart" style="color:#ec4899"></i> My Music</h3>
+                    <div id="my-music-count" class="books-results-count"></div>
+                </div>
+                <div id="my-music-grid" class="books-results-grid"></div>
+                <div id="my-music-empty" class="books-empty" style="display:none;">
+                    <div class="books-empty-icon"><i class="fas fa-heart"></i></div>
+                    <h3>No saved tracks yet</h3>
+                    <p>Click the + on any track to add it here for quick access.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Music Player Modal (transparent overlay + custom controls) -->
+    <div id="music-player-modal" class="books-reader-modal" style="display: none; background: rgba(0,0,0,0.85); backdrop-filter: blur(10px);">
+        <div class="books-reader-content" style="border:2px solid #ec4899; border-radius: 16px; max-width:560px; width:90%;">
+            <div class="books-reader-header">
+                <button id="music-player-back" class="books-reader-back-btn">
+                    <i class="fas fa-arrow-left"></i>
+                    Back
+                </button>
+                <h3 id="music-player-title">Now Playing</h3>
+            </div>
+            <div class="books-reader-frame-container" style="display:flex; flex-direction:column; align-items:center; justify-content:center; padding: 1.75rem; background: linear-gradient(135deg, rgba(26,26,46,0.95), rgba(22,33,62,0.95));">
+                <img id="music-player-cover" src="" alt="Album Cover" style="width: 240px; height: 240px; object-fit: cover; border-radius: 12px; margin-bottom: 1rem; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);">
+                <h2 id="music-player-song-title" style="color: var(--light); margin-bottom: 0.25rem; text-align: center; font-size:1.3rem;"></h2>
+                <p id="music-player-artist" style="color: #ec4899; font-size: 1rem; margin-bottom: 1rem; text-align: center;"></p>
+                
+                <!-- Custom Controls -->
+                <div style="width:100%; max-width:520px;">
+                    <div class="audio-progress-bar" id="music-progress-bar" style="width:100%; height:6px; background: rgba(255,255,255,0.12); border-radius:3px; cursor:pointer; overflow:hidden;">
+                        <div class="audio-progress-fill" id="music-progress-fill" style="height:100%; width:0%; background: linear-gradient(90deg, #ec4899, #a855f7);"></div>
+                    </div>
+                    <div class="audio-time-display" style="display:flex; justify-content:space-between; color:#9ca3af; font-size:0.85rem; margin-top:0.5rem;">
+                        <span id="music-current-time">0:00</span>
+                        <span id="music-total-time">0:00</span>
+                    </div>
+                    <div class="audio-controls-buttons" style="display:flex; justify-content:center; align-items:center; gap:1rem; margin-top:1rem;">
+                        <button class="audio-control-btn" id="music-backward-btn" title="Back 10s" style="background: rgba(236,72,153,0.1); border:1px solid rgba(236,72,153,0.3); color:#ec4899; border-radius:50%; width:46px; height:46px; display:flex; align-items:center; justify-content:center;"><i class="fas fa-backward"></i></button>
+                        <button class="audio-control-btn" id="music-play-pause-btn" title="Play/Pause" style="background: linear-gradient(135deg, #ec4899, #a855f7); color:white; border:none; border-radius:50%; width:56px; height:56px; display:flex; align-items:center; justify-content:center; font-size:1.1rem;"><i class="fas fa-play"></i></button>
+                        <button class="audio-control-btn" id="music-forward-btn" title="Forward 10s" style="background: rgba(236,72,153,0.1); border:1px solid rgba(236,72,153,0.3); color:#ec4899; border-radius:50%; width:46px; height:46px; display:flex; align-items:center; justify-content:center;"><i class="fas fa-forward"></i></button>
+                    </div>
+                    <div class="audio-volume-control" style="display:flex; align-items:center; gap:0.75rem; margin-top:1rem;">
+                        <i class="fas fa-volume-up" id="music-volume-icon" style="color:#ec4899;"></i>
+                        <div class="audio-volume-slider" id="music-volume-slider" style="flex:1; height:4px; background: rgba(255,255,255,0.12); border-radius:2px; cursor:pointer;">
+                            <div class="audio-volume-fill" id="music-volume-fill" style="height:100%; width:100%; background:#ec4899;"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <audio id="music-player-audio" style="display:none;" crossorigin="anonymous" preload="metadata"></audio>
+            </div>
+        </div>
+    </div>
     <!-- Genres Page -->
     <div id="genresPage" style="display: none;">
         <h2 class="section-title">
@@ -6845,13 +7042,15 @@ Can't find what you're looking for? Try a custom search
 <div class="vlc-player-container" id="mpvPlayerContainer">
 <div class="vlc-player-header">
 <div class="vlc-player-title" id="mpvPlayerTitle">MPV Torrent Player <span class="source-badge webtorrent" id="streamSourceBadge" title="Streaming source">WebTorrent</span></div>
-<button class="vlc-player-close" id="closePlayerBtn">
-<i class="fas fa-times"></i> Press Escape to Exit
-            </button>
 </div>
 <div class="vlc-player-content">
 <div class="file-selector" id="fileSelector">
-<h3><i class="fas fa-folder-open"></i> Select File to Play</h3>
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+    <h3 style="margin: 0;"><i class="fas fa-folder-open"></i> Select File to Play</h3>
+    <button class="close-player-btn" id="closePlayerBtn" title="Close Player (Esc)" style="padding: 0.5rem 1rem; background: var(--vlc-orange); border: none; color: white; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 0.95rem;">
+        <i class="fas fa-times"></i> Close
+    </button>
+</div>
 <div class="file-list" id="fileList">
 <!-- Files will be loaded here -->
 </div>
@@ -6892,6 +7091,9 @@ Can't find what you're looking for? Try a custom search
 <i class="fas fa-play-circle"></i>
 <span>Custom Player</span> <span class="source-badge webtorrent" id="customSourceBadge" title="Streaming source">WebTorrent</span>
 </div>
+<button class="close-player-btn" id="closeCustomPlayer" title="Close Player (Esc)">
+    <i class="fas fa-times"></i> Close
+</button>
 </div>
 
 
@@ -6932,9 +7134,6 @@ Your browser does not support the video tag.
         </div>
         <button class="control-btn" id="htmlSubsBtn" title="Subtitles"><i class="fas fa-closed-captioning"></i></button>
         <button class="control-btn" id="fullscreenBtn" title="Fullscreen"><i class="fas fa-expand"></i></button>
-        <button class="close-player-btn" id="closeCustomPlayer" title="Close Player (Esc)">
-            <i class="fas fa-times"></i> Close
-        </button>
     </div>
 </div>
 </div>
@@ -9504,6 +9703,10 @@ Your browser does not support the video tag.
             window.location.hash = '#/books';
         }
         
+        function showMusicPage() {
+            window.location.hash = '#/music';
+        }
+        
         function showBookTorrioPage() {
             window.location.hash = '#/booktorrio';
         }
@@ -10741,6 +10944,8 @@ Your browser does not support the video tag.
                         showIptvPage();
                     } else if (page === 'books') {
                         showBooksPage();
+                    } else if (page === 'music') {
+                        showMusicPage();
                     } else if (page === 'booktorrio') {
                         showBookTorrioPage();
                     } else if (page === 'anime') {
@@ -10967,6 +11172,461 @@ Your browser does not support the video tag.
                 
                 booksEmpty.style.display = 'none';
                 booksResults.style.display = 'block';
+            }
+
+            // Music Functionality
+            let musicResultsCache = [];
+            const musicSearchInput = document.getElementById('music-search-input');
+            const musicSearchBtn = document.getElementById('music-search-btn');
+            const musicLoading = document.getElementById('music-loading');
+            const musicEmpty = document.getElementById('music-empty');
+            const musicResults = document.getElementById('music-results');
+            const musicResultsGrid = document.getElementById('music-results-grid');
+            const musicResultsCount = document.getElementById('music-results-count');
+            const musicResultsTitle = document.getElementById('music-results-title');
+
+            const musicModal = document.getElementById('music-player-modal');
+            const musicModalBack = document.getElementById('music-player-back');
+            const musicModalTitle = document.getElementById('music-player-title');
+            const musicSongTitle = document.getElementById('music-player-song-title');
+            const musicArtist = document.getElementById('music-player-artist');
+            const musicCover = document.getElementById('music-player-cover');
+            const musicAudio = document.getElementById('music-player-audio');
+            const musicPlayPauseBtn = document.getElementById('music-play-pause-btn');
+            const musicBackwardBtn = document.getElementById('music-backward-btn');
+            const musicForwardBtn = document.getElementById('music-forward-btn');
+            const musicProgressBar = document.getElementById('music-progress-bar');
+            const musicProgressFill = document.getElementById('music-progress-fill');
+            const musicCurrentTime = document.getElementById('music-current-time');
+            const musicTotalTime = document.getElementById('music-total-time');
+            const musicVolumeSlider = document.getElementById('music-volume-slider');
+            const musicVolumeFill = document.getElementById('music-volume-fill');
+
+            const HIFI_BASE = 'https://hifi.401658.xyz';
+
+            function tidalCoverUrl(cover) {
+                if (!cover) return '';
+                try {
+                    return `https://resources.tidal.com/images/${cover.replace(/-/g, '/')}/320x320.jpg`;
+                } catch (_) {
+                    return '';
+                }
+            }
+
+            function fmtTime(sec) {
+                if (!isFinite(sec)) return '0:00';
+                const m = Math.floor(sec / 60);
+                const s = Math.floor(sec % 60).toString().padStart(2, '0');
+                return `${m}:${s}`;
+            }
+
+            async function searchMusic(query) {
+                if (!query || !query.trim()) {
+                    showNotification('Please enter a search term', 'warning');
+                    return;
+                }
+
+                const q = query.trim();
+                musicEmpty.style.display = 'none';
+                musicResults.style.display = 'none';
+                musicLoading.style.display = 'block';
+
+                try {
+                    const resp = await fetch(`${HIFI_BASE}/search/?s=${encodeURIComponent(q)}`);
+                    const data = await resp.json();
+                    musicLoading.style.display = 'none';
+                    const items = Array.isArray(data?.items) ? data.items : [];
+
+                    if (!items.length) {
+                        musicResults.style.display = 'none';
+                        musicEmpty.style.display = 'block';
+                        musicEmpty.innerHTML = `
+                            <div class="books-empty-icon"><i class="fas fa-search"></i></div>
+                            <h3>No Music Found</h3>
+                            <p>No results found for "${q}". Try a different search.</p>
+                        `;
+                        showNotification('No music found for your search', 'info');
+                        return;
+                    }
+
+                    // Prefer tracks; if mixed, filter to tracks when possible
+                    const tracks = items.filter(it => (it.type || it.itemType || '').toString().toLowerCase() === 'track' || it.audioQuality || it.artist);
+                    const results = tracks.length ? tracks : items;
+                    musicResultsCache = results;
+                    displayMusicResults(results, q);
+                    showNotification(`Found ${results.length} items`, 'success');
+                } catch (e) {
+                    console.error('[MUSIC] Search error', e);
+                    musicLoading.style.display = 'none';
+                    musicResults.style.display = 'none';
+                    musicEmpty.style.display = 'block';
+                    musicEmpty.innerHTML = `
+                        <div class="books-empty-icon"><i class="fas fa-exclamation-triangle"></i></div>
+                        <h3>Search Error</h3>
+                        <p>Failed to search music. Please try again.</p>
+                    `;
+                    showNotification('Failed to search music', 'error');
+                }
+            }
+
+            function displayMusicResults(results, q) {
+                musicResultsTitle.textContent = `Search Results for "${q}"`;
+                musicResultsCount.textContent = `${results.length} item${results.length !== 1 ? 's' : ''} found`;
+                musicResultsGrid.innerHTML = '';
+
+                results.forEach(item => {
+                    const trackId = item.id || item.trackId || item.itemId;
+                    const title = item.title || item.trackTitle || 'Unknown Title';
+                    const artistName = (item.artist && (item.artist.name || item.artist)) || (item.artists && item.artists[0]?.name) || 'Unknown Artist';
+                    const cover = item.album?.cover || item.cover || item.albumCover || '';
+                    const img = tidalCoverUrl(cover) || 'https://via.placeholder.com/320x320?text=Music';
+
+                    const card = document.createElement('div');
+                    card.className = 'music-card';
+                    const isSaved = getMyMusic().some(x => x.id == trackId);
+                    card.innerHTML = `
+                        <div class="music-cover">
+                            <img src="${img}" alt="${title}">
+                        </div>
+                        <div class="music-info">
+                            <div class="music-title">${title}</div>
+                            <div class="music-artist">${artistName}</div>
+                            <div class="music-actions">
+                                <button class="music-play-btn" data-id="${trackId}"><i class="fas fa-play"></i> Play</button>
+                                <button class="music-add-btn ${isSaved ? 'added' : ''}" title="${isSaved ? 'In My Music' : 'Add to My Music'}" data-id="${trackId}" data-title="${title.replace(/\"/g,'&quot;')}" data-artist="${artistName.replace(/\"/g,'&quot;')}" data-cover="${img}"><i class="fas ${isSaved ? 'fa-check' : 'fa-plus'}"></i></button>
+                                <button class="music-open-btn" title="Open in TIDAL" data-id="${trackId}"><i class="fas fa-external-link-alt"></i></button>
+                            </div>
+                        </div>
+                    `;
+                    musicResultsGrid.appendChild(card);
+                });
+
+                // Wire up buttons
+                musicResultsGrid.querySelectorAll('.music-play-btn').forEach(btn => {
+                    btn.addEventListener('click', async (e) => {
+                        const trackId = e.currentTarget.getAttribute('data-id');
+                        const card = e.currentTarget.closest('.music-card');
+                        const title = card.querySelector('.music-title')?.textContent || 'Unknown Title';
+                        const artistName = card.querySelector('.music-artist')?.textContent || 'Unknown Artist';
+                        const coverSrc = card.querySelector('img')?.src || '';
+                        await playMusicTrack({ trackId, title, artistName, coverSrc });
+                    });
+                });
+
+                musicResultsGrid.querySelectorAll('.music-open-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const trackId = e.currentTarget.getAttribute('data-id');
+                        const url = trackId ? `https://tidal.com/browse/track/${trackId}` : null;
+                        if (url && window.electronAPI?.openExternal) {
+                            window.electronAPI.openExternal(url);
+                        } else if (url) {
+                            window.open(url, '_blank');
+                        }
+                    });
+                });
+
+                // Save buttons
+                musicResultsGrid.querySelectorAll('.music-add-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const el = e.currentTarget;
+                        const saved = getMyMusic();
+                        const track = {
+                            id: el.getAttribute('data-id'),
+                            title: el.getAttribute('data-title'),
+                            artist: el.getAttribute('data-artist'),
+                            cover: el.getAttribute('data-cover')
+                        };
+                        if (!saved.find(x => x.id === track.id)) {
+                            saved.push(track);
+                            setMyMusic(saved);
+                            showNotification(`Saved "${track.title}" to My Music`, 'success');
+                            // Visually mark as saved
+                            el.classList.add('added');
+                            el.title = 'In My Music';
+                            const icon = el.querySelector('i');
+                            if (icon) icon.className = 'fas fa-check';
+                        } else {
+                            showNotification('Already in My Music', 'info');
+                        }
+                    });
+                });
+
+                musicEmpty.style.display = 'none';
+                musicResults.style.display = 'block';
+            }
+
+            // My Music storage helpers
+            const MY_MUSIC_KEY = 'pt_my_music_v1';
+            function getMyMusic() {
+                try { return JSON.parse(localStorage.getItem(MY_MUSIC_KEY) || '[]'); } catch(_) { return []; }
+            }
+            function setMyMusic(arr) {
+                try { localStorage.setItem(MY_MUSIC_KEY, JSON.stringify(arr)); } catch(_) {}
+            }
+
+            // Render My Music grid
+            function renderMyMusic() {
+                const list = getMyMusic();
+                const grid = document.getElementById('my-music-grid');
+                const count = document.getElementById('my-music-count');
+                const empty = document.getElementById('my-music-empty');
+                grid.innerHTML = '';
+                if (!list.length) {
+                    count.textContent = '0 items';
+                    empty.style.display = '';
+                    return;
+                }
+                empty.style.display = 'none';
+                count.textContent = `${list.length} item${list.length!==1?'s':''}`;
+                list.forEach(item => {
+                    const card = document.createElement('div');
+                    card.className = 'music-card';
+                    card.innerHTML = `
+                        <div class="music-cover"><img src="${item.cover}" alt="${item.title}"></div>
+                        <div class="music-info">
+                            <div class="music-title">${item.title}</div>
+                            <div class="music-artist">${item.artist}</div>
+                            <div class="music-actions">
+                                <button class="music-play-btn" data-id="${item.id}"><i class="fas fa-play"></i> Play</button>
+                                <button class="music-open-btn" title="Open in TIDAL" data-id="${item.id}"><i class="fas fa-external-link-alt"></i></button>
+                                <button class="music-add-btn" title="Remove from My Music" data-remove="true" data-id="${item.id}"><i class="fas fa-trash"></i></button>
+                            </div>
+                        </div>`;
+                    grid.appendChild(card);
+                });
+                // wire play/open
+                grid.querySelectorAll('.music-play-btn').forEach(btn => {
+                    btn.addEventListener('click', async (e) => {
+                        const id = e.currentTarget.getAttribute('data-id');
+                        const card = e.currentTarget.closest('.music-card');
+                        const title = card.querySelector('.music-title')?.textContent || 'Unknown Title';
+                        const artistName = card.querySelector('.music-artist')?.textContent || 'Unknown Artist';
+                        const coverSrc = card.querySelector('img')?.src || '';
+                        await playMusicTrack({ trackId: id, title, artistName, coverSrc });
+                    });
+                });
+                grid.querySelectorAll('.music-open-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const id = e.currentTarget.getAttribute('data-id');
+                        const url = id ? `https://tidal.com/browse/track/${id}` : null;
+                        if (url && window.electronAPI?.openExternal) window.electronAPI.openExternal(url);
+                        else if (url) window.open(url, '_blank');
+                    });
+                });
+                grid.querySelectorAll('.music-add-btn[data-remove="true"]').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const id = e.currentTarget.getAttribute('data-id');
+                        const list2 = getMyMusic().filter(x => x.id !== id);
+                        setMyMusic(list2);
+                        renderMyMusic();
+                        showNotification('Removed from My Music', 'info');
+                    });
+                });
+            }
+
+            // Toggle My Music section
+            const myBtn = document.getElementById('music-my-btn');
+            if (myBtn) {
+                myBtn.addEventListener('click', () => {
+                    const mySec = document.getElementById('my-music');
+                    const resSec = document.getElementById('music-results');
+                    const empty = document.getElementById('music-empty');
+                    const showing = mySec.style.display !== 'none';
+                    if (showing) {
+                        mySec.style.display = 'none';
+                        // Restore last state: show results if present else empty
+                        if (musicResultsGrid && musicResultsGrid.children.length) {
+                            resSec.style.display = 'block';
+                            empty.style.display = 'none';
+                        } else {
+                            resSec.style.display = 'none';
+                            empty.style.display = '';
+                        }
+                    } else {
+                        renderMyMusic();
+                        mySec.style.display = 'block';
+                        resSec.style.display = 'none';
+                        empty.style.display = 'none';
+                    }
+                });
+            }
+
+            async function playMusicTrack({ trackId, title, artistName, coverSrc }) {
+                if (!trackId) {
+                    showNotification('Missing track ID', 'error');
+                    return;
+                }
+                try {
+                    musicModal.style.display = 'flex';
+                    musicModalTitle.textContent = 'Now Playing';
+                    musicSongTitle.textContent = title;
+                    musicArtist.textContent = artistName;
+                    if (coverSrc) musicCover.src = coverSrc;
+                    musicPlayPauseBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+
+                    const resp = await fetch(`${HIFI_BASE}/track/?id=${encodeURIComponent(trackId)}&quality=LOSSLESS`);
+                    const data = await resp.json();
+                    let url = null;
+                    if (Array.isArray(data) && data.length >= 3) {
+                        // HiFi API returns [trackInfo, manifest, {OriginalTrackUrl: "..."}]
+                        // We want the third element with OriginalTrackUrl
+                        url = data[2]?.OriginalTrackUrl || data[2]?.originalTrackUrl;
+                    }
+                    // Fallback: scan all elements if not found
+                    if (!url && Array.isArray(data)) {
+                        for (const item of data) {
+                            const candidate = item?.OriginalTrackUrl || item?.originalTrackUrl;
+                            if (candidate && !candidate.startsWith('http://www.tidal.com')) {
+                                url = candidate;
+                                break;
+                            }
+                        }
+                    }
+                    if (!url) throw new Error('Track URL not found');
+
+                    // Set <source> with a suitable type hint
+                    while (musicAudio.firstChild) musicAudio.removeChild(musicAudio.firstChild);
+                    const source = document.createElement('source');
+                    source.src = url;
+                    const lowerUrl = url.toLowerCase();
+                    if (lowerUrl.includes('.flac')) source.type = 'audio/flac';
+                    else if (lowerUrl.includes('.mp4') || lowerUrl.includes('.m4a')) source.type = 'audio/mp4';
+                    else if (lowerUrl.includes('.aac')) source.type = 'audio/aac';
+                    else if (lowerUrl.includes('.ogg') || lowerUrl.includes('.ogx')) source.type = 'audio/ogg';
+                    musicAudio.appendChild(source);
+
+                    // Load then play
+                    musicAudio.load();
+                    try {
+                        await musicAudio.play();
+                    } catch (err) {
+                        await new Promise(r => setTimeout(r, 150));
+                        await musicAudio.play();
+                    }
+                    musicPlayPauseBtn.innerHTML = '<i class="fas fa-pause"></i>';
+                    updateTimeDisplays();
+                } catch (e) {
+                    console.error('[MUSIC] Play error', e);
+                    showNotification('Failed to play track', 'error');
+                    musicModal.style.display = 'none';
+                }
+            }
+
+            // Fully close/stop music modal and unload audio
+            function closeMusicModal() {
+                try {
+                    if (musicAudio) {
+                        try { musicAudio.pause(); } catch(_) {}
+                        // Clear source(s) to stop network streaming
+                        musicAudio.removeAttribute('src');
+                        while (musicAudio.firstChild) musicAudio.removeChild(musicAudio.firstChild);
+                        musicAudio.load();
+                    }
+                } catch(_) {}
+                if (musicProgressFill) musicProgressFill.style.width = '0%';
+                if (musicCurrentTime) musicCurrentTime.textContent = '0:00';
+                if (musicTotalTime) musicTotalTime.textContent = '0:00';
+                if (musicPlayPauseBtn) musicPlayPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
+                if (musicModal) musicModal.style.display = 'none';
+            }
+
+            // Modal Controls
+            function updateTimeDisplays() {
+                musicCurrentTime.textContent = fmtTime(musicAudio.currentTime || 0);
+                musicTotalTime.textContent = fmtTime(musicAudio.duration || 0);
+                const p = (musicAudio.currentTime || 0) / (musicAudio.duration || 1) * 100;
+                musicProgressFill.style.width = `${p}%`;
+            }
+
+            if (musicAudio) {
+                musicAudio.addEventListener('timeupdate', updateTimeDisplays);
+                musicAudio.addEventListener('loadedmetadata', updateTimeDisplays);
+                musicAudio.addEventListener('ended', () => {
+                    musicPlayPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
+                });
+            }
+
+            if (musicPlayPauseBtn) {
+                musicPlayPauseBtn.addEventListener('click', async () => {
+                    if (musicAudio.paused) {
+                        try { await musicAudio.play(); } catch(_) {}
+                        musicPlayPauseBtn.innerHTML = '<i class="fas fa-pause"></i>';
+                    } else {
+                        musicAudio.pause();
+                        musicPlayPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
+                    }
+                });
+            }
+
+            if (musicBackwardBtn) {
+                musicBackwardBtn.addEventListener('click', () => {
+                    musicAudio.currentTime = Math.max(0, (musicAudio.currentTime || 0) - 10);
+                    updateTimeDisplays();
+                });
+            }
+
+            if (musicForwardBtn) {
+                musicForwardBtn.addEventListener('click', () => {
+                    const dur = musicAudio.duration || 0;
+                    musicAudio.currentTime = Math.min(dur, (musicAudio.currentTime || 0) + 10);
+                    updateTimeDisplays();
+                });
+            }
+
+            if (musicProgressBar) {
+                musicProgressBar.addEventListener('click', (e) => {
+                    const rect = musicProgressBar.getBoundingClientRect();
+                    const x = e.clientX - rect.left;
+                    const ratio = Math.min(1, Math.max(0, x / rect.width));
+                    musicAudio.currentTime = ratio * (musicAudio.duration || 0);
+                    updateTimeDisplays();
+                });
+            }
+
+            if (musicVolumeSlider) {
+                const setVolumeFromEvent = (clientX) => {
+                    const rect = musicVolumeSlider.getBoundingClientRect();
+                    const x = clientX - rect.left;
+                    const ratio = Math.min(1, Math.max(0, x / rect.width));
+                    musicAudio.volume = ratio;
+                    musicVolumeFill.style.width = `${ratio * 100}%`;
+                };
+                musicVolumeSlider.addEventListener('click', (e) => setVolumeFromEvent(e.clientX));
+            }
+
+            if (musicModalBack && musicModal) {
+                musicModalBack.addEventListener('click', closeMusicModal);
+                musicModal.addEventListener('click', (e) => {
+                    if (e.target === musicModal) closeMusicModal();
+                });
+            }
+
+            // Keyboard controls when modal open
+            document.addEventListener('keydown', (e) => {
+                if (!musicModal || musicModal.style.display === 'none') return;
+                const tag = (document.activeElement && document.activeElement.tagName) || '';
+                const isTyping = ['INPUT', 'TEXTAREA'].includes(tag);
+                if (e.key === 'Escape') {
+                    e.preventDefault();
+                    closeMusicModal();
+                } else if (e.key === ' ' && !isTyping) {
+                    e.preventDefault();
+                    if (musicAudio.paused) {
+                        musicAudio.play();
+                        musicPlayPauseBtn.innerHTML = '<i class="fas fa-pause"></i>';
+                    } else {
+                        musicAudio.pause();
+                        musicPlayPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
+                    }
+                }
+            });
+
+            // Wire search input/button
+            if (musicSearchBtn && musicSearchInput) {
+                musicSearchBtn.addEventListener('click', () => searchMusic(musicSearchInput.value));
+                musicSearchInput.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') searchMusic(musicSearchInput.value);
+                });
             }
             
             function openBookReader(readLink, title) {
@@ -12268,6 +12928,10 @@ Your browser does not support the video tag.
     activeRoute = 'books';
     showSection('books');
     return;
+} else if (hash === '#/music') {
+    activeRoute = 'music';
+    showSection('music');
+    return;
 } else if (hash === '#/booktorrio') {
     activeRoute = 'booktorrio';
     showSection('booktorrio');
@@ -12323,6 +12987,17 @@ Your browser does not support the video tag.
             }
             const booksPageEl = document.getElementById('books-page');
             if (booksPageEl) booksPageEl.style.display = section === 'books' ? '' : 'none';
+            const musicPageEl = document.getElementById('music-page');
+            if (musicPageEl) {
+                const leavingMusic = musicPageEl.style.display !== 'none' && section !== 'music';
+                musicPageEl.style.display = section === 'music' ? '' : 'none';
+                if (leavingMusic) {
+                    const audio = document.getElementById('music-player-audio');
+                    const modal = document.getElementById('music-player-modal');
+                    if (audio && !audio.paused) audio.pause();
+                    if (modal) modal.style.display = 'none';
+                }
+            }
             const bookTorrioPageEl = document.getElementById('booktorrio-page');
             if (bookTorrioPageEl) bookTorrioPageEl.style.display = section === 'booktorrio' ? '' : 'none';
             const animePageEl = document.getElementById('anime-page');
