@@ -1,6 +1,6 @@
 {
   "name": "playtorrio",
-  "version": "1.2.6",
+  "version": "1.2.7",
   "description": "A sophisticated application designed to seamlessly interface with Jackett for fetching torrents and provide high-performance streaming directly through an integrated API.",
   "author": {
     "name": "ayman",
