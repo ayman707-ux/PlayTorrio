@@ -11,6 +11,11 @@ import fs from 'fs';
 import os from 'os';
 import zlib from 'zlib';
 import crypto from 'crypto';
+import { createRequire } from 'module';
+
+// Import the CommonJS api.cjs module
+const require = createRequire(import.meta.url);
+const { registerApiRoutes } = require('./api.cjs');
 
 // This function will be imported and called by main.js
 export function startServer(userDataPath) {
@@ -132,6 +137,12 @@ export function startServer(userDataPath) {
     app.use(cors());
     app.use(express.static(path.join(__dirname, 'public')));
     app.use(express.json());
+    
+    // Register all API routes from api.js (anime, torrentio, torrentless, zlib, otherbook, 111477)
+    console.log('📦 Registering API routes from api.js...');
+    registerApiRoutes(app);
+    console.log('✅ API routes registered successfully');
+    
     // Simple playback resume storage in userData
     const RESUME_PATH = path.join(userDataPath, 'playback_positions.json');
     function readResumeMap() {
@@ -3586,8 +3597,23 @@ export function startServer(userDataPath) {
     });
 
     const server = app.listen(PORT, () => {
-        console.log(`✅ Server running on http://localhost:${PORT}`);
-        if (!hasAPIKey) console.log('⚠️ Jackett API key not configured.');
+        console.log(`\n${'='.repeat(70)}`);
+        console.log(`🚀 UNIFIED SERVER RUNNING ON http://localhost:${PORT}`);
+        console.log(`${'='.repeat(70)}`);
+        console.log(`\n📚 Available API Services:\n`);
+        console.log(`  🎬 ANIME        → http://localhost:${PORT}/anime/api/{query}`);
+        console.log(`  🎥 TORRENTIO    → http://localhost:${PORT}/torrentio/api/{imdbid}`);
+        console.log(`  🔍 TORRENTLESS  → http://localhost:${PORT}/torrentless/api/search?q={query}`);
+        console.log(`  📖 ZLIB         → http://localhost:${PORT}/zlib/search/{query}`);
+        console.log(`  📚 OTHERBOOK    → http://localhost:${PORT}/otherbook/api/search/{query}`);
+        console.log(`  🎞️  111477       → http://localhost:${PORT}/111477/api/tmdb/movie/{tmdbId}`);
+        console.log(`\n🎯 Main Services:\n`);
+        console.log(`  🔧 Settings     → http://localhost:${PORT}/api/settings`);
+        console.log(`  🎬 Trakt        → http://localhost:${PORT}/api/trakt/*`);
+        console.log(`  📺 Torrents     → http://localhost:${PORT}/api/torrents`);
+        console.log(`  🎮 WebTorrent   → http://localhost:${PORT}/api/webtorrent/*`);
+        if (!hasAPIKey) console.log('\n⚠️  Jackett API key not configured.');
+        console.log(`\n${'='.repeat(70)}\n`);
     });
 
     return { server, client };
