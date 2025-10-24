@@ -1577,15 +1577,17 @@
             border-color: var(--light);
         }
 
-        /* Donate Modal */
-        .donate-modal {
+        /* Donate modal removed */
+
+        /* Discord Modal */
+        .discord-modal {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
             background-color: rgba(0, 0, 0, 0.95);
-            z-index: 5500;
+            z-index: 6000;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -1594,68 +1596,82 @@
             transition: opacity 0.3s ease;
         }
         
-        .donate-modal.active {
+        .discord-modal.active {
             opacity: 1;
             pointer-events: all;
         }
         
-        .donate-content {
-            background: linear-gradient(135deg, var(--primary), var(--dark));
-            border-radius: 15px;
+        .discord-content {
+            background: linear-gradient(135deg, #5865F2, #4752C4);
+            border-radius: 20px;
             padding: 3rem;
             max-width: 520px;
             width: 90%;
             text-align: center;
-            box-shadow: 0 20px 60px rgba(168, 85, 247, 0.3);
-            border: 2px solid var(--vlc-orange);
+            box-shadow: 0 20px 60px rgba(88, 101, 242, 0.4);
+            border: 2px solid #7289DA;
             position: relative;
+            animation: modalSlideIn 0.4s ease;
         }
         
-        .donate-close {
+        @keyframes modalSlideIn {
+            from {
+                transform: scale(0.9) translateY(-20px);
+                opacity: 0;
+            }
+            to {
+                transform: scale(1) translateY(0);
+                opacity: 1;
+            }
+        }
+        
+        .discord-close {
             position: absolute;
             top: 15px;
             right: 15px;
-            background-color: rgba(255, 255, 255, 0.1);
+            background-color: rgba(0, 0, 0, 0.3);
             border: none;
-            color: var(--light);
+            color: #fff;
             font-size: 1.5rem;
             width: 35px;
             height: 35px;
             border-radius: 50%;
             cursor: pointer;
-            display: none;
+            display: flex;
             align-items: center;
             justify-content: center;
             transition: all 0.3s ease;
         }
         
-        .donate-close.visible {
-            display: flex;
-        }
-        
-        .donate-close:hover {
-            background-color: var(--danger);
+        .discord-close:hover {
+            background-color: #ED4245;
             transform: rotate(90deg);
         }
         
-        .donate-title {
+        .discord-title {
             font-size: 2rem;
             margin-bottom: 1.5rem;
-            color: var(--vlc-orange);
+            color: #fff;
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 0.75rem;
+            font-weight: 700;
         }
         
-        .donate-message {
-            color: var(--light);
+        .discord-logo {
+            width: 48px;
+            height: 48px;
+        }
+        
+        .discord-message {
+            color: #fff;
             margin-bottom: 2rem;
             line-height: 1.8;
-            text-align: left;
+            font-size: 1.05rem;
         }
         
-        .donate-btn {
+        .discord-join-btn {
             padding: 1rem 2.5rem;
             border-radius: 30px;
             border: none;
@@ -1666,14 +1682,14 @@
             align-items: center;
             gap: 0.75rem;
             font-size: 1.1rem;
-            background: linear-gradient(135deg, var(--vlc-orange), #9333ea);
-            color: white;
-            box-shadow: 0 4px 15px rgba(168, 85, 247, 0.4);
+            background: #fff;
+            color: #5865F2;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
         }
         
-        .donate-btn:hover {
+        .discord-join-btn:hover {
             transform: translateY(-3px);
-            box-shadow: 0 6px 25px rgba(168, 85, 247, 0.6);
+            box-shadow: 0 6px 25px rgba(0, 0, 0, 0.4);
         }
 
         /* Settings Modal */
@@ -2050,6 +2066,47 @@
             width: 38px; height: 38px; display: inline-flex; align-items: center; justify-content: center;
             border-radius: 10px; border: 1px solid rgba(236,72,153,0.35); background: rgba(236,72,153,0.12); color: #ec4899; cursor: pointer;
         }
+        .music-heart-btn {
+            width: 38px; height: 38px; display: inline-flex; align-items: center; justify-content: center;
+            border-radius: 10px; border: 1px solid rgba(236,72,153,0.35); background: rgba(236,72,153,0.12); color: #ec4899; cursor: pointer;
+        }
+        .music-heart-btn.added {
+            border-color: rgba(244,114,182,0.6);
+            background: rgba(244,114,182,0.2);
+            color: #f472b6;
+        }
+        .music-plus-btn {
+            width: 38px; height: 38px; display: inline-flex; align-items: center; justify-content: center;
+            border-radius: 10px; border: 1px solid rgba(56,189,248,0.35); background: rgba(56,189,248,0.12); color: #38bdf8; cursor: pointer;
+        }
+        .music-play-btn:hover, .music-open-btn:hover, .music-heart-btn:hover, .music-plus-btn:hover {
+            filter: brightness(1.08);
+        }
+        /* Playlist open view header tweak */
+        #music-page.playlist-open .books-results-header h3 i { display: none; }
+        #music-page.playlist-open .books-results-header h3 { gap: 0; }
+
+        /* Playlists list view buttons */
+        .playlist-open-btn {
+            display: inline-flex; align-items: center; gap: 0.4rem;
+            padding: 0.45rem 0.7rem; border-radius: 10px; border: none;
+            background: linear-gradient(135deg, #a855f7, #ec4899); color: #fff; cursor: pointer;
+            font-weight: 700; font-size: 0.9rem;
+        }
+        .playlist-delete-btn {
+            width: 38px; height: 38px; display: inline-flex; align-items: center; justify-content: center;
+            border-radius: 10px; border: 1px solid rgba(239,68,68,0.45); background: rgba(239,68,68,0.12); color: #ef4444; cursor: pointer;
+        }
+        .playlist-open-btn:hover, .playlist-delete-btn:hover { filter: brightness(1.08); }
+
+        /* Close playlist header button */
+        .playlist-close-btn {
+            display: inline-flex; align-items: center; gap: 0.45rem;
+            padding: 0.5rem 0.8rem; border-radius: 10px; border: 1px solid rgba(148,163,184,0.35);
+            background: rgba(148,163,184,0.12); color: #e2e8f0; cursor: pointer;
+            font-weight: 700; margin-left: auto;
+        }
+        .playlist-close-btn:hover { filter: brightness(1.08); }
         .music-add-btn {
             width: 38px; height: 38px; display: inline-flex; align-items: center; justify-content: center;
             border-radius: 10px; border: 1px solid rgba(16,185,129,0.35); background: rgba(16,185,129,0.12); color: #10b981; cursor: pointer;
@@ -2059,6 +2116,58 @@
             background: rgba(34,197,94,0.18);
             color: #22c55e;
         }
+
+        /* Albums UI */
+        .album-card {
+            background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(59,130,246,0.18);
+            border-radius: 14px;
+            overflow: hidden;
+            transition: transform 0.15s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+        }
+        .album-card:hover { transform: translateY(-3px); border-color: rgba(59,130,246,0.35); box-shadow: 0 14px 34px rgba(2,6,23,0.45); }
+        .album-cover { width: 100%; aspect-ratio: 1 / 1; object-fit: cover; background:#111827; display:block; }
+        .album-body { padding: 0.75rem; display:flex; flex-direction:column; gap:0.4rem; }
+        .album-title { font-weight: 800; color:#e5e7eb; line-height:1.2; }
+        .album-artist { color:#9ca3af; font-size:0.9rem; }
+        .album-meta { color:#94a3b8; font-size:0.82rem; display:flex; gap:0.5rem; align-items:center; }
+        .album-open-btn { display:inline-flex; align-items:center; gap:0.4rem; padding:0.45rem 0.75rem; border:none; border-radius:10px; background: linear-gradient(135deg,#38bdf8,#0ea5e9); color:#05222e; font-weight:800; cursor:pointer; }
+        .album-open-btn:hover { filter: brightness(1.05); }
+
+        .album-tracks-list .track-row {
+            display:grid; grid-template-columns: 32px 1fr 90px 210px; gap:0.75rem; align-items:center;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(59,130,246,0.14);
+            border-radius: 12px; padding: 0.5rem 0.6rem;
+            transition: background 0.2s ease, border-color 0.2s ease;
+        }
+        .track-row:hover { background: rgba(255,255,255,0.07); border-color: rgba(59,130,246,0.25); }
+        .track-index { color:#94a3b8; font-weight:700; text-align:center; }
+        .track-title { color:#e5e7eb; font-weight:700; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+        .track-duration { color:#94a3b8; text-align:right; font-variant-numeric: tabular-nums; }
+        .track-actions { display:flex; justify-content:flex-end; gap:0.4rem; flex-wrap:wrap; }
+        .track-play-btn, .track-plus-btn, .track-heart-btn {
+            display:inline-flex; align-items:center; gap:0.35rem; border-radius: 10px; cursor:pointer;
+            padding: 0.4rem 0.65rem; font-size: 0.8rem; font-weight: 800; border: 1px solid rgba(148,163,184,0.25);
+            background: linear-gradient(135deg, rgba(51,65,85,0.8), rgba(15,23,42,0.6)); color:#e5e7eb;
+            transition: transform 0.12s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+        }
+        .track-play-btn:hover, .track-plus-btn:hover, .track-heart-btn:hover { transform: translateY(-1px); box-shadow: 0 10px 22px rgba(2,6,23,0.35); border-color: rgba(148,163,184,0.4); }
+        .track-play-btn { background: linear-gradient(135deg, #34d399, #10b981); color:#052e2b; border:none; }
+        .track-plus-btn { background: linear-gradient(135deg, #c4b5fd, #a78bfa); color:#1e1b4b; border:none; }
+        .track-heart-btn { background: linear-gradient(135deg, #fda4af, #fb7185); color:#4c0519; border:none; }
+        .album-empty { color:#94a3b8; text-align:center; padding:1rem 0; }
+
+        /* My Albums heart button */
+        .album-heart-btn {
+            width: 38px; height: 38px; display:inline-flex; align-items:center; justify-content:center;
+            border-radius: 10px; border: 1px solid rgba(236,72,153,0.35); background: rgba(236,72,153,0.12); color:#ec4899; cursor:pointer;
+            transition: filter 0.15s ease;
+        }
+        .album-heart-btn.added {
+            border-color: rgba(236,72,153,0.6); background: rgba(236,72,153,0.2); color:#f472b6;
+        }
+        .album-heart-btn:hover { filter: brightness(1.08); }
 
         .books-book-card {
             background: rgba(255, 255, 255, 0.06);
@@ -5359,23 +5468,33 @@
     </div>
 </div>
 
-<!-- Donate Modal -->
-<div class="donate-modal" id="donateModal">
-    <div class="donate-content">
-        <button class="donate-close" id="donateClose">
+<!-- Donate modal removed -->
+
+<!-- Discord Modal -->
+<div class="discord-modal" id="discordModal">
+    <div class="discord-content">
+        <button class="discord-close" id="discordClose">
             <i class="fas fa-times"></i>
         </button>
-        <h2 class="donate-title">
-            <i class="fas fa-heart"></i>
-            Support the Developer
+        <h2 class="discord-title">
+            <svg class="discord-logo" viewBox="0 0 71 55" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <g clip-path="url(#clip0)">
+                    <path d="M60.1045 4.8978C55.5792 2.8214 50.7265 1.2916 45.6527 0.41542C45.5603 0.39851 45.468 0.440769 45.4204 0.525289C44.7963 1.6353 44.105 3.0834 43.6209 4.2216C38.1637 3.4046 32.7345 3.4046 27.3892 4.2216C26.905 3.0581 26.1886 1.6353 25.5617 0.525289C25.5141 0.443589 25.4218 0.40133 25.3294 0.41542C20.2584 1.2888 15.4057 2.8186 10.8776 4.8978C10.8384 4.9147 10.8048 4.9429 10.7825 4.9795C1.57795 18.7309 -0.943561 32.1443 0.293408 45.3914C0.299005 45.4562 0.335386 45.5182 0.385761 45.5576C6.45866 50.0174 12.3413 52.7249 18.1147 54.5195C18.2071 54.5477 18.305 54.5139 18.3638 54.4378C19.7295 52.5728 20.9469 50.6063 21.9907 48.5383C22.0523 48.4172 21.9935 48.2735 21.8676 48.2256C19.9366 47.4931 18.0979 46.6 16.3292 45.5858C16.1893 45.5041 16.1781 45.304 16.3068 45.2082C16.679 44.9293 17.0513 44.6391 17.4067 44.3461C17.471 44.2926 17.5606 44.2813 17.6362 44.3151C29.2558 49.6202 41.8354 49.6202 53.3179 44.3151C53.3935 44.2785 53.4831 44.2898 53.5502 44.3433C53.9057 44.6363 54.2779 44.9293 54.6529 45.2082C54.7816 45.304 54.7732 45.5041 54.6333 45.5858C52.8646 46.6197 51.0259 47.4931 49.0921 48.2228C48.9662 48.2707 48.9102 48.4172 48.9718 48.5383C50.038 50.6034 51.2554 52.5699 52.5959 54.435C52.6519 54.5139 52.7526 54.5477 52.845 54.5195C58.6464 52.7249 64.529 50.0174 70.6019 45.5576C70.6551 45.5182 70.6887 45.459 70.6943 45.3942C72.1747 30.0791 68.2147 16.7757 60.1968 4.9823C60.1772 4.9429 60.1437 4.9147 60.1045 4.8978ZM23.7259 37.3253C20.2276 37.3253 17.3451 34.1136 17.3451 30.1693C17.3451 26.225 20.1717 23.0133 23.7259 23.0133C27.308 23.0133 30.1626 26.2532 30.1066 30.1693C30.1066 34.1136 27.28 37.3253 23.7259 37.3253ZM47.3178 37.3253C43.8196 37.3253 40.9371 34.1136 40.9371 30.1693C40.9371 26.225 43.7636 23.0133 47.3178 23.0133C50.9 23.0133 53.7545 26.2532 53.6986 30.1693C53.6986 34.1136 50.9 37.3253 47.3178 37.3253Z" fill="white"/>
+                </g>
+                <defs>
+                    <clipPath id="clip0">
+                        <rect width="71" height="55" fill="white"/>
+                    </clipPath>
+                </defs>
+            </svg>
+            Join the Discord
         </h2>
-        <div class="donate-message">
-            <p>Hi there! I built this app completely on my own — it's been over half a year of late nights, debugging, and learning just to make something people can enjoy. If you've found it useful, a small donation would mean the world to me. It helps keep the project alive and motivates me to keep improving it.</p>
-            <p style="margin-top: 1rem;">Thank you for even considering it ❤️</p>
+        <div class="discord-message">
+            <p>Suggest features, report bugs, be a part of the community, and help me make a better app.</p>
         </div>
-        <button class="donate-btn" id="donateButton">
-            <i class="fas fa-heart"></i>
-            Donate
+        <button class="discord-join-btn" id="discordJoinBtn">
+            <i class="fab fa-discord"></i>
+            Join Discord
         </button>
     </div>
 </div>
@@ -5737,6 +5856,22 @@
             <i class="fas fa-cog"></i>
             <span>Settings</span>
         </div>
+        <div class="floating-nav-item" data-action="home">
+            <i class="fas fa-home"></i>
+            <span>Home</span>
+        </div>
+        <div class="floating-nav-item" data-action="genres">
+            <i class="fas fa-layer-group"></i>
+            <span>Genres</span>
+        </div>
+        <div class="floating-nav-item" data-action="my-list">
+            <i class="fas fa-list"></i>
+            <span>My List</span>
+        </div>
+        <div class="floating-nav-item" data-action="done-watching">
+            <i class="fas fa-check-double"></i>
+            <span>Done Watching</span>
+        </div>
         <div class="floating-nav-item" data-action="livetv">
             <i class="fas fa-broadcast-tower"></i>
             <span>Live TV</span>
@@ -5745,9 +5880,25 @@
             <i class="fas fa-tv"></i>
             <span>IPTV</span>
         </div>
+        <div class="floating-nav-item" data-action="music">
+            <i class="fas fa-music"></i>
+            <span>Music</span>
+        </div>
         <div class="floating-nav-item" data-action="books">
             <i class="fas fa-book"></i>
             <span>Books</span>
+        </div>
+        <div class="floating-nav-item" data-action="booktorrio">
+            <i class="fas fa-book-open"></i>
+            <span>BookTorrio</span>
+        </div>
+        <div class="floating-nav-item" data-action="anime">
+            <i class="fas fa-dragon"></i>
+            <span>Anime</span>
+        </div>
+        <div class="floating-nav-item" data-action="manga">
+            <i class="fas fa-book-dead"></i>
+            <span>Manga</span>
         </div>
         <div class="floating-nav-item" data-action="downloader">
             <i class="fas fa-download"></i>
@@ -5889,8 +6040,9 @@
         <button class="btn btn-outline" id="clearCacheBtn">
         <i class="fas fa-trash"></i> Clear Cache
                         </button>
-        <button class="btn btn-outline" id="headerDonateBtn">
-        <i class="fas fa-heart"></i> Donate
+    <!-- Donate button removed -->
+        <button class="btn btn-outline" id="discordBtn" title="Join Discord Community">
+        <i class="fab fa-discord"></i> Discord
                         </button>
         <button class="btn btn-outline" id="genresBtn">
         <i class="fas fa-layer-group"></i> Genres
@@ -5963,6 +6115,15 @@
                     <i class="fas fa-heart"></i>
                     <span>My Music</span>
                 </button>
+                <button class="action-btn" id="music-my-albums-btn" title="Open My Albums">
+                    <i class="fas fa-compact-disc"></i>
+                    <span>My Albums</span>
+                </button>
+                <button class="action-btn" id="music-playlists-btn" title="Open Playlists">
+                    <i class="fas fa-list"></i>
+                    <span>Playlists</span>
+                </button>
+                
             </div>
         </div>
 
@@ -5981,6 +6142,10 @@
                         <button id="music-search-btn" class="books-search-button">
                             <i class="fas fa-search"></i>
                             Search
+                        </button>
+                        <button id="music-album-search-btn" class="books-search-button" style="margin-left:0.5rem; background: linear-gradient(135deg, #38bdf8, #0ea5e9);">
+                            <i class="fas fa-compact-disc"></i>
+                            Albums
                         </button>
                     </div>
                 </div>
@@ -6014,6 +6179,47 @@
                 </div>
             </div>
 
+            <!-- Albums Results Section -->
+            <div id="music-albums" class="books-results" style="display:none;">
+                <div class="books-results-header">
+                    <h3 id="music-albums-title"><i class="fas fa-compact-disc" style="color:#38bdf8"></i> Album Results</h3>
+                    <div id="music-albums-count" class="books-results-count"></div>
+                </div>
+                <div id="music-albums-grid" class="books-results-grid"></div>
+            </div>
+
+            <!-- Album View (open a specific album) -->
+            <div id="music-album-view" class="books-results" style="display:none;">
+                <div class="books-results-header" style="align-items:center; gap:1rem; flex-wrap:wrap;">
+                    <div style="display:flex; align-items:center; gap:0.75rem;">
+                        <img id="album-view-cover" src="" alt="Album Cover" style="width:68px; height:68px; border-radius:10px; object-fit:cover; border:1px solid rgba(255,255,255,0.1);">
+                        <div>
+                            <h3 id="album-view-title" style="margin:0; display:flex; align-items:center; gap:0.5rem;"></h3>
+                            <div id="album-view-meta" style="color:#9ca3af; font-size:0.9rem;"></div>
+                        </div>
+                    </div>
+                    <button id="album-close-btn" class="playlist-close-btn" style="margin-left:auto;">
+                        <i class="fas fa-times"></i>
+                        <span>Close Album</span>
+                    </button>
+                </div>
+                <div id="album-tracks" class="album-tracks-list" style="display:flex; flex-direction:column; gap:0.5rem;"></div>
+            </div>
+
+            <!-- My Albums Section -->
+            <div id="my-albums" class="books-results" style="display:none;">
+                <div class="books-results-header">
+                    <h3><i class="fas fa-compact-disc" style="color:#38bdf8"></i> My Albums</h3>
+                    <div id="my-albums-count" class="books-results-count"></div>
+                </div>
+                <div id="my-albums-grid" class="books-results-grid"></div>
+                <div id="my-albums-empty" class="books-empty" style="display:none;">
+                    <div class="books-empty-icon"><i class="fas fa-compact-disc"></i></div>
+                    <h3>No saved albums yet</h3>
+                    <p>Click the heart on any album to add it here.</p>
+                </div>
+            </div>
+
             <!-- My Music Section -->
             <div id="my-music" class="books-results" style="display: none;">
                 <div class="books-results-header">
@@ -6024,9 +6230,27 @@
                 <div id="my-music-empty" class="books-empty" style="display:none;">
                     <div class="books-empty-icon"><i class="fas fa-heart"></i></div>
                     <h3>No saved tracks yet</h3>
-                    <p>Click the + on any track to add it here for quick access.</p>
+                    <p>Click the heart on any track to add it here for quick access.</p>
                 </div>
             </div>
+
+            <!-- Playlists Section -->
+            <div id="music-playlists" class="books-results" style="display: none;">
+                <div class="books-results-header" style="gap: 1rem; align-items: center;">
+                    <h3><i class="fas fa-list" style="color:#38bdf8"></i> Playlists</h3>
+                    <div style="flex:1"></div>
+                    <input id="playlist-name-input" placeholder="New playlist name" style="padding:0.5rem 0.75rem; border-radius:8px; background:var(--surface); border:1px solid var(--border); color:var(--light); width:220px;" />
+                    <button class="action-btn" id="playlist-create-btn"><i class="fas fa-plus"></i><span>Create</span></button>
+                </div>
+                <div id="playlists-list" class="books-results-grid"></div>
+                <div id="playlists-empty" class="books-empty" style="display:none;">
+                    <div class="books-empty-icon"><i class="fas fa-list"></i></div>
+                    <h3>No playlists yet</h3>
+                    <p>Create a playlist to get started.</p>
+                </div>
+            </div>
+
+            
         </div>
     </div>
 
@@ -6068,6 +6292,31 @@
                 </div>
 
                 <audio id="music-player-audio" style="display:none;" crossorigin="anonymous" preload="metadata"></audio>
+            </div>
+        </div>
+    </div>
+
+    <!-- Playlist Chooser Modal -->
+    <div id="music-playlist-chooser" class="books-reader-modal" style="display:none; background: rgba(0,0,0,0.7); backdrop-filter: blur(6px);">
+        <div class="books-reader-content" style="max-width:520px; width:90%; border:1px solid rgba(56,189,248,0.35); border-radius:14px; overflow:hidden;">
+            <div class="books-reader-header">
+                <button id="playlist-chooser-back" class="books-reader-back-btn">
+                    <i class="fas fa-arrow-left"></i>
+                    Back
+                </button>
+                <h3>Add to Playlist</h3>
+            </div>
+            <div style="padding:1rem; display:flex; flex-direction:column; gap:0.75rem;">
+                <div style="display:flex; gap:0.5rem;">
+                    <input id="playlist-chooser-new-name" placeholder="New playlist name" style="flex:1; padding:0.6rem 0.8rem; border-radius:8px; background:var(--surface); border:1px solid var(--border); color:var(--light);" />
+                    <button id="playlist-chooser-create" class="action-btn"><i class="fas fa-plus"></i><span>Create</span></button>
+                </div>
+                <div id="playlist-chooser-empty" class="books-empty" style="display:none; margin:0;">
+                    <div class="books-empty-icon"><i class="fas fa-list"></i></div>
+                    <h3>No playlists yet</h3>
+                    <p>Create one above, then add your track.</p>
+                </div>
+                <div id="playlist-chooser-list" class="books-results-grid" style="grid-template-columns: 1fr; gap:0.5rem;"></div>
             </div>
         </div>
     </div>
@@ -7389,11 +7638,13 @@ Your browser does not support the video tag.
         const saveFirstTimeApiKey = document.getElementById('saveFirstTimeApiKey');
     const openJackettLinkBtn = document.getElementById('openJackettLink');
         
-        // Donate Modal elements
-        const donateModal = document.getElementById('donateModal');
-        const donateClose = document.getElementById('donateClose');
-        const donateButton = document.getElementById('donateButton');
-        const headerDonateBtn = document.getElementById('headerDonateBtn');
+    // Donate modal removed - no DOM elements
+        
+        // Discord Modal elements
+        const discordModal = document.getElementById('discordModal');
+        const discordClose = document.getElementById('discordClose');
+        const discordJoinBtn = document.getElementById('discordJoinBtn');
+        const discordBtn = document.getElementById('discordBtn');
         
         // Settings Modal elements
         const settingsModal = document.getElementById('settingsModal');
@@ -7680,7 +7931,34 @@ Your browser does not support the video tag.
             initializeAnime(); // Initialize Anime functionality
             initializeManga(); // Initialize Manga functionality
             handleRoute(); // route-aware initial load
-            checkFirstLaunch(); // Show donate modal on first launch
+            checkDiscordPrompt(); // Show Discord modal if user hasn't joined
+        }
+        
+        // Check if user has joined Discord and show modal if not
+        function checkDiscordPrompt() {
+            const hasJoinedDiscord = localStorage.getItem('hasJoinedDiscord');
+            if (!hasJoinedDiscord) {
+                // Wait a bit for the page to fully load before showing the discord modal
+                setTimeout(() => {
+                    showDiscordModal();
+                }, 1000);
+            }
+        }
+
+        // Show Discord modal
+        function showDiscordModal() {
+            if (discordModal) {
+                discordModal.classList.add('active');
+                document.body.style.overflow = 'hidden';
+            }
+        }
+        
+        // Hide Discord modal
+        function hideDiscordModal() {
+            if (discordModal) {
+                discordModal.classList.remove('active');
+                document.body.style.overflow = 'auto';
+            }
         }
         
         // Check if this is the first launch and show donate modal
@@ -7781,25 +8059,7 @@ Your browser does not support the video tag.
             document.body.style.overflow = 'auto';
         }
         
-        // Show donate modal
-        function showDonateModal() {
-            donateModal.classList.add('active');
-            document.body.style.overflow = 'hidden';
-            
-            // Hide the close button initially
-            donateClose.classList.remove('visible');
-            
-            // Show close button after 2 seconds
-            setTimeout(() => {
-                donateClose.classList.add('visible');
-            }, 2000);
-        }
-        
-        // Hide donate modal
-        function hideDonateModal() {
-            donateModal.classList.remove('active');
-            document.body.style.overflow = 'auto';
-        }
+        // Donate modal functionality removed
         
         // Show settings modal
         async function showSettingsModal() {
@@ -9995,27 +10255,46 @@ Your browser does not support the video tag.
                 });
             }
             
-            // Donate Modal
-            if (donateClose) {
-                donateClose.addEventListener('click', hideDonateModal);
+            // Donate modal removed
+            
+            // Discord Modal
+            if (discordClose) {
+                discordClose.addEventListener('click', hideDiscordModal);
             }
-            if (donateButton) {
-                donateButton.addEventListener('click', async () => {
-                    const url = 'https://buymeacoffee.com/ayman228x';
+            if (discordJoinBtn) {
+                discordJoinBtn.addEventListener('click', async () => {
+                    const url = 'https://discord.gg/bbkVHRHnRk';
                     try {
                         if (window.electronAPI?.openExternal) {
                             await window.electronAPI.openExternal(url);
                         } else {
-                            // Fallback in case preload bridge is unavailable
                             window.open(url, '_blank', 'noopener');
                         }
-                    } catch(_) {}
-                    // Optionally close the donate modal after opening the link
-                    try { hideDonateModal(); } catch(_) {}
+                        // Mark as joined so modal doesn't show again
+                        localStorage.setItem('hasJoinedDiscord', 'true');
+                        hideDiscordModal();
+                        showNotification('Opening Discord invite...', 'success');
+                    } catch(err) {
+                        console.error('Failed to open Discord:', err);
+                        showNotification('Failed to open Discord link', 'error');
+                    }
                 });
             }
-            if (headerDonateBtn) {
-                headerDonateBtn.addEventListener('click', showDonateModal);
+            if (discordBtn) {
+                discordBtn.addEventListener('click', async () => {
+                    const url = 'https://discord.gg/bbkVHRHnRk';
+                    try {
+                        if (window.electronAPI?.openExternal) {
+                            await window.electronAPI.openExternal(url);
+                        } else {
+                            window.open(url, '_blank', 'noopener');
+                        }
+                        showNotification('Opening Discord...', 'success');
+                    } catch(err) {
+                        console.error('Failed to open Discord:', err);
+                        showNotification('Failed to open Discord link', 'error');
+                    }
+                });
             }
             
             // Settings Modal
@@ -10997,14 +11276,38 @@ Your browser does not support the video tag.
                             case 'settings':
                                 showSettingsModal();
                                 break;
+                            case 'home':
+                                showHomePage();
+                                break;
+                            case 'genres':
+                                showGenresPage();
+                                break;
+                            case 'my-list':
+                                showMyListPage();
+                                break;
+                            case 'done-watching':
+                                showDoneWatchingPage();
+                                break;
                             case 'livetv':
                                 showLiveTvPage();
                                 break;
                             case 'iptv':
                                 showIptvPage();
                                 break;
+                            case 'music':
+                                showMusicPage();
+                                break;
                             case 'books':
                                 showBooksPage();
+                                break;
+                            case 'booktorrio':
+                                showBookTorrioPage();
+                                break;
+                            case 'anime':
+                                showAnimePage();
+                                break;
+                            case 'manga':
+                                showMangaPage();
                                 break;
                             case 'downloader':
                                 showDownloaderPage();
@@ -11061,7 +11364,7 @@ Your browser does not support the video tag.
                 try {
                     const encodedQuery = encodeURIComponent(searchTerm);
                     // Resolve Books server base URL dynamically from main process (port may vary)
-                    let booksBase = 'http://127.0.0.1:3004';
+                    let booksBase = 'http://localhost:3000/zlib';
                     try {
                         if (window.electronAPI?.booksGetUrl) {
                             const r = await window.electronAPI.booksGetUrl();
@@ -11201,6 +11504,14 @@ Your browser does not support the video tag.
             const musicTotalTime = document.getElementById('music-total-time');
             const musicVolumeSlider = document.getElementById('music-volume-slider');
             const musicVolumeFill = document.getElementById('music-volume-fill');
+            // Playlist chooser modal refs
+            const playlistChooser = document.getElementById('music-playlist-chooser');
+            const playlistChooserBack = document.getElementById('playlist-chooser-back');
+            const playlistChooserList = document.getElementById('playlist-chooser-list');
+            const playlistChooserEmpty = document.getElementById('playlist-chooser-empty');
+            const playlistChooserNewName = document.getElementById('playlist-chooser-new-name');
+            const playlistChooserCreate = document.getElementById('playlist-chooser-create');
+            let playlistChooserTrack = null;
 
             const HIFI_BASE = 'https://hifi.401658.xyz';
 
@@ -11272,6 +11583,14 @@ Your browser does not support the video tag.
             function displayMusicResults(results, q) {
                 musicResultsTitle.textContent = `Search Results for "${q}"`;
                 musicResultsCount.textContent = `${results.length} item${results.length !== 1 ? 's' : ''} found`;
+                // Ensure we are not in playlist-open mode when showing generic results
+                const musicPage = document.getElementById('music-page');
+                if (musicPage) musicPage.classList.remove('playlist-open');
+                // Hide My Albums and Album View when showing generic results
+                const myAlbumsSec = document.getElementById('my-albums');
+                if (myAlbumsSec) myAlbumsSec.style.display = 'none';
+                const albumViewSec = document.getElementById('music-album-view');
+                if (albumViewSec) albumViewSec.style.display = 'none';
                 musicResultsGrid.innerHTML = '';
 
                 results.forEach(item => {
@@ -11292,8 +11611,10 @@ Your browser does not support the video tag.
                             <div class="music-title">${title}</div>
                             <div class="music-artist">${artistName}</div>
                             <div class="music-actions">
-                                <button class="music-play-btn" data-id="${trackId}"><i class="fas fa-play"></i> Play</button>
-                                <button class="music-add-btn ${isSaved ? 'added' : ''}" title="${isSaved ? 'In My Music' : 'Add to My Music'}" data-id="${trackId}" data-title="${title.replace(/\"/g,'&quot;')}" data-artist="${artistName.replace(/\"/g,'&quot;')}" data-cover="${img}"><i class="fas ${isSaved ? 'fa-check' : 'fa-plus'}"></i></button>
+                                <button class="music-play-btn" data-id="${trackId}" data-title="${title.replace(/\"/g,'&quot;')}" data-artist="${artistName.replace(/\"/g,'&quot;')}" data-cover="${img}"><i class="fas fa-play"></i> Play</button>
+                                <button class="music-heart-btn ${isSaved ? 'added' : ''}" title="${isSaved ? 'In My Music' : 'Add to My Music'}" data-id="${trackId}" data-title="${title.replace(/\"/g,'&quot;')}" data-artist="${artistName.replace(/\"/g,'&quot;')}" data-cover="${img}"><i class="fas ${isSaved ? 'fa-heart' : 'fa-heart'}"></i></button>
+                                <button class="music-plus-btn" title="Add to Playlist" data-id="${trackId}" data-title="${title.replace(/\"/g,'&quot;')}" data-artist="${artistName.replace(/\"/g,'&quot;')}" data-cover="${img}"><i class="fas fa-plus"></i></button>
+                                
                                 <button class="music-open-btn" title="Open in TIDAL" data-id="${trackId}"><i class="fas fa-external-link-alt"></i></button>
                             </div>
                         </div>
@@ -11325,8 +11646,8 @@ Your browser does not support the video tag.
                     });
                 });
 
-                // Save buttons
-                musicResultsGrid.querySelectorAll('.music-add-btn').forEach(btn => {
+                // Heart (My Music)
+                musicResultsGrid.querySelectorAll('.music-heart-btn').forEach(btn => {
                     btn.addEventListener('click', (e) => {
                         const el = e.currentTarget;
                         const saved = getMyMusic();
@@ -11340,19 +11661,330 @@ Your browser does not support the video tag.
                             saved.push(track);
                             setMyMusic(saved);
                             showNotification(`Saved "${track.title}" to My Music`, 'success');
-                            // Visually mark as saved
                             el.classList.add('added');
                             el.title = 'In My Music';
-                            const icon = el.querySelector('i');
-                            if (icon) icon.className = 'fas fa-check';
                         } else {
                             showNotification('Already in My Music', 'info');
                         }
                     });
                 });
 
+                // Add to playlist
+                musicResultsGrid.querySelectorAll('.music-plus-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const el = e.currentTarget;
+                        const track = {
+                            id: el.getAttribute('data-id'),
+                            title: el.getAttribute('data-title'),
+                            artist: el.getAttribute('data-artist'),
+                            cover: el.getAttribute('data-cover')
+                        };
+                        showPlaylistChooser(track);
+                    });
+                });
+
+                
+
                 musicEmpty.style.display = 'none';
                 musicResults.style.display = 'block';
+            }
+
+            // ===== Albums Search & View =====
+            const albumSearchBtn = document.getElementById('music-album-search-btn');
+            const albumsSection = document.getElementById('music-albums');
+            const albumsGrid = document.getElementById('music-albums-grid');
+            const albumsCount = document.getElementById('music-albums-count');
+            const albumView = document.getElementById('music-album-view');
+            const albumCloseBtn = document.getElementById('album-close-btn');
+            const albumTracksEl = document.getElementById('album-tracks');
+            const albumViewTitle = document.getElementById('album-view-title');
+            const albumViewMeta = document.getElementById('album-view-meta');
+            const albumViewCover = document.getElementById('album-view-cover');
+
+            function setMusicSectionVisible(section) {
+                const sections = ['music-results','my-music','music-playlists','music-albums','music-album-view'];
+                const empty = document.getElementById('music-empty');
+                sections.forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) el.style.display = 'none';
+                });
+                if (empty) empty.style.display = 'none';
+                const musicPage = document.getElementById('music-page');
+                if (musicPage) musicPage.classList.remove('playlist-open');
+                if (section === 'results') document.getElementById('music-results').style.display = '';
+                if (section === 'my-music') document.getElementById('my-music').style.display = '';
+                if (section === 'music-playlists') document.getElementById('music-playlists').style.display = '';
+                if (section === 'albums') document.getElementById('music-albums').style.display = '';
+                if (section === 'album-view') document.getElementById('music-album-view').style.display = '';
+                if (section === 'my-albums') document.getElementById('my-albums').style.display = '';
+            }
+
+            async function searchAlbums(query) {
+                if (!query || !query.trim()) {
+                    showNotification('Please enter an album search term', 'warning');
+                    return;
+                }
+                setMusicSectionVisible('albums');
+                albumsGrid.innerHTML = '';
+                albumsCount.textContent = 'Searching…';
+                try {
+                    const resp = await fetch(`${HIFI_BASE}/search/?al=${encodeURIComponent(query.trim())}`);
+                    if (!resp.ok) throw new Error(`Album search failed: ${resp.status}`);
+                    const data = await resp.json();
+                    const albums = (data && data.albums && Array.isArray(data.albums.items)) ? data.albums.items : [];
+                    renderAlbumResults(albums);
+                } catch (e) {
+                    console.error('[MUSIC] Album search error', e);
+                    albumsCount.textContent = 'Error searching albums';
+                }
+            }
+
+            function renderAlbumResults(albums) {
+                albumsGrid.innerHTML = '';
+                albumsCount.textContent = `${albums.length} album${albums.length===1?'':'s'}`;
+                if (!albums.length) {
+                    albumsGrid.innerHTML = '<div class="album-empty">No albums found.</div>';
+                    return;
+                }
+                albums.forEach(a => {
+                    const artistName = (a.artists && a.artists[0]?.name) ? a.artists[0].name : 'Unknown Artist';
+                    const coverUrl = a.cover ? tidalCoverUrl(a.cover) : '';
+                    const card = document.createElement('div');
+                    card.className = 'album-card';
+                    const saved = getMyAlbums().some(x => String(x.id) === String(a.id));
+                    card.innerHTML = `
+                        <img class="album-cover" src="${coverUrl}" alt="${a.title}">
+                        <div class="album-body">
+                            <div class="album-title">${a.title}</div>
+                            <div class="album-artist">${artistName}</div>
+                            <div class="album-meta">
+                                <span>${a.type || 'ALBUM'}</span>
+                                <span>·</span>
+                                <span>${a.numberOfTracks || 0} tracks</span>
+                                ${a.releaseDate ? `<span>·</span><span>${a.releaseDate}</span>` : ''}
+                            </div>
+                            <div style="display:flex; gap:0.5rem;">
+                                <button class="album-open-btn"><i class="fas fa-folder-open"></i> Open</button>
+                                <button class="album-heart-btn ${saved ? 'added' : ''}" title="${saved ? 'In My Albums' : 'Save Album'}"><i class="fas fa-heart"></i></button>
+                            </div>
+                        </div>`;
+                    card.querySelector('.album-open-btn').addEventListener('click', () => openAlbum(a));
+                    card.querySelector('.album-heart-btn').addEventListener('click', () => saveAlbum(a, card.querySelector('.album-heart-btn')));
+                    albumsGrid.appendChild(card);
+                });
+            }
+
+            async function openAlbum(albumFromSearch) {
+                try {
+                    setMusicSectionVisible('album-view');
+                    albumTracksEl.innerHTML = '<div class="album-empty">Loading tracks…</div>';
+
+                    const resp = await fetch(`${HIFI_BASE}/album/?id=${encodeURIComponent(albumFromSearch.id)}`);
+                    if (!resp.ok) throw new Error(`Album fetch failed: ${resp.status}`);
+                    const json = await resp.json();
+
+                    // API shape per example: [ albumMeta, { limit, offset, totalNumberOfItems, items: [{ item: {track}, type: 'track' }, ...] } ]
+                    let albumMeta = null;
+                    let tracks = [];
+                    if (Array.isArray(json)) {
+                        albumMeta = json[0] || null;
+                        const items = json[1]?.items || [];
+                        tracks = items.map(x => x?.item).filter(Boolean);
+                    } else if (Array.isArray(json?.tracks)) {
+                        // fallback shape support
+                        tracks = json.tracks;
+                        albumMeta = albumFromSearch || null;
+                    } else {
+                        albumMeta = albumFromSearch || null;
+                    }
+
+                    // Header info using albumMeta when available
+                    const title = albumMeta?.title || albumFromSearch?.title || 'Album';
+                    const artistName = albumMeta?.artist?.name || (albumMeta?.artists && albumMeta.artists[0]?.name) || (albumFromSearch?.artists && albumFromSearch.artists[0]?.name) || 'Unknown Artist';
+                    const numTracks = albumMeta?.numberOfTracks ?? albumFromSearch?.numberOfTracks ?? (Array.isArray(tracks) ? tracks.length : 0);
+                    const releaseDate = albumMeta?.releaseDate || albumFromSearch?.releaseDate || '';
+                    const coverId = albumMeta?.cover || albumFromSearch?.cover || '';
+
+                    albumViewTitle.textContent = title;
+                    albumViewMeta.textContent = `${artistName} · ${numTracks} tracks${releaseDate ? ' · ' + releaseDate : ''}`;
+                    albumViewCover.src = coverId ? tidalCoverUrl(coverId) : '';
+
+                    renderAlbumTracks(tracks, { artists: [{ name: artistName }], cover: coverId });
+                } catch (e) {
+                    console.error('[MUSIC] openAlbum error', e);
+                    albumTracksEl.innerHTML = '<div class="album-empty">Failed to load album.</div>';
+                }
+            }
+
+            function renderAlbumTracks(tracks, album) {
+                if (!tracks.length) {
+                    albumTracksEl.innerHTML = '<div class="album-empty">No tracks found in this album.</div>';
+                    return;
+                }
+                albumTracksEl.innerHTML = '';
+                const coverSrc = album.cover ? tidalCoverUrl(album.cover) : '';
+                tracks.forEach((t, idx) => {
+                    const trackId = t.id || t.trackNumber || idx + 1; // prefer real id
+                    const trackTitle = t.title || t.name || `Track ${idx+1}`;
+                    const artistName = (t.artists && t.artists[0]?.name) ? t.artists[0].name : ((album.artists && album.artists[0]?.name) ? album.artists[0].name : 'Unknown Artist');
+                    const durationSec = (typeof t.duration === 'number') ? t.duration : (t.durationMs ? Math.round(t.durationMs/1000) : 0);
+
+                    const row = document.createElement('div');
+                    row.className = 'track-row';
+                    row.innerHTML = `
+                        <div class="track-index">${idx+1}</div>
+                        <div class="track-title">${trackTitle} <span style="color:#94a3b8; font-weight:600;">· ${artistName}</span></div>
+                        <div class="track-duration">${fmtTime(durationSec)}</div>
+                        <div class="track-actions">
+                            <button class="track-play-btn"><i class="fas fa-play"></i> Play</button>
+                            <button class="track-plus-btn"><i class="fas fa-plus"></i> Playlist</button>
+                            <button class="track-heart-btn"><i class="fas fa-heart"></i> Save</button>
+                        </div>`;
+
+                    row.querySelector('.track-play-btn').addEventListener('click', () => {
+                        if (!t.id) { showNotification('Unable to play: missing track id', 'error'); return; }
+                        playMusicTrack({ trackId: t.id, title: trackTitle, artistName, coverSrc });
+                    });
+                    row.querySelector('.track-plus-btn').addEventListener('click', () => {
+                        if (!t.id) { showNotification('Unable to add: missing track id', 'error'); return; }
+                        showPlaylistChooser({ id: String(t.id), title: trackTitle, artist: artistName, cover: coverSrc });
+                    });
+                    row.querySelector('.track-heart-btn').addEventListener('click', () => {
+                        if (!t.id) { showNotification('Unable to save: missing track id', 'error'); return; }
+                        const list = getMyMusic();
+                        if (!list.find(x => String(x.id) === String(t.id))) {
+                            list.push({ id: String(t.id), title: trackTitle, artist: artistName, cover: coverSrc });
+                            setMyMusic(list);
+                            showNotification(`Saved "${trackTitle}" to My Music`, 'success');
+                        } else {
+                            showNotification('Already in My Music', 'info');
+                        }
+                    });
+
+                    albumTracksEl.appendChild(row);
+                });
+            }
+
+            if (albumSearchBtn) {
+                albumSearchBtn.addEventListener('click', () => searchAlbums(musicSearchInput?.value || ''));
+            }
+            if (albumCloseBtn) {
+                albumCloseBtn.addEventListener('click', () => {
+                    // If albums list has content, go back there; else back to generic state
+                    if (albumsGrid && albumsGrid.children.length) setMusicSectionVisible('albums');
+                    else if (musicResultsGrid && musicResultsGrid.children.length) setMusicSectionVisible('results');
+                    else setMusicSectionVisible('results');
+                });
+            }
+
+            // ===== My Albums storage and rendering =====
+            const MY_ALBUMS_KEY = 'pt_my_albums_v1';
+            function getMyAlbums() {
+                try { return JSON.parse(localStorage.getItem(MY_ALBUMS_KEY) || '[]'); } catch(_) { return []; }
+            }
+            function setMyAlbums(arr) {
+                try { localStorage.setItem(MY_ALBUMS_KEY, JSON.stringify(arr)); } catch(_) {}
+            }
+            function saveAlbum(album, btnEl) {
+                const list = getMyAlbums();
+                const exists = list.find(x => String(x.id) === String(album.id));
+                if (exists) {
+                    showNotification('Album already saved', 'info');
+                    if (btnEl) btnEl.classList.add('added');
+                    return;
+                }
+                const toSave = {
+                    id: album.id,
+                    title: album.title,
+                    cover: album.cover || null,
+                    artist: (album.artist?.name) || (album.artists && album.artists[0]?.name) || 'Unknown Artist',
+                    numberOfTracks: album.numberOfTracks || 0,
+                    releaseDate: album.releaseDate || ''
+                };
+                list.push(toSave);
+                setMyAlbums(list);
+                showNotification(`Saved "${toSave.title}" to My Albums`, 'success');
+                if (btnEl) btnEl.classList.add('added');
+            }
+
+            function renderMyAlbums() {
+                const grid = document.getElementById('my-albums-grid');
+                const count = document.getElementById('my-albums-count');
+                const empty = document.getElementById('my-albums-empty');
+                const albums = getMyAlbums();
+                grid.innerHTML = '';
+                if (!albums.length) {
+                    count.textContent = '0 albums';
+                    empty.style.display = '';
+                    return;
+                }
+                empty.style.display = 'none';
+                count.textContent = `${albums.length} album${albums.length===1?'':'s'}`;
+                albums.forEach(a => {
+                    const card = document.createElement('div');
+                    card.className = 'album-card';
+                    const coverUrl = a.cover ? tidalCoverUrl(a.cover) : '';
+                    card.innerHTML = `
+                        <img class="album-cover" src="${coverUrl}" alt="${a.title}">
+                        <div class="album-body">
+                            <div class="album-title">${a.title}</div>
+                            <div class="album-artist">${a.artist || ''}</div>
+                            <div class="album-meta"><span>${a.numberOfTracks||0} tracks</span>${a.releaseDate?`<span>·</span><span>${a.releaseDate}</span>`:''}</div>
+                            <div style="display:flex; gap:0.5rem;">
+                                <button class="album-open-btn" data-id="${a.id}"><i class="fas fa-folder-open"></i> Open</button>
+                                <button class="album-heart-btn added" title="Remove from My Albums" data-remove="true" data-id="${a.id}"><i class="fas fa-trash"></i></button>
+                            </div>
+                        </div>`;
+                    grid.appendChild(card);
+                });
+                // Wire open and remove
+                grid.querySelectorAll('.album-open-btn').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const id = btn.getAttribute('data-id');
+                        const album = getMyAlbums().find(x => String(x.id) === String(id));
+                        if (album) openAlbum(album);
+                    });
+                });
+                grid.querySelectorAll('.album-heart-btn[data-remove="true"]').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const id = btn.getAttribute('data-id');
+                        const list = getMyAlbums().filter(x => String(x.id) !== String(id));
+                        setMyAlbums(list);
+                        renderMyAlbums();
+                        showNotification('Removed album', 'info');
+                    });
+                });
+            }
+
+            // Toggle My Albums
+            const myAlbumsBtn = document.getElementById('music-my-albums-btn');
+            if (myAlbumsBtn) {
+                myAlbumsBtn.addEventListener('click', () => {
+                    const sec = document.getElementById('my-albums');
+                    const resSec = document.getElementById('music-results');
+                    const empty = document.getElementById('music-empty');
+                    const mySec = document.getElementById('my-music');
+                    const plsSec = document.getElementById('music-playlists');
+                    const albListSec = document.getElementById('music-albums');
+                    const albumViewSec = document.getElementById('music-album-view');
+                    const showing = sec.style.display !== 'none';
+                    if (showing) {
+                        sec.style.display = 'none';
+                        if (albListSec && albListSec.children.length) { albListSec.style.display = 'block'; }
+                        else if (musicResultsGrid && musicResultsGrid.children.length) { resSec.style.display = 'block'; empty.style.display = 'none'; }
+                        else { resSec.style.display = 'none'; empty.style.display = ''; }
+                        if (albumViewSec) albumViewSec.style.display = 'none';
+                    } else {
+                        renderMyAlbums();
+                        sec.style.display = 'block';
+                        resSec.style.display = 'none';
+                        empty.style.display = 'none';
+                        mySec.style.display = 'none';
+                        plsSec.style.display = 'none';
+                        if (albListSec) albListSec.style.display = 'none';
+                        if (albumViewSec) albumViewSec.style.display = 'none';
+                    }
+                });
             }
 
             // My Music storage helpers
@@ -11363,6 +11995,221 @@ Your browser does not support the video tag.
             function setMyMusic(arr) {
                 try { localStorage.setItem(MY_MUSIC_KEY, JSON.stringify(arr)); } catch(_) {}
             }
+
+            // Playlists storage helpers
+            const PLAYLISTS_KEY = 'pt_playlists_v1';
+            function getPlaylists() {
+                try { return JSON.parse(localStorage.getItem(PLAYLISTS_KEY) || '[]'); } catch(_) { return []; }
+            }
+            function setPlaylists(arr) {
+                try { localStorage.setItem(PLAYLISTS_KEY, JSON.stringify(arr)); } catch(_) {}
+            }
+            function addTrackToPlaylist(playlistId, track) {
+                const pls = getPlaylists();
+                const pl = pls.find(p => p.id === playlistId);
+                if (!pl) return false;
+                if (!pl.tracks) pl.tracks = [];
+                if (!pl.tracks.find(t => t.id === track.id)) {
+                    pl.tracks.push(track);
+                    setPlaylists(pls);
+                    return true;
+                }
+                return false;
+            }
+
+            function renderPlaylists() {
+                const wrap = document.getElementById('music-playlists');
+                if (!wrap) return;
+                const list = document.getElementById('playlists-list');
+                const empty = document.getElementById('playlists-empty');
+                const pls = getPlaylists();
+                list.innerHTML = '';
+                if (!pls.length) {
+                    empty.style.display = '';
+                    return;
+                }
+                empty.style.display = 'none';
+                pls.forEach(pl => {
+                    const card = document.createElement('div');
+                    card.className = 'music-card';
+                    card.innerHTML = `
+                        <div class="music-info">
+                            <div class="music-title">${pl.name}</div>
+                            <div class="music-artist">${(pl.tracks?.length||0)} track${(pl.tracks?.length||0)!==1?'s':''}</div>
+                            <div class="music-actions">
+                                <button class="playlist-open-btn" data-id="${pl.id}"><i class="fas fa-folder-open"></i> Open</button>
+                                <button class="playlist-delete-btn" data-id="${pl.id}"><i class="fas fa-trash"></i></button>
+                            </div>
+                        </div>`;
+                    list.appendChild(card);
+                });
+                // open
+                list.querySelectorAll('.playlist-open-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const id = e.currentTarget.getAttribute('data-id');
+                        openPlaylist(id);
+                    });
+                });
+                // delete
+                list.querySelectorAll('.playlist-delete-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const id = e.currentTarget.getAttribute('data-id');
+                        const pls = getPlaylists().filter(p => p.id !== id);
+                        setPlaylists(pls);
+                        renderPlaylists();
+                        showNotification('Playlist deleted', 'info');
+                    });
+                });
+            }
+
+            function openPlaylist(id) {
+                const pls = getPlaylists();
+                const pl = pls.find(p => p.id === id);
+                if (!pl) return;
+                // Reuse results grid to show playlist content
+                const resSec = document.getElementById('music-results');
+                const empty = document.getElementById('music-empty');
+                const mySec = document.getElementById('my-music');
+                mySec.style.display = 'none';
+                resSec.style.display = 'block'; empty.style.display = 'none';
+                musicResultsTitle.textContent = `Playlist: ${pl.name}`;
+                // mark playlist-open on page for CSS tweaks
+                const musicPage = document.getElementById('music-page');
+                if (musicPage) musicPage.classList.add('playlist-open');
+                // Add Close Playlist button in the header
+                const header = resSec.querySelector('.books-results-header');
+                if (header && !header.querySelector('#playlist-close-btn')) {
+                    const closeBtn = document.createElement('button');
+                    closeBtn.id = 'playlist-close-btn';
+                    closeBtn.className = 'playlist-close-btn';
+                    closeBtn.innerHTML = '<i class="fas fa-times"></i><span>Close Playlist</span>';
+                    header.appendChild(closeBtn);
+                    closeBtn.addEventListener('click', () => {
+                        // Clear playlist-open mode and header button
+                        if (musicPage) musicPage.classList.remove('playlist-open');
+                        const btn = document.getElementById('playlist-close-btn');
+                        if (btn) btn.remove();
+                        // Go back to Playlists view explicitly
+                        resSec.style.display = 'none';
+                        empty.style.display = 'none';
+                        const plsSec = document.getElementById('music-playlists');
+                        if (plsSec) {
+                            plsSec.style.display = 'block';
+                            try { renderPlaylists(); } catch(_) {}
+                        }
+                    });
+                }
+                const tracks = pl.tracks || [];
+                musicResultsCount.textContent = `${tracks.length} track${tracks.length!==1?'s':''}`;
+                musicResultsGrid.innerHTML = '';
+                tracks.forEach(t => {
+                    const card = document.createElement('div');
+                    card.className = 'music-card';
+                    card.innerHTML = `
+                        <div class="music-cover"><img src="${t.cover}" alt="${t.title}"></div>
+                        <div class="music-info">
+                            <div class="music-title">${t.title}</div>
+                            <div class="music-artist">${t.artist}</div>
+                            <div class="music-actions">
+                                <button class="music-play-btn" data-id="${t.id}" data-title="${t.title}" data-artist="${t.artist}" data-cover="${t.cover}"><i class="fas fa-play"></i> Play</button>
+                                <button class="playlist-delete-btn playlist-remove-btn" data-id="${t.id}" data-pl="${id}" title="Remove from Playlist"><i class="fas fa-trash"></i></button>
+                            </div>
+                        </div>`;
+                    musicResultsGrid.appendChild(card);
+                });
+                musicResultsGrid.querySelectorAll('.music-play-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const el = e.currentTarget;
+                        playMusicTrack({
+                            trackId: el.getAttribute('data-id'),
+                            title: el.getAttribute('data-title'),
+                            artistName: el.getAttribute('data-artist'),
+                            coverSrc: el.getAttribute('data-cover')
+                        });
+                    });
+                });
+                musicResultsGrid.querySelectorAll('.playlist-remove-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const idTrack = e.currentTarget.getAttribute('data-id');
+                        const pid = e.currentTarget.getAttribute('data-pl');
+                        const pls = getPlaylists();
+                        const pl2 = pls.find(p => p.id === pid);
+                        if (pl2) {
+                            pl2.tracks = (pl2.tracks||[]).filter(t => t.id !== idTrack);
+                            setPlaylists(pls);
+                            openPlaylist(pid);
+                            showNotification('Removed from playlist', 'info');
+                        }
+                    });
+                });
+            }
+
+            function showPlaylistChooser(track) {
+                // Open the modal chooser and list playlists to add into
+                playlistChooserTrack = track;
+                const pls = getPlaylists();
+                if (!playlistChooser || !playlistChooserList || !playlistChooserEmpty) return;
+                playlistChooserList.innerHTML = '';
+                if (!pls.length) {
+                    playlistChooserEmpty.style.display = '';
+                } else {
+                    playlistChooserEmpty.style.display = 'none';
+                    pls.forEach(pl => {
+                        const row = document.createElement('div');
+                        row.className = 'music-card';
+                        row.innerHTML = `
+                            <div class="music-info">
+                                <div class="music-title">${pl.name}</div>
+                                <div class="music-artist">${(pl.tracks?.length||0)} track${(pl.tracks?.length||0)!==1?'s':''}</div>
+                                <div class="music-actions">
+                                    <button class="playlist-open-btn playlist-choose-btn" data-id="${pl.id}"><i class="fas fa-check"></i><span>Add Here</span></button>
+                                </div>
+                            </div>`;
+                        playlistChooserList.appendChild(row);
+                    });
+                    playlistChooserList.querySelectorAll('.playlist-choose-btn').forEach(btn => {
+                        btn.addEventListener('click', () => {
+                            const pid = btn.getAttribute('data-id');
+                            const ok = addTrackToPlaylist(pid, playlistChooserTrack);
+                            const name = (getPlaylists().find(p => p.id===pid)?.name) || 'playlist';
+                            showNotification(ok ? `Added to ${name}` : 'Already in playlist', ok ? 'success' : 'info');
+                            closePlaylistChooser();
+                        });
+                    });
+                }
+                playlistChooser.style.display = 'flex';
+            }
+
+            function closePlaylistChooser() {
+                if (playlistChooser) playlistChooser.style.display = 'none';
+                playlistChooserTrack = null;
+                if (playlistChooserNewName) playlistChooserNewName.value = '';
+            }
+
+            // Playlist chooser events
+            if (playlistChooserBack && playlistChooser) {
+                playlistChooserBack.addEventListener('click', closePlaylistChooser);
+                playlistChooser.addEventListener('click', (e) => {
+                    if (e.target === playlistChooser) closePlaylistChooser();
+                });
+            }
+            if (playlistChooserCreate) {
+                playlistChooserCreate.addEventListener('click', () => {
+                    const name = (playlistChooserNewName.value || '').trim();
+                    if (!name) { showNotification('Enter a playlist name', 'warning'); return; }
+                    const pls = getPlaylists();
+                    if (pls.find(p => p.name.toLowerCase() === name.toLowerCase())) { showNotification('Playlist exists', 'info'); return; }
+                    const id = 'pl_' + Math.random().toString(36).slice(2,10);
+                    pls.push({ id, name, tracks: [] });
+                    setPlaylists(pls);
+                    playlistChooserNewName.value = '';
+                    // Refresh chooser list
+                    showPlaylistChooser(playlistChooserTrack || null);
+                    showNotification('Playlist created', 'success');
+                });
+            }
+
+            // Removed offline rendering and related actions
 
             // Render My Music grid
             function renderMyMusic() {
@@ -11431,6 +12278,10 @@ Your browser does not support the video tag.
                     const mySec = document.getElementById('my-music');
                     const resSec = document.getElementById('music-results');
                     const empty = document.getElementById('music-empty');
+                    const plsSec = document.getElementById('music-playlists');
+                    const myAlbumsSec2 = document.getElementById('my-albums');
+                    const albumListSec2 = document.getElementById('music-albums');
+                    const albumViewSec2 = document.getElementById('music-album-view');
                     const showing = mySec.style.display !== 'none';
                     if (showing) {
                         mySec.style.display = 'none';
@@ -11442,14 +12293,74 @@ Your browser does not support the video tag.
                             resSec.style.display = 'none';
                             empty.style.display = '';
                         }
+                        plsSec.style.display = 'none';
+                        if (myAlbumsSec2) myAlbumsSec2.style.display = 'none';
+                        if (albumListSec2) albumListSec2.style.display = 'none';
+                        if (albumViewSec2) albumViewSec2.style.display = 'none';
+                        const musicPage = document.getElementById('music-page');
+                        if (musicPage) musicPage.classList.remove('playlist-open');
                     } else {
                         renderMyMusic();
                         mySec.style.display = 'block';
                         resSec.style.display = 'none';
                         empty.style.display = 'none';
+                        plsSec.style.display = 'none';
+                        if (myAlbumsSec2) myAlbumsSec2.style.display = 'none';
+                        if (albumListSec2) albumListSec2.style.display = 'none';
+                        if (albumViewSec2) albumViewSec2.style.display = 'none';
+                        const musicPage = document.getElementById('music-page');
+                        if (musicPage) musicPage.classList.remove('playlist-open');
                     }
                 });
             }
+
+            // Toggle Playlists
+            const playlistsBtn = document.getElementById('music-playlists-btn');
+            if (playlistsBtn) {
+                playlistsBtn.addEventListener('click', () => {
+                    const sec = document.getElementById('music-playlists');
+                    const resSec = document.getElementById('music-results');
+                    const empty = document.getElementById('music-empty');
+                    const mySec = document.getElementById('my-music');
+                    const myAlbumsSec3 = document.getElementById('my-albums');
+                    const showing = sec.style.display !== 'none';
+                    if (showing) {
+                        sec.style.display = 'none';
+                        if (musicResultsGrid && musicResultsGrid.children.length) { resSec.style.display = 'block'; empty.style.display = 'none'; }
+                        else { resSec.style.display = 'none'; empty.style.display = ''; }
+                        const musicPage = document.getElementById('music-page');
+                        if (musicPage) musicPage.classList.remove('playlist-open');
+                        if (myAlbumsSec3) myAlbumsSec3.style.display = 'none';
+                    } else {
+                        renderPlaylists();
+                        sec.style.display = 'block';
+                        resSec.style.display = 'none';
+                        empty.style.display = 'none';
+                        mySec.style.display = 'none';
+                        if (myAlbumsSec3) myAlbumsSec3.style.display = 'none';
+                        const musicPage = document.getElementById('music-page');
+                        if (musicPage) musicPage.classList.remove('playlist-open');
+                    }
+                });
+            }
+            const createPlBtn = document.getElementById('playlist-create-btn');
+            const plNameInput = document.getElementById('playlist-name-input');
+            if (createPlBtn) {
+                createPlBtn.addEventListener('click', () => {
+                    const name = (plNameInput.value || '').trim();
+                    if (!name) { showNotification('Enter a playlist name', 'warning'); return; }
+                    const pls = getPlaylists();
+                    if (pls.find(p => p.name.toLowerCase() === name.toLowerCase())) { showNotification('Playlist exists', 'info'); return; }
+                    const id = 'pl_' + Math.random().toString(36).slice(2,10);
+                    pls.push({ id, name, tracks: [] });
+                    setPlaylists(pls);
+                    plNameInput.value = '';
+                    renderPlaylists();
+                    showNotification('Playlist created', 'success');
+                });
+            }
+
+            // Offline removed
 
             async function playMusicTrack({ trackId, title, artistName, coverSrc }) {
                 if (!trackId) {
@@ -12387,7 +13298,7 @@ Your browser does not support the video tag.
                     // Try local 111477 service first
                     let results = [];
                     try {
-                        const res = await fetch(`http://127.0.0.1:3003/api/tmdb/search/${encodeURIComponent(query)}`);
+                        const res = await fetch(`http://localhost:3000/111477/api/tmdb/search/${encodeURIComponent(query)}`);
                         if (res.ok) {
                             const data = await res.json();
                             results = Array.isArray(data?.results) ? data.results : [];
@@ -12595,7 +13506,7 @@ Your browser does not support the video tag.
             async function fetchDownloaderFilesByTmdb(tmdbId, container) {
                 try {
                     const loadKey = startFilesLoad(container);
-                    const res = await fetch(`http://127.0.0.1:3003/api/tmdb/movie/${encodeURIComponent(tmdbId)}`);
+                    const res = await fetch(`http://localhost:3000/111477/api/tmdb/movie/${encodeURIComponent(tmdbId)}`);
                     if (!res.ok) throw new Error(`HTTP ${res.status}`);
                     const data = await res.json();
                     
@@ -12706,7 +13617,7 @@ Your browser does not support the video tag.
                         container.querySelectorAll('.downloader-files-card').forEach(el => el.remove());
                         try {
                             const loadKey = startFilesLoad(container);
-                            const res = await fetch(`http://127.0.0.1:3003/api/tmdb/tv/${encodeURIComponent(tmdbId)}/season/${encodeURIComponent(sVal)}/episode/${encodeURIComponent(eVal)}`);
+                            const res = await fetch(`http://localhost:3000/111477/api/tmdb/tv/${encodeURIComponent(tmdbId)}/season/${encodeURIComponent(sVal)}/episode/${encodeURIComponent(eVal)}`);
                             if (!res.ok) throw new Error(`HTTP ${res.status}`);
                             const data = await res.json();
                             
@@ -12956,61 +13867,60 @@ Your browser does not support the video tag.
         }
 
         function showSection(section) {
-            // Reset basic visibility
-            homePageEl.style.display = section === 'home' ? '' : 'none';
-            genresPageEl.style.display = section === 'genres' ? '' : 'none';
-            genreDetailsPageEl.style.display = section === 'genreDetails' ? '' : 'none';
-            const myListPageEl = document.getElementById('myListPage');
-            if (myListPageEl) myListPageEl.style.display = section === 'my-list' ? '' : 'none';
-            const doneWatchingPageEl = document.getElementById('doneWatchingPage');
-            if (doneWatchingPageEl) doneWatchingPageEl.style.display = section === 'done-watching' ? '' : 'none';
-            const traktPageEl = document.getElementById('trakt-page');
-            if (traktPageEl) {
-                traktPageEl.style.display = section === 'trakt' ? '' : 'none';
-                // Initialize Trakt page if showing it
-                if (section === 'trakt' && !traktPageEl.dataset.initialized) {
+            // Hide ALL known top-level pages first to avoid stacking
+            const allPageIds = [
+                'homePage','genresPage','genreDetailsPage','myListPage','doneWatchingPage',
+                'trakt-page','livetv-page','iptv-page','books-page','music-page',
+                'booktorrio-page','anime-page','manga-page','manga-reader-page','downloader-page'
+            ];
+            allPageIds.forEach(id => { const el = document.getElementById(id); if (el) el.style.display = 'none'; });
+
+            // Special leave-behavior
+            // Stop music if we are not showing the music page
+            if (section !== 'music') {
+                const audio = document.getElementById('music-player-audio');
+                const modal = document.getElementById('music-player-modal');
+                if (audio) { try { audio.pause(); } catch(_) {} }
+                if (modal) modal.style.display = 'none';
+            }
+            // Clear IPTV iframe if not on IPTV page
+            if (section !== 'iptv') {
+                try { clearIptvPage(); } catch(_) {}
+            }
+
+            // Map route section to element id
+            const map = {
+                'home': 'homePage',
+                'genres': 'genresPage',
+                'genreDetails': 'genreDetailsPage',
+                'my-list': 'myListPage',
+                'done-watching': 'doneWatchingPage',
+                'trakt': 'trakt-page',
+                'livetv': 'livetv-page',
+                'iptv': 'iptv-page',
+                'books': 'books-page',
+                'music': 'music-page',
+                'booktorrio': 'booktorrio-page',
+                'anime': 'anime-page',
+                'manga': 'manga-page',
+                'manga-reader': 'manga-reader-page',
+                'downloader': 'downloader-page'
+            };
+            const targetId = map[section];
+            if (targetId) {
+                const el = document.getElementById(targetId);
+                if (el) el.style.display = '';
+                // One-off init for Trakt page when shown
+                if (section === 'trakt' && el && !el.dataset.initialized) {
                     initializeTraktPage();
-                    traktPageEl.dataset.initialized = 'true';
+                    el.dataset.initialized = 'true';
                 }
             }
-            const downloaderPageEl = document.getElementById('downloader-page');
-            if (downloaderPageEl) downloaderPageEl.style.display = section === 'downloader' ? '' : 'none';
-            const liveTvPageEl = document.getElementById('livetv-page');
-            if (liveTvPageEl) liveTvPageEl.style.display = section === 'livetv' ? '' : 'none';
-            const iptvPageEl = document.getElementById('iptv-page');
-            if (iptvPageEl) {
-                // Clear IPTV iframe when leaving the page
-                if (iptvPageEl.style.display !== 'none' && section !== 'iptv') {
-                    clearIptvPage();
-                }
-                iptvPageEl.style.display = section === 'iptv' ? '' : 'none';
-            }
-            const booksPageEl = document.getElementById('books-page');
-            if (booksPageEl) booksPageEl.style.display = section === 'books' ? '' : 'none';
-            const musicPageEl = document.getElementById('music-page');
-            if (musicPageEl) {
-                const leavingMusic = musicPageEl.style.display !== 'none' && section !== 'music';
-                musicPageEl.style.display = section === 'music' ? '' : 'none';
-                if (leavingMusic) {
-                    const audio = document.getElementById('music-player-audio');
-                    const modal = document.getElementById('music-player-modal');
-                    if (audio && !audio.paused) audio.pause();
-                    if (modal) modal.style.display = 'none';
-                }
-            }
-            const bookTorrioPageEl = document.getElementById('booktorrio-page');
-            if (bookTorrioPageEl) bookTorrioPageEl.style.display = section === 'booktorrio' ? '' : 'none';
-            const animePageEl = document.getElementById('anime-page');
-            if (animePageEl) animePageEl.style.display = section === 'anime' ? '' : 'none';
-            const mangaPageEl = document.getElementById('manga-page');
-            if (mangaPageEl) mangaPageEl.style.display = section === 'manga' ? '' : 'none';
-            // Update navigation states
+
+            // Update nav/fab, reset load flag, scroll to top
             updateNavigationStates(section);
-            // Update floating settings button visibility (Old UI only, Home page only)
             updateFloatingSettingsButton(section);
-            // Reset loading flag for new route
             isLoading = false;
-            // Scroll to top on route change
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
@@ -13912,12 +14822,12 @@ Your browser does not support the video tag.
 
                         let torrentioUrl;
                         if (mediaType === 'movie') {
-                            // Movies: http://localhost:5500/api/tt5950044
-                            torrentioUrl = `http://localhost:5500/api/${imdbId}`;
+                            // Movies: http://localhost:3000/torrentio/api/tt5950044
+                            torrentioUrl = `http://localhost:3000/torrentio/api/${imdbId}`;
                             console.log('[Torrentio] Movie URL:', torrentioUrl);
                         } else if (season && episode) {
-                            // TV Shows: http://localhost:5500/api/tt13159924/2/1
-                            torrentioUrl = `http://localhost:5500/api/${imdbId}/${season}/${episode}`;
+                            // TV Shows: http://localhost:3000/torrentio/api/tt13159924/2/1
+                            torrentioUrl = `http://localhost:3000/torrentio/api/${imdbId}/${season}/${episode}`;
                             console.log('[Torrentio] TV Show URL:', torrentioUrl);
                         } else {
                             throw new Error('Season and episode required for TV shows');
@@ -13998,8 +14908,8 @@ Your browser does not support the video tag.
                             }
                         }
                         
-                        // Use Torrentless API: http://localhost:3002/api/search?q=Superman&page=1
-                        const torrentlessUrl = `http://localhost:3002/api/search?q=${encodeURIComponent(query)}&page=1`;
+                        // Use Torrentless API: http://localhost:3000/torrentless/api/search?q=Superman&page=1
+                        const torrentlessUrl = `http://localhost:3000/torrentless/api/search?q=${encodeURIComponent(query)}&page=1`;
                         console.log('[Torrentless] Query:', query);
                         console.log('[Torrentless] Fetching from:', torrentlessUrl);
                         
@@ -15962,7 +16872,7 @@ Your browser does not support the video tag.
                     loadingDiv.style.display = 'block';
                     resultsContainer.innerHTML = '';
 
-                    const response = await fetch(`http://localhost:5000/api/search/${encodeURIComponent(query)}`);
+                    const response = await fetch(`http://localhost:3000/otherbook/api/search/${encodeURIComponent(query)}`);
                     if (!response.ok) {
                         throw new Error('Search failed');
                     }
@@ -16174,7 +17084,7 @@ Your browser does not support the video tag.
         let animeHasMore = true;
         let animeIsSearching = false;
         let animeSearchQuery = '';
-        let animeBaseUrl = 'http://127.0.0.1:7000';
+        let animeBaseUrl = 'http://localhost:3000/anime';
         
         async function initializeAnime() {
             const animeSearchInput = document.getElementById('animeSearchInput');
