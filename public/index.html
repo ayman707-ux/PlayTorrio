@@ -1290,15 +1290,20 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            gap: 1rem;
         }
         
         .torrent-info {
             flex: 1;
+            min-width: 0;
+            overflow: hidden;
         }
         
         .torrent-name {
             font-weight: 600;
             margin-bottom: 0.5rem;
+            word-break: break-word;
+            overflow-wrap: break-word;
         }
         
         .torrent-details {
@@ -1306,6 +1311,7 @@
             gap: 1rem;
             font-size: 0.9rem;
             color: var(--gray);
+            flex-wrap: wrap;
         }
         
         .torrent-quality {
@@ -1320,6 +1326,7 @@
         .torrent-actions {
             display: flex;
             gap: 0.5rem;
+            flex-shrink: 0;
         }
 
         .torrent-pagination {
@@ -1344,6 +1351,43 @@
 
         .torrent-pagination span {
             margin: 0 1rem;
+        }
+        
+        .provider-buttons {
+            display: flex;
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+        }
+        
+        .provider-btn {
+            padding: 0.75rem 1.5rem;
+            background: rgba(255, 255, 255, 0.08);
+            border: 2px solid rgba(255, 255, 255, 0.15);
+            border-radius: 8px;
+            color: var(--light);
+            cursor: pointer;
+            font-size: 0.95rem;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+        }
+        
+        .provider-btn:hover {
+            background: rgba(255, 255, 255, 0.12);
+            border-color: rgba(255, 255, 255, 0.3);
+            transform: translateY(-1px);
+        }
+        
+        .provider-btn.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-color: #667eea;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        .provider-btn.active:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
         }
         
         .torrent-btn {
@@ -1764,6 +1808,7 @@
         .source-badge { display:inline-block; padding:2px 8px; border-radius: 12px; font-size: 0.75rem; font-weight:700; margin-left: 8px; background: #6c757d; color: #fff; }
         .source-badge.debrid { background:#198754; }
         .source-badge.webtorrent { background:#0d6efd; }
+        .source-badge.direct-stream { background:#dc3545; }
         
         .current-api-key {
             background-color: rgba(255, 255, 255, 0.05);
@@ -7276,6 +7321,28 @@ Can't find what you're looking for? Try a custom search
                             </button>
 </div>
 </div>
+<div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-left: 4px solid #ffd700; padding: 1rem; margin-bottom: 1.5rem; border-radius: 8px; box-shadow: 0 2px 10px rgba(102, 126, 234, 0.3);">
+<div style="display: flex; align-items: center; gap: 0.75rem;">
+<i class="fas fa-volume-up" style="color: #ffd700; font-size: 1.5rem;"></i>
+<div>
+<strong style="color: #fff; font-size: 1.05rem;">Audio Issues?</strong>
+<p style="margin: 0.25rem 0 0 0; color: rgba(255, 255, 255, 0.9); font-size: 0.95rem;">
+If you experience audio problems or no audio at all, click <strong>"Open in MPV"</strong> for the best playback experience.
+                        </p>
+</div>
+</div>
+</div>
+<div class="provider-buttons">
+<button class="provider-btn active" data-provider="playtorrio">
+<i class="fas fa-magnet"></i> Playtorrio
+                    </button>
+<button class="provider-btn" data-provider="nuvio">
+<i class="fas fa-stream"></i> Nuvio <span style="font-size: 0.8em; opacity: 0.8;">(could contain ShowBox)</span>
+</button>
+<button class="provider-btn" data-provider="comet">
+<i class="fas fa-meteor"></i> Comet
+                    </button>
+</div>
 <div style="margin-bottom: 1rem;">
 <input type="text" id="torrentKeywordFilter" placeholder="Filter torrents by keyword..." style="width: 100%; padding: 0.6rem; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; color: var(--light); font-size: 0.95rem;">
 </div>
@@ -7290,7 +7357,7 @@ Can't find what you're looking for? Try a custom search
 <!-- MPV Player -->
 <div class="vlc-player-container" id="mpvPlayerContainer">
 <div class="vlc-player-header">
-<div class="vlc-player-title" id="mpvPlayerTitle">MPV Torrent Player <span class="source-badge webtorrent" id="streamSourceBadge" title="Streaming source">WebTorrent</span></div>
+<div class="vlc-player-title" id="mpvPlayerTitle">Player <span class="source-badge webtorrent" id="streamSourceBadge" title="Streaming source">by ayman</span></div>
 </div>
 <div class="vlc-player-content">
 <div class="file-selector" id="fileSelector">
@@ -7832,6 +7899,9 @@ Your browser does not support the video tag.
         let currentSubtitles = [];
     let subtitleTrack = null;
     let currentSubtitleFile = null; // filename served under /subtitles to delete on switch
+    let selectedProvider = 'playtorrio'; // Default provider: playtorrio, nuvio, or comet
+    let lastSearchedSeason = null; // Track last searched season for provider switching
+    let lastSearchedEpisode = null; // Track last searched episode for provider switching
     
     // Sort and Filter state
     let currentSort = 'popularity'; // popularity, rating, date
@@ -10827,7 +10897,27 @@ Your browser does not support the video tag.
             });
             
             // Refresh torrents
-            refreshTorrents.addEventListener('click', () => fetchTorrents());
+            refreshTorrents.addEventListener('click', () => {
+                torrentsLoaded = false;
+                fetchTorrents(lastSearchedSeason, lastSearchedEpisode);
+            });
+            
+            // Provider buttons
+            document.querySelectorAll('.provider-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    // Update active state
+                    document.querySelectorAll('.provider-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    
+                    // Update selected provider
+                    selectedProvider = btn.dataset.provider;
+                    console.log('[Provider] Switched to:', selectedProvider);
+                    
+                    // Fetch torrents with new provider using last searched parameters
+                    torrentsLoaded = false;
+                    fetchTorrents(lastSearchedSeason, lastSearchedEpisode);
+                });
+            });
             
             // Keyword filter for torrents
             if (torrentKeywordFilter) {
@@ -14364,6 +14454,20 @@ Your browser does not support the video tag.
         function closeModal() {
             detailsModal.classList.remove('active');
             document.body.style.overflow = 'auto';
+            
+            // Reset provider selection to default
+            selectedProvider = 'playtorrio';
+            document.querySelectorAll('.provider-btn').forEach(btn => {
+                if (btn.dataset.provider === 'playtorrio') {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
+            });
+            
+            // Reset tracked search parameters
+            lastSearchedSeason = null;
+            lastSearchedEpisode = null;
         }
 
         // Display cast
@@ -14758,9 +14862,306 @@ Your browser does not support the video tag.
             }
         }
 
+        // Fetch streams from Nuvio API (direct streaming links)
+        async function fetchNuvioStreams(season = null, episode = null) {
+            if (!currentContent) return;
+
+            const torrentsList = document.getElementById('torrentsList');
+            torrentsList.innerHTML = '<div class="loading"><i class="fas fa-spinner"></i> Searching Nuvio...</div>';
+
+            try {
+                const tmdbId = currentContent.id;
+                const mediaType = currentMediaType; // 'movie' or 'tv'
+
+                // Get IMDB ID from TMDB
+                const externalIdsUrl = `https://api.themoviedb.org/3/${mediaType}/${tmdbId}/external_ids?api_key=${TMDB_API_KEY}`;
+                const externalIdsRes = await fetch(externalIdsUrl);
+                if (!externalIdsRes.ok) throw new Error('Failed to get IMDB ID from TMDB');
+                
+                const externalIds = await externalIdsRes.json();
+                const imdbId = externalIds.imdb_id;
+                
+                if (!imdbId) {
+                    throw new Error('No IMDB ID found for this content');
+                }
+
+                let nuvioUrl;
+                if (mediaType === 'movie') {
+                    nuvioUrl = `https://nuviostreams.hayd.uk/stream/movie/${imdbId}.json?cookie=ui%3DYOUR_FEBBOX_TOKEN&region=US`;
+                } else if (season && episode) {
+                    nuvioUrl = `https://nuviostreams.hayd.uk/stream/series/${imdbId}:${season}:${episode}.json?cookie=ui%3DYOUR_FEBBOX_TOKEN&region=US`;
+                } else {
+                    throw new Error('Season and episode required for TV shows');
+                }
+
+                console.log('[Nuvio] Fetching from:', nuvioUrl);
+
+                const response = await fetch(nuvioUrl);
+                if (!response.ok) throw new Error(`Nuvio error: ${response.statusText}`);
+                
+                const data = await response.json();
+                const streams = data.streams || [];
+                
+                console.log('[Nuvio] Found', streams.length, 'streams');
+
+                if (streams.length === 0) {
+                    torrentsList.innerHTML = '<div class="error-message"><i class="fas fa-info-circle"></i> No Nuvio streams found</div>';
+                    return;
+                }
+
+                // Display Nuvio streams as direct play buttons
+                displayNuvioStreams(streams);
+
+            } catch (error) {
+                console.error('[Nuvio] Error:', error);
+                torrentsList.innerHTML = `<div class="error-message"><i class="fas fa-exclamation-triangle"></i> Nuvio Error: ${error.message}</div>`;
+            }
+        }
+
+        // Display Nuvio streams (direct play, not torrents)
+        function displayNuvioStreams(streams) {
+            const torrentsList = document.getElementById('torrentsList');
+            
+            if (!streams || streams.length === 0) {
+                torrentsList.innerHTML = '<div class="error-message"><i class="fas fa-info-circle"></i> No streams available</div>';
+                return;
+            }
+
+            torrentsList.innerHTML = '';
+            
+            streams.forEach((stream, index) => {
+                const streamDiv = document.createElement('div');
+                streamDiv.className = 'torrent-item';
+                streamDiv.style.cursor = 'default';
+                
+                // Parse stream info
+                const name = stream.name || `Stream ${index + 1}`;
+                const title = stream.title || '';
+                const url = stream.url;
+                
+                // Extract quality and size info from title
+                const titleLines = title.split('\n');
+                const mainTitle = titleLines[0] || '';
+                const details = titleLines[1] || '';
+                
+                streamDiv.innerHTML = `
+                    <div class="torrent-info">
+                        <div class="torrent-name">${name}</div>
+                        ${mainTitle ? `<div style="color: var(--gray); font-size: 0.85rem; margin: 0.25rem 0;">${mainTitle}</div>` : ''}
+                        ${details ? `<div class="torrent-details">
+                            <span>${details}</span>
+                        </div>` : ''}
+                    </div>
+                    <div style="display: flex; gap: 0.5rem;">
+                        <button class="torrent-btn play-nuvio-btn" data-url="${url}" data-name="${name}">
+                            <i class="fas fa-play"></i> Play Now
+                        </button>
+                        <button class="torrent-btn mpv-nuvio-btn" data-url="${url}" data-name="${name}">
+                            <i class="fas fa-external-link-alt"></i> Open in MPV
+                        </button>
+                    </div>
+                `;
+                
+                torrentsList.appendChild(streamDiv);
+            });
+
+            // Add event listeners for Nuvio play buttons
+            document.querySelectorAll('.play-nuvio-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const url = btn.dataset.url;
+                    const name = btn.dataset.name;
+                    playNuvioStream(url, name);
+                });
+            });
+
+            document.querySelectorAll('.mpv-nuvio-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const url = btn.dataset.url;
+                    const name = btn.dataset.name;
+                    openNuvioInMPV(url, name);
+                });
+            });
+        }
+
+        // Play Nuvio stream directly (not a torrent)
+        async function playNuvioStream(url, name) {
+            try {
+                console.log('[Nuvio] Playing stream in custom player:', url);
+                
+                // Set current stream URL and name
+                currentStreamUrl = url;
+                currentSelectedVideoName = name;
+                
+                // Update player title
+                if (customPlayerTitle) {
+                    customPlayerTitle.innerHTML = `<span>${name}</span> <span class="source-badge direct-stream" title="Direct Stream">Nuvio</span>`;
+                }
+                
+                // Open in custom player
+                openCustomPlayer();
+                
+                showNotification('Playing in browser player', 'success');
+            } catch (error) {
+                console.error('[Nuvio] Play error:', error);
+                showNotification('Failed to play stream', 'error');
+            }
+        }
+
+        // Open Nuvio stream in MPV
+        async function openNuvioInMPV(url, name) {
+            try {
+                console.log('[Nuvio] Opening in MPV:', url);
+                
+                if (!window.electronAPI || !window.electronAPI.openInMPV) {
+                    showNotification('MPV integration not available', 'error');
+                    return;
+                }
+                
+                // Set current stream for MPV
+                currentStreamUrl = url;
+                currentSelectedVideoName = name;
+                
+                // Open in external MPV
+                const data = {
+                    streamUrl: url,
+                    infoHash: null,
+                    startSeconds: undefined
+                };
+                
+                const result = await window.electronAPI.openInMPV(data);
+                if (result.success) {
+                    showNotification('Opened in MPV', 'success');
+                } else {
+                    showNotification(`MPV Error: ${result.message}`, 'error');
+                }
+            } catch (error) {
+                console.error('[Nuvio] MPV open error:', error);
+                showNotification('Failed to open in MPV', 'error');
+            }
+        }
+
+        // Fetch torrents from Comet API
+        async function fetchCometTorrents(season = null, episode = null) {
+            if (!currentContent) return;
+
+            const torrentsList = document.getElementById('torrentsList');
+            torrentsList.innerHTML = '<div class="loading"><i class="fas fa-spinner"></i> Searching Comet...</div>';
+
+            try {
+                const tmdbId = currentContent.id;
+                const mediaType = currentMediaType; // 'movie' or 'tv'
+
+                // Get IMDB ID from TMDB
+                const externalIdsUrl = `https://api.themoviedb.org/3/${mediaType}/${tmdbId}/external_ids?api_key=${TMDB_API_KEY}`;
+                const externalIdsRes = await fetch(externalIdsUrl);
+                if (!externalIdsRes.ok) throw new Error('Failed to get IMDB ID from TMDB');
+                
+                const externalIds = await externalIdsRes.json();
+                const imdbId = externalIds.imdb_id;
+                
+                if (!imdbId) {
+                    throw new Error('No IMDB ID found for this content');
+                }
+
+                // Comet config (base64 encoded configuration)
+                const cometConfig = 'eyJtYXhSZXN1bHRzUGVyUmVzb2x1dGlvbiI6MCwibWF4U2l6ZSI6MCwiY2FjaGVkT25seSI6dHJ1ZSwicmVtb3ZlVHJhc2giOnRydWUsInJlc3VsdEZvcm1hdCI6WyJhbGwiXSwiZGVicmlkU2VydmljZSI6InRvcnJlbnQiLCJkZWJyaWRBcGlLZXkiOiIiLCJkZWJyaWRTdHJlYW1Qcm94eVBhc3N3b3JkIjoiIiwibGFuZ3VhZ2VzIjp7ImV4Y2x1ZGUiOltdLCJwcmVmZXJyZWQiOlsiZW4iXX0sInJlc29sdXRpb25zIjp7fSwib3B0aW9ucyI6eyJyZW1vdmVfcmFua3NfdW5kZXIiOi0xMDAwMDAwMDAwMCwiYWxsb3dfZW5nbGlzaF9pbl9sYW5ndWFnZXMiOmZhbHNlLCJyZW1vdmVfdW5rbm93bl9sYW5ndWFnZXMiOmZhbHNlfX0=';
+
+                let cometUrl;
+                if (mediaType === 'movie') {
+                    cometUrl = `https://comet.elfhosted.com/${cometConfig}/stream/movie/${imdbId}.json`;
+                } else if (season && episode) {
+                    cometUrl = `https://comet.elfhosted.com/${cometConfig}/stream/series/${imdbId}:${season}:${episode}.json`;
+                } else {
+                    throw new Error('Season and episode required for TV shows');
+                }
+
+                console.log('[Comet] Fetching from:', cometUrl);
+
+                const response = await fetch(cometUrl);
+                if (!response.ok) throw new Error(`Comet error: ${response.statusText}`);
+                
+                const data = await response.json();
+                const streams = data.streams || [];
+                
+                console.log('[Comet] Found', streams.length, 'streams');
+
+                if (streams.length === 0) {
+                    torrentsList.innerHTML = '<div class="error-message"><i class="fas fa-info-circle"></i> No Comet torrents found</div>';
+                    return;
+                }
+
+                // Convert Comet streams to magnet links and display
+                const torrents = streams.map(stream => {
+                    const infoHash = stream.infoHash;
+                    const sources = stream.sources || [];
+                    const name = stream.name || 'Unknown';
+                    const description = stream.description || '';
+                    
+                    // Use filename from behaviorHints if available, otherwise use name
+                    const displayTitle = (stream.behaviorHints && stream.behaviorHints.filename) 
+                        ? stream.behaviorHints.filename 
+                        : name;
+                    
+                    // Construct magnet link compatible with WebTorrent
+                    // Include display name and file index if available
+                    const fileName = (stream.behaviorHints && stream.behaviorHints.filename) || displayTitle;
+                    const fileIdx = stream.fileIdx !== undefined ? stream.fileIdx : 0;
+                    
+                    let magnetLink = `magnet:?xt=urn:btih:${infoHash}&dn=${encodeURIComponent(fileName)}`;
+                    
+                    // Add trackers (WebTorrent needs good trackers for peer discovery)
+                    sources.forEach(tracker => {
+                        magnetLink += `&tr=${encodeURIComponent(tracker)}`;
+                    });
+                    
+                    // Store fileIdx for later use when playing specific file from torrent
+                    if (fileIdx > 0) {
+                        magnetLink += `&so=${fileIdx}`;
+                    }
+                    
+                    // Extract size if available
+                    let sizeBytes = 0;
+                    if (stream.behaviorHints && stream.behaviorHints.videoSize) {
+                        sizeBytes = stream.behaviorHints.videoSize;
+                    }
+                    
+                    return {
+                        title: displayTitle,
+                        magnet: magnetLink,
+                        seeders: 0, // Comet doesn't provide seeders
+                        size: sizeBytes,
+                        description: description
+                    };
+                }).filter(Boolean);
+
+                console.log('[Comet] Converted', torrents.length, 'torrents');
+                displayTorrents(torrents, season, episode);
+
+            } catch (error) {
+                console.error('[Comet] Error:', error);
+                torrentsList.innerHTML = `<div class="error-message"><i class="fas fa-exclamation-triangle"></i> Comet Error: ${error.message}</div>`;
+            }
+        }
+
         // Fetch torrents from the backend
         async function fetchTorrents(season = null, episode = null) {
             if (!currentContent) return;
+
+            // Track last searched parameters for provider switching
+            lastSearchedSeason = season;
+            lastSearchedEpisode = episode;
+
+            // Check selected provider first
+            if (selectedProvider === 'nuvio') {
+                console.log('[Provider] Routing to Nuvio');
+                return fetchNuvioStreams(season, episode);
+            } else if (selectedProvider === 'comet') {
+                console.log('[Provider] Routing to Comet');
+                return fetchCometTorrents(season, episode);
+            }
+
+            // Playtorrio (default) - use existing torrent search logic
+            console.log('[Provider] Using Playtorrio (default torrent search)');
 
             // Check if Watch without Jackett is enabled and which source to use
             let torrentSource = 'torrentio'; // default
