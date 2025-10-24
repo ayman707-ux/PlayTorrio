@@ -5,35 +5,96 @@ import { fileURLToPath } from 'url';
 import fs from 'fs';
 import http from 'http';
 import os from 'os';
+import got from 'got';
+import { pipeline as streamPipelineCb } from 'stream';
+import { promisify } from 'util';
+
 // electron-updater is CommonJS; use default import + destructure for ESM
 import updaterPkg from 'electron-updater';
+// discord-rpc is CommonJS; default import works under ESM
+import RPC from 'discord-rpc';
 import { startServer } from './server.mjs'; // Import the server
 
 const { autoUpdater } = updaterPkg;
+const streamPipeline = promisify(streamPipelineCb);
 
 let httpServer;
 let webtorrentClient;
 let mainWindow;
-let torrentlessProc = null;
-let svc111477Proc = null;
-let booksProc = null;
-let booksDesiredPort = 3004;
-let booksBaseUrl = 'http://127.0.0.1:3004';
-let randomBookProc = null;
-let randomBookDesiredPort = 5000;
-let randomBookBaseUrl = 'http://127.0.0.1:5000';
-let animeProc = null;
-let animeDesiredPort = 7000;
-let animeBaseUrl = 'http://127.0.0.1:7000';
-let torrentioProc = null;
-let torrentioDesiredPort = 5500;
-let torrentioBaseUrl = 'http://127.0.0.1:5500';
+
+// ============================================================================
+// NOTE: Microservice process variables no longer used
+// All services now integrated into server.mjs via api.cjs on port 3000
+// ============================================================================
+// let torrentlessProc = null;
+// let svc111477Proc = null;
+// let booksProc = null;
+// let booksDesiredPort = 3004;
+// let booksBaseUrl = 'http://127.0.0.1:3004';
+// let randomBookProc = null;
+// let randomBookDesiredPort = 5000;
+// let randomBookBaseUrl = 'http://127.0.0.1:5000';
+// let animeProc = null;
+// let animeDesiredPort = 7000;
+// let animeBaseUrl = 'http://127.0.0.1:7000';
+// let torrentioProc = null;
+// let torrentioDesiredPort = 5500;
+// let torrentioBaseUrl = 'http://127.0.0.1:5500';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+
 // Ensure a stable AppUserModelID to prevent Windows taskbar/shortcut icon issues after updates
 try { app.setAppUserModelId('com.ayman.PlayTorrio'); } catch(_) {}
+
+// ----------------------
+// Discord Rich Presence
+// ----------------------
+const DISCORD_CLIENT_ID = '1430114242815725579';
+let discordRpc = null;
+let discordRpcReady = false;
+
+function setupDiscordRPC() {
+    try {
+        if (!DISCORD_CLIENT_ID) return;
+        // Avoid double init
+        if (discordRpc) return;
+        try { RPC.register(DISCORD_CLIENT_ID); } catch(_) {}
+
+        discordRpc = new RPC.Client({ transport: 'ipc' });
+
+        const setBaseActivity = () => {
+            try {
+                if (!discordRpc) return;
+                discordRpc.setActivity({
+                    details: 'Streaming your favorite movies',
+                    state: 'Browsing PlayTorrio',
+                    startTimestamp: new Date(),
+                    largeImageKey: 'icon', // uploaded image name on Discord dev portal
+                    largeImageText: 'PlayTorrio App',
+                    buttons: [
+                        { label: 'Download App', url: 'https://github.com/ayman707-ux/PlayTorrio' }
+                    ]
+                });
+            } catch (e) {
+                console.error('[Discord RPC] setActivity error:', e?.message || e);
+            }
+        };
+
+        discordRpc.on('ready', () => {
+            discordRpcReady = true;
+            setBaseActivity();
+            console.log('✅ Discord Rich Presence active!');
+        });
+
+        discordRpc.login({ clientId: DISCORD_CLIENT_ID }).catch((err) => {
+            console.error('[Discord RPC] login failed:', err?.message || err);
+        });
+    } catch (e) {
+        console.error('[Discord RPC] setup failed:', e?.message || e);
+    }
+}
 
 // ----------------------
 // Auto Update (Main-only)
@@ -46,8 +107,10 @@ function setupAutoUpdater() {
             return;
         }
 
-        autoUpdater.autoDownload = true;
-        autoUpdater.autoInstallOnAppQuit = true;
+    autoUpdater.autoDownload = true;
+    // We want to show the NSIS installer UI (non-silent) and exit immediately once ready
+    // So do NOT auto-install on app quit; we will explicitly quitAndInstall when downloaded
+    autoUpdater.autoInstallOnAppQuit = false;
 
         autoUpdater.on('checking-for-update', () => {
             console.log('[Updater] Checking for updates...');
@@ -126,6 +189,21 @@ function setupAutoUpdater() {
                     mainWindow.webContents.send('update-downloaded', info || {});
                 }
             } catch(_) {}
+            // Immediately start installer with UI (isSilent=false) and run app after finish (isForceRunAfter=true)
+            try {
+                console.log('[Updater] Launching installer and quitting app...');
+                // Small delay to allow renderer to show a toast before quitting
+                setTimeout(() => {
+                    // Note: Microservices no longer running - all handled by server.mjs
+                    try { autoUpdater.quitAndInstall(false, true); } catch (e) {
+                        console.error('[Updater] quitAndInstall failed:', e);
+                        // As a fallback, force app to quit; installer will run on next start if needed
+                        try { app.quit(); } catch(_) {}
+                    }
+                }, 1500);
+            } catch (e) {
+                console.error('[Updater] Failed to launch installer:', e);
+            }
         });
 
         // Perform initial check with retry logic
@@ -147,6 +225,11 @@ function setupAutoUpdater() {
         console.error('[Updater] setup failed:', e?.message || e);
     }
 }
+
+// Ensure processes are terminated when updater begins quitting
+app.on('before-quit-for-update', () => {
+    // Note: Microservices no longer running - all handled by server.mjs on port 3000
+});
 
 // Function to clear the webtorrent temp folder
 async function clearWebtorrentTemp() {
@@ -1068,28 +1151,23 @@ if (!gotLock) {
     });
 
     app.whenReady().then(() => {
-    // Start the integrated streaming server (port 3000)
+    // Initialize Discord RPC
+    try { setupDiscordRPC(); } catch(_) {}
+    // Start the unified server (port 3000) - handles all API routes including anime, books, torrents, etc.
     const { server, client } = startServer(app.getPath('userData'));
     httpServer = server;
     webtorrentClient = client;
 
-    // Start the Torrentless scraper server (port 3002)
-    startTorrentless();
-
-    // Start the 111477 service (port 3003)
-    start111477();
-
-    // Start the Books (Z-Library) search server (port 3004)
-    startBooks();
-
-    // Start the RandomBook search server (port 5000)
-    startRandomBook();
-
-    // Start the Anime (Nyaa) search server (port 7000)
-    startAnime();
-
-    // Start the Torrentio server (port 7001)
-    startTorrentio();
+    // ============================================================================
+    // NOTE: All microservices below are now integrated into server.mjs via api.cjs
+    // No need to start individual servers - all routes available on localhost:3000
+    // ============================================================================
+    // startTorrentless();  // Now: localhost:3000/torrentless/api/*
+    // start111477();       // Now: localhost:3000/111477/api/*
+    // startBooks();        // Now: localhost:3000/zlib/*
+    // startRandomBook();   // Now: localhost:3000/otherbook/api/*
+    // startAnime();        // Now: localhost:3000/anime/api/*
+    // startTorrentio();    // Now: localhost:3000/torrentio/api/*
 
         mainWindow = createWindow();
 
@@ -1497,6 +1575,129 @@ if (!gotLock) {
         }
     });
 
+    // ----------------------
+    // Music Offline Download
+    // ----------------------
+    const HIFI_BASE = 'https://hifi.401658.xyz';
+    const offlineDir = path.join(app.getPath('userData'), 'music_offline');
+    const coversDir = path.join(offlineDir, 'covers');
+    const offlineIndexPath = path.join(offlineDir, 'offline_music.json');
+    function ensureDirSync(dir) {
+        try { fs.mkdirSync(dir, { recursive: true }); } catch(_) {}
+    }
+    function readOfflineIndex() {
+        try {
+            if (fs.existsSync(offlineIndexPath)) {
+                return JSON.parse(fs.readFileSync(offlineIndexPath, 'utf8'));
+            }
+        } catch(_) {}
+        return [];
+    }
+    function writeOfflineIndex(arr) {
+        try { ensureDirSync(offlineDir); fs.writeFileSync(offlineIndexPath, JSON.stringify(arr, null, 2)); } catch(_) {}
+    }
+    function sanitizeFilename(name) {
+        return (name || '').replace(/[\\/:*?"<>|]/g, '_').slice(0, 120);
+    }
+    async function downloadToFile(url, destPath) {
+        await streamPipeline(got.stream(url), fs.createWriteStream(destPath));
+        return destPath;
+    }
+
+    ipcMain.handle('music-download-track', async (event, track) => {
+        try {
+            if (!track || !track.id) return { success: false, message: 'Invalid track' };
+            ensureDirSync(offlineDir); ensureDirSync(coversDir);
+            const index = readOfflineIndex();
+            // If already exists, return it
+            const existing = index.find(e => e.id == track.id);
+            if (existing && fs.existsSync(existing.filePath)) {
+                return { success: true, entry: existing, already: true };
+            }
+            // Fetch OriginalTrackUrl
+            const resp = await got(`${HIFI_BASE}/track/?id=${encodeURIComponent(track.id)}&quality=LOSSLESS`, { timeout: 20000 }).json();
+            let audioUrl = null;
+            if (Array.isArray(resp)) {
+                for (const it of resp) {
+                    const cand = it?.OriginalTrackUrl || it?.originalTrackUrl;
+                    if (cand && !String(cand).includes('tidal.com/browse')) { audioUrl = cand; break; }
+                }
+            }
+            if (!audioUrl) return { success: false, message: 'Audio URL not found' };
+            const lower = audioUrl.toLowerCase();
+            let ext = 'mp3';
+            if (lower.includes('.flac')) ext = 'flac';
+            else if (lower.includes('.m4a')) ext = 'm4a';
+            else if (lower.includes('.mp4')) ext = 'mp4';
+            else if (lower.includes('.aac')) ext = 'aac';
+            else if (lower.includes('.ogg')) ext = 'ogg';
+            const baseName = sanitizeFilename(`${track.artist || 'Artist'} - ${track.title || 'Track'}`);
+            const audioPath = path.join(offlineDir, `${baseName}.${ext}`);
+            await downloadToFile(audioUrl, audioPath);
+            // Download cover offline if available and http(s)
+            let coverPath = '';
+            try {
+                if (track.cover && /^https?:\/\//i.test(track.cover)) {
+                    const coverExt = track.cover.toLowerCase().includes('.png') ? 'png' : 'jpg';
+                    const coverName = sanitizeFilename(`${track.id}.${coverExt}`);
+                    const coverDest = path.join(coversDir, coverName);
+                    await downloadToFile(track.cover, coverDest);
+                    coverPath = coverDest;
+                }
+            } catch(_) {}
+
+            const entry = {
+                id: track.id,
+                title: track.title || 'Unknown Title',
+                artist: track.artist || 'Unknown Artist',
+                cover: coverPath || track.cover || '',
+                filePath: audioPath,
+                ext,
+                addedAt: new Date().toISOString()
+            };
+            const updated = existing ? index.map(e => e.id == entry.id ? entry : e) : [...index, entry];
+            writeOfflineIndex(updated);
+            return { success: true, entry };
+        } catch (e) {
+            console.error('[Music Offline] download failed:', e);
+            return { success: false, message: e?.message || 'Download failed' };
+        }
+    });
+
+    ipcMain.handle('music-offline-library', async () => {
+        try {
+            const index = readOfflineIndex();
+            // Filter out missing files
+            const valid = index.filter(e => {
+                try { return e.filePath && fs.existsSync(e.filePath); } catch(_) { return false; }
+            });
+            if (valid.length !== index.length) writeOfflineIndex(valid);
+            return { success: true, items: valid };
+        } catch (e) {
+            return { success: false, items: [], message: e?.message || 'Failed to read offline library' };
+        }
+    });
+
+    ipcMain.handle('music-offline-delete', async (event, entryId) => {
+        try {
+            if (!entryId) return { success: false, message: 'Missing id' };
+            const index = readOfflineIndex();
+            const entry = index.find(e => e.id == entryId);
+            if (entry) {
+                try { if (entry.filePath && fs.existsSync(entry.filePath)) fs.unlinkSync(entry.filePath); } catch(_) {}
+                // Remove cover only if inside coversDir
+                try {
+                    if (entry.cover && entry.cover.startsWith(coversDir) && fs.existsSync(entry.cover)) fs.unlinkSync(entry.cover);
+                } catch(_) {}
+            }
+            const updated = index.filter(e => e.id != entryId);
+            writeOfflineIndex(updated);
+            return { success: true };
+        } catch (e) {
+            return { success: false, message: e?.message || 'Failed to delete offline item' };
+        }
+    });
+
         // Initialize the auto-updater (main-process only, no renderer changes)
         setupAutoUpdater();
     });
@@ -1505,6 +1706,14 @@ if (!gotLock) {
 // Graceful shutdown
 app.on('will-quit', () => {
     app.isQuitting = true;
+    // Clean up Discord RPC
+    try {
+        if (discordRpc) {
+            try { discordRpc.clearActivity().catch(() => {}); } catch(_) {}
+            try { discordRpc.destroy(); } catch(_) {}
+            discordRpc = null;
+        }
+    } catch(_) {}
     // Shut down the webtorrent client
     if (webtorrentClient) {
         webtorrentClient.destroy(() => {
@@ -1517,26 +1726,25 @@ app.on('will-quit', () => {
             console.log('HTTP server closed.');
         });
     }
-    // Stop Torrentless child process
-    if (torrentlessProc) {
-        try { torrentlessProc.kill('SIGTERM'); } catch(_) {}
-        torrentlessProc = null;
-    }
-    // Stop 111477 child process
-    if (svc111477Proc) {
-        try { svc111477Proc.kill('SIGTERM'); } catch(_) {}
-        svc111477Proc = null;
-    }
-    // Stop Books child process
-    if (booksProc) {
-        try { booksProc.kill('SIGTERM'); } catch(_) {}
-        booksProc = null;
-    }
-    // Stop RandomBook child process
-    if (randomBookProc) {
-        try { randomBookProc.kill('SIGTERM'); } catch(_) {}
-        randomBookProc = null;
-    }
+    // ============================================================================
+    // NOTE: Microservice processes no longer used - all handled by server.mjs
+    // ============================================================================
+    // if (torrentlessProc) {
+    //     try { torrentlessProc.kill('SIGTERM'); } catch(_) {}
+    //     torrentlessProc = null;
+    // }
+    // if (svc111477Proc) {
+    //     try { svc111477Proc.kill('SIGTERM'); } catch(_) {}
+    //     svc111477Proc = null;
+    // }
+    // if (booksProc) {
+    //     try { booksProc.kill('SIGTERM'); } catch(_) {}
+    //     booksProc = null;
+    // }
+    // if (randomBookProc) {
+    //     try { randomBookProc.kill('SIGTERM'); } catch(_) {}
+    //     randomBookProc = null;
+    // }
 });
 
 app.on('window-all-closed', () => {
