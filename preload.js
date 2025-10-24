@@ -56,6 +56,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
   },
   getEpubLibrary: () => ipcRenderer.invoke('get-epub-library'),
   readEpubFile: (filePath) => ipcRenderer.invoke('read-epub-file', filePath),
+  // Music offline download & library
+  musicDownloadTrack: (track) => ipcRenderer.invoke('music-download-track', track),
+  musicGetOfflineLibrary: () => ipcRenderer.invoke('music-offline-library'),
+  musicDeleteOfflineTrack: (entryId) => ipcRenderer.invoke('music-offline-delete', entryId),
   // WebChimera exposure (optional, may be null if not installed)
   wcjs: {
     available: Boolean(wcRendererMod),
