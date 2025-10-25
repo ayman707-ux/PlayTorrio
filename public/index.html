@@ -10838,7 +10838,7 @@ Your browser does not support the video tag.
             // Open Jackett installer link in default browser
             if (openJackettLinkBtn) {
                 openJackettLinkBtn.addEventListener('click', async () => {
-                    const url = 'https://github.com/Jackett/Jackett/releases/download/v0.24.124/Jackett.Installer.Windows.exe';
+                    const url = 'https://github.com/Jackett/Jackett/releases/latest/download/Jackett.Installer.Windows.exe';
                     if (window.electronAPI?.openExternal) {
                         const res = await window.electronAPI.openExternal(url);
                         if (!res?.success) {
