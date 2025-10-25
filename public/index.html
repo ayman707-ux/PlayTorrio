@@ -5782,6 +5782,38 @@
             </div>
         </div>
 
+        <!-- Nuvio Febbox Token Section -->
+        <div class="settings-section" style="margin-top:1.25rem;">
+            <h3>
+                <i class="fas fa-stream" style="color: #667eea; margin-right: 0.5rem;"></i>
+                Nuvio Configuration
+            </h3>
+            <div style="padding:1rem; border:1px solid rgba(255,255,255,0.15); border-radius:8px; background: rgba(255,255,255,0.05);">
+                <div style="margin-bottom: 1rem; color: var(--secondary); font-size: 0.9rem;">
+                    <i class="fas fa-info-circle"></i>
+                    Configure your Febbox token for Nuvio streaming (ShowBox). A default token is provided, but you can use your own.
+                </div>
+                
+                <label for="febboxTokenInput" style="display: block; margin-bottom: 0.5rem; font-weight: 500;">
+                    Febbox JWT Token (Optional)
+                </label>
+                <input 
+                    type="text" 
+                    id="febboxTokenInput" 
+                    placeholder="Leave empty to use default token or paste your Febbox JWT token here"
+                    style="width: 100%; padding: 0.75rem; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; color: var(--light); font-size: 0.95rem; font-family: monospace; margin-bottom: 1rem;"
+                />
+                
+                <button id="saveFebboxToken" class="btn" style="width: 100%;">
+                    <i class="fas fa-save"></i> Save Token
+                </button>
+                
+                <div style="margin-top: 1rem; padding: 0.75rem; background: rgba(103, 126, 234, 0.1); border-left: 3px solid var(--secondary); border-radius: 4px; font-size: 0.85rem;">
+                    <i class="fas fa-check-circle" style="color: var(--secondary);"></i> Default token is active. You can continue using Nuvio without adding your own token.
+                </div>
+            </div>
+        </div>
+
         <!-- Trakt Integration Section -->
         <div class="settings-section" style="margin-top:1.25rem;">
             <h3>
@@ -7334,10 +7366,10 @@ If you experience audio problems or no audio at all, click <strong>"Open in MPV"
 </div>
 <div class="provider-buttons">
 <button class="provider-btn active" data-provider="playtorrio">
-<i class="fas fa-magnet"></i> Playtorrio
+<i class="fas fa-magnet"></i> Playtorrio (Configure in the settings)
                     </button>
 <button class="provider-btn" data-provider="nuvio">
-<i class="fas fa-stream"></i> Nuvio <span style="font-size: 0.8em; opacity: 0.8;">(could contain ShowBox)</span>
+<i class="fas fa-stream"></i> Nuvio <span style="font-size: 0.8em; opacity: 0.8;">(ShowBox)</span>
 </button>
 <button class="provider-btn" data-provider="comet">
 <i class="fas fa-meteor"></i> Comet
@@ -10712,6 +10744,32 @@ Your browser does not support the video tag.
                     if (r.ok) { if (debridStatus) debridStatus.textContent = 'Not logged in'; showNotification('Logged out of Premiumize'); }
                 } catch {}
             });
+
+            // ===== FEBBOX TOKEN EVENT LISTENER =====
+            
+            const febboxTokenInput = document.getElementById('febboxTokenInput');
+            const saveFebboxTokenBtn = document.getElementById('saveFebboxToken');
+            
+            // Load saved token on page load
+            if (febboxTokenInput) {
+                const savedToken = localStorage.getItem('febboxToken');
+                if (savedToken) {
+                    febboxTokenInput.value = savedToken;
+                }
+            }
+            
+            if (saveFebboxTokenBtn) {
+                saveFebboxTokenBtn.addEventListener('click', () => {
+                    const token = (febboxTokenInput?.value || '').trim();
+                    if (token) {
+                        localStorage.setItem('febboxToken', token);
+                        showNotification('Febbox token saved successfully', 'success');
+                    } else {
+                        localStorage.removeItem('febboxToken');
+                        showNotification('Febbox token cleared, using default', 'success');
+                    }
+                });
+            }
 
             // ===== TRAKT EVENT LISTENERS =====
             
@@ -14885,11 +14943,18 @@ Your browser does not support the video tag.
                     throw new Error('No IMDB ID found for this content');
                 }
 
+                // Default Febbox JWT token for Nuvio
+                const defaultFebboxToken = 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpYXQiOjE3NTU5MzQ2NzcsIm5iZiI6MTc1NTkzNDY3NywiZXhwIjoxNzg3MDM4Njk3LCJkYXRhIjp7InVpZCI6OTY3OTA3LCJ0b2tlbiI6ImRjZTBiZTUyNzgzODU1Njg5ZjNlMjBhZTIzODU2YzlkIn19.yAuVwTgLyO7sTH5rOi_-UaVAHqO0YzUkykXgQC2ci2E';
+                
+                // Use custom token from settings if available, otherwise use default
+                const savedToken = localStorage.getItem('febboxToken');
+                const febboxToken = savedToken && savedToken.trim() ? savedToken.trim() : defaultFebboxToken;
+
                 let nuvioUrl;
                 if (mediaType === 'movie') {
-                    nuvioUrl = `https://nuviostreams.hayd.uk/stream/movie/${imdbId}.json?cookie=ui%3DYOUR_FEBBOX_TOKEN&region=US`;
+                    nuvioUrl = `https://nuviostreams.hayd.uk/providers=showbox,vidzee,vidsrc,vixsrc,mp4hydra,uhdmovies,moviesmod,4khdhub,topmovies/stream/movie/${imdbId}.json?cookie=ui%3D${febboxToken}&region=US`;
                 } else if (season && episode) {
-                    nuvioUrl = `https://nuviostreams.hayd.uk/stream/series/${imdbId}:${season}:${episode}.json?cookie=ui%3DYOUR_FEBBOX_TOKEN&region=US`;
+                    nuvioUrl = `https://nuviostreams.hayd.uk/providers=showbox,vidzee,vidsrc,vixsrc,mp4hydra,uhdmovies,moviesmod,4khdhub,topmovies/stream/series/${imdbId}:${season}:${episode}.json?cookie=ui%3D${febboxToken}&region=US`;
                 } else {
                     throw new Error('Season and episode required for TV shows');
                 }
