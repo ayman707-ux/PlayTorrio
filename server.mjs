@@ -2390,11 +2390,12 @@ export function startServer(userDataPath) {
                 
                 // Rewrite relative URLs in the playlist to go through our proxy
                 const baseUrl = directUrl.substring(0, directUrl.lastIndexOf('/') + 1);
-                const rewrittenBody = body.replace(/^([^#\n\r]+\.ts)/gm, (match, segment) => {
+                const rewrittenBody = body.replace(/^([^#\n\r]+\.(ts|m3u8))/gm, (match, segment) => {
                     const segmentUrl = segment.startsWith('http') ? segment : baseUrl + segment;
                     return `${req.protocol}://${req.get('host')}/stream/debrid?url=${encodeURIComponent(segmentUrl)}`;
                 });
                 
+                console.log('[STREAM] HLS playlist rewritten, segments proxied through', `${req.protocol}://${req.get('host')}`);
                 res.send(rewrittenBody);
             } else {
                 // Regular file streaming with range support
@@ -2467,11 +2468,12 @@ export function startServer(userDataPath) {
                 
                 // Rewrite relative URLs in the playlist to go through our proxy
                 const baseUrl = directUrl.substring(0, directUrl.lastIndexOf('/') + 1);
-                const rewrittenBody = body.replace(/^([^#\n\r]+\.ts)/gm, (match, segment) => {
+                const rewrittenBody = body.replace(/^([^#\n\r]+\.(ts|m3u8))/gm, (match, segment) => {
                     const segmentUrl = segment.startsWith('http') ? segment : baseUrl + segment;
                     return `${req.protocol}://${req.get('host')}/api/stream/debrid?url=${encodeURIComponent(segmentUrl)}`;
                 });
                 
+                console.log('[STREAM] API HLS playlist rewritten');
                 res.send(rewrittenBody);
             } else {
                 // Regular file streaming
