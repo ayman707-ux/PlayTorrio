@@ -1349,6 +1349,132 @@
             cursor: not-allowed;
         }
 
+        /* Chromecast Device Selection Styles */
+        .chromecast-modal-header {
+            padding: 1.5rem 2rem;
+            border-bottom: 2px solid rgba(139, 92, 246, 0.3);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .chromecast-modal-header h3 {
+            font-size: 1.5rem;
+            color: var(--light);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin: 0;
+        }
+
+        .chromecast-modal-header i {
+            color: var(--tertiary);
+        }
+
+        .chromecast-device-list {
+            min-height: 200px;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .chromecast-device-item {
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(168, 85, 247, 0.05));
+            border: 2px solid rgba(139, 92, 246, 0.3);
+            border-radius: 12px;
+            padding: 1.25rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .chromecast-device-item:hover {
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(168, 85, 247, 0.1));
+            border-color: var(--tertiary);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+        }
+
+        .chromecast-device-icon {
+            font-size: 2rem;
+            color: var(--tertiary);
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(139, 92, 246, 0.2);
+            border-radius: 50%;
+        }
+
+        .chromecast-device-info {
+            flex: 1;
+        }
+
+        .chromecast-device-name {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--light);
+            margin-bottom: 0.25rem;
+        }
+
+        .chromecast-device-host {
+            font-size: 0.9rem;
+            color: var(--gray);
+        }
+
+        .loading-spinner {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
+            padding: 3rem;
+            color: var(--gray);
+        }
+
+        .loading-spinner i {
+            font-size: 2.5rem;
+            color: var(--tertiary);
+        }
+
+        .chromecast-no-devices {
+            text-align: center;
+            padding: 3rem;
+            color: var(--gray);
+        }
+
+        .chromecast-no-devices i {
+            font-size: 3rem;
+            color: var(--gray);
+            margin-bottom: 1rem;
+        }
+
+        .chromecast-no-devices h4 {
+            margin-bottom: 0.5rem;
+            color: var(--light);
+        }
+
+        .chromecast-refresh-btn {
+            margin-top: 1rem;
+            padding: 0.75rem 1.5rem;
+            background: linear-gradient(135deg, var(--secondary), var(--tertiary));
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .chromecast-refresh-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4);
+        }
+
+
         .torrent-pagination span {
             margin: 0 1rem;
         }
@@ -5477,6 +5603,8 @@
             }
         }
     </style>
+    <!-- Google Cast SDK -->
+    <script src="https://www.gstatic.com/cv/js/sender/v1/cast_sender.js?loadCastFramework=1"></script>
 </head>
 <body>
 <!-- API Setup Modal -->
@@ -6905,6 +7033,26 @@
         </div>
     </div>
 
+    <!-- Chromecast Device Selection Modal -->
+    <div id="chromecast-device-modal" class="modal" style="display: none; z-index: 6000;">
+        <div class="modal-content" style="max-width: 500px;">
+            <div class="chromecast-modal-header">
+                <h3><i class="fas fa-tv"></i> Select Chromecast Device</h3>
+                <button class="close-modal" id="close-chromecast-modal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div id="chromecast-device-list" class="chromecast-device-list">
+                    <div class="loading-spinner">
+                        <i class="fas fa-spinner fa-spin"></i>
+                        <p>Discovering devices...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Video Player Modal -->
     <div id="video-player-modal" class="video-player-modal" style="display: none;">
         <div class="video-player-content">
@@ -7481,6 +7629,7 @@ Your browser does not support the video tag.
                 <input type="range" id="htmlVolume" class="volume-slider" min="0" max="100" value="80" />
         </div>
         <button class="control-btn" id="htmlSubsBtn" title="Subtitles"><i class="fas fa-closed-captioning"></i></button>
+        
         <button class="control-btn" id="fullscreenBtn" title="Fullscreen"><i class="fas fa-expand"></i></button>
     </div>
 </div>
@@ -8024,6 +8173,24 @@ Your browser does not support the video tag.
         let genreCurrentPage = 1;
 
         // Initialize the app
+        function initializeCast() {
+            // Wait for Cast SDK to load
+            window['__onGCastApiAvailable'] = function(isAvailable) {
+                if (isAvailable) {
+                    try {
+                        const castContext = window.cast.framework.CastContext.getInstance();
+                        castContext.setOptions({
+                            receiverApplicationId: window.chrome.cast.media.DEFAULT_MEDIA_RECEIVER_APP_ID,
+                            autoJoinPolicy: window.chrome.cast.AutoJoinPolicy.ORIGIN_SCOPED
+                        });
+                        console.log('Google Cast initialized successfully');
+                    } catch (error) {
+                        console.error('Error initializing Cast:', error);
+                    }
+                }
+            };
+        }
+
         async function init() {
             await checkApiKeyStatus();
             await ensureDebridState();
@@ -8034,6 +8201,7 @@ Your browser does not support the video tag.
             initializeManga(); // Initialize Manga functionality
             handleRoute(); // route-aware initial load
             checkDiscordPrompt(); // Show Discord modal if user hasn't joined
+            initializeCast(); // Initialize Google Cast SDK
         }
         
         // Check if user has joined Discord and show modal if not
@@ -10399,6 +10567,20 @@ Your browser does not support the video tag.
                 });
             }
             
+            // Chromecast Device Modal
+            const closeChromecastModal = document.getElementById('close-chromecast-modal');
+            if (closeChromecastModal) {
+                closeChromecastModal.addEventListener('click', () => {
+                    const modal = document.getElementById('chromecast-device-modal');
+                    if (modal) {
+                        modal.style.display = 'none';
+                        modal.classList.remove('active');
+                        modal.style.opacity = '0';
+                        modal.style.pointerEvents = 'none';
+                    }
+                });
+            }
+            
             // Settings Modal
             clearCacheBtn.addEventListener('click', async () => {
                 const result = await window.electronAPI.clearCache();
@@ -11112,11 +11294,24 @@ Your browser does not support the video tag.
             copyStreamBtn.addEventListener('click', copyStreamUrl);
             playNowBtn.addEventListener('click', handlePlayNowClick);
             
+            // Chromecast button (in MPV controls) - uses backend catt
+            const castToChromecastBtn = document.getElementById('castToChromecastBtn');
+            if (castToChromecastBtn) {
+                castToChromecastBtn.addEventListener('click', castMPVToChromecast);
+            }
+            
             // Custom Player Controls
             playPauseBtn.addEventListener('click', togglePlayPause);
             rewindBtn.addEventListener('click', () => skipTime(-10));
             forwardBtn.addEventListener('click', () => skipTime(10));
             fullscreenBtn.addEventListener('click', toggleFullscreen);
+            
+            // Cast button (in custom player controls) - uses Google Cast SDK
+            const castBtn = document.getElementById('castBtn');
+            if (castBtn) {
+                castBtn.addEventListener('click', castToChromecast);
+            }
+            
             progressBar.addEventListener('click', seekVideo);
             subtitleFile.addEventListener('change', handleSubtitleUpload);
             // HTML5 audio controls
@@ -11661,7 +11856,41 @@ Your browser does not support the video tag.
             const playlistChooserCreate = document.getElementById('playlist-chooser-create');
             let playlistChooserTrack = null;
 
-            const HIFI_BASE = 'https://hifi.401658.xyz';
+            // Music providers (fallback order)
+            const HIFI_BASES = [
+                'https://frankfurt.monochrome.tf',
+                'https://hifi.401658.xyz',
+                'https://virginia.monochrome.tf',
+                'https://ohio.monochrome.tf',
+                'https://singapore.monochrome.tf',
+                'https://california.monochrome.tf',
+                'https://oregon.monochrome.tf',
+                'https://jakarta.monochrome.tf',
+                'https://tokyo.monochrome.tf',
+                'https://tidal.401658.xyz',
+                'https://hund.qqdl.site',
+                'https://katze.qqdl.site',
+                'https://vogel.qqdl.site',
+                'https://maus.qqdl.site',
+                'https://wolf.qqdl.site'
+            ];
+
+            // Helper to fetch from music providers with fallback
+            async function musicFetchJson(path) {
+                let lastError = null;
+                for (const base of HIFI_BASES) {
+                    try {
+                        const resp = await fetch(`${base}${path}`);
+                        if (resp.ok) {
+                            return await resp.json();
+                        }
+                        lastError = new Error(`HTTP ${resp.status} from ${base}`);
+                    } catch (e) {
+                        lastError = e;
+                    }
+                }
+                throw lastError || new Error('All music providers failed');
+            }
 
             function tidalCoverUrl(cover) {
                 if (!cover) return '';
@@ -11691,8 +11920,7 @@ Your browser does not support the video tag.
                 musicLoading.style.display = 'block';
 
                 try {
-                    const resp = await fetch(`${HIFI_BASE}/search/?s=${encodeURIComponent(q)}`);
-                    const data = await resp.json();
+                    const data = await musicFetchJson(`/search/?s=${encodeURIComponent(q)}`);
                     musicLoading.style.display = 'none';
                     const items = Array.isArray(data?.items) ? data.items : [];
 
@@ -11876,9 +12104,7 @@ Your browser does not support the video tag.
                 albumsGrid.innerHTML = '';
                 albumsCount.textContent = 'Searching…';
                 try {
-                    const resp = await fetch(`${HIFI_BASE}/search/?al=${encodeURIComponent(query.trim())}`);
-                    if (!resp.ok) throw new Error(`Album search failed: ${resp.status}`);
-                    const data = await resp.json();
+                    const data = await musicFetchJson(`/search/?al=${encodeURIComponent(query.trim())}`);
                     const albums = (data && data.albums && Array.isArray(data.albums.items)) ? data.albums.items : [];
                     renderAlbumResults(albums);
                 } catch (e) {
@@ -11927,9 +12153,7 @@ Your browser does not support the video tag.
                     setMusicSectionVisible('album-view');
                     albumTracksEl.innerHTML = '<div class="album-empty">Loading tracks…</div>';
 
-                    const resp = await fetch(`${HIFI_BASE}/album/?id=${encodeURIComponent(albumFromSearch.id)}`);
-                    if (!resp.ok) throw new Error(`Album fetch failed: ${resp.status}`);
-                    const json = await resp.json();
+                    const json = await musicFetchJson(`/album/?id=${encodeURIComponent(albumFromSearch.id)}`);
 
                     // API shape per example: [ albumMeta, { limit, offset, totalNumberOfItems, items: [{ item: {track}, type: 'track' }, ...] } ]
                     let albumMeta = null;
@@ -12523,8 +12747,7 @@ Your browser does not support the video tag.
                     if (coverSrc) musicCover.src = coverSrc;
                     musicPlayPauseBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
 
-                    const resp = await fetch(`${HIFI_BASE}/track/?id=${encodeURIComponent(trackId)}&quality=LOSSLESS`);
-                    const data = await resp.json();
+                    const data = await musicFetchJson(`/track/?id=${encodeURIComponent(trackId)}&quality=LOSSLESS`);
                     let url = null;
                     if (Array.isArray(data) && data.length >= 3) {
                         // HiFi API returns [trackInfo, manifest, {OriginalTrackUrl: "..."}]
@@ -15024,6 +15247,9 @@ Your browser does not support the video tag.
                         <button class="torrent-btn mpv-nuvio-btn" data-url="${url}" data-name="${name}">
                             <i class="fas fa-external-link-alt"></i> Open in MPV
                         </button>
+                        <button class="torrent-btn cast-nuvio-btn" data-url="${url}" data-name="${name}">
+                            <i class="fas fa-tv"></i> Cast
+                        </button>
                     </div>
                 `;
                 
@@ -15044,6 +15270,23 @@ Your browser does not support the video tag.
                     const url = btn.dataset.url;
                     const name = btn.dataset.name;
                     openNuvioInMPV(url, name);
+                });
+            });
+
+            // Add event listeners for Nuvio cast buttons
+            document.querySelectorAll('.cast-nuvio-btn').forEach(btn => {
+                btn.addEventListener('click', async () => {
+                    const url = btn.dataset.url;
+                    const name = btn.dataset.name;
+                    try {
+                        // Set current stream and show device picker to cast
+                        currentStreamUrl = url;
+                        currentSelectedVideoName = name;
+                        await showChromecastDevicePicker();
+                    } catch (e) {
+                        console.error('[Nuvio] Cast error:', e);
+                        showNotification('Failed to initiate casting', 'error');
+                    }
                 });
             });
         }
@@ -16898,6 +17141,203 @@ Your browser does not support the video tag.
             }
         }
 
+        async function castToChromecast() {
+            // Use the same backend casting as MPV button
+            if (!currentStreamUrl) {
+                showNotification('No stream available to cast', 'error');
+                return;
+            }
+            
+            // Show device picker modal (same as MPV casting)
+            await showChromecastDevicePicker();
+        }
+
+        // Deprecated: Old Web SDK method (kept for reference but not used in Electron)
+        function loadMediaToCast() {
+            const castSession = window.cast.framework.CastContext.getInstance().getCurrentSession();
+            if (!castSession) {
+                showNotification('No active Chromecast session', 'error');
+                return;
+            }
+
+            // Prepare media info
+            const mediaInfo = new window.chrome.cast.media.MediaInfo(currentStreamUrl, 'video/mp4');
+            
+            // Set metadata
+            const metadata = new window.chrome.cast.media.GenericMediaMetadata();
+            if (currentContent) {
+                metadata.title = currentContent.title || currentContent.name || 'Unknown';
+                if (currentContent.poster_path) {
+                    metadata.images = [new window.chrome.cast.Image(`https://image.tmdb.org/t/p/w500${currentContent.poster_path}`)];
+                }
+            }
+            mediaInfo.metadata = metadata;
+
+            const request = new window.chrome.cast.media.LoadRequest(mediaInfo);
+            
+            // Set current playback position if playing from custom player
+            if (customVideo && !customVideo.paused) {
+                request.currentTime = customVideo.currentTime;
+                // Pause local player
+                customVideo.pause();
+            }
+
+            castSession.loadMedia(request).then(
+                () => {
+                    showNotification('Casting to ' + castSession.getCastDevice().friendlyName, 'success');
+                },
+                (error) => {
+                    console.error('Load media error:', error);
+                    showNotification('Failed to cast media: ' + error.message, 'error');
+                }
+            );
+        }
+
+        async function castMPVToChromecast() {
+            if (!currentStreamUrl) {
+                showNotification('No stream available to cast', 'error');
+                return;
+            }
+            
+            // Show device picker modal
+            await showChromecastDevicePicker();
+        }
+
+        async function showChromecastDevicePicker() {
+            const modal = document.getElementById('chromecast-device-modal');
+            const deviceList = document.getElementById('chromecast-device-list');
+            
+            if (!modal || !deviceList) {
+                console.error('[Chromecast] Modal elements not found');
+                showNotification('Device picker not available', 'error');
+                return;
+            }
+            
+            // Show modal with loading state
+            modal.style.display = 'flex';
+            modal.classList.add('active');
+            modal.style.opacity = '1';
+            modal.style.pointerEvents = 'all';
+            
+            deviceList.innerHTML = `
+                <div class="loading-spinner">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    <p>Discovering Chromecast devices...</p>
+                </div>
+            `;
+            
+            try {
+                // Discover devices
+                const result = await window.electronAPI.discoverChromecastDevices();
+                
+                if (!result.success || result.devices.length === 0) {
+                    deviceList.innerHTML = `
+                        <div class="chromecast-no-devices">
+                            <i class="fas fa-broadcast-tower"></i>
+                            <h4>No Chromecast Devices Found</h4>
+                            <p>Make sure your Chromecast is on the same network</p>
+                            <button class="chromecast-refresh-btn" onclick="showChromecastDevicePicker()">
+                                <i class="fas fa-sync"></i> Refresh
+                            </button>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                // Display devices
+                deviceList.innerHTML = '';
+                result.devices.forEach(device => {
+                    const deviceItem = document.createElement('div');
+                    deviceItem.className = 'chromecast-device-item';
+                    deviceItem.innerHTML = `
+                        <div class="chromecast-device-icon">
+                            <i class="fas fa-tv"></i>
+                        </div>
+                        <div class="chromecast-device-info">
+                            <div class="chromecast-device-name">${escapeHtml(device.name)}</div>
+                            <div class="chromecast-device-host">${escapeHtml(device.host)}</div>
+                        </div>
+                    `;
+                    
+                    deviceItem.addEventListener('click', () => {
+                        castToDevice(device);
+                    });
+                    
+                    deviceList.appendChild(deviceItem);
+                });
+                
+            } catch (error) {
+                console.error('Device discovery error:', error);
+                deviceList.innerHTML = `
+                    <div class="chromecast-no-devices">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <h4>Discovery Failed</h4>
+                        <p>${escapeHtml(error.message || 'Failed to discover devices')}</p>
+                        <button class="chromecast-refresh-btn" onclick="showChromecastDevicePicker()">
+                            <i class="fas fa-sync"></i> Try Again
+                        </button>
+                    </div>
+                `;
+            }
+        }
+
+        async function castToDevice(device) {
+            const modal = document.getElementById('chromecast-device-modal');
+            if (modal) {
+                modal.style.display = 'none';
+                modal.classList.remove('active');
+                modal.style.opacity = '0';
+                modal.style.pointerEvents = 'none';
+            }
+            
+            try {
+                // Just send the URL as-is - main.js will handle proxying through network IP
+                let toCast = currentStreamUrl;
+                if (!toCast) {
+                    showNotification('No stream available to cast', 'error');
+                    return;
+                }
+
+                // Prepare metadata for Chromecast
+                const metadata = {
+                    title: 'PlayTorrio Stream',
+                    // Guess content type from original URL
+                    contentType: (toCast.includes('.m3u8') ? 'application/vnd.apple.mpegurl' : 'video/mp4'),
+                    images: []
+                };
+                
+                // Use currentContent if available
+                if (currentContent) {
+                    metadata.title = currentContent.title || currentContent.name || 'PlayTorrio Stream';
+                    
+                    if (currentContent.poster_path) {
+                        metadata.images = [{
+                            url: `https://image.tmdb.org/t/p/w500${currentContent.poster_path}`
+                        }];
+                    }
+                }
+                
+                console.log('[Cast] Sending stream URL to main process:', toCast);
+                
+                showNotification(`Connecting to ${device.name}...`, 'info');
+                
+                const result = await window.electronAPI.castToChromecast({
+                    streamUrl: toCast,
+                    metadata: metadata,
+                    deviceHost: device.host
+                });
+                
+                if (result.success) {
+                    showNotification(`Casting to ${device.name}`, 'success');
+                } else {
+                    showNotification(result.message, 'error');
+                }
+            } catch (error) {
+                console.error('Cast error:', error);
+                showNotification('Failed to cast: ' + error.message, 'error');
+            }
+        }
+
         function updateProgress() {
             const percent = (customVideo.currentTime / customVideo.duration) * 100;
             progressFilled.style.width = `${percent}%`;
@@ -16923,6 +17363,12 @@ Your browser does not support the video tag.
             const minutes = Math.floor(seconds / 60);
             const secs = Math.floor(seconds % 60);
             return `${minutes}:${String(secs).padStart(2, '0')}`;
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
         }
 
         async function handleSubtitleUpload(event) {
