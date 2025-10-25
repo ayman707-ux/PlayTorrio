@@ -14,6 +14,7 @@ import updaterPkg from 'electron-updater';
 // discord-rpc is CommonJS; default import works under ESM
 import RPC from 'discord-rpc';
 import { startServer } from './server.mjs'; // Import the server
+// Chromecast module will be dynamically imported when needed
 
 const { autoUpdater } = updaterPkg;
 const streamPipeline = promisify(streamPipelineCb);
@@ -1176,6 +1177,147 @@ if (!gotLock) {
         const { streamUrl, infoHash, startSeconds } = data || {};
         console.log(`Received MPV open request for hash: ${infoHash}`);
             return openInMPV(mainWindow, streamUrl, infoHash, startSeconds);
+    });
+
+    // Helper function to get local network IP
+    function getLocalNetworkIP(targetDeviceIP = null) {
+        const interfaces = os.networkInterfaces();
+        
+        // If we have a target device IP, try to find an interface on the same subnet
+        if (targetDeviceIP) {
+            const targetParts = targetDeviceIP.split('.');
+            const targetSubnet = `${targetParts[0]}.${targetParts[1]}.${targetParts[2]}`;
+            
+            for (const name of Object.keys(interfaces)) {
+                for (const iface of interfaces[name]) {
+                    if (iface.family === 'IPv4' && !iface.internal) {
+                        const ifaceParts = iface.address.split('.');
+                        const ifaceSubnet = `${ifaceParts[0]}.${ifaceParts[1]}.${ifaceParts[2]}`;
+                        
+                        // Found interface on same subnet as target device
+                        if (ifaceSubnet === targetSubnet) {
+                            console.log(`[Network] Found matching subnet interface: ${iface.address} for target ${targetDeviceIP}`);
+                            return iface.address;
+                        }
+                    }
+                }
+            }
+        }
+        
+        // Fallback: return first non-internal IPv4 address, skip virtual adapters
+        for (const name of Object.keys(interfaces)) {
+            for (const iface of interfaces[name]) {
+                // Skip internal, virtual adapters, and APIPA addresses
+                if (iface.family === 'IPv4' && !iface.internal && 
+                    !name.toLowerCase().includes('virtualbox') &&
+                    !name.toLowerCase().includes('vmware') &&
+                    !iface.address.startsWith('169.254') &&
+                    !iface.address.startsWith('192.168.56')) { // Common VirtualBox subnet
+                    return iface.address;
+                }
+            }
+        }
+        return 'localhost'; // fallback
+    }
+
+    // Helper function to replace localhost with network IP
+    function replaceLocalhostWithNetworkIP(url, targetDeviceIP = null) {
+        const networkIP = getLocalNetworkIP(targetDeviceIP);
+        console.log(`[Chromecast] Network IP: ${networkIP}`);
+        
+        if (url.includes('localhost')) {
+            const newUrl = url.replace('localhost', networkIP);
+            console.log(`[Chromecast] Replaced localhost URL: ${url} -> ${newUrl}`);
+            return newUrl;
+        }
+        if (url.includes('127.0.0.1')) {
+            const newUrl = url.replace('127.0.0.1', networkIP);
+            console.log(`[Chromecast] Replaced 127.0.0.1 URL: ${url} -> ${newUrl}`);
+            return newUrl;
+        }
+        return url;
+    }
+
+    // IPC handler to cast to Chromecast using bundled castv2-client
+    ipcMain.handle('cast-to-chromecast', async (event, data) => {
+        const { streamUrl, metadata, deviceHost } = data || {};
+        
+        if (!streamUrl) {
+            return { success: false, message: 'No stream URL provided' };
+        }
+        
+        try {
+            console.log('[Chromecast] Starting cast request...');
+            console.log('[Chromecast] Original stream URL:', streamUrl);
+            
+            // Detect if this is HLS
+            const isHLS = streamUrl.includes('.m3u8') || streamUrl.includes('mpegurl') || 
+                         streamUrl.includes('/playlist/');
+            
+            // Update metadata contentType if HLS
+            if (isHLS && metadata) {
+                metadata.contentType = 'application/x-mpegURL';
+                console.log('[Chromecast] Detected HLS stream, set contentType to application/x-mpegURL');
+            }
+            
+            // Wrap URL through local proxy if it's not already proxied
+            let urlToProxy = streamUrl;
+            const alreadyProxied = /\/stream\/debrid\?url=/.test(urlToProxy);
+            if (!alreadyProxied) {
+                // Wrap through proxy so PC handles fetching/caching
+                urlToProxy = `http://localhost:3000/stream/debrid?url=${encodeURIComponent(streamUrl)}`;
+            }
+            
+            // Replace localhost with network IP on same subnet as device
+            const networkStreamUrl = replaceLocalhostWithNetworkIP(urlToProxy, deviceHost);
+            
+            console.log('[Chromecast] Final URL for Chromecast:', networkStreamUrl);
+            
+            let result;
+            if (deviceHost) {
+                // Cast to specific device
+                console.log(`[Chromecast] Casting to specific device: ${deviceHost}`);
+                const { castMedia } = await import('./chromecast.mjs');
+                result = await castMedia(deviceHost, networkStreamUrl, metadata);
+            } else {
+                // Cast to first available device
+                const { castToFirstDevice } = await import('./chromecast.mjs');
+                result = await castToFirstDevice(networkStreamUrl, metadata);
+            }
+            
+            return { 
+                success: true, 
+                message: result.message || 'Casting to Chromecast...' 
+            };
+        } catch (error) {
+            console.error('[Chromecast] Casting error:', error);
+            
+            return { 
+                success: false, 
+                message: error.message || 'Failed to cast to Chromecast' 
+            };
+        }
+    });
+
+    // IPC handler to discover Chromecast devices
+    ipcMain.handle('discover-chromecast-devices', async () => {
+        try {
+            console.log('[Chromecast] Discovering devices...');
+            const { discoverDevices } = await import('./chromecast.mjs');
+            const devices = await discoverDevices(3000);
+            
+            return {
+                success: true,
+                devices: devices
+            };
+        } catch (error) {
+            console.error('[Chromecast] Discovery error:', error);
+            return {
+                success: false,
+                devices: [],
+                message: error.message
+            };
+        }
     });
 
     // IPC handler for manual temp folder clearing (e.g., from Close Player button)
