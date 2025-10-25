@@ -4,7 +4,7 @@ import cors from 'cors';
 import xml2js from 'xml2js';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import WebTorrent from 'webtorrent';
+import WebTorrent from 'webtorrent-hybrid';
 import mime from 'mime-types';
 import multer from 'multer';
 import fs from 'fs';
@@ -2690,12 +2690,71 @@ export function startServer(userDataPath) {
     }));
 
     const client = new WebTorrent({
-        maxConns: 100,        // Increase max connections for faster downloads
-        dht: true,            // Enable DHT for more peers
-        tracker: true,        // Enable trackers
-        webSeeds: true,       // Enable web seeds if available
-        uploadLimit: -1,      // No upload limit
-        downloadLimit: -1     // No download limit
+        // CONSERVATIVE: Stable connection limits that won't crash
+        maxConns: 80,  // Reduced from 150 - prevents buffer overrun
+        
+        // DHT (Distributed Hash Table) for peer discovery
+        dht: {
+            bootstrap: [
+                'router.bittorrent.com:6881',
+                'router.utorrent.com:6881',
+                'dht.transmissionbt.com:6881',
+                'dht.aelitis.com:6881'
+            ],
+            // Moderate DHT connections
+            concurrency: 16,  // Reduced from 24 - stable
+            verify: (info) => true // Skip verification for faster connections
+        },
+        
+        // Enable trackers for peer discovery
+        tracker: {
+            announce: [
+                // Public trackers for maximum peer discovery
+                'udp://tracker.opentrackr.org:1337/announce',
+                'udp://open.stealth.si:80/announce',
+                'udp://tracker.torrent.eu.org:451/announce',
+                'udp://tracker.moeking.me:6969/announce',
+                'udp://explodie.org:6969/announce',
+                'udp://tracker1.bt.moack.co.kr:80/announce',
+                'udp://tracker.theoks.net:6969/announce',
+                'udp://open.demonii.com:1337/announce',
+                'udp://p4p.arenabg.com:1337/announce',
+                'udp://tracker.dler.org:6969/announce',
+                'https://tracker.tamersunion.org:443/announce',
+                'https://tracker.gbitt.info:443/announce',
+                'http://tracker.openbittorrent.com:80/announce',
+                'udp://tracker.openbittorrent.com:6969/announce',
+                'udp://tracker.internetwarriors.net:1337/announce'
+            ],
+            // Moderate peer requests
+            getAnnounceOpts: () => {
+                return {
+                    numwant: 80, // Reduced from 150 - matches maxConns
+                    uploaded: 0,
+                    downloaded: 0,
+                    left: 999999999
+                }
+            },
+            // Standard announce interval
+            interval: 60000  // 60 seconds - stable
+        },
+        
+        // Enable web seeds for faster initial download from HTTP sources
+        webSeeds: true,
+        
+        // Unlimited upload/download (remove artificial throttling)
+        uploadLimit: -1,
+        downloadLimit: -1,
+        
+        // Enable uTP (Micro Transport Protocol) for better performance
+        utp: true,
+        
+        // Enable LSD (Local Service Discovery) for LAN peers
+        lsd: true,
+        
+        // Download chunks with reasonable timeout
+        pieceTimeout: 20000, // 20 seconds
+        downloadLimit: -1
     });
     const activeTorrents = new Map();
     // OpenSubtitles API key (provided by user for this app)
@@ -2839,12 +2898,62 @@ export function startServer(userDataPath) {
 
         const torrentDownloadPath = path.join(CACHE_LOCATION, 'webtorrent', infoHash);
         fs.mkdirSync(torrentDownloadPath, { recursive: true });
-        const torrentOptions = { path: torrentDownloadPath, destroyStoreOnDestroy: true };
+        const torrentOptions = { 
+            path: torrentDownloadPath, 
+            destroyStoreOnDestroy: true,
+            // CONSERVATIVE: Stable per-torrent connection limit
+            maxWebConns: 30,  // Reduced from 50 - prevents crashes
+            // Force aggressive peer discovery
+            announce: [
+                'udp://tracker.opentrackr.org:1337/announce',
+                'udp://open.stealth.si:80/announce',
+                'udp://tracker.torrent.eu.org:451/announce',
+                'udp://tracker.moeking.me:6969/announce',
+                'udp://explodie.org:6969/announce',
+                'udp://tracker1.bt.moack.co.kr:80/announce',
+                'udp://tracker.theoks.net:6969/announce',
+                'udp://open.demonii.com:1337/announce',
+                'udp://p4p.arenabg.com:1337/announce',
+                'udp://tracker.dler.org:6969/announce',
+                'https://tracker.tamersunion.org:443/announce',
+                'https://tracker.gbitt.info:443/announce',
+                'http://tracker.openbittorrent.com:80/announce',
+                'udp://tracker.openbittorrent.com:6969/announce',
+                'udp://tracker.internetwarriors.net:1337/announce'
+            ]
+        };
         const torrent = client.add(magnet, torrentOptions);
         activeTorrents.set(infoHash, torrent);
 
+        // Force immediate peer discovery
+        torrent.on('infoHash', () => {
+            console.log(`[Torrent] Info hash received: ${infoHash}, forcing peer discovery...`);
+            if (torrent.discovery && torrent.discovery.tracker) {
+                try {
+                    torrent.discovery.tracker.update();
+                } catch (err) {}
+            }
+            if (torrent.discovery && torrent.discovery.dht) {
+                try {
+                    torrent.discovery.dht.announce();
+                } catch (err) {}
+            }
+        });
+
         // As soon as metadata is available, deselect everything to prevent auto-download
         torrent.on('metadata', () => {
+            console.log(`[Torrent] Metadata received for ${infoHash}, peers: ${torrent.numPeers}`);
+            
+            // One re-announce after metadata
+            setTimeout(() => {
+                if (torrent.discovery && torrent.discovery.tracker) {
+                    try {
+                        torrent.discovery.tracker.update();
+                        console.log(`[Torrent] Re-announced, peers: ${torrent.numPeers}`);
+                    } catch (err) {}
+                }
+            }, 2000);
+            
             try { torrent.files.forEach(f => f.deselect()); } catch {}
             try { torrent.deselect(0, Math.max(0, torrent.pieces.length - 1), false); } catch {}
         });
@@ -2897,6 +3006,10 @@ export function startServer(userDataPath) {
                 // Deselect everything first
                 torrent.files.forEach(f => f.deselect());
                 try { torrent.deselect(0, Math.max(0, torrent.pieces.length - 1), false); } catch {}
+                
+                // CRITICAL: Force torrent to start discovering peers immediately
+                torrent.resume();
+                
                 // Select the chosen video file
                 file.select();
                 
@@ -2910,19 +3023,31 @@ export function startServer(userDataPath) {
                     torrent.select(fileStart, fileEnd, 1);
                 } catch {}
                 
-                // CRITICAL: Prioritize first 5MB for immediate playback
-                const priorityBytes = 5 * 1024 * 1024; // 5MB
+                // CRITICAL: Prioritize first 10MB for immediate playback (increased from 5MB)
+                const priorityBytes = 10 * 1024 * 1024; // 10MB
                 const priorityPieces = Math.ceil(priorityBytes / pieceLength);
                 const priorityEnd = Math.min(fileStart + priorityPieces, fileEnd);
                 
-                // Download first pieces with highest priority
+                // AGGRESSIVE: Mark all priority pieces as critical immediately
                 for (let i = fileStart; i <= priorityEnd; i++) {
                     try {
                         torrent.critical(i, i);
                     } catch {}
                 }
                 
-                console.log(`[Streaming] Prioritizing pieces ${fileStart}-${priorityEnd} of ${fileStart}-${fileEnd} for ${file.name}`);
+                // ADDITIONAL: Also prioritize LAST 5MB for seeking to end
+                const endPriorityBytes = 5 * 1024 * 1024;
+                const endPriorityPieces = Math.ceil(endPriorityBytes / pieceLength);
+                const endPriorityStart = Math.max(fileStart, fileEnd - endPriorityPieces);
+                
+                for (let i = endPriorityStart; i <= fileEnd; i++) {
+                    try {
+                        torrent.critical(i, i);
+                    } catch {}
+                }
+                
+                console.log(`[Streaming] Critical pieces: ${fileStart}-${priorityEnd} (start) and ${endPriorityStart}-${fileEnd} (end) of total ${fileStart}-${fileEnd} for ${file.name}`);
+                console.log(`[Streaming] Torrent has ${torrent.numPeers} peers, downloading: ${torrent.downloaded}, speed: ${torrent.downloadSpeed}`);
                 
                 // Select all subtitle files so they download alongside
                 torrent.files.forEach(f => {
@@ -2930,7 +3055,9 @@ export function startServer(userDataPath) {
                         try { f.select(); } catch {}
                     }
                 });
-            } catch {}
+            } catch (err) {
+                console.error('[Streaming] Error during file selection:', err);
+            }
 
             res.setHeader('Accept-Ranges', 'bytes');
             const range = req.headers.range;
@@ -2950,11 +3077,31 @@ export function startServer(userDataPath) {
                 });
 
                 const fileStream = file.createReadStream({ start, end });
+                
                 fileStream.on('error', (err) => {
-                    console.error('Stream error during seek:', err.message);
-                    res.end();
+                    console.error('[Stream Error] Range request failed:', err.message);
+                    if (!res.headersSent) {
+                        res.status(500).end();
+                    } else {
+                        res.end();
+                    }
                 });
-                res.on('close', () => fileStream.destroy());
+                
+                res.on('close', () => {
+                    try {
+                        fileStream.destroy();
+                    } catch (err) {
+                        console.error('[Cleanup] Error destroying stream:', err.message);
+                    }
+                });
+                
+                res.on('error', (err) => {
+                    console.error('[Response Error]:', err.message);
+                    try {
+                        fileStream.destroy();
+                    } catch {}
+                });
+                
                 fileStream.pipe(res);
 
             } else {
@@ -2963,12 +3110,33 @@ export function startServer(userDataPath) {
                     'Content-Length': fileSize, 
                     'Content-Type': contentType 
                 });
+                
                 const fileStream = file.createReadStream();
+                
                 fileStream.on('error', (err) => {
-                    console.error('Stream error initial:', err.message);
-                    res.end();
+                    console.error('[Stream Error] Initial request failed:', err.message);
+                    if (!res.headersSent) {
+                        res.status(500).end();
+                    } else {
+                        res.end();
+                    }
                 });
-                res.on('close', () => fileStream.destroy());
+                
+                res.on('close', () => {
+                    try {
+                        fileStream.destroy();
+                    } catch (err) {
+                        console.error('[Cleanup] Error destroying stream:', err.message);
+                    }
+                });
+                
+                res.on('error', (err) => {
+                    console.error('[Response Error]:', err.message);
+                    try {
+                        fileStream.destroy();
+                    } catch {}
+                });
+                
                 fileStream.pipe(res);
             }
         };
