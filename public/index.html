@@ -16548,6 +16548,7 @@ Your browser does not support the video tag.
                 return;
             }
             customPlayerContainer.classList.add('active');
+            customPlayerContainer.style.display = 'flex'; // Ensure it's visible
             
             // Check if this is an HLS stream (.m3u8) and use HLS.js if needed
             if (currentStreamUrl.includes('.m3u8') && typeof Hls !== 'undefined' && Hls.isSupported()) {
@@ -17075,6 +17076,7 @@ Your browser does not support the video tag.
             }
             
             customPlayerContainer.classList.remove('active');
+            customPlayerContainer.style.display = 'none'; // Fully hide to prevent invisible overlay
             try { customVideo.pause(); } catch(_) {}
             
             // Exit video fullscreen if active
