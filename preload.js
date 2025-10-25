@@ -14,6 +14,8 @@ try {
 
 contextBridge.exposeInMainWorld('electronAPI', {
   openInMPV: (data) => ipcRenderer.invoke('open-in-mpv', data),
+  castToChromecast: (data) => ipcRenderer.invoke('cast-to-chromecast', data),
+  discoverChromecastDevices: () => ipcRenderer.invoke('discover-chromecast-devices'),
   onStreamClosed: (callback) => ipcRenderer.on('stream-closed', callback),
   clearWebtorrentTemp: () => ipcRenderer.invoke('clear-webtorrent-temp'),
   clearCache: () => ipcRenderer.invoke('clear-cache'),
