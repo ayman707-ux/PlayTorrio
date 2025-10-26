@@ -43,6 +43,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // Fullscreen API
   setFullscreen: (isFullscreen) => ipcRenderer.invoke('set-fullscreen', isFullscreen),
   getFullscreen: () => ipcRenderer.invoke('get-fullscreen'),
+  // Discord Rich Presence API
+  updateDiscordPresence: (presenceData) => ipcRenderer.invoke('update-discord-presence', presenceData),
+  clearDiscordPresence: () => ipcRenderer.invoke('clear-discord-presence'),
   // EPUB Library API
   getEpubFolder: () => ipcRenderer.invoke('get-epub-folder'),
   // Accept both call styles:
