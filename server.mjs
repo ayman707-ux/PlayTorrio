@@ -2727,10 +2727,9 @@ export function startServer(userDataPath) {
     })();
 
     const resolveWritePath = () => {
-        // In installed app, always write to userData to ensure we have permissions and resilience across updates
-        return isPackagedByExe
-            ? path.join(userDataPath, 'jackett_api_key.json')
-            : path.join(devRoot, 'jackett_api_key.json');
+        // ALWAYS write to userData for consistency (both dev and packaged)
+        // This matches the read priority in loadAPIKey()
+        return path.join(userDataPath, 'jackett_api_key.json');
     };
 
     function loadAPIKey() {
@@ -3367,6 +3366,7 @@ export function startServer(userDataPath) {
         if (!query) return res.status(400).json({ error: 'Missing query' });
         const s = readSettings();
         const useTorrentless = !!s.useTorrentless;
+        console.log(`[/api/torrents] query="${query}", useTorrentless=${useTorrentless}, will use: ${useTorrentless ? 'TORRENTLESS' : 'JACKETT'}`);
         // If Torrentless is enabled, prefer it
         if (useTorrentless) {
             try {
@@ -3410,7 +3410,8 @@ export function startServer(userDataPath) {
         // Jackett fallback/default
         // Ensure key is loaded from disk whenever we need Jackett
         if (!API_KEY) loadAPIKey();
-    if (!API_KEY) return res.status(400).json({ error: 'API key not configured' });
+        console.log(`[Jackett] API_KEY check: ${API_KEY ? 'KEY EXISTS (length=' + API_KEY.length + ')' : 'KEY IS EMPTY'}`);
+        if (!API_KEY) return res.status(400).json({ error: 'API key not configured' });
         try {
             // Exclude adult/XXX categories (category IDs: 6000-6999 are adult categories in Jackett/Newznab)
             // Also exclude specific category codes: XXX (6000), Other XXX (6010-6090)
