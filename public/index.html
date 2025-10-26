@@ -9326,11 +9326,11 @@ Your browser does not support the video tag.
                 const response = await fetch(`${API_BASE_URL}/get-api-key`);
                 const data = await response.json();
                 
-                if (data.hasApiKey) {
-                    currentApiKey.textContent = `Current: ${data.apiKey}`;
-                } else {
-                    currentApiKey.textContent = 'No API key configured';
-                }
+                const text = data.hasApiKey ? `Current: ${data.apiKey}` : 'No API key configured';
+                // Update ALL elements with id currentApiKey (there are duplicates)
+                document.querySelectorAll('#currentApiKey').forEach(el => {
+                    el.textContent = text;
+                });
             } catch (error) {
                 console.error('Error loading current API key:', error);
                 // Also fetch debrid settings for global flags
@@ -9342,7 +9342,9 @@ Your browser does not support the video tag.
                         debridAuth = !!s.debridAuth;
                     }
                 } catch(_) {}
-                currentApiKey.textContent = 'Error loading API key';
+                document.querySelectorAll('#currentApiKey').forEach(el => {
+                    el.textContent = 'Error loading API key';
+                });
             }
         }
         
@@ -11174,16 +11176,17 @@ Your browser does not support the video tag.
         
         // Save Settings: persist useTorrentless and optionally API key, then close modal
         async function saveSettings_() {
-            // Get visible API key input
+            // Get API key from any instance (prefer visible, else any non-empty)
             const apiKeyElements = document.querySelectorAll('#newApiKey');
-            let apiKeyInput = null;
+            let apiKey = '';
             for (const el of apiKeyElements) {
-                if (el.offsetParent !== null) {
-                    apiKeyInput = el;
-                    break;
+                const val = (el.value || '').trim();
+                if (val) {
+                    apiKey = val;
+                    // Prefer the visible one but accept hidden if that's the only filled one
+                    if (el.offsetParent !== null) break;
                 }
             }
-            const apiKey = apiKeyInput?.value.trim() || '';
             
             // Get the toggle that is actually checked (either modal or settings page)
             const toggleElements = document.querySelectorAll('#useTorrentlessToggle');
@@ -11196,27 +11199,27 @@ Your browser does not support the video tag.
             }
             const desiredTorrentless = toggleEl ? !!toggleEl.checked : useTorrentless;
             
-            // Get visible Jackett URL input
+            // Get Jackett URL (prefer visible, else any non-empty)
             const jackettUrlElements = document.querySelectorAll('#jackettUrl');
-            let visibleJackettUrl = null;
+            let jackettUrl = '';
             for (const el of jackettUrlElements) {
-                if (el.offsetParent !== null) {
-                    visibleJackettUrl = el;
-                    break;
+                const val = (el.value || '').trim();
+                if (val) {
+                    jackettUrl = val;
+                    if (el.offsetParent !== null) break;
                 }
             }
-            const jackettUrl = visibleJackettUrl?.value.trim() || '';
             
-            // Get visible cache location input
+            // Get cache location (prefer visible, else any non-empty)
             const cacheLocationElements = document.querySelectorAll('#cacheLocation');
-            let visibleCacheLocation = null;
+            let cacheLocation = '';
             for (const el of cacheLocationElements) {
-                if (el.offsetParent !== null) {
-                    visibleCacheLocation = el;
-                    break;
+                const val = (el.value || '').trim();
+                if (val) {
+                    cacheLocation = val;
+                    if (el.offsetParent !== null) break;
                 }
             }
-            const cacheLocation = visibleCacheLocation?.value.trim() || '';
             
             // Handle fullscreen toggle - get the visible one
             const fullscreenToggles = document.querySelectorAll('#fullscreenToggle');
@@ -11292,13 +11295,27 @@ Your browser does not support the video tag.
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ apiKey })
                     });
-                    apiResult = await response.json();
+                    let keyLoc = null;
+                    try {
+                        apiResult = await response.json();
+                    } catch(_) { apiResult = null; }
                     if (response.ok) {
                         hasApiKey = true;
+                        // Confirm and show where it was saved
+                        try {
+                            const locRes = await fetch(`${API_BASE_URL}/key-location`);
+                            if (locRes.ok) keyLoc = await locRes.json();
+                        } catch(_) {}
                         await loadCurrentApiKey();
-                        showNotification('Settings saved. API key updated.');
+                        if (keyLoc?.hasApiKey && keyLoc?.path) {
+                            showNotification(`Settings saved. API key updated at ${keyLoc.path}`);
+                        } else {
+                            showNotification('Settings saved. API key updated.');
+                        }
+                        // Clear ALL API key inputs after success
+                        document.querySelectorAll('#newApiKey').forEach(el => { el.value = ''; });
                     } else {
-                        showNotification(apiResult.error || 'Failed to update API key');
+                        showNotification(apiResult?.error || 'Failed to update API key');
                     }
                 } else {
                     showNotification('Settings saved.');
