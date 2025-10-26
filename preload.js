@@ -14,6 +14,7 @@ try {
 
 contextBridge.exposeInMainWorld('electronAPI', {
   openInMPV: (data) => ipcRenderer.invoke('open-in-mpv', data),
+  openMPVDirect: (url) => ipcRenderer.invoke('open-mpv-direct', url),
   castToChromecast: (data) => ipcRenderer.invoke('cast-to-chromecast', data),
   discoverChromecastDevices: () => ipcRenderer.invoke('discover-chromecast-devices'),
   onStreamClosed: (callback) => ipcRenderer.on('stream-closed', callback),
