@@ -6403,6 +6403,10 @@
                             <div id="album-view-meta" style="color:#9ca3af; font-size:0.9rem;"></div>
                         </div>
                     </div>
+                    <button id="album-play-all-btn" class="action-btn" style="background: linear-gradient(135deg, #ec4899, #a855f7);">
+                        <i class="fas fa-play"></i>
+                        <span>Play All</span>
+                    </button>
                     <button id="album-close-btn" class="playlist-close-btn" style="margin-left:auto;">
                         <i class="fas fa-times"></i>
                         <span>Close Album</span>
@@ -6427,9 +6431,13 @@
 
             <!-- My Music Section -->
             <div id="my-music" class="books-results" style="display: none;">
-                <div class="books-results-header">
+                <div class="books-results-header" style="align-items:center; gap:1rem;">
                     <h3><i class="fas fa-heart" style="color:#ec4899"></i> My Music</h3>
                     <div id="my-music-count" class="books-results-count"></div>
+                    <button id="my-music-play-all-btn" class="action-btn" style="margin-left:auto; background: linear-gradient(135deg, #ec4899, #a855f7);">
+                        <i class="fas fa-play"></i>
+                        <span>Play All</span>
+                    </button>
                 </div>
                 <div id="my-music-grid" class="books-results-grid"></div>
                 <div id="my-music-empty" class="books-empty" style="display:none;">
@@ -8106,6 +8114,82 @@ Your browser does not support the video tag.
         let allTorrents = [];
         let torrentsPage = 1;
         const torrentsPerPage = 20;
+
+        // Discord Rich Presence tracking
+        let discordStreamingActive = false;
+        let discordMusicActive = false;
+
+        // Update Discord presence for streaming
+        async function updateDiscordForStreaming(contentTitle, provider = 'PlayTorrio', season = null) {
+            if (!window.electronAPI?.updateDiscordPresence) return;
+            
+            try {
+                discordStreamingActive = true;
+                
+                // For TV shows, append season info (no episode number)
+                let displayTitle = contentTitle;
+                if (season !== null && season !== undefined) {
+                    displayTitle = `${contentTitle} - Season ${season}`;
+                }
+                
+                const details = `Watching: ${displayTitle}`;
+                const state = `via ${provider}`;
+                
+                await window.electronAPI.updateDiscordPresence({
+                    details,
+                    state,
+                    startTimestamp: new Date(),
+                    largeImageKey: 'icon',
+                    largeImageText: 'PlayTorrio App',
+                    smallImageKey: 'play',
+                    smallImageText: 'Streaming',
+                    buttons: [
+                        { label: 'Download App', url: 'https://github.com/ayman707-ux/PlayTorrio' }
+                    ]
+                });
+            } catch (e) {
+                console.error('[Discord] Failed to update streaming presence:', e);
+            }
+        }
+
+        // Update Discord presence for music
+        async function updateDiscordForMusic(songTitle, artist, album) {
+            if (!window.electronAPI?.updateDiscordPresence) return;
+            
+            try {
+                discordMusicActive = true;
+                const details = `🎵 ${songTitle}`;
+                const state = artist ? `by ${artist}${album ? ` - ${album}` : ''}` : (album || 'Music');
+                
+                await window.electronAPI.updateDiscordPresence({
+                    details,
+                    state,
+                    startTimestamp: new Date(),
+                    largeImageKey: 'icon',
+                    largeImageText: 'PlayTorrio App',
+                    smallImageKey: 'music',
+                    smallImageText: 'Listening',
+                    buttons: [
+                        { label: 'Download App', url: 'https://github.com/ayman707-ux/PlayTorrio' }
+                    ]
+                });
+            } catch (e) {
+                console.error('[Discord] Failed to update music presence:', e);
+            }
+        }
+
+        // Clear Discord presence
+        async function clearDiscordPresence() {
+            if (!window.electronAPI?.clearDiscordPresence) return;
+            
+            try {
+                discordStreamingActive = false;
+                discordMusicActive = false;
+                await window.electronAPI.clearDiscordPresence();
+            } catch (e) {
+                console.error('[Discord] Failed to clear presence:', e);
+            }
+        }
 
         // Cache for filename -> TMDB lookup
         const filenameTmdbCache = new Map();
@@ -12151,10 +12235,14 @@ Your browser does not support the video tag.
                 });
             }
 
+            // Store current album tracks for Play All functionality
+            let currentAlbumTracks = [];
+
             async function openAlbum(albumFromSearch) {
                 try {
                     setMusicSectionVisible('album-view');
                     albumTracksEl.innerHTML = '<div class="album-empty">Loading tracks…</div>';
+                    currentAlbumTracks = []; // Clear previous album data
 
                     const json = await musicFetchJson(`/album/?id=${encodeURIComponent(albumFromSearch.id)}`);
 
@@ -12184,10 +12272,25 @@ Your browser does not support the video tag.
                     albumViewMeta.textContent = `${artistName} · ${numTracks} tracks${releaseDate ? ' · ' + releaseDate : ''}`;
                     albumViewCover.src = coverId ? tidalCoverUrl(coverId) : '';
 
+                    // Store tracks for Play All before rendering
+                    const coverSrc = coverId ? tidalCoverUrl(coverId) : '';
+                    currentAlbumTracks = tracks.map((t, idx) => {
+                        const trackId = t.id || t.trackNumber || idx + 1;
+                        const trackTitle = t.title || t.name || `Track ${idx+1}`;
+                        const trackArtist = (t.artists && t.artists[0]?.name) ? t.artists[0].name : artistName;
+                        return {
+                            id: trackId,
+                            title: trackTitle,
+                            artist: trackArtist,
+                            cover: coverSrc
+                        };
+                    }).filter(t => t.id); // Only tracks with valid IDs
+
                     renderAlbumTracks(tracks, { artists: [{ name: artistName }], cover: coverId });
                 } catch (e) {
                     console.error('[MUSIC] openAlbum error', e);
                     albumTracksEl.innerHTML = '<div class="album-empty">Failed to load album.</div>';
+                    currentAlbumTracks = []; // Clear on error
                 }
             }
 
@@ -12249,6 +12352,31 @@ Your browser does not support the video tag.
                     if (albumsGrid && albumsGrid.children.length) setMusicSectionVisible('albums');
                     else if (musicResultsGrid && musicResultsGrid.children.length) setMusicSectionVisible('results');
                     else setMusicSectionVisible('results');
+                });
+            }
+
+            // Play All button handlers
+            const albumPlayAllBtn = document.getElementById('album-play-all-btn');
+            if (albumPlayAllBtn) {
+                albumPlayAllBtn.addEventListener('click', () => {
+                    // Use stored album tracks instead of querying DOM
+                    if (currentAlbumTracks.length === 0) {
+                        showNotification('No tracks to play', 'info');
+                        return;
+                    }
+                    playAllTracks(currentAlbumTracks);
+                });
+            }
+
+            const myMusicPlayAllBtn = document.getElementById('my-music-play-all-btn');
+            if (myMusicPlayAllBtn) {
+                myMusicPlayAllBtn.addEventListener('click', () => {
+                    const tracks = getMyMusic();
+                    if (tracks.length === 0) {
+                        showNotification('No tracks in My Music', 'info');
+                        return;
+                    }
+                    playAllTracks(tracks);
                 });
             }
 
@@ -12454,16 +12582,35 @@ Your browser does not support the video tag.
                 // Add Close Playlist button in the header
                 const header = resSec.querySelector('.books-results-header');
                 if (header && !header.querySelector('#playlist-close-btn')) {
+                    // Add Play All button first
+                    const playAllBtn = document.createElement('button');
+                    playAllBtn.id = 'playlist-play-all-btn';
+                    playAllBtn.className = 'action-btn';
+                    playAllBtn.style.background = 'linear-gradient(135deg, #ec4899, #a855f7)';
+                    playAllBtn.innerHTML = '<i class="fas fa-play"></i><span>Play All</span>';
+                    header.appendChild(playAllBtn);
+                    playAllBtn.addEventListener('click', () => {
+                        const tracks = pl.tracks || [];
+                        if (tracks.length === 0) {
+                            showNotification('No tracks in this playlist', 'info');
+                            return;
+                        }
+                        playAllTracks(tracks);
+                    });
+                    
                     const closeBtn = document.createElement('button');
                     closeBtn.id = 'playlist-close-btn';
                     closeBtn.className = 'playlist-close-btn';
+                    closeBtn.style.marginLeft = 'auto';
                     closeBtn.innerHTML = '<i class="fas fa-times"></i><span>Close Playlist</span>';
                     header.appendChild(closeBtn);
                     closeBtn.addEventListener('click', () => {
-                        // Clear playlist-open mode and header button
+                        // Clear playlist-open mode and header buttons
                         if (musicPage) musicPage.classList.remove('playlist-open');
-                        const btn = document.getElementById('playlist-close-btn');
-                        if (btn) btn.remove();
+                        const pBtn = document.getElementById('playlist-play-all-btn');
+                        const cBtn = document.getElementById('playlist-close-btn');
+                        if (pBtn) pBtn.remove();
+                        if (cBtn) cBtn.remove();
                         // Go back to Playlists view explicitly
                         resSec.style.display = 'none';
                         empty.style.display = 'none';
@@ -12790,6 +12937,9 @@ Your browser does not support the video tag.
                     }
                     musicPlayPauseBtn.innerHTML = '<i class="fas fa-pause"></i>';
                     updateTimeDisplays();
+                    
+                    // Update Discord presence for music
+                    updateDiscordForMusic(title, artistName, '');
                 } catch (e) {
                     console.error('[MUSIC] Play error', e);
                     showNotification('Failed to play track', 'error');
@@ -12799,6 +12949,11 @@ Your browser does not support the video tag.
 
             // Fully close/stop music modal and unload audio
             function closeMusicModal() {
+                // Clear Discord presence when music stops
+                if (discordMusicActive) {
+                    clearDiscordPresence();
+                }
+                
                 try {
                     if (musicAudio) {
                         try { musicAudio.pause(); } catch(_) {}
@@ -12815,6 +12970,55 @@ Your browser does not support the video tag.
                 if (musicModal) musicModal.style.display = 'none';
             }
 
+            // Play All functionality
+            let currentPlayQueue = [];
+            let currentQueueIndex = 0;
+
+            function playAllTracks(tracks) {
+                if (!tracks || tracks.length === 0) {
+                    showNotification('No tracks to play', 'info');
+                    return;
+                }
+                
+                // Store the queue
+                currentPlayQueue = tracks;
+                currentQueueIndex = 0;
+                
+                // Play the first track
+                const firstTrack = tracks[0];
+                playMusicTrack({
+                    trackId: firstTrack.id,
+                    title: firstTrack.title,
+                    artistName: firstTrack.artist,
+                    coverSrc: firstTrack.cover
+                });
+                
+                showNotification(`Playing ${tracks.length} track${tracks.length !== 1 ? 's' : ''}`, 'success');
+            }
+
+            function playNextInQueue() {
+                if (currentPlayQueue.length === 0) return;
+                
+                currentQueueIndex++;
+                
+                if (currentQueueIndex >= currentPlayQueue.length) {
+                    // Queue finished
+                    currentPlayQueue = [];
+                    currentQueueIndex = 0;
+                    showNotification('Queue finished', 'info');
+                    return;
+                }
+                
+                // Play next track
+                const nextTrack = currentPlayQueue[currentQueueIndex];
+                playMusicTrack({
+                    trackId: nextTrack.id,
+                    title: nextTrack.title,
+                    artistName: nextTrack.artist,
+                    coverSrc: nextTrack.cover
+                });
+            }
+
             // Modal Controls
             function updateTimeDisplays() {
                 musicCurrentTime.textContent = fmtTime(musicAudio.currentTime || 0);
@@ -12828,6 +13032,10 @@ Your browser does not support the video tag.
                 musicAudio.addEventListener('loadedmetadata', updateTimeDisplays);
                 musicAudio.addEventListener('ended', () => {
                     musicPlayPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
+                    // Auto-play next track in queue if available
+                    if (currentPlayQueue.length > 0 && currentQueueIndex < currentPlayQueue.length - 1) {
+                        setTimeout(() => playNextInQueue(), 500);
+                    }
                 });
             }
 
@@ -13172,6 +13380,28 @@ Your browser does not support the video tag.
             function showVideoPlayer(url, title) {
                 console.log('[SERVERS] Opening embedded video player for:', title, url);
                 
+                // Update Discord presence for streaming
+                // Use TMDB title from currentContent, not the passed title parameter
+                const tmdbTitle = currentContent?.title || currentContent?.name || title;
+                
+                // Determine provider based on selectedProvider setting
+                let provider;
+                if (selectedProvider === 'playtorrio') {
+                    provider = 'App Sources';  // PlayTorrio configured in settings
+                } else if (selectedProvider === 'nuvio') {
+                    provider = 'Nuvio';
+                } else if (selectedProvider === 'comet') {
+                    provider = 'Comet';
+                } else if (selectedProvider === '111477') {
+                    provider = '111477';
+                } else {
+                    provider = 'App Sources';  // Default fallback
+                }
+                
+                // For TV shows, pass the season number
+                const seasonNum = (currentMediaType === 'tv' && currentSeason) ? currentSeason : null;
+                updateDiscordForStreaming(tmdbTitle, provider, seasonNum);
+                
                 // Get embedded video elements
                 const serverVideoSection = document.getElementById('server-video-section');
                 const serverVideoTitle = document.getElementById('server-video-title');
@@ -13323,6 +13553,12 @@ Your browser does not support the video tag.
             // Close video player function
             function closeVideoPlayer() {
                 console.log('[SERVERS] Closing video player due to URL violation');
+                
+                // Clear Discord presence when video closes
+                if (discordStreamingActive) {
+                    clearDiscordPresence();
+                }
+                
                 const serverVideoSection = document.getElementById('server-video-section');
                 const serverVideoFrame = document.getElementById('server-video-frame');
                 
@@ -15500,9 +15736,50 @@ Your browser does not support the video tag.
                     return;
                 }
 
+                // Helper function to extract quality from filename
+                function extractQuality(filename) {
+                    const qualities = ['2160p', '4K', '1080p', '720p', '480p', '360p'];
+                    for (const q of qualities) {
+                        if (filename.includes(q)) {
+                            return q;
+                        }
+                    }
+                    // Check for other indicators
+                    if (filename.match(/BluRay|Blu-Ray/i)) return 'BluRay';
+                    if (filename.match(/WEBRip|WEB-DL/i)) return 'WEB';
+                    if (filename.match(/HDTV/i)) return 'HDTV';
+                    return 'Unknown';
+                }
+
+                // Helper function to format file size
+                function formatFileSize(bytes) {
+                    if (!bytes || bytes === 0) return 'Unknown Size';
+                    const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+                    const i = Math.floor(Math.log(bytes) / Math.log(1024));
+                    return parseFloat((bytes / Math.pow(1024, i)).toFixed(2)) + ' ' + sizes[i];
+                }
+
+                // Process files: extract quality, format size, parse size for sorting
+                const processedFiles = allFiles.map(file => {
+                    const fileName = file.name || '';
+                    const quality = extractQuality(fileName);
+                    const sizeBytes = parseInt(file.size) || 0;
+                    const sizeFormatted = formatFileSize(sizeBytes);
+                    
+                    return {
+                        ...file,
+                        quality: quality,
+                        sizeFormatted: sizeFormatted,
+                        sizeBytes: sizeBytes
+                    };
+                });
+
+                // Sort by size: smallest to largest
+                processedFiles.sort((a, b) => a.sizeBytes - b.sizeBytes);
+
                 // Display 111477 streams
                 torrentsList.innerHTML = '';
-                allFiles.forEach(file => {
+                processedFiles.forEach(file => {
                     const item = document.createElement('div');
                     item.className = 'torrent-item';
                     item.style.display = 'flex';
@@ -15525,9 +15802,7 @@ Your browser does not support the video tag.
                     const meta = document.createElement('div');
                     meta.style.fontSize = '0.85rem';
                     meta.style.opacity = '0.7';
-                    const quality = file.quality || 'Unknown Quality';
-                    const size = file.size || 'Unknown Size';
-                    meta.textContent = `${quality} • ${size}`;
+                    meta.textContent = `${file.quality} • ${file.sizeFormatted}`;
 
                     info.appendChild(title);
                     info.appendChild(meta);
@@ -15541,6 +15816,11 @@ Your browser does not support the video tag.
                         if (file.url) {
                             console.log('[111477] Opening in MPV:', file.url);
                             try {
+                                // Update Discord presence for 111477 MPV streaming
+                                const title = currentContent?.title || currentContent?.name || 'Video';
+                                const seasonNum = (currentMediaType === 'tv' && currentSeason) ? currentSeason : null;
+                                updateDiscordForStreaming(title, '111477', seasonNum);
+                                
                                 const result = await window.electronAPI.openMPVDirect(file.url);
                                 if (result.success) {
                                     showNotification('Opening stream in MPV... Please Wait', 'success', 5000);
@@ -16465,6 +16745,29 @@ Your browser does not support the video tag.
                 showNotification('MPV integration not available in this environment');
                 return;
             }
+            
+            // Update Discord presence for MPV streaming
+            // Always use TMDB title, not torrent filename
+            const title = currentContent?.title || currentContent?.name || 'Video';
+            
+            // Determine provider based on selectedProvider setting
+            let provider;
+            if (selectedProvider === 'playtorrio') {
+                provider = 'App Sources';  // PlayTorrio configured in settings
+            } else if (selectedProvider === 'nuvio') {
+                provider = 'Nuvio';
+            } else if (selectedProvider === 'comet') {
+                provider = 'Comet';
+            } else if (selectedProvider === '111477') {
+                provider = '111477';
+            } else {
+                provider = 'App Sources';  // Default fallback
+            }
+            
+            // For TV shows, pass the season number
+            const seasonNum = (currentMediaType === 'tv' && currentSeason) ? currentSeason : null;
+            updateDiscordForStreaming(title, provider, seasonNum);
+            
             const data = {
                 streamUrl: currentStreamUrl,
                 infoHash: (currentTorrentData && currentTorrentData.infoHash) ? currentTorrentData.infoHash : null,
@@ -16666,6 +16969,28 @@ Your browser does not support the video tag.
                 showNotification('No file selected to play');
                 return;
             }
+            
+            // Update Discord presence for streaming
+            const tmdbTitle = currentContent?.title || currentContent?.name || 'Unknown';
+            
+            // Determine provider based on selectedProvider setting
+            let provider;
+            if (selectedProvider === 'playtorrio') {
+                provider = 'App Sources';
+            } else if (selectedProvider === 'nuvio') {
+                provider = 'Nuvio';
+            } else if (selectedProvider === 'comet') {
+                provider = 'Comet';
+            } else if (selectedProvider === '111477') {
+                provider = '111477';
+            } else {
+                provider = 'App Sources';
+            }
+            
+            // For TV shows, pass the season number
+            const seasonNum = (currentMediaType === 'tv' && currentSeason) ? currentSeason : null;
+            updateDiscordForStreaming(tmdbTitle, provider, seasonNum);
+            
             customPlayerContainer.classList.add('active');
             customPlayerContainer.style.display = 'flex'; // Ensure it's visible
             
@@ -17192,6 +17517,11 @@ Your browser does not support the video tag.
             if (customVideo.duration && traktCurrentScrobble) {
                 const progress = customVideo.currentTime / customVideo.duration * 100;
                 scrobbleStop(Math.floor(progress));
+            }
+            
+            // Clear Discord presence when custom player closes
+            if (discordStreamingActive) {
+                clearDiscordPresence();
             }
             
             customPlayerContainer.classList.remove('active');
