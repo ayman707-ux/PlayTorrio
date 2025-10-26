@@ -1155,9 +1155,12 @@ if (!gotLock) {
     // Initialize Discord RPC
     try { setupDiscordRPC(); } catch(_) {}
     // Start the unified server (port 3000) - handles all API routes including anime, books, torrents, etc.
-    const { server, client } = startServer(app.getPath('userData'));
+    const { server, client, clearCache } = startServer(app.getPath('userData'));
     httpServer = server;
     webtorrentClient = client;
+    
+    // Store clearCache function globally for cleanup on exit
+    global.clearApiCache = clearCache;
 
     // ============================================================================
     // NOTE: All microservices below are now integrated into server.mjs via api.cjs
@@ -1177,6 +1180,23 @@ if (!gotLock) {
         const { streamUrl, infoHash, startSeconds } = data || {};
         console.log(`Received MPV open request for hash: ${infoHash}`);
             return openInMPV(mainWindow, streamUrl, infoHash, startSeconds);
+    });
+
+    // Direct MPV launch for external URLs (111477, etc.)
+    ipcMain.handle('open-mpv-direct', async (event, url) => {
+        try {
+            console.log('Opening URL in MPV:', url);
+            const mpvPath = resolveMpvExe();
+            if (!mpvPath) {
+                throw new Error('MPV not found');
+            }
+            const mpvProcess = spawn(mpvPath, [url], { stdio: 'ignore', detached: true });
+            mpvProcess.unref();
+            return { success: true };
+        } catch (error) {
+            console.error('Error opening MPV:', error);
+            return { success: false, error: error.message };
+        }
     });
 
     // Helper function to get local network IP
@@ -1330,9 +1350,20 @@ if (!gotLock) {
             const results = [];
             const r1 = await clearWebtorrentTemp(); results.push(r1);
             const r2 = await clearPlaytorrioSubtitlesTemp(); results.push(r2);
+            
+            // Also clear API cache
+            if (global.clearApiCache) {
+                try {
+                    global.clearApiCache();
+                    results.push({ success: true, message: 'API cache cleared' });
+                } catch (error) {
+                    results.push({ success: false, message: 'Failed to clear API cache: ' + error.message });
+                }
+            }
+            
             const success = results.every(r => r.success);
             const message = success
-                ? 'Cache cleared: webtorrent and downloaded subtitles.'
+                ? 'Cache cleared: webtorrent, downloaded subtitles, and API cache.'
                 : results.map(r => r.message).join(' | ');
             return { success, message };
     });
@@ -1848,6 +1879,17 @@ if (!gotLock) {
 // Graceful shutdown
 app.on('will-quit', () => {
     app.isQuitting = true;
+    
+    // Clear API cache on exit
+    console.log('Clearing API cache on exit...');
+    if (global.clearApiCache) {
+        try {
+            global.clearApiCache();
+        } catch (error) {
+            console.error('Error clearing cache:', error);
+        }
+    }
+    
     // Clean up Discord RPC
     try {
         if (discordRpc) {
