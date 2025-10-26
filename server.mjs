@@ -4,7 +4,7 @@ import cors from 'cors';
 import xml2js from 'xml2js';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import WebTorrent from 'webtorrent-hybrid';
+import WebTorrent from 'webtorrent';
 import mime from 'mime-types';
 import multer from 'multer';
 import fs from 'fs';
@@ -19,6 +19,85 @@ const { registerApiRoutes } = require('./api.cjs');
 
 // This function will be imported and called by main.js
 export function startServer(userDataPath) {
+    // ============================================================================
+    // API CACHE MANAGER - 1 hour cache for all API requests
+    // ============================================================================
+    const apiCache = new Map();
+    const CACHE_DURATION = 60 * 60 * 1000; // 1 hour in milliseconds
+
+    // Cache helper functions
+    function getCacheKey(url, params = {}) {
+        const sortedParams = JSON.stringify(params, Object.keys(params).sort());
+        return `${url}::${sortedParams}`;
+    }
+
+    function getFromCache(key) {
+        const cached = apiCache.get(key);
+        if (!cached) return null;
+        
+        const now = Date.now();
+        if (now - cached.timestamp > CACHE_DURATION) {
+            apiCache.delete(key);
+            return null;
+        }
+        
+        console.log(`[Cache HIT] ${key.substring(0, 80)}...`);
+        return cached.data;
+    }
+
+    function setToCache(key, data) {
+        apiCache.set(key, {
+            data: data,
+            timestamp: Date.now()
+        });
+        console.log(`[Cache SET] ${key.substring(0, 80)}... (Total cached: ${apiCache.size})`);
+    }
+
+    function clearCache() {
+        const size = apiCache.size;
+        apiCache.clear();
+        console.log(`[Cache CLEARED] Removed ${size} cached entries`);
+    }
+
+    // Periodic cache cleanup (remove expired entries every 15 minutes)
+    setInterval(() => {
+        const now = Date.now();
+        let removed = 0;
+        for (const [key, value] of apiCache.entries()) {
+            if (now - value.timestamp > CACHE_DURATION) {
+                apiCache.delete(key);
+                removed++;
+            }
+        }
+        if (removed > 0) {
+            console.log(`[Cache Cleanup] Removed ${removed} expired entries`);
+        }
+    }, 15 * 60 * 1000);
+
+    // Middleware to cache GET requests automatically
+    function cacheMiddleware(req, res, next) {
+        if (req.method !== 'GET') return next();
+        
+        const cacheKey = getCacheKey(req.originalUrl || req.url, req.query);
+        const cached = getFromCache(cacheKey);
+        
+        if (cached) {
+            return res.json(cached);
+        }
+        
+        // Override res.json to cache the response
+        const originalJson = res.json.bind(res);
+        res.json = function(data) {
+            if (res.statusCode === 200 && data) {
+                setToCache(cacheKey, data);
+            }
+            return originalJson(data);
+        };
+        
+        next();
+    }
+
+    // ============================================================================
     // Recursive directory deletion function
     const deleteFolderRecursive = async (directoryPath) => {
         if (fs.existsSync(directoryPath)) {
@@ -137,6 +216,108 @@ export function startServer(userDataPath) {
     app.use(cors());
     app.use(express.static(path.join(__dirname, 'public')));
     app.use(express.json());
+    
+    // Apply cache middleware to all API routes
+    app.use('/anime/api', cacheMiddleware);
+    app.use('/torrentio/api', cacheMiddleware);
+    app.use('/torrentless/api', cacheMiddleware);
+    app.use('/zlib', cacheMiddleware);
+    app.use('/otherbook/api', cacheMiddleware);
+    app.use('/111477/api', cacheMiddleware);
+    app.use('/api/torrents', cacheMiddleware);
+    app.use('/api/trakt', cacheMiddleware);
+    
+    // Health check endpoint
+    app.get('/', (req, res) => {
+        res.json({ 
+            status: 'running', 
+            message: 'PlayTorrio Server is running',
+            version: '1.3.9',
+            cacheSize: apiCache.size,
+            endpoints: {
+                anime: '/anime/api/*',
+                torrentio: '/torrentio/api/*',
+                torrentless: '/torrentless/api/*',
+                webtorrent: '/api/webtorrent/*',
+                trakt: '/api/trakt/*'
+            }
+        });
+    });
+    
+    // Cache management endpoint
+    app.post('/api/clear-cache', (req, res) => {
+        clearCache();
+        res.json({ success: true, message: 'Cache cleared successfully' });
+    });
+
+    app.get('/api/cache-stats', (req, res) => {
+        res.json({ 
+            size: apiCache.size,
+            duration: CACHE_DURATION / 1000 / 60 + ' minutes'
+        });
+    });
+
+    // ============================================================================
+    // NUVIO PROXY - Cache Nuvio streaming API requests
+    // ============================================================================
+    app.get('/api/nuvio/stream/:type/:id', cacheMiddleware, async (req, res) => {
+        try {
+            const { type, id } = req.params;
+            const { cookie, region = 'US' } = req.query;
+
+            if (!['movie', 'series'].includes(type)) {
+                return res.status(400).json({ error: 'Invalid type. Must be movie or series.' });
+            }
+
+            const providers = 'showbox,vidzee,vidsrc,vixsrc,mp4hydra,uhdmovies,moviesmod,4khdhub,topmovies';
+            const nuvioUrl = `https://nuviostreams.hayd.uk/providers=${providers}/stream/${type}/${id}.json?cookie=${cookie || ''}&region=${region}`;
+
+            console.log('[Nuvio Proxy] Fetching:', nuvioUrl);
+
+            const response = await fetch(nuvioUrl);
+            if (!response.ok) {
+                throw new Error(`Nuvio API error: ${response.statusText}`);
+            }
+
+            const data = await response.json();
+            res.json(data);
+        } catch (error) {
+            console.error('[Nuvio Proxy Error]:', error);
+            res.status(500).json({ error: error.message || 'Failed to fetch Nuvio streams' });
+        }
+    });
+
+    // ============================================================================
+    // COMET PROXY - Cache Comet debrid API requests
+    // ============================================================================
+    app.get('/api/comet/stream/:type/:id', cacheMiddleware, async (req, res) => {
+        try {
+            const { type, id } = req.params;
+            const { config } = req.query;
+
+            if (!['movie', 'series'].includes(type)) {
+                return res.status(400).json({ error: 'Invalid type. Must be movie or series.' });
+            }
+
+            // Default Comet config if none provided
+            const cometConfig = config || 'eyJtYXhSZXN1bHRzUGVyUmVzb2x1dGlvbiI6MCwibWF4U2l6ZSI6MCwiY2FjaGVkT25seSI6dHJ1ZSwicmVtb3ZlVHJhc2giOnRydWUsInJlc3VsdEZvcm1hdCI6WyJhbGwiXSwiZGVicmlkU2VydmljZSI6InRvcnJlbnQiLCJkZWJyaWRBcGlLZXkiOiIiLCJkZWJyaWRTdHJlYW1Qcm94eVBhc3N3b3JkIjoiIiwibGFuZ3VhZ2VzIjp7ImV4Y2x1ZGUiOltdLCJwcmVmZXJyZWQiOlsiZW4iXX0sInJlc29sdXRpb25zIjp7fSwib3B0aW9ucyI6eyJyZW1vdmVfcmFua3NfdW5kZXIiOi0xMDAwMDAwMDAwMCwiYWxsb3dfZW5nbGlzaF9pbl9sYW5ndWFnZXMiOmZhbHNlLCJyZW1vdmVfdW5rbm93bl9sYW5ndWFnZXMiOmZhbHNlfX0=';
+            
+            const cometUrl = `https://comet.elfhosted.com/${cometConfig}/stream/${type}/${id}.json`;
+
+            console.log('[Comet Proxy] Fetching:', cometUrl);
+
+            const response = await fetch(cometUrl);
+            if (!response.ok) {
+                throw new Error(`Comet API error: ${response.statusText}`);
+            }
+
+            const data = await response.json();
+            res.json(data);
+        } catch (error) {
+            console.error('[Comet Proxy Error]:', error);
+            res.status(500).json({ error: error.message || 'Failed to fetch Comet streams' });
+        }
+    });
     
     // Register all API routes from api.js (anime, torrentio, torrentless, zlib, otherbook, 111477)
     console.log('📦 Registering API routes from api.js...');
@@ -2690,73 +2871,78 @@ export function startServer(userDataPath) {
     }));
 
     const client = new WebTorrent({
-        // CONSERVATIVE: Stable connection limits that won't crash
-        maxConns: 80,  // Reduced from 150 - prevents buffer overrun
-        
-        // DHT (Distributed Hash Table) for peer discovery
+        maxConns: 200,           // Double max connections for more peers
         dht: {
             bootstrap: [
                 'router.bittorrent.com:6881',
                 'router.utorrent.com:6881',
                 'dht.transmissionbt.com:6881',
-                'dht.aelitis.com:6881'
+                'dht.aelitis.com:6881',
+                'dht.libtorrent.org:25401'
             ],
-            // Moderate DHT connections
-            concurrency: 16,  // Reduced from 24 - stable
-            verify: (info) => true // Skip verification for faster connections
+            maxTables: 5000,     // Increase DHT routing table size
         },
-        
-        // Enable trackers for peer discovery
         tracker: {
             announce: [
-                // Public trackers for maximum peer discovery
                 'udp://tracker.opentrackr.org:1337/announce',
-                'udp://open.stealth.si:80/announce',
+                'udp://open.tracker.cl:1337/announce',
                 'udp://tracker.torrent.eu.org:451/announce',
                 'udp://tracker.moeking.me:6969/announce',
+                'udp://tracker.dler.org:6969/announce',
                 'udp://explodie.org:6969/announce',
                 'udp://tracker1.bt.moack.co.kr:80/announce',
                 'udp://tracker.theoks.net:6969/announce',
                 'udp://open.demonii.com:1337/announce',
-                'udp://p4p.arenabg.com:1337/announce',
-                'udp://tracker.dler.org:6969/announce',
-                'https://tracker.tamersunion.org:443/announce',
-                'https://tracker.gbitt.info:443/announce',
-                'http://tracker.openbittorrent.com:80/announce',
                 'udp://tracker.openbittorrent.com:6969/announce',
-                'udp://tracker.internetwarriors.net:1337/announce'
+                'udp://bt1.archive.org:6969/announce',
+                'udp://bt2.archive.org:6969/announce',
+                'http://tracker.openbittorrent.com:80/announce',
+                'udp://retracker.lanta-net.ru:2710/announce',
+                'udp://open.stealth.si:80/announce'
             ],
-            // Moderate peer requests
-            getAnnounceOpts: () => {
-                return {
-                    numwant: 80, // Reduced from 150 - matches maxConns
-                    uploaded: 0,
-                    downloaded: 0,
-                    left: 999999999
-                }
-            },
-            // Standard announce interval
-            interval: 60000  // 60 seconds - stable
+            getAnnounceOpts: function () {
+                return { numwant: 200 }  // Request more peers per announce
+            }
         },
-        
-        // Enable web seeds for faster initial download from HTTP sources
         webSeeds: true,
-        
-        // Unlimited upload/download (remove artificial throttling)
         uploadLimit: -1,
         downloadLimit: -1,
-        
-        // Enable uTP (Micro Transport Protocol) for better performance
-        utp: true,
-        
-        // Enable LSD (Local Service Discovery) for LAN peers
-        lsd: true,
-        
-        // Download chunks with reasonable timeout
-        pieceTimeout: 20000, // 20 seconds
-        downloadLimit: -1
+        utp: true,              // Enable uTP for better NAT traversal
+        lsd: true,              // Enable Local Service Discovery
+        natUpnp: true,          // Enable UPnP for automatic port forwarding
+        natPmp: true            // Enable NAT-PMP for automatic port forwarding
     });
+    
+    // Handle WebTorrent client errors to prevent crashes
+    client.on('error', (err) => {
+        console.error('[WebTorrent] Client error (non-fatal):', err.message || err);
+        // Don't crash the server, just log the error
+    });
+
     const activeTorrents = new Map();
+    const torrentTimestamps = new Map(); // Track last access time for cleanup
+    
+    // Auto-cleanup inactive torrents every 30 minutes
+    const TORRENT_TIMEOUT = 30 * 60 * 1000; // 30 minutes
+    setInterval(() => {
+        const now = Date.now();
+        for (const [hash, timestamp] of torrentTimestamps.entries()) {
+            if (now - timestamp > TORRENT_TIMEOUT) {
+                const torrent = activeTorrents.get(hash);
+                if (torrent) {
+                    console.log(`[Cleanup] Removing inactive torrent: ${hash}`);
+                    try {
+                        client.remove(torrent, () => {});
+                        activeTorrents.delete(hash);
+                        torrentTimestamps.delete(hash);
+                    } catch (err) {
+                        console.error(`[Cleanup] Error removing torrent ${hash}:`, err);
+                    }
+                }
+            }
+        }
+    }, 10 * 60 * 1000); // Check every 10 minutes
+
     // OpenSubtitles API key (provided by user for this app)
     const OPEN_SUBTITLES_API_KEY = 'bAYQ53sQ01tx14QcOrPjGkdnTOUMjMC0';
 
@@ -2901,59 +3087,37 @@ export function startServer(userDataPath) {
         const torrentOptions = { 
             path: torrentDownloadPath, 
             destroyStoreOnDestroy: true,
-            // CONSERVATIVE: Stable per-torrent connection limit
-            maxWebConns: 30,  // Reduced from 50 - prevents crashes
-            // Force aggressive peer discovery
-            announce: [
+            announce: [  // Add extra trackers per torrent for maximum peer discovery
                 'udp://tracker.opentrackr.org:1337/announce',
-                'udp://open.stealth.si:80/announce',
+                'udp://open.tracker.cl:1337/announce',
                 'udp://tracker.torrent.eu.org:451/announce',
                 'udp://tracker.moeking.me:6969/announce',
                 'udp://explodie.org:6969/announce',
-                'udp://tracker1.bt.moack.co.kr:80/announce',
-                'udp://tracker.theoks.net:6969/announce',
                 'udp://open.demonii.com:1337/announce',
-                'udp://p4p.arenabg.com:1337/announce',
-                'udp://tracker.dler.org:6969/announce',
-                'https://tracker.tamersunion.org:443/announce',
-                'https://tracker.gbitt.info:443/announce',
-                'http://tracker.openbittorrent.com:80/announce',
-                'udp://tracker.openbittorrent.com:6969/announce',
-                'udp://tracker.internetwarriors.net:1337/announce'
-            ]
+                'udp://tracker.openbittorrent.com:6969/announce'
+            ],
+            maxWebConns: 10,  // Max web seed connections
+            strategy: 'sequential'  // Sequential downloading for better streaming
         };
         const torrent = client.add(magnet, torrentOptions);
         activeTorrents.set(infoHash, torrent);
+        torrentTimestamps.set(infoHash, Date.now()); // Track access time
 
-        // Force immediate peer discovery
-        torrent.on('infoHash', () => {
-            console.log(`[Torrent] Info hash received: ${infoHash}, forcing peer discovery...`);
-            if (torrent.discovery && torrent.discovery.tracker) {
-                try {
-                    torrent.discovery.tracker.update();
-                } catch (err) {}
+        // Handle torrent-level errors
+        torrent.on('error', (err) => {
+            console.error(`[Torrent Error] ${infoHash}:`, err.message || err);
+            if (!res.headersSent) {
+                res.status(500).json({ error: 'Torrent error: ' + (err.message || 'Unknown error') });
             }
-            if (torrent.discovery && torrent.discovery.dht) {
-                try {
-                    torrent.discovery.dht.announce();
-                } catch (err) {}
-            }
+            // Clean up failed torrent
+            try {
+                activeTorrents.delete(infoHash);
+                client.remove(torrent, () => {});
+            } catch {}
         });
 
         // As soon as metadata is available, deselect everything to prevent auto-download
         torrent.on('metadata', () => {
-            console.log(`[Torrent] Metadata received for ${infoHash}, peers: ${torrent.numPeers}`);
-            
-            // One re-announce after metadata
-            setTimeout(() => {
-                if (torrent.discovery && torrent.discovery.tracker) {
-                    try {
-                        torrent.discovery.tracker.update();
-                        console.log(`[Torrent] Re-announced, peers: ${torrent.numPeers}`);
-                    } catch (err) {}
-                }
-            }, 2000);
-            
             try { torrent.files.forEach(f => f.deselect()); } catch {}
             try { torrent.deselect(0, Math.max(0, torrent.pieces.length - 1), false); } catch {}
         });
@@ -2980,24 +3144,18 @@ export function startServer(userDataPath) {
         };
 
     torrent.once('ready', () => handleReady(torrent));
-
-        torrent.once('error', (err) => {
-            console.error(`Torrent error for ${infoHash}:`, err);
-            if (!res.headersSent) {
-                res.status(500).json({ error: 'Failed to load torrent metadata.' });
-            }
-            client.remove(magnet, () => console.log(`Cleaned up failed torrent: ${infoHash}`));
-            activeTorrents.delete(infoHash);
-        });
     });
 
     app.get('/api/stream-file', (req, res) => {
-        const { hash, file: fileIndex } = req.query;
-        if (!hash || isNaN(fileIndex)) return res.status(400).send('Missing hash or file index');
-        const torrent = activeTorrents.get(hash);
-        if (!torrent) return res.status(404).send('Torrent not found');
+        try {
+            const { hash, file: fileIndex } = req.query;
+            if (!hash || isNaN(fileIndex)) return res.status(400).send('Missing hash or file index');
+            const torrent = activeTorrents.get(hash);
+            if (!torrent) return res.status(404).send('Torrent not found');
+            
+            torrentTimestamps.set(hash, Date.now()); // Update access time
 
-        const stream = () => {
+            const stream = () => {
             const file = torrent.files[fileIndex];
             if (!file) return res.status(404).send('File not found');
 
@@ -3006,14 +3164,10 @@ export function startServer(userDataPath) {
                 // Deselect everything first
                 torrent.files.forEach(f => f.deselect());
                 try { torrent.deselect(0, Math.max(0, torrent.pieces.length - 1), false); } catch {}
-                
-                // CRITICAL: Force torrent to start discovering peers immediately
-                torrent.resume();
-                
                 // Select the chosen video file
                 file.select();
                 
-                // OPTIMIZATION: Prioritize first pieces for faster playback start
+                // OPTIMIZATION: Prioritize first and last pieces for faster playback start
                 const pieceLength = torrent.pieceLength;
                 const fileStart = Math.max(0, Math.floor(file.offset / pieceLength));
                 const fileEnd = Math.max(fileStart, Math.floor((file.offset + file.length - 1) / pieceLength));
@@ -3024,30 +3178,26 @@ export function startServer(userDataPath) {
                 } catch {}
                 
                 // CRITICAL: Prioritize first 10MB for immediate playback (increased from 5MB)
-                const priorityBytes = 10 * 1024 * 1024; // 10MB
+                const priorityBytes = 10 * 1024 * 1024; // 10MB for buffer
                 const priorityPieces = Math.ceil(priorityBytes / pieceLength);
                 const priorityEnd = Math.min(fileStart + priorityPieces, fileEnd);
                 
-                // AGGRESSIVE: Mark all priority pieces as critical immediately
+                // Download first pieces with highest priority
                 for (let i = fileStart; i <= priorityEnd; i++) {
                     try {
                         torrent.critical(i, i);
                     } catch {}
                 }
                 
-                // ADDITIONAL: Also prioritize LAST 5MB for seeking to end
-                const endPriorityBytes = 5 * 1024 * 1024;
-                const endPriorityPieces = Math.ceil(endPriorityBytes / pieceLength);
-                const endPriorityStart = Math.max(fileStart, fileEnd - endPriorityPieces);
-                
-                for (let i = endPriorityStart; i <= fileEnd; i++) {
+                // OPTIMIZATION: Also prioritize last few pieces for seeking to end
+                const endPriorityPieces = Math.min(5, Math.floor((fileEnd - fileStart) / 2));
+                for (let i = Math.max(fileStart, fileEnd - endPriorityPieces); i <= fileEnd; i++) {
                     try {
                         torrent.critical(i, i);
                     } catch {}
                 }
                 
-                console.log(`[Streaming] Critical pieces: ${fileStart}-${priorityEnd} (start) and ${endPriorityStart}-${fileEnd} (end) of total ${fileStart}-${fileEnd} for ${file.name}`);
-                console.log(`[Streaming] Torrent has ${torrent.numPeers} peers, downloading: ${torrent.downloaded}, speed: ${torrent.downloadSpeed}`);
+                console.log(`[Streaming] Prioritizing pieces ${fileStart}-${priorityEnd} of ${fileStart}-${fileEnd} for ${file.name}`);
                 
                 // Select all subtitle files so they download alongside
                 torrent.files.forEach(f => {
@@ -3055,9 +3205,7 @@ export function startServer(userDataPath) {
                         try { f.select(); } catch {}
                     }
                 });
-            } catch (err) {
-                console.error('[Streaming] Error during file selection:', err);
-            }
+            } catch {}
 
             res.setHeader('Accept-Ranges', 'bytes');
             const range = req.headers.range;
@@ -3077,31 +3225,11 @@ export function startServer(userDataPath) {
                 });
 
                 const fileStream = file.createReadStream({ start, end });
-                
                 fileStream.on('error', (err) => {
-                    console.error('[Stream Error] Range request failed:', err.message);
-                    if (!res.headersSent) {
-                        res.status(500).end();
-                    } else {
-                        res.end();
-                    }
+                    console.error('Stream error during seek:', err.message);
+                    res.end();
                 });
-                
-                res.on('close', () => {
-                    try {
-                        fileStream.destroy();
-                    } catch (err) {
-                        console.error('[Cleanup] Error destroying stream:', err.message);
-                    }
-                });
-                
-                res.on('error', (err) => {
-                    console.error('[Response Error]:', err.message);
-                    try {
-                        fileStream.destroy();
-                    } catch {}
-                });
-                
+                res.on('close', () => fileStream.destroy());
                 fileStream.pipe(res);
 
             } else {
@@ -3110,49 +3238,37 @@ export function startServer(userDataPath) {
                     'Content-Length': fileSize, 
                     'Content-Type': contentType 
                 });
-                
                 const fileStream = file.createReadStream();
-                
                 fileStream.on('error', (err) => {
-                    console.error('[Stream Error] Initial request failed:', err.message);
-                    if (!res.headersSent) {
-                        res.status(500).end();
-                    } else {
-                        res.end();
-                    }
+                    console.error('Stream error initial:', err.message);
+                    res.end();
                 });
-                
-                res.on('close', () => {
-                    try {
-                        fileStream.destroy();
-                    } catch (err) {
-                        console.error('[Cleanup] Error destroying stream:', err.message);
-                    }
-                });
-                
-                res.on('error', (err) => {
-                    console.error('[Response Error]:', err.message);
-                    try {
-                        fileStream.destroy();
-                    } catch {}
-                });
-                
+                res.on('close', () => fileStream.destroy());
                 fileStream.pipe(res);
             }
         };
 
         if (torrent.ready) stream();
         else torrent.once('ready', stream);
+        } catch (error) {
+            console.error('[Stream Error]:', error);
+            if (!res.headersSent) {
+                res.status(500).json({ error: 'Streaming error: ' + (error.message || 'Unknown error') });
+            }
+        }
     });
 
     // Prepare a specific file for streaming: select the file and start downloading its pieces (and all subtitles), but do not stream yet
     app.get('/api/prepare-file', (req, res) => {
-        const { hash, file: fileIndex } = req.query;
-        if (!hash || isNaN(fileIndex)) return res.status(400).json({ success: false, error: 'Missing hash or file index' });
-        const torrent = activeTorrents.get(hash);
-        if (!torrent) return res.status(404).json({ success: false, error: 'Torrent not found' });
+        try {
+            const { hash, file: fileIndex } = req.query;
+            if (!hash || isNaN(fileIndex)) return res.status(400).json({ success: false, error: 'Missing hash or file index' });
+            const torrent = activeTorrents.get(hash);
+            if (!torrent) return res.status(404).json({ success: false, error: 'Torrent not found' });
+            
+            torrentTimestamps.set(hash, Date.now()); // Update access time
 
-        const prepare = () => {
+            const prepare = () => {
             const idx = Number(fileIndex);
             const file = torrent.files[idx];
             if (!file) return res.status(404).json({ success: false, error: 'File not found' });
@@ -3172,13 +3288,21 @@ export function startServer(userDataPath) {
                     torrent.select(fileStart, fileEnd, 1);
                 } catch {}
                 
-                // CRITICAL: Prioritize first 10MB for pre-buffering
-                const priorityBytes = 10 * 1024 * 1024; // 10MB for prepare (more buffer than stream)
+                // CRITICAL: Prioritize first 15MB for pre-buffering (more than streaming)
+                const priorityBytes = 15 * 1024 * 1024; // 15MB for prepare
                 const priorityPieces = Math.ceil(priorityBytes / pieceLength);
                 const priorityEnd = Math.min(fileStart + priorityPieces, fileEnd);
                 
                 // Download first pieces with highest priority
                 for (let i = fileStart; i <= priorityEnd; i++) {
+                    try {
+                        torrent.critical(i, i);
+                    } catch {}
+                }
+                
+                // OPTIMIZATION: Also prioritize last few pieces for seeking
+                const endPriorityPieces = Math.min(5, Math.floor((fileEnd - fileStart) / 2));
+                for (let i = Math.max(fileStart, fileEnd - endPriorityPieces); i <= fileEnd; i++) {
                     try {
                         torrent.critical(i, i);
                     } catch {}
@@ -3203,6 +3327,12 @@ export function startServer(userDataPath) {
 
         if (torrent.ready) return prepare();
         torrent.once('ready', prepare);
+        } catch (error) {
+            console.error('[Prepare Error]:', error);
+            if (!res.headersSent) {
+                res.status(500).json({ success: false, error: 'Prepare error: ' + (error.message || 'Unknown error') });
+            }
+        }
     });
 
     app.get('/api/stop-stream', (req, res) => {
@@ -3217,6 +3347,7 @@ export function startServer(userDataPath) {
                 else console.log(`Torrent ${hash} removed successfully from client.`);
                 
                 activeTorrents.delete(hash);
+                torrentTimestamps.delete(hash); // Clean up timestamp
                 console.log(`Torrent ${hash} removed from activeTorrents map.`);
 
                 try {
@@ -3766,6 +3897,40 @@ export function startServer(userDataPath) {
         }
     });
 
+    // ===== GLOBAL ERROR HANDLERS =====
+    
+    // Catch-all 404 handler for undefined routes
+    app.use((req, res, next) => {
+        if (!res.headersSent) {
+            res.status(404).json({ error: 'Route not found: ' + req.path });
+        }
+    });
+
+    // Global error handling middleware - must be last
+    app.use((err, req, res, next) => {
+        console.error('[Express Error]:', err.stack || err);
+        if (!res.headersSent) {
+            res.status(500).json({ 
+                error: 'Internal server error',
+                message: err.message || 'Unknown error'
+            });
+        }
+    });
+
+    // Handle uncaught exceptions
+    process.on('uncaughtException', (err) => {
+        console.error('[UNCAUGHT EXCEPTION]:', err);
+        console.error('Stack:', err.stack);
+        // Don't exit the process, just log it
+    });
+
+    // Handle unhandled promise rejections
+    process.on('unhandledRejection', (reason, promise) => {
+        console.error('[UNHANDLED REJECTION]:', reason);
+        console.error('Promise:', promise);
+        // Don't exit the process, just log it
+    });
+
     const server = app.listen(PORT, () => {
         console.log(`\n${'='.repeat(70)}`);
         console.log(`🚀 UNIFIED SERVER RUNNING ON http://localhost:${PORT}`);
@@ -3782,9 +3947,23 @@ export function startServer(userDataPath) {
         console.log(`  🎬 Trakt        → http://localhost:${PORT}/api/trakt/*`);
         console.log(`  📺 Torrents     → http://localhost:${PORT}/api/torrents`);
         console.log(`  🎮 WebTorrent   → http://localhost:${PORT}/api/webtorrent/*`);
+        console.log(`  🌊 Nuvio Proxy  → http://localhost:${PORT}/api/nuvio/stream/*`);
+        console.log(`  ☄️  Comet Proxy  → http://localhost:${PORT}/api/comet/stream/*`);
+        console.log(`\n💾 Cache System:\n`);
+        console.log(`  ⏱️  Duration     → 1 hour (auto-refresh)`);
+        console.log(`  🗑️  Clear Cache  → POST /api/clear-cache`);
+        console.log(`  📊 Cache Stats  → GET /api/cache-stats`);
         if (!hasAPIKey) console.log('\n⚠️  Jackett API key not configured.');
         console.log(`\n${'='.repeat(70)}\n`);
     });
 
-    return { server, client };
+    // Handle server errors
+    server.on('error', (err) => {
+        console.error('[Server Error]:', err);
+        if (err.code === 'EADDRINUSE') {
+            console.error(`Port ${PORT} is already in use. Please close other instances or change the port.`);
+        }
+    });
+
+    return { server, client, clearCache };
 }
