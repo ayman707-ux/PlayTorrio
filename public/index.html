@@ -5905,29 +5905,29 @@
             <i class="fas fa-times"></i>
         </button>
         <h2 class="discord-title" style="display: flex; align-items: center; gap: 1rem; font-size: 1.8rem;">
-            <i class="fas fa-sparkles" style="color: var(--vlc-orange);"></i>
-            New Update: UI Customization
+            <i class="fas fa-tv" style="color: var(--vlc-orange);"></i>
+            New Update: Massive IPTV Improvements
         </h2>
         <div class="discord-message" style="text-align: left;">
             <p style="font-size: 1.1rem; margin-bottom: 1.5rem;">
-                We've completely redesigned the settings and added exciting new features:
+                We've massively upgraded the IPTV experience with better performance and features:
             </p>
             <ul style="list-style: none; padding: 0; margin-bottom: 1.5rem;">
                 <li style="margin-bottom: 1rem; padding-left: 2rem; position: relative;">
-                    <i class="fas fa-palette" style="position: absolute; left: 0; color: var(--vlc-orange); margin-top: 0.2rem;"></i>
-                    <strong>7 Beautiful Themes</strong> - Choose from Purple Dream, Green Forest, Cyberpunk Neon, Ocean Breeze, Cherry Blossom, Midnight Dark, and Sunset Orange
+                    <i class="fas fa-bolt" style="position: absolute; left: 0; color: var(--vlc-orange); margin-top: 0.2rem;"></i>
+                    <strong>Better Performance</strong> - Faster channel loading and improved stream stability
                 </li>
                 <li style="margin-bottom: 1rem; padding-left: 2rem; position: relative;">
-                    <i class="fas fa-cog" style="position: absolute; left: 0; color: var(--vlc-orange); margin-top: 0.2rem;"></i>
-                    <strong>Redesigned Settings</strong> - New organized settings page with tabs for easy navigation
+                    <i class="fas fa-tv" style="position: absolute; left: 0; color: var(--vlc-orange); margin-top: 0.2rem;"></i>
+                    <strong>Enhanced Player</strong> - Better video quality handling and playback controls
                 </li>
                 <li style="margin-bottom: 1rem; padding-left: 2rem; position: relative;">
-                    <i class="fas fa-paint-brush" style="position: absolute; left: 0; color: var(--vlc-orange); margin-top: 0.2rem;"></i>
-                    <strong>Enhanced UI</strong> - Cleaner interface with better colors and improved user experience
+                    <i class="fas fa-bug" style="position: absolute; left: 0; color: var(--vlc-orange); margin-top: 0.2rem;"></i>
+                    <strong>Bug Fixes</strong> - Resolved issues with channel switching and EPG data
                 </li>
             </ul>
             <p style="color: var(--secondary); font-size: 0.95rem; margin-top: 1rem;">
-                <i class="fas fa-info-circle"></i> You can change themes anytime from Settings → User Interface → Theme
+                <i class="fas fa-info-circle"></i> Enjoy a smoother IPTV experience with this update!
             </p>
         </div>
         <button class="discord-join-btn" id="updateGotItBtn" style="background: var(--vlc-orange); width: 100%;">
@@ -9252,12 +9252,12 @@ Your browser does not support the video tag.
         
         // Check if user has seen the update announcement
         function checkUpdateAnnouncement() {
-            const hasSeenUpdate = localStorage.getItem('hasSeenUIUpdate');
+            const hasSeenUpdate = localStorage.getItem('hasSeenIPTVUpdate_v147');
             if (!hasSeenUpdate) {
                 // Wait a bit for the page to fully load before showing the update modal
                 setTimeout(() => {
                     showUpdateModal();
-                    localStorage.setItem('hasSeenUIUpdate', 'true');
+                    localStorage.setItem('hasSeenIPTVUpdate_v147', 'true');
                 }, 1500);
             }
         }
