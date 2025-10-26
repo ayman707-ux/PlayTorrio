@@ -36,7 +36,7 @@
         }
 
         header {
-            background-color: var(--primary);
+            background-color: var(--header-bg);
             padding: 1rem 2rem;
             position: sticky;
             top: 0;
@@ -79,7 +79,7 @@
             padding-left: 3rem;
             border-radius: 30px;
             border: none;
-            background-color: rgba(255, 255, 255, 0.1);
+            background-color: var(--input-bg);
             color: var(--light);
             font-size: 1rem;
             transition: all 0.3s ease;
@@ -87,7 +87,7 @@
         
         .search-container input:focus {
             outline: none;
-            background-color: rgba(255, 255, 255, 0.15);
+            background-color: var(--hover-bg);
             box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.3);
         }
         
@@ -175,7 +175,7 @@
         
         .category {
             padding: 0.8rem 1.5rem;
-            background-color: rgba(255, 255, 255, 0.08);
+            background-color: var(--input-bg);
             border-radius: 30px;
             cursor: pointer;
             transition: all 0.3s ease;
@@ -196,7 +196,7 @@
         }
         
         .movie-card, .genre-card {
-            background-color: var(--primary);
+            background-color: var(--card-bg);
             border-radius: 10px;
             overflow: hidden;
             transition: all 0.3s ease;
@@ -749,7 +749,7 @@
         #resumeModal { z-index: 6000; }
         
         .modal-content {
-            background-color: var(--primary);
+            background-color: var(--card-bg);
             border-radius: 10px;
             overflow: hidden;
             width: 90%;
@@ -843,6 +843,7 @@
         
         .modal-body {
             padding: 2rem;
+            background: var(--card-bg);
         }
         
         .modal-section-title {
@@ -951,7 +952,7 @@
         
         .season-btn {
             padding: 0.5rem 1rem;
-            background-color: rgba(255, 255, 255, 0.1);
+            background-color: var(--input-bg);
             border: none;
             border-radius: 30px;
             color: var(--light);
@@ -971,7 +972,7 @@
         }
         
         .episode-card {
-            background-color: rgba(255, 255, 255, 0.05);
+            background-color: var(--input-bg);
             border-radius: 8px;
             overflow: hidden;
             cursor: pointer;
@@ -1264,7 +1265,7 @@
         }
         
         .torrents-container {
-            background-color: rgba(0, 0, 0, 0.3);
+            background-color: var(--card-bg);
             border-radius: 10px;
             padding: 1.5rem;
             margin-top: 2rem;
@@ -1284,7 +1285,7 @@
         }
         
         .torrent-item {
-            background-color: rgba(255, 255, 255, 0.05);
+            background-color: var(--input-bg);
             border-radius: 8px;
             padding: 1rem;
             display: flex;
@@ -1565,7 +1566,7 @@
         }
         
         .api-setup-content {
-            background: linear-gradient(135deg, var(--primary), var(--dark));
+            background: var(--modal-bg);
             border-radius: 15px;
             padding: 3rem;
             max-width: 500px;
@@ -1607,7 +1608,7 @@
             padding: 1rem;
             border-radius: 8px;
             border: 2px solid rgba(255, 255, 255, 0.2);
-            background-color: rgba(255, 255, 255, 0.1);
+            background-color: var(--input-bg);
             color: var(--light);
             font-size: 1rem;
             transition: all 0.3s ease;
@@ -1616,7 +1617,7 @@
         .api-input:focus {
             outline: none;
             border-color: var(--vlc-orange);
-            background-color: rgba(255, 255, 255, 0.15);
+            background-color: var(--hover-bg);
         }
         
         #torrentSourceSelect {
@@ -1648,8 +1649,38 @@
             padding: 0.75rem;
             font-weight: 500;
         }
-
-        .torrent-source-btn {
+        
+        /* Theme selector styles */
+        #themeSelector {
+            transition: all 0.3s ease;
+        }
+        
+        #themeSelector:hover {
+            background: rgba(255,255,255,0.12);
+            border-color: var(--vlc-orange);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+        
+        #themeSelector:focus {
+            outline: none;
+            border-color: var(--vlc-orange);
+            background: rgba(255,255,255,0.12);
+            box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.3);
+        }
+        
+        #themeSelector option {
+            background: var(--primary);
+            color: var(--light);
+            padding: 1rem;
+            font-weight: 500;
+            font-size: 1rem;
+        }
+        
+        #themeSelector option:hover {
+            background: var(--secondary);
+        }
+                .torrent-source-btn {
             position: relative;
             overflow: hidden;
         }
@@ -1882,7 +1913,7 @@
         }
         
         .settings-content {
-            background: linear-gradient(135deg, var(--primary), var(--dark));
+            background: var(--modal-bg);
             border-radius: 15px;
             padding: 2rem;
             max-width: 800px;
@@ -4908,7 +4939,7 @@
         body.ui-new .app-sidebar {
             display: flex;
             width: 240px;
-            background: linear-gradient(180deg, var(--primary) 0%, #1a0d2e 100%);
+            background: var(--modal-bg);
             border-right: 1px solid rgba(168, 85, 247, 0.2);
             flex-direction: column;
             overflow-y: auto;
@@ -5303,7 +5334,7 @@
         }
         
         body.ui-new .category:hover {
-            background: rgba(168, 85, 247, 0.2);
+            background: var(--hover-bg);
             border-color: var(--vlc-orange);
             transform: translateY(-2px);
             box-shadow: 0 4px 12px rgba(168, 85, 247, 0.2);
@@ -5317,7 +5348,7 @@
         
         /* Modern Movie Cards with Glass Morphism */
         body.ui-new .movie-card {
-            background: rgba(42, 24, 71, 0.4);
+            background: var(--card-bg);
             border: 1px solid rgba(168, 85, 247, 0.2);
             backdrop-filter: blur(15px);
             border-radius: 16px;
@@ -5573,6 +5604,201 @@
             background: linear-gradient(180deg, #9333ea 0%, var(--vlc-orange) 100%);
         }
         
+        /* Settings Page Styles */
+        .settings-page-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        
+        .settings-tabs {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 2rem;
+            border-bottom: 2px solid rgba(168, 85, 247, 0.2);
+            padding-bottom: 0;
+            flex-wrap: wrap;
+        }
+        
+        .settings-tab {
+            padding: 1rem 2rem;
+            background: transparent;
+            border: none;
+            color: rgba(255, 255, 255, 0.6);
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            border-bottom: 3px solid transparent;
+            position: relative;
+            bottom: -2px;
+        }
+        
+        .settings-tab:hover {
+            color: var(--light);
+            background: rgba(168, 85, 247, 0.05);
+        }
+        
+        .settings-tab.active {
+            color: var(--vlc-orange);
+            border-bottom-color: var(--vlc-orange);
+            background: rgba(255, 111, 0, 0.05);
+        }
+        
+        .settings-sections {
+            position: relative;
+        }
+        
+        .settings-section {
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        .settings-section.active {
+            display: block;
+        }
+        
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .settings-card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            margin-bottom: 1.5rem;
+            overflow: hidden;
+            border: 1px solid rgba(168, 85, 247, 0.15);
+            transition: all 0.3s ease;
+        }
+        
+        .settings-card:hover {
+            border-color: rgba(168, 85, 247, 0.3);
+            box-shadow: 0 4px 20px rgba(168, 85, 247, 0.1);
+        }
+        
+        .settings-card-header {
+            background: var(--modal-bg);
+            padding: 1.25rem 1.5rem;
+            border-bottom: 1px solid rgba(168, 85, 247, 0.15);
+        }
+        
+        .settings-card-header h3 {
+            margin: 0;
+            font-size: 1.2rem;
+            color: var(--light);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        
+        .settings-card-header h3 i {
+            color: var(--vlc-orange);
+        }
+        
+        .settings-card-body {
+            padding: 1.5rem;
+        }
+        
+        .settings-card-body .form-group {
+            margin-bottom: 1.5rem;
+        }
+        
+        .settings-card-body .form-group:last-child {
+            margin-bottom: 0;
+        }
+        
+        .settings-card-body label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.9);
+        }
+        
+        .settings-card-body input[type="text"],
+        .settings-card-body input[type="url"],
+        .settings-card-body input[type="password"],
+        .settings-card-body select,
+        .settings-card-body textarea {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            background: var(--input-bg);
+            border: 1px solid rgba(168, 85, 247, 0.2);
+            border-radius: 8px;
+            color: var(--light);
+            font-size: 0.95rem;
+            transition: all 0.2s ease;
+        }
+        
+        .settings-card-body input:focus,
+        .settings-card-body select:focus,
+        .settings-card-body textarea:focus {
+            outline: none;
+            border-color: var(--vlc-orange);
+            background: rgba(0, 0, 0, 0.4);
+        }
+        
+        .settings-card-body button {
+            padding: 0.75rem 1.5rem;
+            background: var(--vlc-orange);
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .settings-card-body button:hover {
+            background: #e65100;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(255, 111, 0, 0.3);
+        }
+        
+        .settings-card-body .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+        }
+        
+        .settings-card-body .checkbox-group input[type="checkbox"] {
+            width: auto;
+            cursor: pointer;
+        }
+        
+        .settings-card-body .radio-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+        
+        .settings-card-body .radio-option {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem;
+            background: rgba(168, 85, 247, 0.05);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .settings-card-body .radio-option:hover {
+            background: rgba(168, 85, 247, 0.1);
+        }
+        
+        .settings-card-body .radio-option input[type="radio"] {
+            width: auto;
+            cursor: pointer;
+        }
+        
         /* Responsive adjustments for New UI */
         @media (max-width: 1024px) {
             body.ui-new .app-sidebar {
@@ -5668,6 +5894,45 @@
         <button class="discord-join-btn" id="discordJoinBtn">
             <i class="fab fa-discord"></i>
             Join Discord
+        </button>
+    </div>
+</div>
+
+<!-- Update Announcement Modal -->
+<div class="discord-modal" id="updateModal">
+    <div class="discord-content" style="max-width: 600px;">
+        <button class="discord-close" id="updateClose">
+            <i class="fas fa-times"></i>
+        </button>
+        <h2 class="discord-title" style="display: flex; align-items: center; gap: 1rem; font-size: 1.8rem;">
+            <i class="fas fa-sparkles" style="color: var(--vlc-orange);"></i>
+            New Update: UI Customization
+        </h2>
+        <div class="discord-message" style="text-align: left;">
+            <p style="font-size: 1.1rem; margin-bottom: 1.5rem;">
+                We've completely redesigned the settings and added exciting new features:
+            </p>
+            <ul style="list-style: none; padding: 0; margin-bottom: 1.5rem;">
+                <li style="margin-bottom: 1rem; padding-left: 2rem; position: relative;">
+                    <i class="fas fa-palette" style="position: absolute; left: 0; color: var(--vlc-orange); margin-top: 0.2rem;"></i>
+                    <strong>7 Beautiful Themes</strong> - Choose from Purple Dream, Green Forest, Cyberpunk Neon, Ocean Breeze, Cherry Blossom, Midnight Dark, and Sunset Orange
+                </li>
+                <li style="margin-bottom: 1rem; padding-left: 2rem; position: relative;">
+                    <i class="fas fa-cog" style="position: absolute; left: 0; color: var(--vlc-orange); margin-top: 0.2rem;"></i>
+                    <strong>Redesigned Settings</strong> - New organized settings page with tabs for easy navigation
+                </li>
+                <li style="margin-bottom: 1rem; padding-left: 2rem; position: relative;">
+                    <i class="fas fa-paint-brush" style="position: absolute; left: 0; color: var(--vlc-orange); margin-top: 0.2rem;"></i>
+                    <strong>Enhanced UI</strong> - Cleaner interface with better colors and improved user experience
+                </li>
+            </ul>
+            <p style="color: var(--secondary); font-size: 0.95rem; margin-top: 1rem;">
+                <i class="fas fa-info-circle"></i> You can change themes anytime from Settings → User Interface → Theme
+            </p>
+        </div>
+        <button class="discord-join-btn" id="updateGotItBtn" style="background: var(--vlc-orange); width: 100%;">
+            <i class="fas fa-check"></i>
+            Got It!
         </button>
     </div>
 </div>
@@ -5906,6 +6171,26 @@
                 </div>
                 <div style="margin-top:0.5rem; color:var(--secondary); font-size:0.9rem;">
                     <i class="fas fa-info-circle"></i> Changes will apply immediately after saving
+                </div>
+                
+                <!-- Theme Selector -->
+                <div style="margin-top:1.5rem; padding-top:1rem; border-top:1px solid rgba(255,255,255,0.1);">
+                    <label style="display:block; margin-bottom:0.75rem; color:var(--light); font-weight:600; font-size:1rem;">
+                        <i class="fas fa-palette" style="margin-right:0.5rem; color:var(--vlc-orange);"></i>
+                        Color Theme
+                    </label>
+                    <select id="themeSelector" class="api-input" style="width:100%; max-width:350px; padding:0.75rem 1rem; background: rgba(255,255,255,0.08); border: 2px solid rgba(255,255,255,0.2); border-radius:10px; color:var(--light); font-size:0.95rem; font-weight:500; cursor:pointer; transition: all 0.3s ease; appearance: none; background-image: url('data:image/svg+xml;charset=UTF-8,%3csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27rgba(255,255,255,0.6)%27 stroke-width=%272%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27%3e%3cpolyline points=%276 9 12 15 18 9%27%3e%3c/polyline%3e%3c/svg%3e'); background-repeat: no-repeat; background-position: right 0.75rem center; background-size: 1.25rem; padding-right: 2.5rem;">
+                        <option value="default">Default (Purple Dream)</option>
+                        <option value="green-forest">Green Forest</option>
+                        <option value="cyberpunk-neon">Cyberpunk Neon</option>
+                        <option value="ocean-breeze">Ocean Breeze</option>
+                        <option value="cherry-blossom">Cherry Blossom</option>
+                        <option value="midnight-dark">Midnight Dark</option>
+                        <option value="sunset-orange">Sunset Orange</option>
+                    </select>
+                    <div style="margin-top:0.5rem; color:var(--secondary); font-size:0.85rem;">
+                        <i class="fas fa-info-circle"></i> Choose your preferred color scheme
+                    </div>
                 </div>
             </div>
         </div>
@@ -6212,7 +6497,7 @@
         <div class="sidebar-footer">
             <div class="sidebar-user-info">
                 <i class="fas fa-user-circle"></i>
-                <span>Local User</span>
+                <span id="windowsUsername">Local User</span>
             </div>
             <button class="btn btn-primary" id="sidebarSettings" style="width: 100%; margin-top: 0.5rem;">
                 <i class="fas fa-cog"></i> Settings
@@ -6821,6 +7106,454 @@
                         <!-- Activity items will be loaded here -->
                     </div>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Page -->
+    <div id="settings-page" style="display: none;">
+        <div class="settings-page-container">
+            <div class="page-header-enhanced">
+                <h2 class="section-title">Settings</h2>
+            </div>
+            
+            <div class="settings-tabs">
+                <button class="settings-tab active" data-section="streaming">Streaming</button>
+                <button class="settings-tab" data-section="debrid">Debrid</button>
+                <button class="settings-tab" data-section="ui">User Interface</button>
+                <button class="settings-tab" data-section="trakt">Trakt Integration</button>
+            </div>
+
+            <div class="settings-sections">
+                <!-- Streaming Section -->
+                <div id="streamingContent" class="settings-section active">
+                    <div class="settings-card">
+                        <div class="settings-card-header">
+                            <h3><i class="fas fa-server"></i> Jackett Configuration</h3>
+                        </div>
+                        <div class="settings-card-body">
+                            <div class="current-api-key" id="currentApiKey">
+                                No API key configured
+                            </div>
+                            <div class="form-group">
+                                <label for="newApiKey">New API Key:</label>
+                                <input type="text" id="newApiKey" placeholder="Enter new Jackett API key..." />
+                            </div>
+                            <div class="form-group">
+                                <label for="jackettUrl">Jackett Base URL:</label>
+                                <input type="text" id="jackettUrl" placeholder="http://127.0.0.1:9117/api/v2.0/indexers/all/results/torznab" />
+                                <small style="color:var(--secondary); font-size:0.85rem; margin-top:0.25rem; display:block;">Default: http://127.0.0.1:9117/api/v2.0/indexers/all/results/torznab</small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="settings-card">
+                        <div class="settings-card-header">
+                            <h3><i class="fas fa-tools"></i> Built-in Scrapers</h3>
+                        </div>
+                        <div class="settings-card-body">
+                            <div class="checkbox-group">
+                                <input type="checkbox" id="useTorrentlessToggle" />
+                                <label for="useTorrentlessToggle">Watch without Jackett (use built-in sources)</label>
+                            </div>
+                            <div class="form-group" style="margin-top:1rem;">
+                                <label style="display:block; margin-bottom:0.75rem; color:var(--text); font-weight:500; font-size:0.95rem;">
+                                    <i class="fas fa-server" style="margin-right:0.3rem; color:var(--primary);"></i>
+                                    Torrent Source:
+                                </label>
+                                <div style="display:flex; gap:1rem;">
+                                    <button id="torrentioBtn" class="torrent-source-btn active" data-source="torrentio" style="flex:1; padding:0.75rem 1rem; background: rgba(76, 175, 80, 0.2); border:2px solid #4CAF50; border-radius:8px; color:#fff; font-size:0.95rem; font-weight:600; cursor:pointer; transition: all 0.3s ease; display:flex; align-items:center; justify-content:center; gap:0.5rem;">
+                                        <i class="fas fa-rocket"></i>
+                                        <span>Torrentio</span>
+                                    </button>
+                                    <button id="inAppScraperBtn" class="torrent-source-btn" data-source="in-app-scraper" style="flex:1; padding:0.75rem 1rem; background: rgba(255,255,255,0.08); border:2px solid rgba(255,255,255,0.2); border-radius:8px; color:var(--text); font-size:0.95rem; font-weight:600; cursor:pointer; transition: all 0.3s ease; display:flex; align-items:center; justify-content:center; gap:0.5rem;">
+                                        <i class="fas fa-tools"></i>
+                                        <span>In-App Scraper</span>
+                                    </button>
+                                </div>
+                            </div>
+                            <div style="margin-top:0.5rem; color:#ffc107; font-size:0.9rem;">
+                                Warning: may result in fewer sources and slower buffering.
+                            </div>
+                            <div style="margin-top:0.75rem;">
+                                <button class="api-btn" id="videoTutorialBtn" style="background:#0d6efd; color:#fff;">
+                                    <i class="fas fa-video"></i> Video Tutorial
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="settings-card">
+                        <div class="settings-card-header">
+                            <h3><i class="fas fa-play-circle"></i> Streaming Mode</h3>
+                        </div>
+                        <div class="settings-card-body">
+                            <div class="checkbox-group">
+                                <input type="checkbox" id="useStreamingServersToggle" />
+                                <label for="useStreamingServersToggle">Use Streaming Servers instead of Torrents</label>
+                            </div>
+                            <div style="margin-top:0.5rem; color:#10b981; font-size:0.9rem;">
+                                Stream directly from web servers (faster startup, no downloads)
+                            </div>
+                            <div style="margin-top:0.25rem; color:#9ca3af; font-size:0.85rem;">
+                                When enabled, movies/shows will stream from online servers instead of torrent files
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="settings-card">
+                        <div class="settings-card-header">
+                            <h3><i class="fas fa-hdd"></i> Cache & Storage</h3>
+                        </div>
+                        <div class="settings-card-body">
+                            <div class="form-group">
+                                <label for="cacheLocation">Cache Location:</label>
+                                <div style="display:flex; gap:0.5rem; align-items:center;">
+                                    <input type="text" id="cacheLocation" readonly placeholder="System default temp folder" style="flex:1;" />
+                                    <button class="api-btn" id="selectCacheBtn" style="background:#0d6efd; color:#fff; white-space:nowrap;">
+                                        <i class="fas fa-folder-open"></i> Browse
+                                    </button>
+                                </div>
+                                <small style="color:var(--secondary); font-size:0.85rem; margin-top:0.25rem; display:block;">
+                                    <i class="fas fa-info-circle"></i> Location where WebTorrent streams and subtitles are cached
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="settings-card">
+                        <div class="settings-card-header">
+                            <h3><i class="fas fa-stream" style="color: #667eea;"></i> Nuvio Configuration</h3>
+                        </div>
+                        <div class="settings-card-body">
+                            <div style="margin-bottom: 1rem; color: var(--secondary); font-size: 0.9rem;">
+                                <i class="fas fa-info-circle"></i>
+                                Configure your Febbox token for Nuvio streaming (ShowBox). A default token is provided, but you can use your own.
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="febboxTokenInput">
+                                    Febbox JWT Token (Optional)
+                                </label>
+                                <input 
+                                    type="text" 
+                                    id="febboxTokenInput" 
+                                    placeholder="Leave empty to use default token or paste your Febbox JWT token here"
+                                    style="font-family: monospace;"
+                                />
+                            </div>
+                            
+                            <button id="saveFebboxToken" class="btn" style="width: 100%;">
+                                <i class="fas fa-save"></i> Save Token
+                            </button>
+                            
+                            <div style="margin-top: 1rem; padding: 0.75rem; background: rgba(103, 126, 234, 0.1); border-left: 3px solid var(--secondary); border-radius: 4px; font-size: 0.85rem;">
+                                <i class="fas fa-check-circle" style="color: var(--secondary);"></i> Default token is active. You can continue using Nuvio without adding your own token.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Debrid Section -->
+                <div id="debridContent" class="settings-section">
+                    <div class="settings-card">
+                        <div class="settings-card-header">
+                            <h3><i class="fas fa-cloud"></i> Debrid Services (Cloud Cache)</h3>
+                        </div>
+                        <div class="settings-card-body" id="debridSection">
+                            <div class="checkbox-group">
+                                <input type="checkbox" id="useDebridToggle" />
+                                <label for="useDebridToggle">Use Debrid</label>
+                            </div>
+                            
+                            <div class="form-group">
+                                <div style="display:flex; gap:0.75rem; align-items:center; flex-wrap: wrap;">
+                                    <label for="debridProvider">Provider:</label>
+                                    <select id="debridProvider" style="min-width:220px; max-width:260px;">
+                                        <option value="realdebrid">Real‑Debrid</option>
+                                        <option value="alldebrid">AllDebrid</option>
+                                        <option value="torbox">TorBox</option>
+                                        <option value="premiumize">Premiumize</option>
+                                    </select>
+                                    <span id="debridStatus" style="font-size:0.9rem; opacity:0.85;">Not logged in</span>
+                                </div>
+                            </div>
+                            
+                            <!-- Real-Debrid Section -->
+                            <div class="form-group" id="rdClientIdGroup">
+                                <label for="rdClientId">Real‑Debrid Client ID (device flow):</label>
+                                <input type="text" id="rdClientId" placeholder="Enter your RD Client ID (e.g., XXXXXXXXXXXXX)" />
+                            </div>
+                            
+                            <div id="rdButtons" style="display:flex; gap:0.5rem; flex-wrap: wrap; align-items:center;">
+                                <button class="api-btn" id="rdDeviceLogin" style="background:#198754; color:#fff;">
+                                    <i class="fas fa-sign-in-alt"></i> Login with Real‑Debrid
+                                </button>
+                                <small style="opacity:0.85;">No password needed. Authenticate on real‑debrid.com using a short code.</small>
+                            </div>
+                            
+                            <div id="rdCodePanel" style="display:none; margin-top:0.5rem; padding:0.75rem; background:rgba(0,0,0,0.35); border:1px solid rgba(255,255,255,0.1); border-radius:8px;">
+                                <div style="display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap;">
+                                    <div>Code:</div>
+                                    <div id="rdUserCode" style="font-family:monospace; font-weight:800; background:rgba(255,255,255,0.1); padding:0.25rem 0.5rem; border-radius:6px;">----</div>
+                                    <button class="api-btn" id="rdCopyCode" style="padding:0.4rem 0.6rem; background:#0d6efd; color:#fff;"><i class="fas fa-copy"></i> Copy</button>
+                                </div>
+                                <div style="margin-top:0.5rem; display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap;">
+                                    <div>Verify at:</div>
+                                    <a id="rdVerifyUrl" href="#" target="_blank" style="color:#0d6efd; text-decoration:underline;">https://real-debrid.com/device</a>
+                                    <button class="api-btn" id="rdOpenVerify" style="padding:0.4rem 0.6rem; background:#0d6efd; color:#fff;"><i class="fas fa-external-link-alt"></i> Open</button>
+                                    <span id="rdLoginStatus" style="margin-left:auto; font-size:0.9rem; opacity:0.9;">Waiting for approval…</span>
+                                    <button class="api-btn api-btn-secondary" id="rdCancelLogin"><i class="fas fa-times"></i> Cancel</button>
+                                </div>
+                            </div>
+                            
+                            <div class="form-group" id="rdTokenGroup">
+                                <label for="debridToken">Real‑Debrid Token (temporary MVP):</label>
+                                <input type="password" id="debridToken" placeholder="Paste RD token..." />
+                            </div>
+                            
+                            <div id="rdTokenButtons" style="display:flex; gap:0.5rem; flex-wrap: wrap;">
+                                <button class="api-btn" id="saveDebridToken" style="background:#0d6efd; color:#fff;">
+                                    <i class="fas fa-key"></i> Save Token
+                                </button>
+                                <button class="api-btn api-btn-secondary" id="clearDebridToken">
+                                    <i class="fas fa-sign-out-alt"></i> Logout
+                                </button>
+                            </div>
+                            
+                            <div style="margin-top:0.25rem; color:#ffc107; font-size:0.9rem;">Your token is stored locally and never exposed to websites.</div>
+
+                            <!-- AllDebrid PIN Login UI -->
+                            <div id="adSection" style="display:none; margin-top:1rem; padding:1rem; border:1px solid rgba(255,255,255,0.15); border-radius:8px; background: rgba(255,255,255,0.05);">
+                                <div style="display:flex; gap:0.5rem; align-items:center; flex-wrap:wrap;">
+                                    <button class="api-btn" id="adStartPin" style="background:#198754; color:#fff;"><i class="fas fa-sign-in-alt"></i> Login with AllDebrid (PIN)</button>
+                                    <small style="opacity:0.85;">Authenticate on alldebrid.com/pin with the code shown.</small>
+                                </div>
+                                <div id="adPinPanel" style="display:none; margin-top:0.5rem; padding:0.75rem; background:rgba(0,0,0,0.35); border:1px solid rgba(255,255,255,0.1); border-radius:8px;">
+                                    <div style="display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap;">
+                                        <div>PIN:</div>
+                                        <div id="adPinCode" style="font-family:monospace; font-weight:800; background:rgba(255,255,255,0.1); padding:0.25rem 0.5rem; border-radius:6px;">----</div>
+                                        <button class="api-btn" id="adCopyPin" style="padding:0.4rem 0.6rem; background:#0d6efd; color:#fff;"><i class="fas fa-copy"></i> Copy</button>
+                                    </div>
+                                    <div style="margin-top:0.5rem; display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap;">
+                                        <div>Open:</div>
+                                        <a id="adUserUrl" href="https://alldebrid.com/pin/" target="_blank" style="color:#0d6efd; text-decoration:underline;">https://alldebrid.com/pin/</a>
+                                        <button class="api-btn" id="adOpenUserUrl" style="padding:0.4rem 0.6rem; background:#0d6efd; color:#fff;"><i class="fas fa-external-link-alt"></i> Open</button>
+                                        <span id="adLoginStatus" style="margin-left:auto; font-size:0.9rem; opacity:0.9;">Waiting…</span>
+                                        <button class="api-btn api-btn-secondary" id="adCancelPin"><i class="fas fa-times"></i> Cancel</button>
+                                    </div>
+                                </div>
+                                <div class="form-group" style="margin-top:0.75rem;">
+                                    <label for="adApiKey">AllDebrid API Key (optional/manual):</label>
+                                    <input type="password" id="adApiKey" placeholder="Paste AD API key..." />
+                                </div>
+                                <div style="display:flex; gap:0.5rem; flex-wrap: wrap;">
+                                    <button class="api-btn" id="adSaveApiKey" style="background:#0d6efd; color:#fff;"><i class="fas fa-key"></i> Save API Key</button>
+                                    <button class="api-btn api-btn-secondary" id="adClearApiKey"><i class="fas fa-sign-out-alt"></i> Logout</button>
+                                </div>
+                            </div>
+
+                            <!-- TorBox Auth (token) -->
+                            <div id="tbSection" style="display:none; margin-top:1rem; padding:1rem; border:1px solid rgba(255,255,255,0.15); border-radius:8px; background: rgba(255,255,255,0.05);">
+                                <div class="form-group">
+                                    <label for="tbToken">TorBox Token (temporary):</label>
+                                    <input type="password" id="tbToken" placeholder="Paste TorBox token..." />
+                                </div>
+                                <div style="display:flex; gap:0.5rem; flex-wrap: wrap;">
+                                    <button class="api-btn" id="tbSaveToken" style="background:#0d6efd; color:#fff;"><i class="fas fa-key"></i> Save Token</button>
+                                    <button class="api-btn api-btn-secondary" id="tbClearToken"><i class="fas fa-sign-out-alt"></i> Logout</button>
+                                </div>
+                                <div style="margin-top:0.25rem; color:#ffc107; font-size:0.9rem;">Token stored locally.</div>
+                            </div>
+
+                            <!-- Premiumize Auth (API Key) -->
+                            <div id="pmSection" style="display:none; margin-top:1rem; padding:1px solid rgba(255,255,255,0.15); border-radius:8px; background: rgba(255,255,255,0.05);">
+                                <div class="form-group">
+                                    <label for="pmApiKey">Premiumize API Key:</label>
+                                    <input type="password" id="pmApiKey" placeholder="Enter your Premiumize API key..." />
+                                </div>
+                                <div style="display:flex; gap:0.5rem; flex-wrap: wrap;">
+                                    <button class="api-btn" id="pmSaveApiKey" style="background:#0d6efd; color:#fff;"><i class="fas fa-key"></i> Save API Key</button>
+                                    <button class="api-btn api-btn-secondary" id="pmClearApiKey"><i class="fas fa-sign-out-alt"></i> Logout</button>
+                                </div>
+                                <div style="margin-top:0.25rem; color:#ffc107; font-size:0.9rem;">
+                                    Get your API key from <a href="https://www.premiumize.me/account" target="_blank" style="color:#0d6efd; text-decoration:underline;">premiumize.me/account</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- User Interface Section -->
+                <div id="uiContent" class="settings-section">
+                    <div class="settings-card">
+                        <div class="settings-card-header">
+                            <h3><i class="fas fa-desktop"></i> Display Settings</h3>
+                        </div>
+                        <div class="settings-card-body">
+                            <div class="checkbox-group">
+                                <input type="checkbox" id="fullscreenToggle" />
+                                <label for="fullscreenToggle">
+                                    <i class="fas fa-expand-arrows-alt" style="margin-right:0.25rem; color:var(--vlc-orange);"></i>
+                                    <strong>Fullscreen Mode</strong>
+                                </label>
+                            </div>
+                            <div style="margin-top:0.25rem; color:var(--secondary); font-size:0.85rem; margin-left:1.85rem;">
+                                <i class="fas fa-info-circle"></i> Toggle between fullscreen and windowed mode
+                            </div>
+                            
+                            <div class="radio-group" style="margin-top:1.5rem; padding-top:1rem; border-top:1px solid rgba(255,255,255,0.1);">
+                                <label style="display:block; margin-bottom:0.75rem; color:var(--light); font-weight:600;">
+                                    UI Mode
+                                </label>
+                                <div class="radio-option">
+                                    <input type="radio" name="uiMode" value="new" id="uiModeNew" checked />
+                                    <label for="uiModeNew"><strong>NEW UI</strong> - Modern app-like interface</label>
+                                </div>
+                                <div class="radio-option">
+                                    <input type="radio" name="uiMode" value="old" id="uiModeOld" />
+                                    <label for="uiModeOld"><strong>OLD UI</strong> - Classic website layout</label>
+                                </div>
+                                <div style="margin-top:0.5rem; color:var(--secondary); font-size:0.9rem;">
+                                    <i class="fas fa-info-circle"></i> Changes will apply immediately after saving
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="settings-card">
+                        <div class="settings-card-header">
+                            <h3><i class="fas fa-palette"></i> Theme</h3>
+                        </div>
+                        <div class="settings-card-body">
+                            <div class="form-group">
+                                <label for="themeSelector" style="display:block; margin-bottom:0.75rem; color:var(--light); font-weight:600; font-size:1rem;">
+                                    <i class="fas fa-palette" style="margin-right:0.5rem; color:var(--vlc-orange);"></i>
+                                    Color Theme
+                                </label>
+                                <select id="themeSelector" style="width:100%; max-width:350px; padding:0.75rem 1rem; background: rgba(255,255,255,0.08); border: 2px solid rgba(255,255,255,0.2); border-radius:10px; color:var(--light); font-size:0.95rem; font-weight:500; cursor:pointer; transition: all 0.3s ease; appearance: none; background-image: url('data:image/svg+xml;charset=UTF-8,%3csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27rgba(255,255,255,0.6)%27 stroke-width=%272%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27%3e%3cpolyline points=%276 9 12 15 18 9%27%3e%3c/polyline%3e%3c/svg%3e'); background-repeat: no-repeat; background-position: right 0.75rem center; background-size: 1.25rem; padding-right: 2.5rem;">
+                                    <option value="default">Default (Purple Dream)</option>
+                                    <option value="green-forest">Green Forest</option>
+                                    <option value="cyberpunk-neon">Cyberpunk Neon</option>
+                                    <option value="ocean-breeze">Ocean Breeze</option>
+                                    <option value="cherry-blossom">Cherry Blossom</option>
+                                    <option value="midnight-dark">Midnight Dark</option>
+                                    <option value="sunset-orange">Sunset Orange</option>
+                                </select>
+                                <small style="margin-top:0.5rem; color:var(--secondary); font-size:0.85rem; display:block;">
+                                    <i class="fas fa-info-circle"></i> Choose your preferred color scheme
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Trakt Integration Section -->
+                <div id="traktContent" class="settings-section">
+                    <div class="settings-card">
+                        <div class="settings-card-header">
+                            <h3><i class="fas fa-tv" style="color: #ed1c24;"></i> Trakt Connection</h3>
+                        </div>
+                        <div class="settings-card-body">
+                            <div style="margin-bottom: 1rem; color: var(--secondary); font-size: 0.9rem;">
+                                <i class="fas fa-info-circle"></i>
+                                Sync your watch history, progress, and manage your watchlist with Trakt.tv
+                            </div>
+                            
+                            <div id="traktNotConnected" style="display: block;">
+                                <div style="margin-bottom: 1rem;">
+                                    <span id="traktStatus" style="color: #dc3545; font-weight: 500;">
+                                        <i class="fas fa-times-circle"></i> Not connected
+                                    </span>
+                                </div>
+                                <div style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
+                                    <button class="api-btn" id="traktLogin" style="background: #ed1c24; color: #fff;">
+                                        <i class="fas fa-sign-in-alt"></i> Connect to Trakt
+                                    </button>
+                                    <small style="opacity: 0.85;">Authenticate with your Trakt.tv account using a secure device code</small>
+                                </div>
+                            </div>
+
+                            <div id="traktConnected" style="display: none;">
+                                <div style="margin-bottom: 1rem;">
+                                    <span id="traktConnectedStatus" style="color: #198754; font-weight: 500;">
+                                        <i class="fas fa-check-circle"></i> Connected as <span id="traktUsername">User</span>
+                                    </span>
+                                </div>
+                                <div style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap; margin-bottom: 1rem;">
+                                    <button class="api-btn" id="traktViewWatchlist" style="background: #0d6efd; color: #fff;">
+                                        <i class="fas fa-list"></i> View Watchlist
+                                    </button>
+                                    <button class="api-btn" id="traktViewHistory" style="background: #6f42c1; color: #fff;">
+                                        <i class="fas fa-history"></i> View History
+                                    </button>
+                                    <button class="api-btn" id="traktViewStats" style="background: #17a2b8; color: #fff;">
+                                        <i class="fas fa-chart-bar"></i> View Stats
+                                    </button>
+                                </div>
+                                <div style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
+                                    <button class="api-btn api-btn-secondary" id="traktDisconnect">
+                                        <i class="fas fa-sign-out-alt"></i> Disconnect
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Trakt Device Code Panel -->
+                            <div id="traktCodePanel" style="display: none; margin-top: 1rem; padding: 0.75rem; background: rgba(0,0,0,0.35); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px;">
+                                <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.5rem;">
+                                    <div>Device Code:</div>
+                                    <div id="traktUserCode" style="font-family: monospace; font-weight: 800; background: rgba(255,255,255,0.1); padding: 0.25rem 0.5rem; border-radius: 6px;">----</div>
+                                    <button class="api-btn" id="traktCopyCode" style="padding: 0.4rem 0.6rem; background: #0d6efd; color: #fff;">
+                                        <i class="fas fa-copy"></i> Copy
+                                    </button>
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+                                    <div>Authorize at:</div>
+                                    <a id="traktVerifyUrl" href="#" target="_blank" style="color: #0d6efd; text-decoration: underline;">https://trakt.tv/activate</a>
+                                    <button class="api-btn" id="traktOpenVerify" style="padding: 0.4rem 0.6rem; background: #0d6efd; color: #fff;">
+                                        <i class="fas fa-external-link-alt"></i> Open
+                                    </button>
+                                    <span id="traktLoginStatus" style="margin-left: auto; font-size: 0.9rem; opacity: 0.9;">Waiting for authorization…</span>
+                                    <button class="api-btn api-btn-secondary" id="traktCancelLogin">
+                                        <i class="fas fa-times"></i> Cancel
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Trakt Settings -->
+                            <div id="traktSettings" style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid rgba(255,255,255,0.1);">
+                                <h4 style="margin-bottom: 0.75rem; color: var(--text-primary);">Scrobbling Settings</h4>
+                                <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                                    <label style="display: flex; align-items: center; gap: 0.6rem; cursor: pointer;">
+                                        <input type="checkbox" id="traktAutoScrobble" checked />
+                                        <span>Automatically track what I watch</span>
+                                    </label>
+                                    <label style="display: flex; align-items: center; gap: 0.6rem; cursor: pointer;">
+                                        <input type="checkbox" id="traktScrobbleProgress" checked />
+                                        <span>Sync watch progress</span>
+                                    </label>
+                                    <label style="display: flex; align-items: center; gap: 0.6rem; cursor: pointer;">
+                                        <input type="checkbox" id="traktSyncWatchlist" checked />
+                                        <span>Show Trakt watchlist items in search</span>
+                                    </label>
+                                </div>
+                                <div style="margin-top: 0.5rem; color: var(--secondary); font-size: 0.85rem;">
+                                    <i class="fas fa-info-circle"></i> Your viewing activity will be automatically synchronized with Trakt.tv
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Save Button -->
+            <div style="margin-top: 2rem; padding-top: 2rem; border-top: 2px solid rgba(168, 85, 247, 0.2); display: flex; gap: 1rem; justify-content: flex-end;">
+                <button class="api-btn api-btn-secondary" id="cancelSettingsPage">
+                    <i class="fas fa-times"></i> Cancel
+                </button>
+                <button class="api-btn api-btn-primary" id="saveSettingsPage">
+                    <i class="fas fa-save"></i> Save Changes
+                </button>
             </div>
         </div>
     </div>
@@ -7837,6 +8570,137 @@ Your browser does not support the video tag.
         // Initialize UI mode immediately (before DOM loads)
         applyUIMode(currentUIMode);
         
+        // Theme Management
+        const themes = {
+            'default': {
+                primary: '#2a1847',
+                secondary: '#8b5cf6',
+                tertiary: '#c084fc',
+                dark: '#120a1f',
+                light: '#f8f9fa',
+                gray: '#6c757d',
+                accent: '#a855f7',
+                cardBg: '#2a1847',
+                modalBg: 'linear-gradient(135deg, #2a1847, #120a1f)',
+                headerBg: '#2a1847',
+                inputBg: 'rgba(255, 255, 255, 0.1)',
+                hoverBg: 'rgba(168, 85, 247, 0.2)'
+            },
+            'green-forest': {
+                primary: '#1a3a2e',
+                secondary: '#4caf50',
+                tertiary: '#81c784',
+                dark: '#0f1e17',
+                light: '#f1f8f4',
+                gray: '#6c8073',
+                accent: '#66bb6a',
+                cardBg: '#1e4d3a',
+                modalBg: 'linear-gradient(135deg, #1a3a2e, #0f1e17)',
+                headerBg: '#1a3a2e',
+                inputBg: 'rgba(76, 175, 80, 0.15)',
+                hoverBg: 'rgba(76, 175, 80, 0.25)'
+            },
+            'cyberpunk-neon': {
+                primary: '#1a1a2e',
+                secondary: '#ff00ff',
+                tertiary: '#00ffff',
+                dark: '#0f0f1e',
+                light: '#f0f0ff',
+                gray: '#7070a0',
+                accent: '#ff00aa',
+                cardBg: '#252540',
+                modalBg: 'linear-gradient(135deg, #1a1a2e, #0f0f1e)',
+                headerBg: '#1a1a2e',
+                inputBg: 'rgba(255, 0, 255, 0.15)',
+                hoverBg: 'rgba(255, 0, 255, 0.3)'
+            },
+            'ocean-breeze': {
+                primary: '#1e3a5f',
+                secondary: '#2196f3',
+                tertiary: '#64b5f6',
+                dark: '#0d1f36',
+                light: '#e3f2fd',
+                gray: '#607d8b',
+                accent: '#42a5f5',
+                cardBg: '#2a4a6f',
+                modalBg: 'linear-gradient(135deg, #1e3a5f, #0d1f36)',
+                headerBg: '#1e3a5f',
+                inputBg: 'rgba(33, 150, 243, 0.15)',
+                hoverBg: 'rgba(33, 150, 243, 0.25)'
+            },
+            'cherry-blossom': {
+                primary: '#4a2545',
+                secondary: '#ff4081',
+                tertiary: '#ff80ab',
+                dark: '#1a0e1a',
+                light: '#fff0f5',
+                gray: '#8e7a8b',
+                accent: '#f48fb1',
+                cardBg: '#5a3555',
+                modalBg: 'linear-gradient(135deg, #4a2545, #1a0e1a)',
+                headerBg: '#4a2545',
+                inputBg: 'rgba(255, 64, 129, 0.15)',
+                hoverBg: 'rgba(255, 64, 129, 0.25)'
+            },
+            'midnight-dark': {
+                primary: '#1c1c2e',
+                secondary: '#6366f1',
+                tertiary: '#818cf8',
+                dark: '#0a0a14',
+                light: '#e0e7ff',
+                gray: '#64748b',
+                accent: '#7c3aed',
+                cardBg: '#2a2a40',
+                modalBg: 'linear-gradient(135deg, #1c1c2e, #0a0a14)',
+                headerBg: '#1c1c2e',
+                inputBg: 'rgba(99, 102, 241, 0.15)',
+                hoverBg: 'rgba(99, 102, 241, 0.25)'
+            },
+            'sunset-orange': {
+                primary: '#3d2a1f',
+                secondary: '#ff9800',
+                tertiary: '#ffb74d',
+                dark: '#1a0f0a',
+                light: '#fff3e0',
+                gray: '#8d6e63',
+                accent: '#fb8c00',
+                cardBg: '#4d3a2f',
+                modalBg: 'linear-gradient(135deg, #3d2a1f, #1a0f0a)',
+                headerBg: '#3d2a1f',
+                inputBg: 'rgba(255, 152, 0, 0.15)',
+                hoverBg: 'rgba(255, 152, 0, 0.25)'
+            }
+        };
+        
+        let currentTheme = localStorage.getItem('appTheme') || 'default';
+        
+        function applyTheme(themeName) {
+            const theme = themes[themeName] || themes['default'];
+            const root = document.documentElement;
+            
+            // Base colors
+            root.style.setProperty('--primary', theme.primary);
+            root.style.setProperty('--secondary', theme.secondary);
+            root.style.setProperty('--tertiary', theme.tertiary);
+            root.style.setProperty('--dark', theme.dark);
+            root.style.setProperty('--light', theme.light);
+            root.style.setProperty('--gray', theme.gray);
+            root.style.setProperty('--vlc-orange', theme.accent);
+            
+            // Extended colors for comprehensive theming
+            root.style.setProperty('--card-bg', theme.cardBg);
+            root.style.setProperty('--modal-bg', theme.modalBg);
+            root.style.setProperty('--header-bg', theme.headerBg);
+            root.style.setProperty('--input-bg', theme.inputBg);
+            root.style.setProperty('--hover-bg', theme.hoverBg);
+            
+            currentTheme = themeName;
+            localStorage.setItem('appTheme', themeName);
+        }
+        
+        // Initialize theme immediately
+        applyTheme(currentTheme);
+        
         // API configuration
         const TMDB_API_KEY = 'b3556f3b206e16f82df4d1f6fd4545e6';
         const API_BASE_URL = 'http://localhost:3000/api';
@@ -8286,9 +9150,59 @@ Your browser does not support the video tag.
             initializeBookTorrio(); // Initialize BookTorrio functionality
             initializeAnime(); // Initialize Anime functionality
             initializeManga(); // Initialize Manga functionality
+            initializeSettingsTabs(); // Initialize settings page tab switching
+            setWindowsUsername(); // Set Windows username in sidebar
             handleRoute(); // route-aware initial load
+            checkUpdateAnnouncement(); // Show update modal on first launch
             checkDiscordPrompt(); // Show Discord modal if user hasn't joined
             initializeCast(); // Initialize Google Cast SDK
+        }
+        
+        // Set Windows username from temp directory path
+        function setWindowsUsername() {
+            const usernameEl = document.getElementById('windowsUsername');
+            if (usernameEl) {
+                try {
+                    // Try to get username from electron API first
+                    if (window.electronAPI && window.electronAPI.getUsername) {
+                        window.electronAPI.getUsername().then(result => {
+                            if (result.success && result.username) {
+                                usernameEl.textContent = result.username;
+                            }
+                        }).catch(() => {
+                            // Fallback to extracting from temp path
+                            fallbackUsernameExtraction(usernameEl);
+                        });
+                    } else {
+                        // Fallback to extracting from temp path
+                        fallbackUsernameExtraction(usernameEl);
+                    }
+                } catch (error) {
+                    console.error('Error getting username:', error);
+                }
+            }
+        }
+        
+        // Fallback method to extract username from localStorage or other sources
+        function fallbackUsernameExtraction(usernameEl) {
+            // Try to extract from previously stored cache location or temp directory
+            const cacheLocation = localStorage.getItem('cacheLocation');
+            if (cacheLocation && cacheLocation.includes('Users\\')) {
+                const match = cacheLocation.match(/Users\\([^\\]+)/);
+                if (match && match[1]) {
+                    usernameEl.textContent = match[1];
+                    return;
+                }
+            }
+            // If no cache location, try to get it from API
+            fetch(`${API_BASE_URL}/settings`).then(res => res.json()).then(settings => {
+                if (settings.cacheLocation && settings.cacheLocation.includes('Users\\')) {
+                    const match = settings.cacheLocation.match(/Users\\([^\\]+)/);
+                    if (match && match[1]) {
+                        usernameEl.textContent = match[1];
+                    }
+                }
+            }).catch(() => {});
         }
         
         // Check if user has joined Discord and show modal if not
@@ -8315,6 +9229,36 @@ Your browser does not support the video tag.
             if (discordModal) {
                 discordModal.classList.remove('active');
                 document.body.style.overflow = 'auto';
+            }
+        }
+        
+        // Show Update modal
+        function showUpdateModal() {
+            const updateModal = document.getElementById('updateModal');
+            if (updateModal) {
+                updateModal.classList.add('active');
+                document.body.style.overflow = 'hidden';
+            }
+        }
+        
+        // Hide Update modal
+        function hideUpdateModal() {
+            const updateModal = document.getElementById('updateModal');
+            if (updateModal) {
+                updateModal.classList.remove('active');
+                document.body.style.overflow = 'auto';
+            }
+        }
+        
+        // Check if user has seen the update announcement
+        function checkUpdateAnnouncement() {
+            const hasSeenUpdate = localStorage.getItem('hasSeenUIUpdate');
+            if (!hasSeenUpdate) {
+                // Wait a bit for the page to fully load before showing the update modal
+                setTimeout(() => {
+                    showUpdateModal();
+                    localStorage.setItem('hasSeenUIUpdate', 'true');
+                }, 1500);
             }
         }
         
@@ -8420,60 +9364,82 @@ Your browser does not support the video tag.
         
         // Show settings modal
         async function showSettingsModal() {
+            // Navigate to settings page instead of showing modal
+            window.location.hash = '#/settings';
+        }
+        
+        // Load all settings data
+        async function loadSettingsData() {
             await loadCurrentApiKey();
             newApiKey.value = '';
-            settingsModal.classList.add('active');
-            document.body.style.overflow = 'hidden';
             
-            // Load UI mode setting
-            const uiModeNew = document.getElementById('uiModeNew');
-            const uiModeOld = document.getElementById('uiModeOld');
-            if (uiModeNew && uiModeOld) {
+            // Load UI mode setting for ALL instances
+            const uiModeNewElements = document.querySelectorAll('#uiModeNew');
+            const uiModeOldElements = document.querySelectorAll('#uiModeOld');
+            
+            uiModeNewElements.forEach(el => {
                 if (currentUIMode === 'new') {
-                    uiModeNew.checked = true;
-                } else {
-                    uiModeOld.checked = true;
+                    el.checked = true;
                 }
-            }
+            });
+            uiModeOldElements.forEach(el => {
+                if (currentUIMode === 'old') {
+                    el.checked = true;
+                }
+            });
             
-            // Load fullscreen setting
-            const fullscreenToggle = document.getElementById('fullscreenToggle');
+            // Load theme setting for ALL instances
+            const themeSelectors = document.querySelectorAll('#themeSelector');
+            themeSelectors.forEach(themeSelector => {
+                if (themeSelector) {
+                    themeSelector.value = currentTheme;
+                }
+            });
+            
+            // Load fullscreen setting for ALL instances
+            const fullscreenToggles = document.querySelectorAll('#fullscreenToggle');
             
             // Check Trakt authentication status
             await checkTraktStatus();
-            if (fullscreenToggle && window.electronAPI && window.electronAPI.getFullscreen) {
+            if (fullscreenToggles.length > 0 && window.electronAPI && window.electronAPI.getFullscreen) {
                 try {
                     const result = await window.electronAPI.getFullscreen();
                     if (result.success) {
-                        fullscreenToggle.checked = result.isFullscreen;
+                        fullscreenToggles.forEach(toggle => {
+                            toggle.checked = result.isFullscreen;
+                        });
                     }
                 } catch (error) {
                     console.error('Error loading fullscreen state:', error);
                 }
             }
             
-            // Load useTorrentless setting state
+            // Load useTorrentless setting state for ALL instances
             try {
                 const res = await fetch(`${API_BASE_URL}/settings`);
                 if (res.ok) {
                     const s = await res.json();
                     console.log('[Settings] Loaded settings:', s);
                     useTorrentless = !!s.useTorrentless;
-                    if (useTorrentlessToggle) useTorrentlessToggle.checked = useTorrentless;
+                    
+                    const useTorrentlessToggles = document.querySelectorAll('#useTorrentlessToggle');
+                    useTorrentlessToggles.forEach(toggle => {
+                        toggle.checked = useTorrentless;
+                    });
                     // Load torrent source preference (default to 'torrentio')
                     const currentSource = s.torrentSource || 'torrentio';
                     console.log('[Settings] Set torrent source to:', currentSource);
                     
-                    // Update button states
-                    const torrentioBtn = document.getElementById('torrentioBtn');
-                    const inAppScraperBtn = document.getElementById('inAppScraperBtn');
-                    if (torrentioBtn && inAppScraperBtn) {
+                    // Update button states for ALL instances
+                    const torrentioBtns = document.querySelectorAll('#torrentioBtn');
+                    const inAppScraperBtns = document.querySelectorAll('#inAppScraperBtn');
+                    if (torrentioBtns.length > 0 && inAppScraperBtns.length > 0) {
                         if (currentSource === 'torrentio') {
-                            torrentioBtn.classList.add('active');
-                            inAppScraperBtn.classList.remove('active');
+                            torrentioBtns.forEach(btn => btn.classList.add('active'));
+                            inAppScraperBtns.forEach(btn => btn.classList.remove('active'));
                         } else {
-                            torrentioBtn.classList.remove('active');
-                            inAppScraperBtn.classList.add('active');
+                            torrentioBtns.forEach(btn => btn.classList.remove('active'));
+                            inAppScraperBtns.forEach(btn => btn.classList.add('active'));
                         }
                     }
                     // Load Jackett URL
@@ -8512,6 +9478,29 @@ Your browser does not support the video tag.
         function hideSettingsModal() {
             settingsModal.classList.remove('active');
             document.body.style.overflow = 'auto';
+        }
+        
+        // Settings Page Tab Switching
+        function initializeSettingsTabs() {
+            const settingsTabs = document.querySelectorAll('.settings-tab');
+            const settingsSections = document.querySelectorAll('.settings-section');
+            
+            settingsTabs.forEach(tab => {
+                tab.addEventListener('click', () => {
+                    const targetSection = tab.getAttribute('data-section');
+                    
+                    // Remove active class from all tabs and sections
+                    settingsTabs.forEach(t => t.classList.remove('active'));
+                    settingsSections.forEach(s => s.classList.remove('active'));
+                    
+                    // Add active class to clicked tab and corresponding section
+                    tab.classList.add('active');
+                    const targetElement = document.getElementById(`${targetSection}Content`);
+                    if (targetElement) {
+                        targetElement.classList.add('active');
+                    }
+                });
+            });
         }
         
         // Save API key (first time setup)
@@ -8626,25 +9615,44 @@ Your browser does not support the video tag.
         }
 
         function showTraktConnected(user) {
-            traktNotConnected.style.display = 'none';
-            traktConnected.style.display = 'block';
-            traktUsername.textContent = user.username || user.name || 'User';
-            traktStatus.innerHTML = '<i class="fas fa-check-circle"></i> Connected';
-            traktStatus.style.color = '#198754';
+            // Update ALL instances of Trakt status elements
+            const traktNotConnectedEls = document.querySelectorAll('#traktNotConnected');
+            const traktConnectedEls = document.querySelectorAll('#traktConnected');
+            const traktUsernameEls = document.querySelectorAll('#traktUsername');
+            const traktStatusEls = document.querySelectorAll('#traktStatus');
+            
+            traktNotConnectedEls.forEach(el => el.style.display = 'none');
+            traktConnectedEls.forEach(el => el.style.display = 'block');
+            traktUsernameEls.forEach(el => el.textContent = user.username || user.name || 'User');
+            traktStatusEls.forEach(el => {
+                el.innerHTML = '<i class="fas fa-check-circle"></i> Connected';
+                el.style.color = '#198754';
+            });
         }
 
         function showTraktDisconnected() {
-            traktNotConnected.style.display = 'block';
-            traktConnected.style.display = 'none';
-            traktStatus.innerHTML = '<i class="fas fa-times-circle"></i> Not connected';
-            traktStatus.style.color = '#dc3545';
+            // Update ALL instances of Trakt status elements
+            const traktNotConnectedEls = document.querySelectorAll('#traktNotConnected');
+            const traktConnectedEls = document.querySelectorAll('#traktConnected');
+            const traktStatusEls = document.querySelectorAll('#traktStatus');
+            
+            traktNotConnectedEls.forEach(el => el.style.display = 'block');
+            traktConnectedEls.forEach(el => el.style.display = 'none');
+            traktStatusEls.forEach(el => {
+                el.innerHTML = '<i class="fas fa-times-circle"></i> Not connected';
+                el.style.color = '#dc3545';
+            });
         }
 
         // Start Trakt authentication flow
         async function startTraktLogin() {
             try {
-                traktLoginBtn.disabled = true;
-                traktLoginBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Connecting...';
+                // Update ALL login buttons
+                const traktLoginBtns = document.querySelectorAll('#traktLogin');
+                traktLoginBtns.forEach(btn => {
+                    btn.disabled = true;
+                    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Connecting...';
+                });
 
                 // Get device code
                 const response = await fetch('/api/trakt/device-code');
@@ -8654,11 +9662,16 @@ Your browser does not support the video tag.
                     throw new Error(data.error || 'Failed to get device code');
                 }
 
-                // Show the code panel
-                traktCodePanel.style.display = 'block';
-                traktUserCodeEl.textContent = data.user_code;
-                traktVerifyUrlEl.href = data.verification_url;
-                traktLoginStatusEl.textContent = 'Waiting for authorization…';
+                // Show the code panel on ALL instances
+                const traktCodePanels = document.querySelectorAll('#traktCodePanel');
+                const traktUserCodeEls = document.querySelectorAll('#traktUserCode');
+                traktCodePanels.forEach(panel => panel.style.display = 'block');
+                traktUserCodeEls.forEach(el => el.textContent = data.user_code);
+                
+                const traktVerifyUrlEls = document.querySelectorAll('#traktVerifyUrl');
+                const traktLoginStatusEls = document.querySelectorAll('#traktLoginStatus');
+                traktVerifyUrlEls.forEach(el => el.href = data.verification_url);
+                traktLoginStatusEls.forEach(el => el.textContent = 'Waiting for authorization…');
 
                 // Start polling for token
                 startTraktPolling(data.device_code, data.interval || 5);
@@ -8722,9 +9735,15 @@ Your browser does not support the video tag.
         }
 
         function resetTraktLogin() {
-            traktLoginBtn.disabled = false;
-            traktLoginBtn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Connect to Trakt';
-            traktCodePanel.style.display = 'none';
+            const traktLoginBtns = document.querySelectorAll('#traktLogin');
+            const traktCodePanels = document.querySelectorAll('#traktCodePanel');
+            
+            traktLoginBtns.forEach(btn => {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Connect to Trakt';
+            });
+            traktCodePanels.forEach(panel => panel.style.display = 'none');
+            
             if (traktPollingInterval) {
                 clearInterval(traktPollingInterval);
                 traktPollingInterval = null;
@@ -10123,13 +11142,31 @@ Your browser does not support the video tag.
         // Save Settings: persist useTorrentless and optionally API key, then close modal
         async function saveSettings_() {
             const apiKey = newApiKey.value.trim();
-            const toggleEl = document.getElementById('useTorrentlessToggle');
+            
+            // Get the toggle that is actually checked (either modal or settings page)
+            const toggleElements = document.querySelectorAll('#useTorrentlessToggle');
+            let toggleEl = null;
+            for (const el of toggleElements) {
+                if (el.offsetParent !== null) { // Check if element is visible
+                    toggleEl = el;
+                    break;
+                }
+            }
             const desiredTorrentless = toggleEl ? !!toggleEl.checked : useTorrentless;
+            
             const jackettUrl = jackettUrlInput?.value.trim() || '';
             const cacheLocation = cacheLocationInput?.value.trim() || '';
             
-            // Handle fullscreen toggle
-            const fullscreenToggle = document.getElementById('fullscreenToggle');
+            // Handle fullscreen toggle - get the visible one
+            const fullscreenToggles = document.querySelectorAll('#fullscreenToggle');
+            let fullscreenToggle = null;
+            for (const el of fullscreenToggles) {
+                if (el.offsetParent !== null) {
+                    fullscreenToggle = el;
+                    break;
+                }
+            }
+            
             if (fullscreenToggle && window.electronAPI && window.electronAPI.setFullscreen) {
                 try {
                     const result = await window.electronAPI.setFullscreen(fullscreenToggle.checked);
@@ -10143,9 +11180,25 @@ Your browser does not support the video tag.
                 }
             }
             
-            // Handle UI mode change
-            const uiModeNew = document.getElementById('uiModeNew');
-            const uiModeOld = document.getElementById('uiModeOld');
+            // Handle UI mode change - get the visible radios
+            const uiModeNewElements = document.querySelectorAll('#uiModeNew');
+            const uiModeOldElements = document.querySelectorAll('#uiModeOld');
+            let uiModeNew = null;
+            let uiModeOld = null;
+            
+            for (const el of uiModeNewElements) {
+                if (el.offsetParent !== null) {
+                    uiModeNew = el;
+                    break;
+                }
+            }
+            for (const el of uiModeOldElements) {
+                if (el.offsetParent !== null) {
+                    uiModeOld = el;
+                    break;
+                }
+            }
+            
             let selectedUIMode = 'new';
             if (uiModeOld && uiModeOld.checked) {
                 selectedUIMode = 'old';
@@ -10193,7 +11246,13 @@ Your browser does not support the video tag.
                 console.error('Error saving settings:', error);
                 // Even if API key call fails, close the modal when toggling Torrentless is desired
             } finally {
-                hideSettingsModal();
+                // Check if we're on settings page or in modal
+                if (window.location.hash === '#/settings') {
+                    // Stay on settings page, just show notification
+                    // Navigation will be handled by cancel button if needed
+                } else {
+                    hideSettingsModal();
+                }
             }
         }
         
@@ -10637,6 +11696,17 @@ Your browser does not support the video tag.
                     }
                 });
             }
+            
+            // Update Modal
+            const updateClose = document.getElementById('updateClose');
+            const updateGotItBtn = document.getElementById('updateGotItBtn');
+            if (updateClose) {
+                updateClose.addEventListener('click', hideUpdateModal);
+            }
+            if (updateGotItBtn) {
+                updateGotItBtn.addEventListener('click', hideUpdateModal);
+            }
+            
             if (discordBtn) {
                 discordBtn.addEventListener('click', async () => {
                     const url = 'https://discord.gg/bbkVHRHnRk';
@@ -10691,16 +11761,43 @@ Your browser does not support the video tag.
             settingsClose.addEventListener('click', hideSettingsModal);
             saveSettings.addEventListener('click', saveSettings_);
             cancelSettings.addEventListener('click', hideSettingsModal);
-            const videoTutorialBtnEl = document.getElementById('videoTutorialBtn');
-            if (videoTutorialBtnEl) {
-                videoTutorialBtnEl.addEventListener('click', async () => {
+            
+            // Settings page buttons
+            const saveSettingsPage = document.getElementById('saveSettingsPage');
+            const cancelSettingsPage = document.getElementById('cancelSettingsPage');
+            if (saveSettingsPage) {
+                saveSettingsPage.addEventListener('click', saveSettings_);
+            }
+            if (cancelSettingsPage) {
+                cancelSettingsPage.addEventListener('click', () => {
+                    window.history.back();
+                });
+            }
+            
+            // Theme selector (attach to all instances - modal and settings page)
+            const themeSelectors = document.querySelectorAll('#themeSelector');
+            themeSelectors.forEach(themeSelector => {
+                if (themeSelector) {
+                    themeSelector.addEventListener('change', (e) => {
+                        const selectedTheme = e.target.value;
+                        applyTheme(selectedTheme);
+                        showNotification(`Theme changed to ${e.target.options[e.target.selectedIndex].text}`, 'success');
+                    });
+                }
+            });
+            
+            const videoTutorialBtns = document.querySelectorAll('#videoTutorialBtn');
+            videoTutorialBtns.forEach(btn => {
+                btn.addEventListener('click', async () => {
                     const url = 'https://www.youtube.com/watch?v=3igLReZFFzg';
                     if (window.electronAPI?.openExternal) await window.electronAPI.openExternal(url);
                 });
-            }
-            // Watch without Jackett toggle
-            if (useTorrentlessToggle) {
-                useTorrentlessToggle.addEventListener('change', async (e) => {
+            });
+            
+            // Watch without Jackett toggle - attach to ALL instances
+            const useTorrentlessToggles = document.querySelectorAll('#useTorrentlessToggle');
+            useTorrentlessToggles.forEach(toggle => {
+                toggle.addEventListener('change', async (e) => {
                     const enabled = !!e.target.checked;
                     try {
                         const res = await fetch(`${API_BASE_URL}/settings`, {
@@ -10710,6 +11807,8 @@ Your browser does not support the video tag.
                         });
                         if (res.ok) {
                             useTorrentless = enabled;
+                            // Update all other toggles
+                            useTorrentlessToggles.forEach(t => t.checked = enabled);
                             showNotification(enabled ? 'Watch without Jackett enabled.' : 'Watch without Jackett disabled.');
                         } else {
                             e.target.checked = !enabled;
@@ -10720,13 +11819,13 @@ Your browser does not support the video tag.
                         showNotification('Failed to update setting.');
                     }
                 });
-            }
+            });
             
-            // Torrent source buttons
-            const torrentioBtn = document.getElementById('torrentioBtn');
-            const inAppScraperBtn = document.getElementById('inAppScraperBtn');
+            // Torrent source buttons - attach to ALL instances
+            const torrentioBtns = document.querySelectorAll('#torrentioBtn');
+            const inAppScraperBtns = document.querySelectorAll('#inAppScraperBtn');
             
-            if (torrentioBtn && inAppScraperBtn) {
+            if (torrentioBtns.length > 0 && inAppScraperBtns.length > 0) {
                 const handleSourceChange = async (source) => {
                     console.log('=================================');
                     console.log('[Settings] Button clicked! Changing source to:', source);
@@ -10740,14 +11839,14 @@ Your browser does not support the video tag.
                         console.log('[Settings] Server response:', responseData);
                         
                         if (res.ok) {
-                            // Update UI immediately
+                            // Update UI immediately for ALL button instances
                             if (source === 'torrentio') {
-                                torrentioBtn.classList.add('active');
-                                inAppScraperBtn.classList.remove('active');
+                                torrentioBtns.forEach(btn => btn.classList.add('active'));
+                                inAppScraperBtns.forEach(btn => btn.classList.remove('active'));
                                 console.log('[Settings] UI updated: Torrentio active');
                             } else {
-                                torrentioBtn.classList.remove('active');
-                                inAppScraperBtn.classList.add('active');
+                                torrentioBtns.forEach(btn => btn.classList.remove('active'));
+                                inAppScraperBtns.forEach(btn => btn.classList.add('active'));
                                 console.log('[Settings] UI updated: In-App Scraper active');
                             }
                             console.log('[Settings] SUCCESS! Setting saved:', source);
@@ -10765,8 +11864,12 @@ Your browser does not support the video tag.
                     }
                 };
                 
-                torrentioBtn.addEventListener('click', () => handleSourceChange('torrentio'));
-                inAppScraperBtn.addEventListener('click', () => handleSourceChange('in-app-scraper'));
+                torrentioBtns.forEach(btn => {
+                    btn.addEventListener('click', () => handleSourceChange('torrentio'));
+                });
+                inAppScraperBtns.forEach(btn => {
+                    btn.addEventListener('click', () => handleSourceChange('in-app-scraper'));
+                });
             }
 
             // Debrid settings
@@ -11040,15 +12143,23 @@ Your browser does not support the video tag.
                 });
             }
 
-            // ===== TRAKT EVENT LISTENERS =====
+            // ===== TRAKT EVENT LISTENERS - attach to ALL instances =====
             
-            if (traktLoginBtn) traktLoginBtn.addEventListener('click', startTraktLogin);
-            if (traktDisconnectBtn) traktDisconnectBtn.addEventListener('click', disconnectTrakt);
-            if (traktCopyCodeBtn) traktCopyCodeBtn.addEventListener('click', copyTraktCode);
-            if (traktOpenVerifyBtn) traktOpenVerifyBtn.addEventListener('click', openTraktVerify);
-            if (traktCancelLoginBtn) traktCancelLoginBtn.addEventListener('click', cancelTraktLogin);
+            const traktLoginBtns = document.querySelectorAll('#traktLogin');
+            const traktDisconnectBtns = document.querySelectorAll('#traktDisconnect');
+            const traktCopyCodeBtns = document.querySelectorAll('#traktCopyCode');
+            const traktOpenVerifyBtns = document.querySelectorAll('#traktOpenVerify');
+            const traktCancelLoginBtns = document.querySelectorAll('#traktCancelLogin');
             
-            if (traktViewWatchlistBtn) traktViewWatchlistBtn.addEventListener('click', async () => {
+            traktLoginBtns.forEach(btn => btn.addEventListener('click', startTraktLogin));
+            traktDisconnectBtns.forEach(btn => btn.addEventListener('click', disconnectTrakt));
+            traktCopyCodeBtns.forEach(btn => btn.addEventListener('click', copyTraktCode));
+            traktOpenVerifyBtns.forEach(btn => btn.addEventListener('click', openTraktVerify));
+            traktCancelLoginBtns.forEach(btn => btn.addEventListener('click', cancelTraktLogin));
+            
+            const traktViewWatchlistBtns = document.querySelectorAll('#traktViewWatchlist');
+            traktViewWatchlistBtns.forEach(btn => {
+                btn.addEventListener('click', async () => {
                 try {
                     const response = await fetch('/api/trakt/watchlist?type=mixed');
                     const data = await response.json();
@@ -11064,9 +12175,12 @@ Your browser does not support the video tag.
                     console.error('[TRAKT] Watchlist error:', error);
                     showNotification('Failed to load watchlist', 'error');
                 }
+                });
             });
             
-            if (traktViewHistoryBtn) traktViewHistoryBtn.addEventListener('click', async () => {
+            const traktViewHistoryBtns = document.querySelectorAll('#traktViewHistory');
+            traktViewHistoryBtns.forEach(btn => {
+                btn.addEventListener('click', async () => {
                 try {
                     const response = await fetch('/api/trakt/history?type=mixed&limit=20');
                     const data = await response.json();
@@ -11081,9 +12195,12 @@ Your browser does not support the video tag.
                     console.error('[TRAKT] History error:', error);
                     showNotification('Failed to load history', 'error');
                 }
+                });
             });
             
-            if (traktViewStatsBtn) traktViewStatsBtn.addEventListener('click', async () => {
+            const traktViewStatsBtns = document.querySelectorAll('#traktViewStats');
+            traktViewStatsBtns.forEach(btn => {
+                btn.addEventListener('click', async () => {
                 try {
                     const response = await fetch('/api/trakt/stats');
                     const data = await response.json();
@@ -11100,6 +12217,7 @@ Your browser does not support the video tag.
                     console.error('[TRAKT] Stats error:', error);
                     showNotification('Failed to load stats', 'error');
                 }
+                });
             });
 
             // ===== END TRAKT EVENT LISTENERS =====
@@ -13874,15 +14992,23 @@ Your browser does not support the video tag.
                 }
             }
 
-            // Initialize streaming servers setting
-            const useStreamingServersToggle = document.getElementById('useStreamingServersToggle');
-            if (useStreamingServersToggle) {
+            // Initialize streaming servers setting for ALL instances
+            const useStreamingServersToggles = document.querySelectorAll('#useStreamingServersToggle');
+            if (useStreamingServersToggles.length > 0) {
                 const currentSetting = localStorage.getItem('useStreamingServers') === 'true';
-                useStreamingServersToggle.checked = currentSetting;
-                useStreamingServersToggle.addEventListener('change', (e) => {
-                    localStorage.setItem('useStreamingServers', e.target.checked);
-                    console.log('[SERVERS] Streaming servers mode:', e.target.checked ? 'enabled' : 'disabled');
-                    updateWatchButtonText(); // Update button text when mode changes
+                
+                useStreamingServersToggles.forEach(toggle => {
+                    toggle.checked = currentSetting;
+                    toggle.addEventListener('change', (e) => {
+                        const newValue = e.target.checked;
+                        localStorage.setItem('useStreamingServers', newValue);
+                        console.log('[SERVERS] Streaming servers mode:', newValue ? 'enabled' : 'disabled');
+                        
+                        // Update ALL other toggles to match
+                        useStreamingServersToggles.forEach(t => t.checked = newValue);
+                        
+                        updateWatchButtonText(); // Update button text when mode changes
+                    });
                 });
             }
 
@@ -14469,6 +15595,11 @@ Your browser does not support the video tag.
     activeRoute = 'downloader';
     showSection('downloader');
     return;
+} else if (hash === '#/settings') {
+    activeRoute = 'settings';
+    showSection('settings');
+    await loadSettingsData();
+    return;
 }
 
             // Fallback
@@ -14481,7 +15612,7 @@ Your browser does not support the video tag.
             const allPageIds = [
                 'homePage','genresPage','genreDetailsPage','myListPage','doneWatchingPage',
                 'trakt-page','livetv-page','iptv-page','books-page','music-page',
-                'booktorrio-page','anime-page','manga-page','manga-reader-page','downloader-page'
+                'booktorrio-page','anime-page','manga-page','manga-reader-page','downloader-page','settings-page'
             ];
             allPageIds.forEach(id => { const el = document.getElementById(id); if (el) el.style.display = 'none'; });
 
@@ -14514,7 +15645,8 @@ Your browser does not support the video tag.
                 'anime': 'anime-page',
                 'manga': 'manga-page',
                 'manga-reader': 'manga-reader-page',
-                'downloader': 'downloader-page'
+                'downloader': 'downloader-page',
+                'settings': 'settings-page'
             };
             const targetId = map[section];
             if (targetId) {
