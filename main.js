@@ -69,8 +69,7 @@ function setupDiscordRPC() {
             try {
                 if (!discordRpc) return;
                 discordRpc.setActivity({
-                    details: 'Streaming your favorite movies',
-                    state: 'Browsing PlayTorrio',
+                    details: 'Browsing PlayTorrio',
                     startTimestamp: new Date(),
                     largeImageKey: 'icon', // uploaded image name on Discord dev portal
                     largeImageText: 'PlayTorrio App',
@@ -336,6 +335,24 @@ function openInMPV(win, streamUrl, infoHash, startSeconds) {
         mpvProcess.on('close', async (code) => {
             // By request: do not disconnect torrent or delete temp when MPV closes.
             console.log(`MPV player closed with code ${code}. Leaving torrent active and temp files intact.`);
+            
+            // Clear Discord presence when MPV closes
+            try {
+                if (discordRpc && discordRpcReady) {
+                    await discordRpc.setActivity({
+                        details: 'Browsing PlayTorrio',
+                        startTimestamp: new Date(),
+                        largeImageKey: 'icon',
+                        largeImageText: 'PlayTorrio App',
+                        buttons: [
+                            { label: 'Download App', url: 'https://github.com/ayman707-ux/PlayTorrio' }
+                        ]
+                    });
+                }
+            } catch (err) {
+                console.error('[Discord RPC] Failed to clear on MPV close:', err);
+            }
+            
             // Optionally inform renderer that MPV closed (no cleanup performed)
             try { win.webContents.send('mpv-closed', { infoHash, code }); } catch(_) {}
         });
@@ -1191,6 +1208,27 @@ if (!gotLock) {
                 throw new Error('MPV not found');
             }
             const mpvProcess = spawn(mpvPath, [url], { stdio: 'ignore', detached: true });
+            
+            // Listen for process close to clear Discord presence
+            mpvProcess.on('close', async (code) => {
+                console.log(`MPV (direct) closed with code ${code}`);
+                try {
+                    if (discordRpc && discordRpcReady) {
+                        await discordRpc.setActivity({
+                            details: 'Browsing PlayTorrio',
+                            startTimestamp: new Date(),
+                            largeImageKey: 'icon',
+                            largeImageText: 'PlayTorrio App',
+                            buttons: [
+                                { label: 'Download App', url: 'https://github.com/ayman707-ux/PlayTorrio' }
+                            ]
+                        });
+                    }
+                } catch (err) {
+                    console.error('[Discord RPC] Failed to clear on MPV direct close:', err);
+                }
+            });
+            
             mpvProcess.unref();
             return { success: true };
         } catch (error) {
@@ -1555,6 +1593,67 @@ if (!gotLock) {
             return { success: false, message: 'Main window not available' };
         } catch (error) {
             console.error('Error getting fullscreen state:', error);
+            return { success: false, message: error.message };
+        }
+    });
+
+    // Discord Rich Presence handlers
+    ipcMain.handle('update-discord-presence', async (event, presenceData) => {
+        try {
+            if (!discordRpc || !discordRpcReady) {
+                return { success: false, message: 'Discord RPC not ready' };
+            }
+            
+            const activity = {
+                details: presenceData.details || 'Using PlayTorrio',
+                state: presenceData.state || '',
+                startTimestamp: presenceData.startTimestamp || new Date(),
+                largeImageKey: presenceData.largeImageKey || 'icon',
+                largeImageText: presenceData.largeImageText || 'PlayTorrio App'
+            };
+
+            // Add small image if provided (for music/video icons)
+            if (presenceData.smallImageKey) {
+                activity.smallImageKey = presenceData.smallImageKey;
+                activity.smallImageText = presenceData.smallImageText || '';
+            }
+
+            // Add buttons if provided
+            if (presenceData.buttons && Array.isArray(presenceData.buttons)) {
+                activity.buttons = presenceData.buttons;
+            } else {
+                activity.buttons = [
+                    { label: 'Download App', url: 'https://github.com/ayman707-ux/PlayTorrio' }
+                ];
+            }
+
+            await discordRpc.setActivity(activity);
+            return { success: true };
+        } catch (error) {
+            console.error('[Discord RPC] Update error:', error);
+            return { success: false, message: error.message };
+        }
+    });
+
+    ipcMain.handle('clear-discord-presence', async () => {
+        try {
+            if (!discordRpc || !discordRpcReady) {
+                return { success: false, message: 'Discord RPC not ready' };
+            }
+            
+            // Reset to base activity - just "Browsing PlayTorrio"
+            await discordRpc.setActivity({
+                details: 'Browsing PlayTorrio',
+                startTimestamp: new Date(),
+                largeImageKey: 'icon',
+                largeImageText: 'PlayTorrio App',
+                buttons: [
+                    { label: 'Download App', url: 'https://github.com/ayman707-ux/PlayTorrio' }
+                ]
+            });
+            return { success: true };
+        } catch (error) {
+            console.error('[Discord RPC] Clear error:', error);
             return { success: false, message: error.message };
         }
     });
