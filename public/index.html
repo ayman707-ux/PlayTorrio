@@ -7521,7 +7521,10 @@ If you experience audio problems or no audio at all, click <strong>"Open in MPV"
 </button>
 <button class="provider-btn" data-provider="comet">
 <i class="fas fa-meteor"></i> Comet
-                    </button>
+</button>
+<button class="provider-btn" data-provider="111477">
+<i class="fas fa-play-circle"></i> 111477
+</button>
 </div>
 <div style="margin-bottom: 1rem;">
 <input type="text" id="torrentKeywordFilter" placeholder="Filter torrents by keyword..." style="width: 100%; padding: 0.6rem; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; color: var(--light); font-size: 0.95rem;">
@@ -8080,7 +8083,7 @@ Your browser does not support the video tag.
         let currentSubtitles = [];
     let subtitleTrack = null;
     let currentSubtitleFile = null; // filename served under /subtitles to delete on switch
-    let selectedProvider = 'playtorrio'; // Default provider: playtorrio, nuvio, or comet
+    let selectedProvider = 'playtorrio'; // Default provider: playtorrio, nuvio, comet, or 111477
     let lastSearchedSeason = null; // Track last searched season for provider switching
     let lastSearchedEpisode = null; // Track last searched episode for provider switching
     
@@ -15175,9 +15178,9 @@ Your browser does not support the video tag.
 
                 let nuvioUrl;
                 if (mediaType === 'movie') {
-                    nuvioUrl = `https://nuviostreams.hayd.uk/providers=showbox,vidzee,vidsrc,vixsrc,mp4hydra,uhdmovies,moviesmod,4khdhub,topmovies/stream/movie/${imdbId}.json?cookie=ui%3D${febboxToken}&region=US`;
+                    nuvioUrl = `${API_BASE_URL}/nuvio/stream/movie/${imdbId}?cookie=ui%3D${febboxToken}&region=US`;
                 } else if (season && episode) {
-                    nuvioUrl = `https://nuviostreams.hayd.uk/providers=showbox,vidzee,vidsrc,vixsrc,mp4hydra,uhdmovies,moviesmod,4khdhub,topmovies/stream/series/${imdbId}:${season}:${episode}.json?cookie=ui%3D${febboxToken}&region=US`;
+                    nuvioUrl = `${API_BASE_URL}/nuvio/stream/series/${imdbId}:${season}:${episode}?cookie=ui%3D${febboxToken}&region=US`;
                 } else {
                     throw new Error('Season and episode required for TV shows');
                 }
@@ -15376,9 +15379,9 @@ Your browser does not support the video tag.
 
                 let cometUrl;
                 if (mediaType === 'movie') {
-                    cometUrl = `https://comet.elfhosted.com/${cometConfig}/stream/movie/${imdbId}.json`;
+                    cometUrl = `${API_BASE_URL}/comet/stream/movie/${imdbId}?config=${cometConfig}`;
                 } else if (season && episode) {
-                    cometUrl = `https://comet.elfhosted.com/${cometConfig}/stream/series/${imdbId}:${season}:${episode}.json`;
+                    cometUrl = `${API_BASE_URL}/comet/stream/series/${imdbId}:${season}:${episode}?config=${cometConfig}`;
                 } else {
                     throw new Error('Season and episode required for TV shows');
                 }
@@ -15451,6 +15454,119 @@ Your browser does not support the video tag.
             }
         }
 
+        // Fetch streams from 111477 API (direct streaming links)
+        async function fetch111477Streams(season = null, episode = null) {
+            if (!currentContent) return;
+
+            const torrentsList = document.getElementById('torrentsList');
+            torrentsList.innerHTML = '<div class="loading"><i class="fas fa-spinner"></i> Searching 111477...</div>';
+
+            try {
+                const tmdbId = currentContent.id;
+                const mediaType = currentMediaType; // 'movie' or 'tv'
+
+                let apiUrl;
+                if (mediaType === 'movie') {
+                    apiUrl = `http://localhost:3000/111477/api/tmdb/movie/${encodeURIComponent(tmdbId)}`;
+                } else if (season && episode) {
+                    apiUrl = `http://localhost:3000/111477/api/tmdb/tv/${encodeURIComponent(tmdbId)}/season/${encodeURIComponent(season)}/episode/${encodeURIComponent(episode)}`;
+                } else {
+                    throw new Error('Season and episode required for TV shows');
+                }
+
+                console.log('[111477] Fetching from:', apiUrl);
+
+                const response = await fetch(apiUrl);
+                if (!response.ok) throw new Error(`111477 API error: ${response.statusText}`);
+                
+                const data = await response.json();
+                
+                // Handle multi-result format from 111477 API
+                let allFiles = [];
+                if (Array.isArray(data?.results)) {
+                    data.results.forEach(result => {
+                        if (result.success && Array.isArray(result.files)) {
+                            allFiles = allFiles.concat(result.files);
+                        }
+                    });
+                } else if (Array.isArray(data?.files)) {
+                    allFiles = data.files;
+                }
+                
+                console.log('[111477] Found', allFiles.length, 'files');
+
+                if (allFiles.length === 0) {
+                    torrentsList.innerHTML = '<div class="error-message"><i class="fas fa-info-circle"></i> No 111477 streams found</div>';
+                    return;
+                }
+
+                // Display 111477 streams
+                torrentsList.innerHTML = '';
+                allFiles.forEach(file => {
+                    const item = document.createElement('div');
+                    item.className = 'torrent-item';
+                    item.style.display = 'flex';
+                    item.style.justifyContent = 'space-between';
+                    item.style.alignItems = 'center';
+                    item.style.padding = '1rem';
+                    item.style.marginBottom = '0.5rem';
+                    item.style.background = 'rgba(255,255,255,0.05)';
+                    item.style.borderRadius = '8px';
+                    item.style.cursor = 'pointer';
+
+                    const info = document.createElement('div');
+                    info.style.flex = '1';
+
+                    const title = document.createElement('div');
+                    title.style.fontWeight = '500';
+                    title.style.marginBottom = '0.25rem';
+                    title.textContent = file.name || 'Unknown';
+
+                    const meta = document.createElement('div');
+                    meta.style.fontSize = '0.85rem';
+                    meta.style.opacity = '0.7';
+                    const quality = file.quality || 'Unknown Quality';
+                    const size = file.size || 'Unknown Size';
+                    meta.textContent = `${quality} • ${size}`;
+
+                    info.appendChild(title);
+                    info.appendChild(meta);
+
+                    const playBtn = document.createElement('button');
+                    playBtn.className = 'btn';
+                    playBtn.innerHTML = '<i class="fas fa-play"></i> Open in MPV';
+                    playBtn.style.marginLeft = '1rem';
+                    playBtn.onclick = async (e) => {
+                        e.stopPropagation();
+                        if (file.url) {
+                            console.log('[111477] Opening in MPV:', file.url);
+                            try {
+                                const result = await window.electronAPI.openMPVDirect(file.url);
+                                if (result.success) {
+                                    showNotification('Opening stream in MPV... Please Wait', 'success', 5000);
+                                } else {
+                                    showNotification('Failed to open in MPV: ' + (result.error || 'Unknown error'));
+                                }
+                            } catch (error) {
+                                console.error('[111477] MPV error:', error);
+                                showNotification('Failed to open in MPV: ' + error.message);
+                            }
+                        } else {
+                            showNotification('No stream URL available');
+                        }
+                    };
+
+                    item.appendChild(info);
+                    item.appendChild(playBtn);
+                    torrentsList.appendChild(item);
+                });
+
+            } catch (error) {
+                console.error('[111477] Error:', error);
+                torrentsList.innerHTML = `<div class="error-message"><i class="fas fa-exclamation-triangle"></i> 111477 Error: ${error.message}</div>`;
+            }
+        }
+
         // Fetch torrents from the backend
         async function fetchTorrents(season = null, episode = null) {
             if (!currentContent) return;
@@ -15466,6 +15582,9 @@ Your browser does not support the video tag.
             } else if (selectedProvider === 'comet') {
                 console.log('[Provider] Routing to Comet');
                 return fetchCometTorrents(season, episode);
+            } else if (selectedProvider === '111477') {
+                console.log('[Provider] Routing to 111477');
+                return fetch111477Streams(season, episode);
             }
 
             // Playtorrio (default) - use existing torrent search logic
@@ -16353,7 +16472,7 @@ Your browser does not support the video tag.
             };
             const result = await window.electronAPI.openInMPV(data);
             if (result.success) {
-                showNotification('MPV launched Please Wait Watch out for a new tab!');
+                showNotification('MPV launched - Please Wait! Watch out for a new window', 'success', 5000);
             } else {
                 showNotification(`Error: ${result.message}`);
             }
