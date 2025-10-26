@@ -9371,7 +9371,12 @@ Your browser does not support the video tag.
         // Load all settings data
         async function loadSettingsData() {
             await loadCurrentApiKey();
-            newApiKey.value = '';
+            
+            // Clear API key input for ALL instances
+            const newApiKeyElements = document.querySelectorAll('#newApiKey');
+            newApiKeyElements.forEach(input => {
+                input.value = '';
+            });
             
             // Load UI mode setting for ALL instances
             const uiModeNewElements = document.querySelectorAll('#uiModeNew');
@@ -9442,34 +9447,62 @@ Your browser does not support the video tag.
                             inAppScraperBtns.forEach(btn => btn.classList.add('active'));
                         }
                     }
-                    // Load Jackett URL
-                    if (jackettUrlInput && s.jackettUrl) {
-                        jackettUrlInput.value = s.jackettUrl;
+                    // Load Jackett URL for ALL instances
+                    const jackettUrlElements = document.querySelectorAll('#jackettUrl');
+                    if (jackettUrlElements.length > 0 && s.jackettUrl) {
+                        jackettUrlElements.forEach(input => {
+                            input.value = s.jackettUrl;
+                        });
                     }
-                    // Load cache location
-                    if (cacheLocationInput && s.cacheLocation) {
-                        cacheLocationInput.value = s.cacheLocation;
+                    // Load cache location for ALL instances
+                    const cacheLocationElements = document.querySelectorAll('#cacheLocation');
+                    if (cacheLocationElements.length > 0 && s.cacheLocation) {
+                        cacheLocationElements.forEach(input => {
+                            input.value = s.cacheLocation;
+                        });
                     }
-                    // Debrid: populate form
-                    if (useDebridToggle) useDebridToggle.checked = !!s.useDebrid;
+                    // Debrid: populate form for ALL instances
+                    const useDebridToggles = document.querySelectorAll('#useDebridToggle');
+                    if (useDebridToggles.length > 0 && s.useDebrid !== undefined) {
+                        useDebridToggles.forEach(toggle => {
+                            toggle.checked = !!s.useDebrid;
+                        });
+                    }
+                    
                     const prov = s.debridProvider || 'realdebrid';
-                    if (debridProviderSel) debridProviderSel.value = prov;
-                    if (debridStatus) debridStatus.textContent = s.debridAuth ? 'Logged in' : 'Not logged in';
-                    if (rdClientIdInput) rdClientIdInput.value = s.rdClientId || '';
+                    const debridProviders = document.querySelectorAll('#debridProvider');
+                    debridProviders.forEach(select => {
+                        select.value = prov;
+                    });
+                    
+                    const debridStatuses = document.querySelectorAll('#debridStatus');
+                    debridStatuses.forEach(status => {
+                        status.textContent = s.debridAuth ? 'Logged in' : 'Not logged in';
+                    });
+                    
+                    // Load rdClientId for ALL instances
+                    const rdClientIdInputs = document.querySelectorAll('#rdClientId');
+                    if (rdClientIdInputs.length > 0 && s.rdClientId) {
+                        rdClientIdInputs.forEach(input => {
+                            input.value = s.rdClientId;
+                        });
+                    }
+                    
                     useDebrid = !!s.useDebrid; debridAuth = !!s.debridAuth;
-                    // Toggle provider-specific UI
+                    // Toggle provider-specific UI for ALL instances
                     const isRD = prov === 'realdebrid';
                     const isAD = prov === 'alldebrid';
                     const isTB = prov === 'torbox';
                     const isPM = prov === 'premiumize';
-                    if (rdClientIdGroup) rdClientIdGroup.style.display = isRD ? '' : 'none';
-                    if (rdButtons) rdButtons.style.display = isRD ? '' : 'none';
-                    if (rdTokenGroup) rdTokenGroup.style.display = isRD ? '' : 'none';
-                    if (rdTokenButtons) rdTokenButtons.style.display = isRD ? '' : 'none';
-                    if (rdCodePanel) rdCodePanel.style.display = 'none';
-                    if (adSection) adSection.style.display = isAD ? '' : 'none';
-                    if (tbSection) tbSection.style.display = isTB ? '' : 'none';
-                    if (pmSection) pmSection.style.display = isPM ? '' : 'none';
+                    
+                    document.querySelectorAll('#rdClientIdGroup').forEach(el => el.style.display = isRD ? '' : 'none');
+                    document.querySelectorAll('#rdButtons').forEach(el => el.style.display = isRD ? '' : 'none');
+                    document.querySelectorAll('#rdTokenGroup').forEach(el => el.style.display = isRD ? '' : 'none');
+                    document.querySelectorAll('#rdTokenButtons').forEach(el => el.style.display = isRD ? '' : 'none');
+                    document.querySelectorAll('#rdCodePanel').forEach(el => el.style.display = 'none');
+                    document.querySelectorAll('#adSection').forEach(el => el.style.display = isAD ? '' : 'none');
+                    document.querySelectorAll('#tbSection').forEach(el => el.style.display = isTB ? '' : 'none');
+                    document.querySelectorAll('#pmSection').forEach(el => el.style.display = isPM ? '' : 'none');
                 }
             } catch(_) {}
         }
@@ -11141,7 +11174,16 @@ Your browser does not support the video tag.
         
         // Save Settings: persist useTorrentless and optionally API key, then close modal
         async function saveSettings_() {
-            const apiKey = newApiKey.value.trim();
+            // Get visible API key input
+            const apiKeyElements = document.querySelectorAll('#newApiKey');
+            let apiKeyInput = null;
+            for (const el of apiKeyElements) {
+                if (el.offsetParent !== null) {
+                    apiKeyInput = el;
+                    break;
+                }
+            }
+            const apiKey = apiKeyInput?.value.trim() || '';
             
             // Get the toggle that is actually checked (either modal or settings page)
             const toggleElements = document.querySelectorAll('#useTorrentlessToggle');
@@ -11154,8 +11196,27 @@ Your browser does not support the video tag.
             }
             const desiredTorrentless = toggleEl ? !!toggleEl.checked : useTorrentless;
             
-            const jackettUrl = jackettUrlInput?.value.trim() || '';
-            const cacheLocation = cacheLocationInput?.value.trim() || '';
+            // Get visible Jackett URL input
+            const jackettUrlElements = document.querySelectorAll('#jackettUrl');
+            let visibleJackettUrl = null;
+            for (const el of jackettUrlElements) {
+                if (el.offsetParent !== null) {
+                    visibleJackettUrl = el;
+                    break;
+                }
+            }
+            const jackettUrl = visibleJackettUrl?.value.trim() || '';
+            
+            // Get visible cache location input
+            const cacheLocationElements = document.querySelectorAll('#cacheLocation');
+            let visibleCacheLocation = null;
+            for (const el of cacheLocationElements) {
+                if (el.offsetParent !== null) {
+                    visibleCacheLocation = el;
+                    break;
+                }
+            }
+            const cacheLocation = visibleCacheLocation?.value.trim() || '';
             
             // Handle fullscreen toggle - get the visible one
             const fullscreenToggles = document.querySelectorAll('#fullscreenToggle');
@@ -11875,9 +11936,37 @@ Your browser does not support the video tag.
             // Debrid settings
             if (useDebridToggle || debridProviderSel) {
                 const onDebridChange = async () => {
-                    const enabled = useDebridToggle ? !!useDebridToggle.checked : false;
-                    const provider = debridProviderSel ? debridProviderSel.value : 'realdebrid';
-                    const rdClientId = (rdClientIdInput?.value || '').trim();
+                    // Get visible useDebridToggle
+                    const useDebridToggles = document.querySelectorAll('#useDebridToggle');
+                    let enabled = false;
+                    for (const toggle of useDebridToggles) {
+                        if (toggle.offsetParent !== null) {
+                            enabled = !!toggle.checked;
+                            break;
+                        }
+                    }
+                    
+                    // Get visible debridProvider
+                    const debridProviders = document.querySelectorAll('#debridProvider');
+                    let provider = 'realdebrid';
+                    for (const select of debridProviders) {
+                        if (select.offsetParent !== null) {
+                            provider = select.value;
+                            break;
+                        }
+                    }
+                    
+                    // Get visible rdClientId input
+                    const rdClientIdInputs = document.querySelectorAll('#rdClientId');
+                    let visibleRdClientId = '';
+                    for (const input of rdClientIdInputs) {
+                        if (input.offsetParent !== null) {
+                            visibleRdClientId = (input.value || '').trim();
+                            break;
+                        }
+                    }
+                    const rdClientId = visibleRdClientId;
+                    
                     try {
                         const res = await fetch(`${API_BASE_URL}/settings`, {
                             method: 'POST',
@@ -11890,40 +11979,72 @@ Your browser does not support the video tag.
                         await res.json();
                         useDebrid = enabled;
                         debridProvider = provider;
-                        // Toggle provider-specific UI blocks
+                        // Toggle provider-specific UI blocks for ALL instances
                         const isRD = provider === 'realdebrid';
                         const isAD = provider === 'alldebrid';
                         const isTB = provider === 'torbox';
                         const isPM = provider === 'premiumize';
-                        if (rdClientIdGroup) rdClientIdGroup.style.display = isRD ? '' : 'none';
-                        if (rdButtons) rdButtons.style.display = isRD ? '' : 'none';
-                        if (rdTokenGroup) rdTokenGroup.style.display = isRD ? '' : 'none';
-                        if (rdTokenButtons) rdTokenButtons.style.display = isRD ? '' : 'none';
-                        if (rdCodePanel) rdCodePanel.style.display = 'none';
-                        if (adSection) adSection.style.display = isAD ? '' : 'none';
-                        if (tbSection) tbSection.style.display = isTB ? '' : 'none';
-                        if (pmSection) pmSection.style.display = isPM ? '' : 'none';
+                        
+                        document.querySelectorAll('#rdClientIdGroup').forEach(el => el.style.display = isRD ? '' : 'none');
+                        document.querySelectorAll('#rdButtons').forEach(el => el.style.display = isRD ? '' : 'none');
+                        document.querySelectorAll('#rdTokenGroup').forEach(el => el.style.display = isRD ? '' : 'none');
+                        document.querySelectorAll('#rdTokenButtons').forEach(el => el.style.display = isRD ? '' : 'none');
+                        document.querySelectorAll('#rdCodePanel').forEach(el => el.style.display = 'none');
+                        document.querySelectorAll('#adSection').forEach(el => el.style.display = isAD ? '' : 'none');
+                        document.querySelectorAll('#tbSection').forEach(el => el.style.display = isTB ? '' : 'none');
+                        document.querySelectorAll('#pmSection').forEach(el => el.style.display = isPM ? '' : 'none');
+                        
                         showNotification('Debrid settings saved.');
                     } catch {
                         showNotification('Failed to save debrid settings');
                     }
                 };
-                if (useDebridToggle) useDebridToggle.addEventListener('change', onDebridChange);
-                if (debridProviderSel) debridProviderSel.addEventListener('change', onDebridChange);
-                if (rdClientIdInput) rdClientIdInput.addEventListener('change', onDebridChange);
+                
+                // Add event listeners to ALL instances
+                const useDebridToggles = document.querySelectorAll('#useDebridToggle');
+                useDebridToggles.forEach(toggle => {
+                    toggle.addEventListener('change', onDebridChange);
+                });
+                
+                const debridProviders = document.querySelectorAll('#debridProvider');
+                debridProviders.forEach(select => {
+                    select.addEventListener('change', onDebridChange);
+                });
+                
+                const rdClientIdInputs = document.querySelectorAll('#rdClientId');
+                rdClientIdInputs.forEach(input => {
+                    input.addEventListener('change', onDebridChange);
+                });
             }
 
             if (saveDebridTokenBtn) {
                 saveDebridTokenBtn.addEventListener('click', async () => {
-                    const token = (debridTokenInput?.value || '').trim();
+                    // Get visible debridToken input
+                    const debridTokenInputs = document.querySelectorAll('#debridToken');
+                    let token = '';
+                    let visibleInput = null;
+                    for (const input of debridTokenInputs) {
+                        if (input.offsetParent !== null) {
+                            token = (input.value || '').trim();
+                            visibleInput = input;
+                            break;
+                        }
+                    }
+                    
                     if (!token) { showNotification('Enter a token first'); return; }
                     try {
                         const res = await fetch(`${API_BASE_URL}/debrid/token`, {
                             method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token })
                         });
                         if (res.ok) {
-                            if (debridStatus) debridStatus.textContent = 'Logged in';
-                            debridTokenInput.value = '';
+                            // Update ALL debridStatus elements
+                            document.querySelectorAll('#debridStatus').forEach(status => {
+                                status.textContent = 'Logged in';
+                            });
+                            // Clear ALL debridToken inputs
+                            debridTokenInputs.forEach(input => {
+                                input.value = '';
+                            });
                             showNotification('Debrid token saved.');
                         } else {
                             showNotification('Failed to save token');
@@ -11938,7 +12059,10 @@ Your browser does not support the video tag.
                             method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token: '' })
                         });
                         if (res.ok) {
-                            if (debridStatus) debridStatus.textContent = 'Not logged in';
+                            // Update ALL debridStatus elements
+                            document.querySelectorAll('#debridStatus').forEach(status => {
+                                status.textContent = 'Not logged in';
+                            });
                             showNotification('Logged out of Debrid.');
                         } else {
                             showNotification('Failed to logout');
@@ -11982,7 +12106,10 @@ Your browser does not support the video tag.
                             if (pr.ok) {
                                 stopRdPolling();
                                 rdLoginStatusEl.textContent = 'Logged in!';
-                                if (debridStatus) debridStatus.textContent = 'Logged in';
+                                // Update ALL debridStatus elements
+                                document.querySelectorAll('#debridStatus').forEach(status => {
+                                    status.textContent = 'Logged in';
+                                });
                                 debridAuth = true;
                                 showNotification('Real‑Debrid connected');
                                 setTimeout(() => { rdCodePanel.style.display = 'none'; }, 800);
@@ -12040,7 +12167,10 @@ Your browser does not support the video tag.
                                 const pj = await pr.json();
                                 if (pr.ok && pj.success) {
                                     stopAdPolling();
-                                    if (debridStatus) debridStatus.textContent = 'Logged in';
+                                    // Update ALL debridStatus elements
+                                    document.querySelectorAll('#debridStatus').forEach(status => {
+                                        status.textContent = 'Logged in';
+                                    });
                                     debridAuth = true;
                                     if (adLoginStatusEl) adLoginStatusEl.textContent = 'Logged in!';
                                     showNotification('AllDebrid connected');
@@ -12068,52 +12198,121 @@ Your browser does not support the video tag.
             if (adCopyPinBtn) adCopyPinBtn.addEventListener('click', async () => { try { await navigator.clipboard.writeText(adPinCodeEl?.textContent || ''); showNotification('PIN copied'); } catch(_) {} });
             if (adCancelPinBtn) adCancelPinBtn.addEventListener('click', () => { stopAdPolling(); if (adPinPanel) adPinPanel.style.display = 'none'; });
             if (adSaveApiKeyBtn) adSaveApiKeyBtn.addEventListener('click', async () => {
-                const apikey = (adApiKeyInput?.value || '').trim();
+                // Get visible adApiKey input
+                const adApiKeyInputs = document.querySelectorAll('#adApiKey');
+                let apikey = '';
+                for (const input of adApiKeyInputs) {
+                    if (input.offsetParent !== null) {
+                        apikey = (input.value || '').trim();
+                        break;
+                    }
+                }
+                
                 if (!apikey) { showNotification('Enter an AllDebrid API key'); return; }
                 try {
                     const r = await fetch(`${API_BASE_URL}/debrid/ad/apikey`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ apikey }) });
-                    if (r.ok) { if (debridStatus) debridStatus.textContent = 'Logged in'; showNotification('AllDebrid API key saved'); adApiKeyInput.value=''; }
+                    if (r.ok) { 
+                        // Update ALL debridStatus elements
+                        document.querySelectorAll('#debridStatus').forEach(status => {
+                            status.textContent = 'Logged in';
+                        });
+                        showNotification('AllDebrid API key saved');
+                        // Clear ALL adApiKey inputs
+                        adApiKeyInputs.forEach(input => { input.value = ''; });
+                    }
                     else { const t = await r.text(); showNotification(t || 'Failed to save'); }
                 } catch { showNotification('Failed to save'); }
             });
             if (adClearApiKeyBtn) adClearApiKeyBtn.addEventListener('click', async () => {
                 try {
                     const r = await fetch(`${API_BASE_URL}/debrid/ad/apikey`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ apikey: '' }) });
-                    if (r.ok) { if (debridStatus) debridStatus.textContent = 'Not logged in'; showNotification('Logged out of AllDebrid'); }
+                    if (r.ok) { 
+                        // Update ALL debridStatus elements
+                        document.querySelectorAll('#debridStatus').forEach(status => {
+                            status.textContent = 'Not logged in';
+                        });
+                        showNotification('Logged out of AllDebrid'); 
+                    }
                 } catch {}
             });
 
             // TorBox: save/clear token
             if (tbSaveTokenBtn) tbSaveTokenBtn.addEventListener('click', async () => {
-                const token = (tbTokenInput?.value || '').trim();
+                // Get visible tbToken input
+                const tbTokenInputs = document.querySelectorAll('#tbToken');
+                let token = '';
+                for (const input of tbTokenInputs) {
+                    if (input.offsetParent !== null) {
+                        token = (input.value || '').trim();
+                        break;
+                    }
+                }
+                
                 if (!token) { showNotification('Enter a TorBox token'); return; }
                 try {
                     const r = await fetch(`${API_BASE_URL}/debrid/tb/token`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token }) });
-                    if (r.ok) { if (debridStatus) debridStatus.textContent = 'Logged in'; tbTokenInput.value = ''; showNotification('TorBox token saved'); }
+                    if (r.ok) { 
+                        // Update ALL debridStatus elements
+                        document.querySelectorAll('#debridStatus').forEach(status => {
+                            status.textContent = 'Logged in';
+                        });
+                        // Clear ALL tbToken inputs
+                        tbTokenInputs.forEach(input => { input.value = ''; });
+                        showNotification('TorBox token saved'); 
+                    }
                     else { const t = await r.text(); showNotification(t || 'Failed to save'); }
                 } catch { showNotification('Failed to save'); }
             });
             if (tbClearTokenBtn) tbClearTokenBtn.addEventListener('click', async () => {
                 try {
                     const r = await fetch(`${API_BASE_URL}/debrid/tb/token`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token: '' }) });
-                    if (r.ok) { if (debridStatus) debridStatus.textContent = 'Not logged in'; showNotification('Logged out of TorBox'); }
+                    if (r.ok) { 
+                        // Update ALL debridStatus elements
+                        document.querySelectorAll('#debridStatus').forEach(status => {
+                            status.textContent = 'Not logged in';
+                        });
+                        showNotification('Logged out of TorBox'); 
+                    }
                 } catch {}
             });
 
             // Premiumize: save/clear API key
             if (pmSaveApiKeyBtn) pmSaveApiKeyBtn.addEventListener('click', async () => {
-                const apikey = (pmApiKeyInput?.value || '').trim();
+                // Get visible pmApiKey input
+                const pmApiKeyInputs = document.querySelectorAll('#pmApiKey');
+                let apikey = '';
+                for (const input of pmApiKeyInputs) {
+                    if (input.offsetParent !== null) {
+                        apikey = (input.value || '').trim();
+                        break;
+                    }
+                }
+                
                 if (!apikey) { showNotification('Enter a Premiumize API key'); return; }
                 try {
                     const r = await fetch(`${API_BASE_URL}/debrid/pm/apikey`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ apikey }) });
-                    if (r.ok) { if (debridStatus) debridStatus.textContent = 'Logged in'; pmApiKeyInput.value = ''; showNotification('Premiumize API key saved'); }
+                    if (r.ok) { 
+                        // Update ALL debridStatus elements
+                        document.querySelectorAll('#debridStatus').forEach(status => {
+                            status.textContent = 'Logged in';
+                        });
+                        // Clear ALL pmApiKey inputs
+                        pmApiKeyInputs.forEach(input => { input.value = ''; });
+                        showNotification('Premiumize API key saved'); 
+                    }
                     else { const t = await r.text(); showNotification(t || 'Failed to save'); }
                 } catch { showNotification('Failed to save'); }
             });
             if (pmClearApiKeyBtn) pmClearApiKeyBtn.addEventListener('click', async () => {
                 try {
                     const r = await fetch(`${API_BASE_URL}/debrid/pm/apikey`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ apikey: '' }) });
-                    if (r.ok) { if (debridStatus) debridStatus.textContent = 'Not logged in'; showNotification('Logged out of Premiumize'); }
+                    if (r.ok) { 
+                        // Update ALL debridStatus elements
+                        document.querySelectorAll('#debridStatus').forEach(status => {
+                            status.textContent = 'Not logged in';
+                        });
+                        showNotification('Logged out of Premiumize'); 
+                    }
                 } catch {}
             });
 
@@ -14868,11 +15067,11 @@ Your browser does not support the video tag.
                     localStorage.setItem('useStreamingServers', 'false');
                     console.log('[SERVERS] Disabled streaming servers mode');
                     
-                    // Update toggle in settings if it exists
-                    const useStreamingServersToggle = document.getElementById('useStreamingServersToggle');
-                    if (useStreamingServersToggle) {
-                        useStreamingServersToggle.checked = false;
-                    }
+                    // Update toggle in settings for ALL instances
+                    const useStreamingServersToggles = document.querySelectorAll('#useStreamingServersToggle');
+                    useStreamingServersToggles.forEach(toggle => {
+                        toggle.checked = false;
+                    });
                     
                     // Update button text
                     updateWatchButtonText();
