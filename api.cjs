@@ -1663,16 +1663,14 @@ function lib111477_getMovieNameVariants(movie) {
 
 function lib111477_constructTvName(tv) {
     const title = tv.name || tv.title;
-    const year = tv.first_air_date ? new Date(tv.first_air_date).getFullYear() : '';
     const cleanTitle = title.replace(/:/g, '');
-    return year ? `${cleanTitle} (${year})` : cleanTitle;
+    return cleanTitle;  // Don't include year for TV shows
 }
 
 function lib111477_constructTvNameWithHyphens(tv) {
     const title = tv.name || tv.title;
-    const year = tv.first_air_date ? new Date(tv.first_air_date).getFullYear() : '';
     const cleanTitle = title.replace(/:/g, ' -');
-    return year ? `${cleanTitle} (${year})` : cleanTitle;
+    return cleanTitle;  // Don't include year for TV shows
 }
 
 function lib111477_getTvNameVariants(tv) {
@@ -1693,8 +1691,8 @@ function lib111477_constructTvUrl(tvName, season = null) {
     const baseUrl = 'https://a.111477.xyz/tvs/';
     const encodedName = encodeURIComponent(tvName);
     if (season !== null) {
-        const seasonFormatted = season.toString().padStart(2, '0');
-        return `${baseUrl}${encodedName}/Season ${seasonFormatted}/`;
+        // Use single digit for seasons 1-9, no padding
+        return `${baseUrl}${encodedName}/Season ${season}/`;
     }
     return `${baseUrl}${encodedName}/`;
 }
