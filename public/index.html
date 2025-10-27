@@ -5958,29 +5958,25 @@
             <i class="fas fa-times"></i>
         </button>
         <h2 class="discord-title" style="display: flex; align-items: center; gap: 1rem; font-size: 1.8rem;">
-            <i class="fas fa-tv" style="color: var(--vlc-orange);"></i>
-            New Update: Massive IPTV Improvements
+            <i class="fas fa-rocket" style="color: var(--vlc-orange);"></i>
+            New in v1.4.9
         </h2>
         <div class="discord-message" style="text-align: left;">
-            <p style="font-size: 1.1rem; margin-bottom: 1.5rem;">
-                We've massively upgraded the IPTV experience with better performance and features:
+            <p style="font-size: 1.1rem; margin-bottom: 1.2rem;">
+                This update brings more streaming servers (Turn on streaming mode in settings) and a nicer reading experience:
             </p>
-            <ul style="list-style: none; padding: 0; margin-bottom: 1.5rem;">
-                <li style="margin-bottom: 1rem; padding-left: 2rem; position: relative;">
-                    <i class="fas fa-bolt" style="position: absolute; left: 0; color: var(--vlc-orange); margin-top: 0.2rem;"></i>
-                    <strong>Better Performance</strong> - Faster channel loading and improved stream stability
+            <ul style="list-style: none; padding: 0; margin-bottom: 1.2rem;">
+                <li style="margin-bottom: 0.9rem; padding-left: 2rem; position: relative;">
+                    <i class="fas fa-film" style="position: absolute; left: 0; color: var(--vlc-orange); margin-top: 0.2rem;"></i>
+                    <strong>More Streaming Servers</strong> – Added lots of new providers and improved ordering for quicker access.
                 </li>
-                <li style="margin-bottom: 1rem; padding-left: 2rem; position: relative;">
-                    <i class="fas fa-tv" style="position: absolute; left: 0; color: var(--vlc-orange); margin-top: 0.2rem;"></i>
-                    <strong>Enhanced Player</strong> - Better video quality handling and playback controls
-                </li>
-                <li style="margin-bottom: 1rem; padding-left: 2rem; position: relative;">
-                    <i class="fas fa-bug" style="position: absolute; left: 0; color: var(--vlc-orange); margin-top: 0.2rem;"></i>
-                    <strong>Bug Fixes</strong> - Resolved issues with channel switching and EPG data
+                <li style="margin-bottom: 0.9rem; padding-left: 2rem; position: relative;">
+                    <i class="fas fa-book-reader" style="position: absolute; left: 0; color: var(--vlc-orange); margin-top: 0.2rem;"></i>
+                    <strong>EPUB Reader Update</strong> – Shows total chapters and lets you jump directly to a chapter number.
                 </li>
             </ul>
-            <p style="color: var(--secondary); font-size: 0.95rem; margin-top: 1rem;">
-                <i class="fas fa-info-circle"></i> Enjoy a smoother IPTV experience with this update!
+            <p style="color: var(--secondary); font-size: 0.95rem; margin-top: 0.5rem;">
+                <i class="fas fa-info-circle"></i> Thanks for updating! Enjoy the new servers and reader improvements.
             </p>
         </div>
         <button class="discord-join-btn" id="updateGotItBtn" style="background: var(--vlc-orange); width: 100%;">
@@ -9310,12 +9306,13 @@ Your browser does not support the video tag.
         
         // Check if user has seen the update announcement
         function checkUpdateAnnouncement() {
-            const hasSeenUpdate = localStorage.getItem('hasSeenIPTVUpdate_v147');
+            // Update key for v1.4.9 so existing users see the new notes
+            const hasSeenUpdate = localStorage.getItem('hasSeenUpdate_v149');
             if (!hasSeenUpdate) {
                 // Wait a bit for the page to fully load before showing the update modal
                 setTimeout(() => {
                     showUpdateModal();
-                    localStorage.setItem('hasSeenIPTVUpdate_v147', 'true');
+                    localStorage.setItem('hasSeenUpdate_v149', 'true');
                 }, 1500);
             }
         }
