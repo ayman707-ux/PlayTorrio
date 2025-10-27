@@ -8374,6 +8374,9 @@ If you experience audio problems or no audio at all, click <strong>"Open in MPV"
     <button class="vlc-btn" id="openMPVBtn">
         <i class="fas fa-external-link-alt"></i> Open in MPV
     </button>
+    <button class="vlc-btn" id="openVLCBtn">
+        <i class="fas fa-external-link-alt"></i> Open in VLC
+    </button>
 </div>
 </div>
 </div>
@@ -8917,6 +8920,7 @@ Your browser does not support the video tag.
             try { return String(p || '').split(/[\\\/]/).pop(); } catch(_) { return p || ''; }
         }
         const openMPVBtn = document.getElementById('openMPVBtn');
+        const openVLCBtn = document.getElementById('openVLCBtn');
         const copyStreamBtn = document.getElementById('copyStreamBtn');
     const playNowBtn = document.getElementById('playNowBtn');
     const streamSourceBadge = document.getElementById('streamSourceBadge');
@@ -12767,6 +12771,52 @@ Your browser does not support the video tag.
             }
 
             openMPVBtn.addEventListener('click', handleOpenMPVClick);
+            // Mirror resume prompt flow for VLC
+            async function handleOpenVLCClick() {
+                let res = resumeInfo;
+                if ((!res || typeof res.position !== 'number') && resumeKey) {
+                    try { res = await fetchResume(resumeKey); } catch(_) {}
+                }
+                if (res && typeof res.position === 'number' && res.position > 0) {
+                    resumeInfo = res;
+                    resumeTimeEl.textContent = formatResumeSeconds(res.position);
+                    showResumeModal();
+                    const onCont = async () => {
+                        try {
+                            if (resumeKey && resumeInfo && typeof resumeInfo.position === 'number') {
+                                const title = currentSelectedVideoName || (currentContent?.title || currentContent?.name || '');
+                                await fetch(`${API_BASE_URL}/resume`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key: resumeKey, position: Math.floor(resumeInfo.position || 0), duration: Math.floor(resumeInfo.duration || 0), title }) });
+                            }
+                        } catch(_) {}
+                        hideResumeModal();
+                        await openInVLC();
+                        cleanup();
+                    };
+                    const onOver = async () => {
+                        try { if (resumeKey) await fetch(`${API_BASE_URL}/resume?key=${encodeURIComponent(resumeKey)}`, { method: 'DELETE' }); } catch(_){ }
+                        resumeInfo = null;
+                        hideResumeModal();
+                        await openInVLC();
+                        cleanup();
+                    };
+                    const cleanup = () => {
+                        resumeContinue.removeEventListener('click', onCont);
+                        resumeStartOver.removeEventListener('click', onOver);
+                        resumeClose.removeEventListener('click', onClose);
+                        document.removeEventListener('keydown', onEsc);
+                    };
+                    const onClose = () => { hideResumeModal(); cleanup(); };
+                    const onEsc = (e) => { if (e.key === 'Escape') { hideResumeModal(); cleanup(); } };
+                    resumeContinue.addEventListener('click', onCont);
+                    resumeStartOver.addEventListener('click', onOver);
+                    resumeClose.addEventListener('click', onClose);
+                    document.addEventListener('keydown', onEsc);
+                    return;
+                }
+                await openInVLC();
+            }
+
+            if (openVLCBtn) openVLCBtn.addEventListener('click', handleOpenVLCClick);
             copyStreamBtn.addEventListener('click', copyStreamUrl);
             playNowBtn.addEventListener('click', handlePlayNowClick);
             
@@ -17085,6 +17135,9 @@ Your browser does not support the video tag.
                         <button class="torrent-btn mpv-nuvio-btn" data-url="${url}" data-name="${name}">
                             <i class="fas fa-external-link-alt"></i> Open in MPV
                         </button>
+                        <button class="torrent-btn vlc-nuvio-btn" data-url="${url}" data-name="${name}">
+                            <i class="fas fa-external-link-alt"></i> Open in VLC
+                        </button>
                         <button class="torrent-btn cast-nuvio-btn" data-url="${url}" data-name="${name}">
                             <i class="fas fa-tv"></i> Cast
                         </button>
@@ -17108,6 +17161,14 @@ Your browser does not support the video tag.
                     const url = btn.dataset.url;
                     const name = btn.dataset.name;
                     openNuvioInMPV(url, name);
+                });
+            });
+
+            document.querySelectorAll('.vlc-nuvio-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const url = btn.dataset.url;
+                    const name = btn.dataset.name;
+                    openNuvioInVLC(url, name);
                 });
             });
 
@@ -17185,6 +17246,39 @@ Your browser does not support the video tag.
                 showNotification('Failed to open in MPV', 'error');
             }
         }
+            // Open Nuvio stream in VLC
+            async function openNuvioInVLC(url, name) {
+                try {
+                    console.log('[Nuvio] Opening in VLC:', url);
+                    if (!window.electronAPI || !window.electronAPI.openInVLC) {
+                        showNotification('VLC integration not available', 'error');
+                        return;
+                    }
+                    // Set current stream context (for resume/discord)
+                    currentStreamUrl = url;
+                    currentSelectedVideoName = name;
+
+                    const title = currentContent?.title || currentContent?.name || 'Video';
+                    const seasonNum = (currentMediaType === 'tv' && currentSeason) ? currentSeason : null;
+                    updateDiscordForStreaming(title, 'Nuvio', seasonNum);
+
+                    const data = {
+                        streamUrl: url,
+                        infoHash: (currentTorrentData && currentTorrentData.infoHash) ? currentTorrentData.infoHash : null,
+                        startSeconds: (resumeInfo && typeof resumeInfo.position === 'number' && resumeInfo.position > 10) ? Math.floor(resumeInfo.position) : undefined
+                    };
+                    const result = await window.electronAPI.openInVLC(data);
+                    if (result?.success) {
+                        showNotification('Opened in VLC', 'success');
+                    } else {
+                        showNotification(`VLC Error: ${result?.message || result?.error || 'Unknown error'}`, 'error');
+                    }
+                } catch (error) {
+                    console.error('[Nuvio] VLC open error:', error);
+                    showNotification('Failed to open in VLC', 'error');
+                }
+            }
+
 
         // Fetch torrents from Comet API
         async function fetchCometTorrents(season = null, episode = null) {
@@ -17435,8 +17529,36 @@ Your browser does not support the video tag.
                         }
                     };
 
+                    const vlcBtn = document.createElement('button');
+                    vlcBtn.className = 'btn';
+                    vlcBtn.innerHTML = '<i class="fas fa-external-link-alt"></i> Open in VLC';
+                    vlcBtn.style.marginLeft = '0.5rem';
+                    vlcBtn.onclick = async (e) => {
+                        e.stopPropagation();
+                        if (file.url) {
+                            console.log('[111477] Opening in VLC:', file.url);
+                            try {
+                                const title = currentContent?.title || currentContent?.name || 'Video';
+                                const seasonNum = (currentMediaType === 'tv' && currentSeason) ? currentSeason : null;
+                                updateDiscordForStreaming(title, '111477', seasonNum);
+                                const result = await window.electronAPI.openVLCDirect(file.url);
+                                if (result.success) {
+                                    showNotification('Opening stream in VLC... Please Wait', 'success', 5000);
+                                } else {
+                                    showNotification('Failed to open in VLC: ' + (result.error || 'Unknown error'));
+                                }
+                            } catch (error) {
+                                console.error('[111477] VLC error:', error);
+                                showNotification('Failed to open in VLC: ' + error.message);
+                            }
+                        } else {
+                            showNotification('No stream URL available');
+                        }
+                    };
+
                     item.appendChild(info);
                     item.appendChild(playBtn);
+                    item.appendChild(vlcBtn);
                     torrentsList.appendChild(item);
                 });
 
@@ -18375,6 +18497,41 @@ Your browser does not support the video tag.
             const result = await window.electronAPI.openInMPV(data);
             if (result.success) {
                 showNotification('MPV launched - Please Wait! Watch out for a new window', 'success', 5000);
+            } else {
+                showNotification(`Error: ${result.message}`);
+            }
+        }
+
+        // Open stream in VLC (same data shape as MPV)
+        async function openInVLC() {
+            if (!currentStreamUrl) {
+                showNotification('No file selected to play');
+                return;
+            }
+            if (!window.electronAPI || !window.electronAPI.openInVLC) {
+                showNotification('VLC integration not available in this environment');
+                return;
+            }
+
+            const title = currentContent?.title || currentContent?.name || 'Video';
+            let provider;
+            if (selectedProvider === 'playtorrio') provider = 'App Sources';
+            else if (selectedProvider === 'nuvio') provider = 'Nuvio';
+            else if (selectedProvider === 'comet') provider = 'Comet';
+            else if (selectedProvider === '111477') provider = '111477';
+            else provider = 'App Sources';
+
+            const seasonNum = (currentMediaType === 'tv' && currentSeason) ? currentSeason : null;
+            updateDiscordForStreaming(title, provider, seasonNum);
+
+            const data = {
+                streamUrl: currentStreamUrl,
+                infoHash: (currentTorrentData && currentTorrentData.infoHash) ? currentTorrentData.infoHash : null,
+                startSeconds: (resumeInfo && typeof resumeInfo.position === 'number' && resumeInfo.position > 10) ? Math.floor(resumeInfo.position) : undefined
+            };
+            const result = await window.electronAPI.openInVLC(data);
+            if (result.success) {
+                showNotification('VLC launched - Please Wait! Watch out for a new window', 'success', 5000);
             } else {
                 showNotification(`Error: ${result.message}`);
             }
