@@ -314,6 +314,34 @@ function resolveMpvExe() {
     return null;
 }
 
+// Resolve bundled VLC executable path (prefer packaged resources, then local dev folder). Windows-focused.
+function resolveVlcExe() {
+    try {
+        const exeName = process.platform === 'win32' ? 'vlc.exe' : 'vlc';
+        const candidates = [];
+        // In packaged apps, resourcesPath is where extraResources are copied
+        if (process.resourcesPath) {
+            // PortableApps layout: VLC/App/vlc/vlc.exe
+            candidates.push(path.join(process.resourcesPath, 'app.asar.unpacked', 'VLC', 'App', 'vlc', exeName));
+            candidates.push(path.join(process.resourcesPath, 'VLC', 'App', 'vlc', exeName));
+            // Flat layout fallback: vlc/vlc.exe
+            candidates.push(path.join(process.resourcesPath, 'app.asar.unpacked', 'vlc', exeName));
+            candidates.push(path.join(process.resourcesPath, 'vlc', exeName));
+        }
+        // Next to current file when running unpackaged
+        candidates.push(path.join(__dirname, 'VLC', 'App', 'vlc', exeName));
+        candidates.push(path.join(__dirname, 'vlc', exeName));
+        // Next to executable
+        candidates.push(path.join(path.dirname(process.execPath), 'VLC', 'App', 'vlc', exeName));
+        candidates.push(path.join(path.dirname(process.execPath), 'vlc', exeName));
+
+        for (const p of candidates) {
+            try { if (fs.existsSync(p)) return p; } catch {}
+        }
+    } catch {}
+    return null;
+}
+
 // Launch MPV and set up cleanup listeners
 function openInMPV(win, streamUrl, infoHash, startSeconds) {
     try {
@@ -365,6 +393,57 @@ function openInMPV(win, streamUrl, infoHash, startSeconds) {
     } catch (error) {
         console.error('Error launching MPV:', error);
         return { success: false, message: 'Failed to launch MPV: ' + error.message };
+    }
+}
+
+// Launch VLC and set up cleanup listeners
+function openInVLC(win, streamUrl, infoHash, startSeconds) {
+    try {
+        console.log('Attempting to launch VLC with URL:', streamUrl);
+        const vlcPath = resolveVlcExe();
+        if (!vlcPath) {
+            const msg = 'Bundled VLC not found. Place portable VLC under the app/VLC (PortableApps) or app/vlc folder.';
+            console.error(msg);
+            return { success: false, message: msg };
+        }
+        const args = [];
+        const start = Number(startSeconds || 0);
+        if (!isNaN(start) && start > 10) {
+            // VLC start time in seconds
+            args.push(`--start-time=${Math.floor(start)}`);
+        }
+        args.push(streamUrl);
+        const vlcProcess = spawn(vlcPath, args, { stdio: 'ignore' });
+
+        vlcProcess.on('close', async (code) => {
+            console.log(`VLC player closed with code ${code}. Leaving torrent active and temp files intact.`);
+            // Clear Discord presence when VLC closes
+            try {
+                if (discordRpc && discordRpcReady) {
+                    await discordRpc.setActivity({
+                        details: 'Browsing PlayTorrio',
+                        startTimestamp: new Date(),
+                        largeImageKey: 'icon',
+                        largeImageText: 'PlayTorrio App',
+                        buttons: [
+                            { label: 'Download App', url: 'https://github.com/ayman707-ux/PlayTorrio' }
+                        ]
+                    });
+                }
+            } catch (err) {
+                console.error('[Discord RPC] Failed to clear on VLC close:', err);
+            }
+            try { win.webContents.send('vlc-closed', { infoHash, code }); } catch(_) {}
+        });
+
+        vlcProcess.on('error', (err) => {
+            console.error('Failed to start VLC process:', err);
+        });
+
+        return { success: true, message: 'VLC launched successfully' };
+    } catch (error) {
+        console.error('Error launching VLC:', error);
+        return { success: false, message: 'Failed to launch VLC: ' + error.message };
     }
 }
 
@@ -1233,6 +1312,50 @@ if (!gotLock) {
             return { success: true };
         } catch (error) {
             console.error('Error opening MPV:', error);
+            return { success: false, error: error.message };
+        }
+    });
+
+    // IPC handler to open VLC from renderer
+    ipcMain.handle('open-in-vlc', (event, data) => {
+        const { streamUrl, infoHash, startSeconds } = data || {};
+        console.log(`Received VLC open request for hash: ${infoHash}`);
+        return openInVLC(mainWindow, streamUrl, infoHash, startSeconds);
+    });
+
+    // Direct VLC launch for external URLs
+    ipcMain.handle('open-vlc-direct', async (event, url) => {
+        try {
+            console.log('Opening URL in VLC:', url);
+            const vlcPath = resolveVlcExe();
+            if (!vlcPath) {
+                throw new Error('VLC not found');
+            }
+            const vlcProcess = spawn(vlcPath, [url], { stdio: 'ignore', detached: true });
+
+            vlcProcess.on('close', async (code) => {
+                console.log(`VLC (direct) closed with code ${code}`);
+                try {
+                    if (discordRpc && discordRpcReady) {
+                        await discordRpc.setActivity({
+                            details: 'Browsing PlayTorrio',
+                            startTimestamp: new Date(),
+                            largeImageKey: 'icon',
+                            largeImageText: 'PlayTorrio App',
+                            buttons: [
+                                { label: 'Download App', url: 'https://github.com/ayman707-ux/PlayTorrio' }
+                            ]
+                        });
+                    }
+                } catch (err) {
+                    console.error('[Discord RPC] Failed to clear on VLC direct close:', err);
+                }
+            });
+
+            vlcProcess.unref();
+            return { success: true };
+        } catch (error) {
+            console.error('Error opening VLC:', error);
             return { success: false, error: error.message };
         }
     });
