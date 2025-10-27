@@ -1,6 +1,6 @@
 {
   "name": "playtorrio",
-  "version": "1.4.6",
+  "version": "1.5.0",
   "description": "Ayman's PlayTorrio an all in one media center",
   "author": {
     "name": "ayman",
@@ -60,15 +60,21 @@
       "jackett_api_key.json",
       "public/**/*",
       "node_modules/**/*",
-      "mpv/**"
+      "mpv/**",
+      "VLC/**"
     ],
     "asarUnpack": [
-      "mpv/**"
+      "mpv/**",
+      "VLC/**"
     ],
     "extraResources": [
       {
         "from": "mpv",
         "to": "mpv"
+      },
+      {
+        "from": "VLC",
+        "to": "VLC"
       }
     ],
     "win": {
