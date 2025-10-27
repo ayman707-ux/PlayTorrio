@@ -2660,7 +2660,8 @@
             left: 0;
             width: 100vw;
             height: 100vh;
-            background: rgba(0, 0, 0, 0.95);
+            /* Match page background instead of pure black overlay */
+            background: var(--dark);
             z-index: 9998;
             display: flex;
             flex-direction: column;
@@ -2720,7 +2721,8 @@
             display: flex;
             flex-direction: column;
             gap: 2rem;
-            max-width: 1000px;
+            /* Make the server selection (and embedded iframe) a bit wider */
+            max-width: 1200px;
             margin: 0 auto;
             width: 100%;
         }
@@ -2811,7 +2813,7 @@
         .server-dropdown {
             width: 100%;
             padding: 1rem 1.5rem;
-            padding-right: 3rem;
+            padding-right: 4.5rem; /* extra space so custom chevron never overlaps scrollbar */
             background: rgba(255, 255, 255, 0.08);
             border: 1px solid rgba(255, 255, 255, 0.15);
             border-radius: 12px;
@@ -2823,6 +2825,30 @@
             transition: all 0.3s ease;
             max-height: 200px;
             overflow-y: auto;
+            /* Make the dropdown scrollbar easier to see */
+            scrollbar-width: thin; /* Firefox */
+            scrollbar-color: #22d3ee rgba(255, 255, 255, 0.12); /* thumb color | track color */
+            scrollbar-gutter: stable both-edges; /* reserve space for scrollbar (Chromium/Firefox) */
+        }
+
+        /* WebKit-based scrollbars (Chromium/Electron) */
+        .server-dropdown::-webkit-scrollbar {
+            width: 14px; /* thicker for visibility */
+        }
+
+        .server-dropdown::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.5); /* darker track for contrast */
+            border-radius: 8px;
+        }
+
+        .server-dropdown::-webkit-scrollbar-thumb {
+            background: #22d3ee; /* bright cyan for high contrast */
+            border-radius: 8px;
+            border: 2px solid rgba(255, 255, 255, 0.15);
+        }
+
+        .server-dropdown::-webkit-scrollbar-thumb:hover {
+            background: #06b6d4;
         }
 
         .server-dropdown option {
@@ -2846,7 +2872,7 @@
 
         .server-dropdown-arrow {
             position: absolute;
-            right: 1.25rem;
+            right: 2.5rem; /* shift left so it never covers the scrollbar */
             top: 50%;
             transform: translateY(-50%);
             color: #9ca3af;
@@ -2952,8 +2978,11 @@
         .server-video-container {
             position: relative;
             width: 100%;
-            height: 400px;
-            background: #000;
+            /* Make the embedded server player noticeably larger and responsive */
+            height: 70vh;
+            min-height: 480px;
+            /* Match the app background so the area under the iframe blends in */
+            background: var(--dark);
         }
 
         .server-video-iframe {
@@ -3148,6 +3177,30 @@
             gap: 1rem;
             flex: 1;
             justify-content: center;
+        }
+        .reader-chapter-controls {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text);
+        }
+        .reader-chapter-controls .chapter-count-label {
+            font-size: 0.9rem;
+            opacity: 0.8;
+            white-space: nowrap;
+        }
+        .reader-chapter-controls input[type="number"] {
+            width: 84px;
+            height: 36px;
+            padding: 0 0.5rem;
+            border-radius: 6px;
+            border: 1px solid rgba(255,255,255,0.15);
+            background: rgba(255,255,255,0.06);
+            color: var(--text);
+            outline: none;
+        }
+        .reader-chapter-controls input[type="number"]::placeholder {
+            color: rgba(255,255,255,0.55);
         }
         .reader-nav-btn, .reader-gear, .reader-back-btn {
             display: inline-flex;
@@ -7889,6 +7942,11 @@
             <div class="reader-nav-controls">
                 <button id="readerPrevBtn" class="reader-nav-btn" title="Previous page"><i class="fas fa-chevron-left"></i></button>
                 <button id="readerNextBtn" class="reader-nav-btn" title="Next page"><i class="fas fa-chevron-right"></i></button>
+            </div>
+            <div id="readerChapterControls" class="reader-chapter-controls" style="display:none;">
+                <span class="chapter-count-label">Chapters: <strong id="readerChapterCount">0</strong></span>
+                <input id="readerChapterInput" type="number" min="1" step="1" placeholder="1" title="Enter chapter number" />
+                <button id="readerChapterGo" class="reader-nav-btn" title="Go to chapter"><i class="fas fa-arrow-right"></i></button>
             </div>
             <button id="readerSettingsBtn" class="reader-gear" aria-label="Settings"><i class="fas fa-cog"></i></button>
         </div>
@@ -14802,7 +14860,9 @@ Your browser does not support the video tag.
                     'embed.smashystream.com': /^https:\/\/embed\.smashystream\.com\/playere\.php\?tmdb=\d+(\&.*)?$/,
                     'player.autoembed.cc': /^https:\/\/player\.autoembed\.cc\/embed\/(movie|tv)\/\d+(\?.*)?$/,
                     'godriveplayer.com': /^https:\/\/godriveplayer\.com\/player\.php\?(imdb=\d+|type=tv&tmdb=\d+&season=\d+&episode=\d+)(\&.*)?$/,
-                    'vidsrc.wtf': /^https:\/\/vidsrc\.wtf\/api\/4\/(movie|tv)\/\?id=\d+(\&.*)?$/
+                    'cinemaos.tech': /^https:\/\/cinemaos\.tech\/player\/\d+(?:\/\d+\/\d+)?(\?.*)?$/,
+                    'primesrc.me': /^https:\/\/primesrc\.me\/embed\/(movie|tv)\?tmdb=\d+(?:&season=\d+&episode=\d+)?(\&.*)?$/,
+                    'vidsrc.wtf': /^https:\/\/vidsrc\.wtf\/api\/(1|2|3|4)\/(movie|tv)\/\?id=\d+(\&.*)?$/
                 };
                 
                 // Get the domain from the expected URL
@@ -14939,6 +14999,10 @@ Your browser does not support the video tag.
                 
                 // Define server configurations inline (serverConfig not accessible from this scope)
                 const servers = {
+                    'CinemaOS': (type, id, season, episode) =>
+                        type === 'movie'
+                            ? `https://cinemaos.tech/player/${id}`
+                            : `https://cinemaos.tech/player/${id}/${season}/${episode}`,
                     'Videasy': (type, id, season, episode) =>
                         type === 'movie'
                             ? `https://player.videasy.net/movie/${id}`
@@ -14969,34 +15033,56 @@ Your browser does not support the video tag.
                             : `https://veloratv.ru/watch/tv/${id}/${season}/${episode}`,
                     'Vidfast': (type, id, season, episode) =>
                         type === 'movie'
-                            ? `https://vidfast.pro/movie/${id}`
-                            : `https://vidfast.pro/tv/${id}/${season}/${episode}`,
+                            ? `https://vidfast.pro/embed/movie/${id}`
+                            : `https://vidfast.pro/embed/tv/${id}/${season}/${episode}`,
                     '111Movies': (type, id, season, episode) =>
                         type === 'movie'
-                            ? `https://111movies.com/movie/${id}`
-                            : `https://111movies.com/tv/${id}/${season}/${episode}`,
+                            ? `https://111movies.com/embed/movie/${id}`
+                            : `https://111movies.com/embed/tv/${id}/${season}/${episode}`,
+                    'VidSrc 1': (type, id, season, episode) =>
+                        type === 'movie'
+                            ? `https://vidsrc.wtf/api/1/movie/?id=${id}&color=e01621`
+                            : `https://vidsrc.wtf/api/1/tv/?id=${id}&s=${season}&e=${episode}&color=e01621`,
+                    'VidSrc 2': (type, id, season, episode) =>
+                        type === 'movie'
+                            ? `https://vidsrc.wtf/api/2/movie/?id=${id}&color=e01621`
+                            : `https://vidsrc.wtf/api/2/tv/?id=${id}&s=${season}&e=${episode}&color=e01621`,
+                    'VidSrc 3': (type, id, season, episode) =>
+                        type === 'movie'
+                            ? `https://vidsrc.wtf/api/3/movie/?id=${id}&color=e01621`
+                            : `https://vidsrc.wtf/api/3/tv/?id=${id}&s=${season}&e=${episode}&color=e01621`,
+                    'VidSrc 4': (type, id, season, episode) =>
+                        type === 'movie'
+                            ? `https://vidsrc.wtf/api/4/movie/?id=${id}&color=e01621`
+                            : `https://vidsrc.wtf/api/4/tv/?id=${id}&s=${season}&e=${episode}&color=e01621`,
+                    'PrimeSrc': (type, id, season, episode) =>
+                        type === 'movie'
+                            ? `https://primesrc.me/embed/movie?tmdb=${id}`
+                            : `https://primesrc.me/embed/tv?tmdb=${id}&season=${season}&episode=${episode}`,
                     'VidJoy': (type, id, season, episode) =>
                         type === 'movie'
                             ? `https://vidjoy.pro/embed/movie/${id}`
                             : `https://vidjoy.pro/embed/tv/${id}/${season}/${episode}`,
                     'MovieClub': (type, id, season, episode) =>
                         type === 'movie'
-                            ? `https://moviesapi.club/movie/${id}`
-                            : `https://moviesapi.club/tv/${id}-${season}-${episode}`,
+                            ? `https://moviesapi.club/embed/movie/${id}`
+                            : `https://moviesapi.club/embed/tv/${id}/${season}/${episode}`,
                     'MapleTV': (type, id, season, episode) =>
                         type === 'movie'
-                            ? `https://mappletv.uk/watch/movie/${id}`
-                            : `https://mappletv.uk/watch/tv/${id}-${season}-${episode}`,
+                            ? `https://mappletv.uk/embed/movie/${id}`
+                            : `https://mappletv.uk/embed/tv/${id}/${season}/${episode}`,
                     'VidSrc PRO': (type, id, season, episode) =>
                         type === 'movie'
                             ? `https://vidsrc.pro/embed/movie/${id}`
                             : `https://vidsrc.pro/embed/tv/${id}/${season}/${episode}`,
                     '2Embed': (type, id, season, episode) =>
                         type === 'movie'
-                            ? `https://2embed.cc/embed/${id}`
-                            : `https://2embed.cc/embed/tv/${id}&s=${season}&e=${episode}`,
+                            ? `https://www.2embed.cc/embed/movie/${id}`
+                            : `https://www.2embed.cc/embed/tv/${id}/${season}/${episode}`,
                     'SuperEmbed': (type, id, season, episode) =>
-                        `https://multiembed.mov/?video_id=${id}&tmdb=1&media_type=${type}${type === 'tv' ? `&season=${season}&episode=${episode}` : ''}`,
+                        type === 'movie'
+                            ? `https://www.superembed.stream/embed/movie/${id}`
+                            : `https://www.superembed.stream/embed/tv/${id}/${season}/${episode}`,
                     'SmashyStream': (type, id, season, episode) =>
                         `https://embed.smashystream.com/playere.php?tmdb=${id}${type === 'tv' ? `&season=${season}&episode=${episode}` : ''}`,
                     'Autoembed': (type, id, season, episode) =>
@@ -15010,7 +15096,132 @@ Your browser does not support the video tag.
                     'VidWTF Premium': (type, id, season, episode) =>
                         type === 'movie'
                             ? `https://vidsrc.wtf/api/4/movie/?id=${id}&color=e01621`
-                            : `https://vidsrc.wtf/api/4/tv/?id=${id}&s=${season}&e=${episode}&color=e01621`
+                            : `https://vidsrc.wtf/api/4/tv/?id=${id}&s=${season}&e=${episode}&color=e01621`,
+                    // New additional servers
+                    'CinemaOS Embed': (type, id, season, episode) =>
+                        type === 'movie'
+                            ? `https://cinemaos.tech/embed/movie/${id}`
+                            : `https://cinemaos.tech/embed/tv/${id}/${season}/${episode}`,
+                    '2Embed Stream': (type, id, season, episode) =>
+                        type === 'movie'
+                            ? `https://2embed.stream/embed/movie/${id}`
+                            : `https://2embed.stream/embed/tv/${id}/${season}/${episode}`,
+                    'AnimeAPI': (type, id, season, episode) =>
+                        type === 'movie'
+                            ? `https://animeapi.skin/embed/movie/${id}`
+                            : `https://animeapi.skin/embed/tv/${id}/${season}/${episode}`,
+                    'Autoembed.cc': (type, id, season, episode) =>
+                        type === 'movie'
+                            ? `https://autoembed.cc/embed/movie/${id}`
+                            : `https://autoembed.cc/embed/tv/${id}/${season}/${episode}`,
+                    'ApiBeech': (type, id, season, episode) =>
+                        type === 'movie'
+                            ? `https://apibeech.vercel.app/embed/movie/${id}`
+                            : `https://apibeech.vercel.app/embed/tv/${id}/${season}/${episode}`,
+                    'VidSrc WTF (Embed)': (type, id, season, episode) =>
+                        type === 'movie'
+                            ? `https://www.vidsrc.wtf/embed/movie/${id}`
+                            : `https://www.vidsrc.wtf/embed/tv/${id}/${season}/${episode}`,
+                    'EmbedLC': (type, id, season, episode) =>
+                        type === 'movie'
+                            ? `https://embed.lc/embed/movie/${id}`
+                            : `https://embed.lc/embed/tv/${id}/${season}/${episode}`,
+                    'Filmku': (type, id, season, episode) =>
+                        type === 'movie'
+                            ? `https://filmku.stream/embed/movie/${id}`
+                            : `https://filmku.stream/embed/tv/${id}/${season}/${episode}`,
+                    'GDrivePlayer API': (type, id, season, episode) =>
+                        type === 'movie'
+                            ? `https://api.gdriveplayer.us/embed/movie/${id}`
+                            : `https://api.gdriveplayer.us/embed/tv/${id}/${season}/${episode}`,
+                    'GoDrivePlayer (Embed)': (type, id, season, episode) =>
+                        type === 'movie'
+                            ? `https://godriveplayer.com/embed/movie/${id}`
+                            : `https://godriveplayer.com/embed/tv/${id}/${season}/${episode}`,
+                    'Gomo': (type, id, season, episode) =>
+                        type === 'movie'
+                            ? `https://gomo.to/embed/movie/${id}`
+                            : `https://gomo.to/embed/tv/${id}/${season}/${episode}`,
+                    'Nontongo': (type, id, season, episode) =>
+                        type === 'movie'
+                            ? `https://nontongo.win/embed/movie/${id}`
+                            : `https://nontongo.win/embed/tv/${id}/${season}/${episode}`,
+                    'Player4U': (type, id, season, episode) =>
+                        type === 'movie'
+                            ? `https://player4u.xyz/embed/movie/${id}`
+                            : `https://player4u.xyz/embed/tv/${id}/${season}/${episode}`,
+                    'PStream': (type, id, season, episode) =>
+                        type === 'movie'
+                            ? `https://embed.pstream.org/embed/movie/${id}`
+                            : `https://embed.pstream.org/embed/tv/${id}/${season}/${episode}`,
+                    'RiveStream': (type, id, season, episode) =>
+                        type === 'movie'
+                            ? `https://rivestream.org/embed/movie/${id}`
+                            : `https://rivestream.org/embed/tv/${id}/${season}/${episode}`,
+                    'SmashyStream (Embed)': (type, id, season, episode) =>
+                        type === 'movie'
+                            ? `https://embed.smashystream.com/embed/movie/${id}`
+                            : `https://embed.smashystream.com/embed/tv/${id}/${season}/${episode}`,
+                    'SpencerDevs': (type, id, season, episode) =>
+                        type === 'movie'
+                            ? `https://spencerdevs.xyz/embed/movie/${id}`
+                            : `https://spencerdevs.xyz/embed/tv/${id}/${season}/${episode}`,
+                    'Vidora': (type, id, season, episode) =>
+                        type === 'movie'
+                            ? `https://vidora.su/embed/movie/${id}`
+                            : `https://vidora.su/embed/tv/${id}/${season}/${episode}`,
+                    'VidAPI': (type, id, season, episode) =>
+                        type === 'movie'
+                            ? `https://vidapi.xyz/embed/movie/${id}`
+                            : `https://vidapi.xyz/embed/tv/${id}/${season}/${episode}`,
+                    'Vidify': (type, id, season, episode) =>
+                        type === 'movie'
+                            ? `https://vidify.top/embed/movie/${id}`
+                            : `https://vidify.top/embed/tv/${id}/${season}/${episode}`,
+                    'VidLink': (type, id, season, episode) =>
+                        type === 'movie'
+                            ? `https://vidlink.pro/embed/movie/${id}`
+                            : `https://vidlink.pro/embed/tv/${id}/${season}/${episode}`,
+                    'VidPlus': (type, id, season, episode) =>
+                        type === 'movie'
+                            ? `https://vidplus.to/embed/movie/${id}`
+                            : `https://vidplus.to/embed/tv/${id}/${season}/${episode}`,
+                    'VidSrc CC': (type, id, season, episode) =>
+                        type === 'movie'
+                            ? `https://vidsrc.cc/embed/movie/${id}`
+                            : `https://vidsrc.cc/embed/tv/${id}/${season}/${episode}`,
+                    'VidSrc CX': (type, id, season, episode) =>
+                        type === 'movie'
+                            ? `https://vidsrc.cx/embed/movie/${id}`
+                            : `https://vidsrc.cx/embed/tv/${id}/${season}/${episode}`,
+                    'VidSrc CO': (type, id, season, episode) =>
+                        type === 'movie'
+                            ? `https://vidsrc.co/embed/movie/${id}`
+                            : `https://vidsrc.co/embed/tv/${id}/${season}/${episode}`,
+                    'VidSrc ME': (type, id, season, episode) =>
+                        type === 'movie'
+                            ? `https://vidsrc.me/embed/movie/${id}`
+                            : `https://vidsrc.me/embed/tv/${id}/${season}/${episode}`,
+                    'VidSrc RIP': (type, id, season, episode) =>
+                        type === 'movie'
+                            ? `https://vidsrc.rip/embed/movie/${id}`
+                            : `https://vidsrc.rip/embed/tv/${id}/${season}/${episode}`,
+                    'VidSrc SU': (type, id, season, episode) =>
+                        type === 'movie'
+                            ? `https://vidsrc.su/embed/movie/${id}`
+                            : `https://vidsrc.su/embed/tv/${id}/${season}/${episode}`,
+                    'VidSrc TO': (type, id, season, episode) =>
+                        type === 'movie'
+                            ? `https://vidsrc.to/embed/movie/${id}`
+                            : `https://vidsrc.to/embed/tv/${id}/${season}/${episode}`,
+                    'VidSrc VIP': (type, id, season, episode) =>
+                        type === 'movie'
+                            ? `https://vidsrc.vip/embed/movie/${id}`
+                            : `https://vidsrc.vip/embed/tv/${id}/${season}/${episode}`,
+                    'VixSrc': (type, id, season, episode) =>
+                        type === 'movie'
+                            ? `https://vixsrc.to/embed/movie/${id}`
+                            : `https://vixsrc.to/embed/tv/${id}/${season}/${episode}`
                 };
 
                 const serverFunction = servers[serverName];
@@ -16682,16 +16893,27 @@ Your browser does not support the video tag.
                     serverDropdown.innerHTML = '';
                     
                     // Define servers inline (serverConfig not accessible from this scope)
+                    // Ordered preference:
+                    // 1) New: CinemaOS first, then Videasy, then Vidfast
+                    // 2) Other new ones: 111Movies, VidSrc 1-4, PrimeSrc
+                    // 3) Existing/older ones afterwards
                     const servers = [
+                        { name: 'CinemaOS' },
                         { name: 'Videasy' },
+                        { name: 'Vidfast' },
+                        { name: '111Movies' },
+                        { name: 'VidSrc 1' },
+                        { name: 'VidSrc 2' },
+                        { name: 'VidSrc 3' },
+                        { name: 'VidSrc 4' },
+                        { name: 'PrimeSrc' },
+                        // Existing ones
                         { name: 'VidRock' },
                         { name: 'HexaWatch' },
                         { name: 'FMovies' },
                         { name: 'Xprime' },
                         { name: 'Vidnest' },
                         { name: 'veloratv' },
-                        { name: 'Vidfast' },
-                        { name: '111Movies' },
                         { name: 'VidJoy' },
                         { name: 'MovieClub' },
                         { name: 'MapleTV' },
@@ -16701,7 +16923,39 @@ Your browser does not support the video tag.
                         { name: 'SmashyStream' },
                         { name: 'Autoembed' },
                         { name: 'GoDrivePlayer' },
-                        { name: 'VidWTF Premium' }
+                        { name: 'VidWTF Premium' },
+                        // New additional servers
+                        { name: '2Embed Stream' },
+                        { name: 'AnimeAPI' },
+                        { name: 'Autoembed.cc' },
+                        { name: 'ApiBeech' },
+                        { name: 'VidSrc WTF (Embed)' },
+                        { name: 'EmbedLC' },
+                        { name: 'Filmku' },
+                        { name: 'GDrivePlayer API' },
+                        { name: 'GoDrivePlayer (Embed)' },
+                        { name: 'Gomo' },
+                        { name: 'Nontongo' },
+                        { name: 'Player4U' },
+                        { name: 'PStream' },
+                        { name: 'RiveStream' },
+                        { name: 'SmashyStream (Embed)' },
+                        { name: 'SpencerDevs' },
+                        { name: 'SuperEmbed Stream' },
+                        { name: 'Vidora' },
+                        { name: 'VidAPI' },
+                        { name: 'Vidify' },
+                        { name: 'VidLink' },
+                        { name: 'VidPlus' },
+                        { name: 'VidSrc CC' },
+                        { name: 'VidSrc CX' },
+                        { name: 'VidSrc CO' },
+                        { name: 'VidSrc ME' },
+                        { name: 'VidSrc RIP' },
+                        { name: 'VidSrc SU' },
+                        { name: 'VidSrc TO' },
+                        { name: 'VidSrc VIP' },
+                        { name: 'VixSrc' }
                     ];
                     
                     console.log('[SERVERS] Using servers array with length:', servers.length);
@@ -20818,6 +21072,9 @@ Your browser does not support the video tag.
         // ---- EPUB Reader Logic ----
         let rendition = null;
         let bookInstance = null;
+    let chapterToc = null;
+    let chapterSpineItems = null;
+    let chapterTotal = 0;
 
         async function openEpubReader(localPath, title) {
             try {
@@ -20941,6 +21198,9 @@ Your browser does not support the video tag.
 
                 // Apply initial theme/font/size
                 applyReaderPrefs();
+
+                // Initialize chapter controls (count and input range)
+                await initChapterControls();
             } catch (err) {
                 console.error('[EPUB] Error:', err);
                 alert('Could not open the EPUB: ' + err.message);
@@ -20958,6 +21218,11 @@ Your browser does not support the video tag.
             if (rendition) { try { rendition.destroy(); } catch(_){} }
             rendition = null;
             bookInstance = null;
+            chapterToc = null;
+            chapterSpineItems = null;
+            chapterTotal = 0;
+            const chapterControls = document.getElementById('readerChapterControls');
+            if (chapterControls) chapterControls.style.display = 'none';
         }
 
         // Escape key to close reader
@@ -21028,6 +21293,12 @@ Your browser does not support the video tag.
                     rendition.next();
                 }
             }
+            if (e.target.closest('#readerChapterGo')) {
+                const inputEl = document.getElementById('readerChapterInput');
+                if (!inputEl) return;
+                const val = parseInt(inputEl.value, 10);
+                goToChapterIndex(val);
+            }
             if (e.target.closest('#readerSettingsBtn')) {
                 const panel = document.getElementById('readerSettingsPanel');
                 const wasHidden = panel.classList.contains('hidden');
@@ -21052,6 +21323,14 @@ Your browser does not support the video tag.
             }
         });
 
+        // Handle Enter key on the chapter input
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && e.target && e.target.id === 'readerChapterInput') {
+                const val = parseInt(e.target.value, 10);
+                goToChapterIndex(val);
+            }
+        });
+
         // Settings controls
         document.addEventListener('click', (e) => {
             const themeBtn = e.target.closest('.theme-btn');
@@ -21073,6 +21352,108 @@ Your browser does not support the video tag.
 
         // Expose open function if needed elsewhere
         window.openEpubReader = openEpubReader;
+        
+        // Initialize chapter controls: compute total and prepare UI
+        async function initChapterControls() {
+            try {
+                const controls = document.getElementById('readerChapterControls');
+                const countEl = document.getElementById('readerChapterCount');
+                const inputEl = document.getElementById('readerChapterInput');
+                if (!controls || !countEl || !inputEl) return;
+
+                if (!bookInstance) {
+                    controls.style.display = 'none';
+                    return;
+                }
+
+                chapterToc = null;
+                chapterSpineItems = null;
+                chapterTotal = 0;
+
+                // Try to load navigation (TOC)
+                try {
+                    const nav = await bookInstance.loaded?.navigation;
+                    if (nav && Array.isArray(nav.toc) && nav.toc.length > 0) {
+                        chapterToc = nav.toc;
+                        chapterTotal = chapterToc.length;
+                    }
+                } catch(_) {}
+
+                // Fallback to spine items
+                if (!chapterTotal) {
+                    try {
+                        const spine = await bookInstance.loaded?.spine;
+                        if (spine && Array.isArray(spine.spineItems) && spine.spineItems.length > 0) {
+                            chapterSpineItems = spine.spineItems;
+                            chapterTotal = chapterSpineItems.length;
+                        } else if (bookInstance.spine && Array.isArray(bookInstance.spine.spineItems) && bookInstance.spine.spineItems.length > 0) {
+                            chapterSpineItems = bookInstance.spine.spineItems;
+                            chapterTotal = chapterSpineItems.length;
+                        }
+                    } catch(_) {}
+                }
+
+                if (chapterTotal > 0) {
+                    controls.style.display = 'flex';
+                    countEl.textContent = String(chapterTotal);
+                    inputEl.max = String(chapterTotal);
+                    inputEl.placeholder = `1-${chapterTotal}`;
+                } else {
+                    controls.style.display = 'none';
+                }
+            } catch (e) {
+                console.warn('[EPUB] Could not initialize chapter controls:', e);
+            }
+        }
+
+        // Jump to a given 1-based chapter index
+        async function goToChapterIndex(n) {
+            const inputEl = document.getElementById('readerChapterInput');
+            if (!bookInstance || !rendition || !Number.isFinite(n)) {
+                if (inputEl) flashInvalid(inputEl);
+                return;
+            }
+            const total = chapterTotal || 0;
+            if (!total) {
+                if (inputEl) flashInvalid(inputEl);
+                return;
+            }
+            let idx = Math.floor(n) - 1;
+            if (idx < 0 || idx >= total) {
+                if (inputEl) flashInvalid(inputEl);
+                return;
+            }
+            try {
+                let targetHref = null;
+                if (chapterToc && chapterToc[idx] && chapterToc[idx].href) {
+                    targetHref = chapterToc[idx].href;
+                } else if (chapterSpineItems && chapterSpineItems[idx] && chapterSpineItems[idx].href) {
+                    targetHref = chapterSpineItems[idx].href;
+                }
+                if (targetHref) {
+                    await rendition.display(targetHref);
+                } else {
+                    // As a last resort, try using the spine index directly if available
+                    if (typeof bookInstance.spine?.get === 'function') {
+                        const item = bookInstance.spine.get(idx);
+                        if (item && item.href) {
+                            await rendition.display(item.href);
+                            return;
+                        }
+                    }
+                    throw new Error('No valid chapter target');
+                }
+            } catch (err) {
+                console.warn('[EPUB] Failed to jump to chapter', n, err);
+                if (inputEl) flashInvalid(inputEl);
+            }
+        }
+
+        function flashInvalid(inputEl) {
+            const orig = inputEl.style.borderColor;
+            inputEl.style.borderColor = 'rgba(244,63,94,0.85)';
+            setTimeout(() => { inputEl.style.borderColor = orig || 'rgba(255,255,255,0.15)'; }, 450);
+        }
         async function fetchResume(key) {
             if (!key) return null;
             try {
