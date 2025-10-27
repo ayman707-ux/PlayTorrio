@@ -12093,8 +12093,10 @@ Your browser does not support the video tag.
                 });
             }
 
-            if (saveDebridTokenBtn) {
-                saveDebridTokenBtn.addEventListener('click', async () => {
+            // Attach to ALL duplicate "Save Token" buttons (new + old settings UI)
+            {
+                const saveDebridTokenBtns = document.querySelectorAll('#saveDebridToken');
+                saveDebridTokenBtns.forEach(btn => btn.addEventListener('click', async () => {
                     // Get visible debridToken input
                     const debridTokenInputs = document.querySelectorAll('#debridToken');
                     let token = '';
@@ -12126,10 +12128,12 @@ Your browser does not support the video tag.
                             showNotification('Failed to save token');
                         }
                     } catch { showNotification('Failed to save token'); }
-                });
+                }));
             }
-            if (clearDebridTokenBtn) {
-                clearDebridTokenBtn.addEventListener('click', async () => {
+            // Attach to ALL duplicate "Logout/clear RD token" buttons
+            {
+                const clearDebridTokenBtns = document.querySelectorAll('#clearDebridToken');
+                clearDebridTokenBtns.forEach(btn => btn.addEventListener('click', async () => {
                     try {
                         const res = await fetch(`${API_BASE_URL}/debrid/token`, {
                             method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token: '' })
@@ -12144,7 +12148,7 @@ Your browser does not support the video tag.
                             showNotification('Failed to logout');
                         }
                     } catch { showNotification('Failed to logout'); }
-                });
+                }));
             }
 
             // RD Device-code login handlers
@@ -12273,7 +12277,8 @@ Your browser does not support the video tag.
             });
             if (adCopyPinBtn) adCopyPinBtn.addEventListener('click', async () => { try { await navigator.clipboard.writeText(adPinCodeEl?.textContent || ''); showNotification('PIN copied'); } catch(_) {} });
             if (adCancelPinBtn) adCancelPinBtn.addEventListener('click', () => { stopAdPolling(); if (adPinPanel) adPinPanel.style.display = 'none'; });
-            if (adSaveApiKeyBtn) adSaveApiKeyBtn.addEventListener('click', async () => {
+            // Attach to ALL duplicate AllDebrid Save buttons
+            document.querySelectorAll('#adSaveApiKey').forEach(btn => btn.addEventListener('click', async () => {
                 // Get visible adApiKey input
                 const adApiKeyInputs = document.querySelectorAll('#adApiKey');
                 let apikey = '';
@@ -12298,8 +12303,9 @@ Your browser does not support the video tag.
                     }
                     else { const t = await r.text(); showNotification(t || 'Failed to save'); }
                 } catch { showNotification('Failed to save'); }
-            });
-            if (adClearApiKeyBtn) adClearApiKeyBtn.addEventListener('click', async () => {
+            }));
+            // Attach to ALL duplicate AllDebrid Logout buttons
+            document.querySelectorAll('#adClearApiKey').forEach(btn => btn.addEventListener('click', async () => {
                 try {
                     const r = await fetch(`${API_BASE_URL}/debrid/ad/apikey`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ apikey: '' }) });
                     if (r.ok) { 
@@ -12310,10 +12316,11 @@ Your browser does not support the video tag.
                         showNotification('Logged out of AllDebrid'); 
                     }
                 } catch {}
-            });
+            }));
 
             // TorBox: save/clear token
-            if (tbSaveTokenBtn) tbSaveTokenBtn.addEventListener('click', async () => {
+            // Attach to ALL duplicate TorBox Save buttons
+            document.querySelectorAll('#tbSaveToken').forEach(btn => btn.addEventListener('click', async () => {
                 // Get visible tbToken input
                 const tbTokenInputs = document.querySelectorAll('#tbToken');
                 let token = '';
@@ -12338,8 +12345,9 @@ Your browser does not support the video tag.
                     }
                     else { const t = await r.text(); showNotification(t || 'Failed to save'); }
                 } catch { showNotification('Failed to save'); }
-            });
-            if (tbClearTokenBtn) tbClearTokenBtn.addEventListener('click', async () => {
+            }));
+            // Attach to ALL duplicate TorBox Logout buttons
+            document.querySelectorAll('#tbClearToken').forEach(btn => btn.addEventListener('click', async () => {
                 try {
                     const r = await fetch(`${API_BASE_URL}/debrid/tb/token`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token: '' }) });
                     if (r.ok) { 
@@ -12350,10 +12358,11 @@ Your browser does not support the video tag.
                         showNotification('Logged out of TorBox'); 
                     }
                 } catch {}
-            });
+            }));
 
             // Premiumize: save/clear API key
-            if (pmSaveApiKeyBtn) pmSaveApiKeyBtn.addEventListener('click', async () => {
+            // Attach to ALL duplicate Premiumize Save buttons
+            document.querySelectorAll('#pmSaveApiKey').forEach(btn => btn.addEventListener('click', async () => {
                 // Get visible pmApiKey input
                 const pmApiKeyInputs = document.querySelectorAll('#pmApiKey');
                 let apikey = '';
@@ -12378,8 +12387,9 @@ Your browser does not support the video tag.
                     }
                     else { const t = await r.text(); showNotification(t || 'Failed to save'); }
                 } catch { showNotification('Failed to save'); }
-            });
-            if (pmClearApiKeyBtn) pmClearApiKeyBtn.addEventListener('click', async () => {
+            }));
+            // Attach to ALL duplicate Premiumize Logout buttons
+            document.querySelectorAll('#pmClearApiKey').forEach(btn => btn.addEventListener('click', async () => {
                 try {
                     const r = await fetch(`${API_BASE_URL}/debrid/pm/apikey`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ apikey: '' }) });
                     if (r.ok) { 
@@ -12390,7 +12400,7 @@ Your browser does not support the video tag.
                         showNotification('Logged out of Premiumize'); 
                     }
                 } catch {}
-            });
+            }));
 
             // ===== FEBBOX TOKEN EVENT LISTENER =====
             
