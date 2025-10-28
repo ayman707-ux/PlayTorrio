@@ -1,6 +1,6 @@
 {
   "name": "playtorrio",
-  "version": "1.5.4",
+  "version": "1.5.6",
   "description": "Ayman's PlayTorrio an all in one media center",
   "author": {
     "name": "ayman",
@@ -65,7 +65,8 @@
     ],
     "asarUnpack": [
       "mpv/**",
-      "VLC/**"
+      "VLC/**",
+      "node_modules/ffmpeg-static/**"
     ],
     "extraResources": [
       {
