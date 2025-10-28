@@ -4244,6 +4244,7 @@ export function startServer(userDataPath) {
         console.log(`  🎬 Trakt        → http://localhost:${PORT}/api/trakt/*`);
         console.log(`  📺 Torrents     → http://localhost:${PORT}/api/torrents`);
         console.log(`  🎮 WebTorrent   → http://localhost:${PORT}/api/webtorrent/*`);
+        console.log(`  🎮 Games       → http://localhost:${PORT}/api/games/search/*`);
         console.log(`  🌊 Nuvio Proxy  → http://localhost:${PORT}/api/nuvio/stream/*`);
         console.log(`  ☄️  Comet Proxy  → http://localhost:${PORT}/api/comet/stream/*`);
         console.log(`\n💾 Cache System:\n`);
