@@ -27,6 +27,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   restartApp: () => ipcRenderer.invoke('restart-app'),
   openExternal: (url) => ipcRenderer.invoke('open-external', url),
   copyToClipboard: (text) => ipcRenderer.invoke('copy-to-clipboard', text),
+  showFolderInExplorer: (folderPath) => ipcRenderer.invoke('show-folder-in-explorer', folderPath),
   // Books server URL helpers
   booksGetUrl: () => ipcRenderer.invoke('books-get-url'),
   onBooksUrl: (cb) => ipcRenderer.on('books-url', (_e, payload) => cb && cb(payload)),
