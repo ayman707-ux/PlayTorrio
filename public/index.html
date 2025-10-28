@@ -14828,11 +14828,18 @@ Your browser does not support the video tag.
                             : `https://veloratv.ru/watch/tv/${id}/${season}/${episode}`
                 },
                 {
-                    name: 'Vidfast',
+                    name: 'Vidfast 1',
                     getUrl: (type, id, season, episode) =>
                         type === 'movie'
                             ? `https://vidfast.pro/movie/${id}`
                             : `https://vidfast.pro/tv/${id}/${season}/${episode}`
+                },
+                {
+                    name: 'Vidfast 2',
+                    getUrl: (type, id, season, episode) =>
+                        type === 'movie'
+                            ? `https://vidfast.to/embed/movie/${id}`
+                            : `https://vidfast.to/embed/tv/${id}/${season}/${episode}`
                 },
                 {
                     name: '111Movies',
@@ -14841,13 +14848,7 @@ Your browser does not support the video tag.
                             ? `https://111movies.com/movie/${id}`
                             : `https://111movies.com/tv/${id}/${season}/${episode}`
                 },
-                {
-                    name: 'VidJoy',
-                    getUrl: (type, id, season, episode) =>
-                        type === 'movie'
-                            ? `https://vidjoy.pro/embed/movie/${id}`
-                            : `https://vidjoy.pro/embed/tv/${id}/${season}/${episode}`
-                },
+                
                 {
                     name: 'MovieClub',
                     getUrl: (type, id, season, episode) =>
@@ -14859,32 +14860,20 @@ Your browser does not support the video tag.
                     name: 'MapleTV',
                     getUrl: (type, id, season, episode) =>
                         type === 'movie'
-                            ? `https://mappletv.uk/watch/movie/${id}`
-                            : `https://mappletv.uk/watch/tv/${id}-${season}-${episode}`
-                },
-                {
-                    name: 'VidSrc PRO',
-                    getUrl: (type, id, season, episode) =>
-                        type === 'movie'
-                            ? `https://vidsrc.pro/embed/movie/${id}`
-                            : `https://vidsrc.pro/embed/tv/${id}/${season}/${episode}`
+                            ? `https://mapple.uk/watch/movie/${id}`
+                            : `https://mapple.uk/watch/tv/${id}-${season}-${episode}`
                 },
                 {
                     name: '2Embed',
-                    getUrl: (type, id, season, episode) =>
-                        type === 'movie'
-                            ? `https://2embed.cc/embed/${id}`
-                            : `https://2embed.cc/embed/tv/${id}&s=${season}&e=${episode}`
-                },
-                {
-                    name: 'SuperEmbed',
                     getUrl: (type, id, season, episode) =>
                         `https://multiembed.mov/?video_id=${id}&tmdb=1&media_type=${type}${type === 'tv' ? `&season=${season}&episode=${episode}` : ''}`
                 },
                 {
                     name: 'SmashyStream',
                     getUrl: (type, id, season, episode) =>
-                        `https://embed.smashystream.com/playere.php?tmdb=${id}${type === 'tv' ? `&season=${season}&episode=${episode}` : ''}`
+                        (type === 'movie'
+                            ? `https://player.smashy.stream/movie/${id}`
+                            : `https://player.smashy.stream/tv/${id}?s=${season}&e=${episode}`)
                 },
                 {
                     name: 'Autoembed',
@@ -15069,17 +15058,17 @@ Your browser does not support the video tag.
                     'vidnest.fun': /^https:\/\/vidnest\.fun\/(movie|tv)\/\d+(\?.*)?$/,
                     'player.videasy.net': /^https:\/\/player\.videasy\.net\/(movie|tv)\/\d+(\?.*)?$/,
                     'veloratv.ru': /^https:\/\/veloratv\.ru\/watch\/(movie|tv)\/\d+(\?.*)?$/,
-                    'vidfast.pro': /^https:\/\/vidfast\.pro\/(movie|tv)\/\d+(\?.*)?$/,
-                    '111movies.com': /^https:\/\/111movies\.com\/(movie|tv)\/\d+(\?.*)?$/,
-                    'vidjoy.pro': /^https:\/\/vidjoy\.pro\/embed\/(movie|tv)\/\d+(\?.*)?$/,
+                    'vidfast.pro': /^https:\/\/vidfast\.pro\/(movie\/\d+|tv\/\d+\/\d+\/\d+)(\?.*)?$/,
+                    'vidfast.to': /^https:\/\/vidfast\.to\/embed\/(movie\/\d+|tv\/\d+\/\d+\/\d+)(\?.*)?$/,
+                    '111movies.com': /^https:\/\/111movies\.com\/(movie\/\d+|tv\/\d+\/\d+\/\d+)(\?.*)?$/,
                     'moviesapi.club': /^https:\/\/moviesapi\.club\/(movie\/\d+|tv\/\d+-\d+-\d+)(\?.*)?$/,
-                    'mappletv.uk': /^https:\/\/mappletv\.uk\/watch\/(movie\/\d+|tv\/\d+-\d+-\d+)(\?.*)?$/,
-                    'vidsrc.pro': /^https:\/\/vidsrc\.pro\/embed\/(movie|tv)\/\d+(\?.*)?$/,
-                    '2embed.cc': /^https:\/\/2embed\.cc\/embed\/(tv\/)?[\d&se=]+(\?.*)?$/,
+                    'mapple.uk': /^https:\/\/mapple\.uk\/watch\/(movie\/\d+|tv\/\d+-\d+-\d+)(\?.*)?$/,
                     'multiembed.mov': /^https:\/\/multiembed\.mov\/\?video_id=\d+&tmdb=1&media_type=(movie|tv)(\&.*)?$/,
-                    'embed.smashystream.com': /^https:\/\/embed\.smashystream\.com\/playere\.php\?tmdb=\d+(\&.*)?$/,
+                    'player.smashy.stream': /^https:\/\/player\.smashy\.stream\/(movie\/\d+|tv\/\d+\?s=\d+&e=\d+)(\?.*)?$/,
                     'player.autoembed.cc': /^https:\/\/player\.autoembed\.cc\/embed\/(movie|tv)\/\d+(\?.*)?$/,
                     'godriveplayer.com': /^https:\/\/godriveplayer\.com\/player\.php\?(imdb=\d+|type=tv&tmdb=\d+&season=\d+&episode=\d+)(\&.*)?$/,
+                    'databasegdriveplayer.xyz': /^https:\/\/databasegdriveplayer\.xyz\/+player\.php\?tmdb=\d+(\&.*)?$/,
+                    'database.gdriveplayer.us': /^https:\/\/database\.gdriveplayer\.us\/player\.php\?type=series&tmdb=\d+&season=\d+&episode=\d+(\&.*)?$/,
                     'cinemaos.tech': /^https:\/\/cinemaos\.tech\/player\/\d+(?:\/\d+\/\d+)?(\?.*)?$/,
                     'primesrc.me': /^https:\/\/primesrc\.me\/embed\/(movie|tv)\?tmdb=\d+(?:&season=\d+&episode=\d+)?(\&.*)?$/,
                     'vidsrc.wtf': /^https:\/\/vidsrc\.wtf\/api\/(1|2|3|4)\/(movie|tv)\/\?id=\d+(\&.*)?$/
@@ -15251,14 +15240,18 @@ Your browser does not support the video tag.
                         type === 'movie'
                             ? `https://veloratv.ru/watch/movie/${id}`
                             : `https://veloratv.ru/watch/tv/${id}/${season}/${episode}`,
-                    'Vidfast': (type, id, season, episode) =>
+                    'Vidfast 1': (type, id, season, episode) =>
                         type === 'movie'
-                            ? `https://vidfast.pro/embed/movie/${id}`
-                            : `https://vidfast.pro/embed/tv/${id}/${season}/${episode}`,
+                            ? `https://vidfast.pro/movie/${id}`
+                            : `https://vidfast.pro/tv/${id}/${season}/${episode}`,
+                    'Vidfast 2': (type, id, season, episode) =>
+                        type === 'movie'
+                            ? `https://vidfast.to/embed/movie/${id}`
+                            : `https://vidfast.to/embed/tv/${id}/${season}/${episode}`,
                     '111Movies': (type, id, season, episode) =>
                         type === 'movie'
-                            ? `https://111movies.com/embed/movie/${id}`
-                            : `https://111movies.com/embed/tv/${id}/${season}/${episode}`,
+                            ? `https://111movies.com/movie/${id}`
+                            : `https://111movies.com/tv/${id}/${season}/${episode}`,
                     'VidSrc 1': (type, id, season, episode) =>
                         type === 'movie'
                             ? `https://vidsrc.wtf/api/1/movie/?id=${id}&color=e01621`
@@ -15279,32 +15272,20 @@ Your browser does not support the video tag.
                         type === 'movie'
                             ? `https://primesrc.me/embed/movie?tmdb=${id}`
                             : `https://primesrc.me/embed/tv?tmdb=${id}&season=${season}&episode=${episode}`,
-                    'VidJoy': (type, id, season, episode) =>
-                        type === 'movie'
-                            ? `https://vidjoy.pro/embed/movie/${id}`
-                            : `https://vidjoy.pro/embed/tv/${id}/${season}/${episode}`,
                     'MovieClub': (type, id, season, episode) =>
                         type === 'movie'
-                            ? `https://moviesapi.club/embed/movie/${id}`
-                            : `https://moviesapi.club/embed/tv/${id}/${season}/${episode}`,
+                            ? `https://moviesapi.club/movie/${id}`
+                            : `https://moviesapi.club/tv/${id}-${season}-${episode}`,
                     'MapleTV': (type, id, season, episode) =>
                         type === 'movie'
-                            ? `https://mappletv.uk/embed/movie/${id}`
-                            : `https://mappletv.uk/embed/tv/${id}/${season}/${episode}`,
-                    'VidSrc PRO': (type, id, season, episode) =>
-                        type === 'movie'
-                            ? `https://vidsrc.pro/embed/movie/${id}`
-                            : `https://vidsrc.pro/embed/tv/${id}/${season}/${episode}`,
+                            ? `https://mapple.uk/watch/movie/${id}`
+                            : `https://mapple.uk/watch/tv/${id}-${season}-${episode}`,
                     '2Embed': (type, id, season, episode) =>
-                        type === 'movie'
-                            ? `https://www.2embed.cc/embed/movie/${id}`
-                            : `https://www.2embed.cc/embed/tv/${id}/${season}/${episode}`,
-                    'SuperEmbed': (type, id, season, episode) =>
-                        type === 'movie'
-                            ? `https://www.superembed.stream/embed/movie/${id}`
-                            : `https://www.superembed.stream/embed/tv/${id}/${season}/${episode}`,
+                        `https://multiembed.mov/?video_id=${id}&tmdb=1&media_type=${type}${type === 'tv' ? `&season=${season}&episode=${episode}` : ''}`,
                     'SmashyStream': (type, id, season, episode) =>
-                        `https://embed.smashystream.com/playere.php?tmdb=${id}${type === 'tv' ? `&season=${season}&episode=${episode}` : ''}`,
+                        (type === 'movie'
+                            ? `https://player.smashy.stream/movie/${id}`
+                            : `https://player.smashy.stream/tv/${id}?s=${season}&e=${episode}`),
                     'Autoembed': (type, id, season, episode) =>
                         type === 'movie'
                             ? `https://player.autoembed.cc/embed/movie/${id}`
@@ -15322,74 +15303,20 @@ Your browser does not support the video tag.
                         type === 'movie'
                             ? `https://cinemaos.tech/embed/movie/${id}`
                             : `https://cinemaos.tech/embed/tv/${id}/${season}/${episode}`,
-                    '2Embed Stream': (type, id, season, episode) =>
-                        type === 'movie'
-                            ? `https://2embed.stream/embed/movie/${id}`
-                            : `https://2embed.stream/embed/tv/${id}/${season}/${episode}`,
-                    'AnimeAPI': (type, id, season, episode) =>
-                        type === 'movie'
-                            ? `https://animeapi.skin/embed/movie/${id}`
-                            : `https://animeapi.skin/embed/tv/${id}/${season}/${episode}`,
-                    'Autoembed.cc': (type, id, season, episode) =>
-                        type === 'movie'
-                            ? `https://autoembed.cc/embed/movie/${id}`
-                            : `https://autoembed.cc/embed/tv/${id}/${season}/${episode}`,
-                    'ApiBeech': (type, id, season, episode) =>
-                        type === 'movie'
-                            ? `https://apibeech.vercel.app/embed/movie/${id}`
-                            : `https://apibeech.vercel.app/embed/tv/${id}/${season}/${episode}`,
-                    'VidSrc WTF (Embed)': (type, id, season, episode) =>
-                        type === 'movie'
-                            ? `https://www.vidsrc.wtf/embed/movie/${id}`
-                            : `https://www.vidsrc.wtf/embed/tv/${id}/${season}/${episode}`,
-                    'EmbedLC': (type, id, season, episode) =>
-                        type === 'movie'
-                            ? `https://embed.lc/embed/movie/${id}`
-                            : `https://embed.lc/embed/tv/${id}/${season}/${episode}`,
-                    'Filmku': (type, id, season, episode) =>
-                        type === 'movie'
-                            ? `https://filmku.stream/embed/movie/${id}`
-                            : `https://filmku.stream/embed/tv/${id}/${season}/${episode}`,
+                    
                     'GDrivePlayer API': (type, id, season, episode) =>
                         type === 'movie'
-                            ? `https://api.gdriveplayer.us/embed/movie/${id}`
-                            : `https://api.gdriveplayer.us/embed/tv/${id}/${season}/${episode}`,
-                    'GoDrivePlayer (Embed)': (type, id, season, episode) =>
-                        type === 'movie'
-                            ? `https://godriveplayer.com/embed/movie/${id}`
-                            : `https://godriveplayer.com/embed/tv/${id}/${season}/${episode}`,
-                    'Gomo': (type, id, season, episode) =>
-                        type === 'movie'
-                            ? `https://gomo.to/embed/movie/${id}`
-                            : `https://gomo.to/embed/tv/${id}/${season}/${episode}`,
+                            ? `https://databasegdriveplayer.xyz/player.php?tmdb=${id}`
+                            : `https://database.gdriveplayer.us/player.php?type=series&tmdb=${id}&season=${season}&episode=${episode}`,
                     'Nontongo': (type, id, season, episode) =>
                         type === 'movie'
                             ? `https://nontongo.win/embed/movie/${id}`
                             : `https://nontongo.win/embed/tv/${id}/${season}/${episode}`,
-                    'Player4U': (type, id, season, episode) =>
-                        type === 'movie'
-                            ? `https://player4u.xyz/embed/movie/${id}`
-                            : `https://player4u.xyz/embed/tv/${id}/${season}/${episode}`,
-                    'PStream': (type, id, season, episode) =>
-                        type === 'movie'
-                            ? `https://embed.pstream.org/embed/movie/${id}`
-                            : `https://embed.pstream.org/embed/tv/${id}/${season}/${episode}`,
-                    'RiveStream': (type, id, season, episode) =>
-                        type === 'movie'
-                            ? `https://rivestream.org/embed/movie/${id}`
-                            : `https://rivestream.org/embed/tv/${id}/${season}/${episode}`,
-                    'SmashyStream (Embed)': (type, id, season, episode) =>
-                        type === 'movie'
-                            ? `https://embed.smashystream.com/embed/movie/${id}`
-                            : `https://embed.smashystream.com/embed/tv/${id}/${season}/${episode}`,
+                    
                     'SpencerDevs': (type, id, season, episode) =>
                         type === 'movie'
-                            ? `https://spencerdevs.xyz/embed/movie/${id}`
-                            : `https://spencerdevs.xyz/embed/tv/${id}/${season}/${episode}`,
-                    'Vidora': (type, id, season, episode) =>
-                        type === 'movie'
-                            ? `https://vidora.su/embed/movie/${id}`
-                            : `https://vidora.su/embed/tv/${id}/${season}/${episode}`,
+                            ? `https://spencerdevs.xyz/movie/${id}`
+                            : `https://spencerdevs.xyz/tv/${id}/${season}/${episode}`,
                     'VidAPI': (type, id, season, episode) =>
                         type === 'movie'
                             ? `https://vidapi.xyz/embed/movie/${id}`
@@ -15398,38 +15325,14 @@ Your browser does not support the video tag.
                         type === 'movie'
                             ? `https://vidify.top/embed/movie/${id}`
                             : `https://vidify.top/embed/tv/${id}/${season}/${episode}`,
-                    'VidLink': (type, id, season, episode) =>
-                        type === 'movie'
-                            ? `https://vidlink.pro/embed/movie/${id}`
-                            : `https://vidlink.pro/embed/tv/${id}/${season}/${episode}`,
-                    'VidPlus': (type, id, season, episode) =>
-                        type === 'movie'
-                            ? `https://vidplus.to/embed/movie/${id}`
-                            : `https://vidplus.to/embed/tv/${id}/${season}/${episode}`,
-                    'VidSrc CC': (type, id, season, episode) =>
-                        type === 'movie'
-                            ? `https://vidsrc.cc/embed/movie/${id}`
-                            : `https://vidsrc.cc/embed/tv/${id}/${season}/${episode}`,
                     'VidSrc CX': (type, id, season, episode) =>
                         type === 'movie'
                             ? `https://vidsrc.cx/embed/movie/${id}`
                             : `https://vidsrc.cx/embed/tv/${id}/${season}/${episode}`,
-                    'VidSrc CO': (type, id, season, episode) =>
-                        type === 'movie'
-                            ? `https://vidsrc.co/embed/movie/${id}`
-                            : `https://vidsrc.co/embed/tv/${id}/${season}/${episode}`,
                     'VidSrc ME': (type, id, season, episode) =>
                         type === 'movie'
                             ? `https://vidsrc.me/embed/movie/${id}`
                             : `https://vidsrc.me/embed/tv/${id}/${season}/${episode}`,
-                    'VidSrc RIP': (type, id, season, episode) =>
-                        type === 'movie'
-                            ? `https://vidsrc.rip/embed/movie/${id}`
-                            : `https://vidsrc.rip/embed/tv/${id}/${season}/${episode}`,
-                    'VidSrc SU': (type, id, season, episode) =>
-                        type === 'movie'
-                            ? `https://vidsrc.su/embed/movie/${id}`
-                            : `https://vidsrc.su/embed/tv/${id}/${season}/${episode}`,
                     'VidSrc TO': (type, id, season, episode) =>
                         type === 'movie'
                             ? `https://vidsrc.to/embed/movie/${id}`
@@ -15440,8 +15343,8 @@ Your browser does not support the video tag.
                             : `https://vidsrc.vip/embed/tv/${id}/${season}/${episode}`,
                     'VixSrc': (type, id, season, episode) =>
                         type === 'movie'
-                            ? `https://vixsrc.to/embed/movie/${id}`
-                            : `https://vixsrc.to/embed/tv/${id}/${season}/${episode}`
+                            ? `https://vixsrc.to/movie/${id}/`
+                            : `https://vixsrc.to/tv/${id}/${season}/${episode}/`
                 };
 
                 const serverFunction = servers[serverName];
@@ -15613,12 +15516,17 @@ Your browser does not support the video tag.
                 });
             }
 
-            // Close modals when clicking outside
+            // Disable closing server selection when clicking on the backdrop
+            // Absorb clicks on the empty area so they don't close or trigger anything behind
             serverSelectionModal?.addEventListener('click', (e) => {
                 if (e.target === serverSelectionModal) {
-                    hideServerSelection();
+                    e.stopPropagation();
+                    // Intentionally do nothing: require explicit Back button to close
                 }
             });
+            // Also stop click propagation inside the content
+            const serverSelectionContent = document.querySelector('#server-selection-modal .server-selection-content');
+            serverSelectionContent?.addEventListener('click', (e) => e.stopPropagation());
 
             videoPlayerModal?.addEventListener('click', (e) => {
                 if (e.target === videoPlayerModal) {
@@ -17120,7 +17028,8 @@ Your browser does not support the video tag.
                     const servers = [
                         { name: 'CinemaOS' },
                         { name: 'Videasy' },
-                        { name: 'Vidfast' },
+                        { name: 'Vidfast 1' },
+                        { name: 'Vidfast 2' },
                         { name: '111Movies' },
                         { name: 'VidSrc 1' },
                         { name: 'VidSrc 2' },
@@ -17134,45 +17043,27 @@ Your browser does not support the video tag.
                         { name: 'Xprime' },
                         { name: 'Vidnest' },
                         { name: 'veloratv' },
-                        { name: 'VidJoy' },
+                        
                         { name: 'MovieClub' },
                         { name: 'MapleTV' },
-                        { name: 'VidSrc PRO' },
                         { name: '2Embed' },
-                        { name: 'SuperEmbed' },
                         { name: 'SmashyStream' },
                         { name: 'Autoembed' },
                         { name: 'GoDrivePlayer' },
                         { name: 'VidWTF Premium' },
                         // New additional servers
-                        { name: '2Embed Stream' },
-                        { name: 'AnimeAPI' },
-                        { name: 'Autoembed.cc' },
-                        { name: 'ApiBeech' },
-                        { name: 'VidSrc WTF (Embed)' },
-                        { name: 'EmbedLC' },
-                        { name: 'Filmku' },
+                        
                         { name: 'GDrivePlayer API' },
-                        { name: 'GoDrivePlayer (Embed)' },
-                        { name: 'Gomo' },
+                        
                         { name: 'Nontongo' },
-                        { name: 'Player4U' },
-                        { name: 'PStream' },
-                        { name: 'RiveStream' },
-                        { name: 'SmashyStream (Embed)' },
+                        
                         { name: 'SpencerDevs' },
-                        { name: 'SuperEmbed Stream' },
-                        { name: 'Vidora' },
+                        
                         { name: 'VidAPI' },
                         { name: 'Vidify' },
-                        { name: 'VidLink' },
-                        { name: 'VidPlus' },
-                        { name: 'VidSrc CC' },
+                        
                         { name: 'VidSrc CX' },
-                        { name: 'VidSrc CO' },
                         { name: 'VidSrc ME' },
-                        { name: 'VidSrc RIP' },
-                        { name: 'VidSrc SU' },
                         { name: 'VidSrc TO' },
                         { name: 'VidSrc VIP' },
                         { name: 'VixSrc' }
