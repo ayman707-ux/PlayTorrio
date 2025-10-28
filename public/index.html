@@ -11880,19 +11880,34 @@ Your browser does not support the video tag.
                 const result = await window.electronAPI.clearCache();
                 showNotification(result.message, result.success ? 'success' : 'error');
             });
-            // Cache folder browse button
-            if (selectCacheBtn && window.electronAPI && window.electronAPI.selectCacheFolder) {
-                selectCacheBtn.addEventListener('click', async () => {
+            // Cache folder browse buttons (attach to ALL instances)
+            if (window.electronAPI && window.electronAPI.selectCacheFolder) {
+                const selectCacheBtns = document.querySelectorAll('#selectCacheBtn');
+                selectCacheBtns.forEach(btn => btn.addEventListener('click', async (e) => {
+                    e.preventDefault();
                     try {
                         const result = await window.electronAPI.selectCacheFolder();
                         if (result.success && result.path) {
-                            cacheLocationInput.value = result.path;
+                            // Prefer the cacheLocation input in the same card/section as the clicked button
+                            const scope = btn.closest('.settings-card-body, .api-input-group, .form-group') || document;
+                            const scopedInput = scope.querySelector('#cacheLocation');
+                            if (scopedInput) {
+                                scopedInput.value = result.path;
+                            } else {
+                                // Fallback: update the visible cacheLocation input
+                                const allInputs = document.querySelectorAll('#cacheLocation');
+                                let updated = false;
+                                for (const input of allInputs) {
+                                    if (input.offsetParent !== null) { input.value = result.path; updated = true; break; }
+                                }
+                                if (!updated && allInputs.length > 0) { allInputs[0].value = result.path; }
+                            }
                         }
                     } catch (error) {
                         console.error('Error selecting cache folder:', error);
                         showNotification('Failed to select folder');
                     }
-                });
+                }));
             }
             // MPV install helpers removed
             settingsClose.addEventListener('click', hideSettingsModal);
@@ -12157,7 +12172,7 @@ Your browser does not support the video tag.
             async function beginRdDeviceLogin() {
                 try {
                     const clientId = (rdClientIdInput?.value || '').trim();
-                    if (!clientId) { showNotification('Enter your Real‑Debrid Client ID first'); return; }
+                    // Allow starting without clientId; server will fall back to stored rdClientId
                     const url = `${API_BASE_URL}/debrid/rd/device-code${clientId ? `?client_id=${encodeURIComponent(clientId)}` : ''}`;
                     const r = await fetch(url);
                     if (!r.ok) {
@@ -12277,6 +12292,150 @@ Your browser does not support the video tag.
             });
             if (adCopyPinBtn) adCopyPinBtn.addEventListener('click', async () => { try { await navigator.clipboard.writeText(adPinCodeEl?.textContent || ''); showNotification('PIN copied'); } catch(_) {} });
             if (adCancelPinBtn) adCancelPinBtn.addEventListener('click', () => { stopAdPolling(); if (adPinPanel) adPinPanel.style.display = 'none'; });
+
+            // --- Bind duplicated RD/AD login UIs (new settings panel) ---
+            // Helper: find nearest container with a descendant matching a selector using attribute match to avoid global-ID issues
+            function qIn(el, sel) { return el ? el.querySelector(sel) : null; }
+
+            // Scoped RD device-code login
+            async function beginRdDeviceLoginScoped(buttonEl) {
+                const container = buttonEl.closest('#rdButtons')?.parentElement || buttonEl.parentElement;
+                const rdClientInput = qIn(container, '[id="rdClientId"]');
+                const codePanel = qIn(container, '[id="rdCodePanel"]');
+                const userCodeEl = qIn(container, '[id="rdUserCode"]');
+                const verifyUrlEl = qIn(container, '[id="rdVerifyUrl"]');
+                const loginStatusEl = qIn(container, '[id="rdLoginStatus"]');
+                const openVerifyBtn = qIn(container, '[id="rdOpenVerify"]');
+                const copyCodeBtn = qIn(container, '[id="rdCopyCode"]');
+                const cancelBtn = qIn(container, '[id="rdCancelLogin"]');
+
+                const clientId = (rdClientInput?.value || '').trim();
+                const url = `${API_BASE_URL}/debrid/rd/device-code${clientId ? `?client_id=${encodeURIComponent(clientId)}` : ''}`;
+                try {
+                    const r = await fetch(url);
+                    if (!r.ok) {
+                        let msg = 'RD device-code start failed';
+                        try { const t = await r.json(); if (t?.error) msg = t.error; } catch { try { msg = await r.text(); } catch {} }
+                        if (loginStatusEl) loginStatusEl.textContent = 'Error starting login';
+                        showNotification(msg);
+                        return;
+                    }
+                    const j = await r.json();
+                    if (codePanel) codePanel.style.display = 'block';
+                    if (userCodeEl) userCodeEl.textContent = j.user_code || '----';
+                    if (verifyUrlEl) { verifyUrlEl.textContent = j.verification_url || 'https://real-debrid.com/device'; verifyUrlEl.href = j.verification_url || 'https://real-debrid.com/device'; }
+                    if (loginStatusEl) loginStatusEl.textContent = 'Waiting for approval…';
+                    const intervalMs = Math.max(3, Number(j.interval || 5)) * 1000;
+                    const deviceCode = j.device_code;
+
+                    stopRdPolling();
+                    rdPollTimer = setInterval(async () => {
+                        try {
+                            const pr = await fetch(`${API_BASE_URL}/debrid/rd/poll`, {
+                                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ device_code: deviceCode, client_id: clientId || undefined })
+                            });
+                            if (pr.ok) {
+                                stopRdPolling();
+                                if (loginStatusEl) loginStatusEl.textContent = 'Logged in!';
+                                document.querySelectorAll('#debridStatus').forEach(status => { status.textContent = 'Logged in'; });
+                                debridAuth = true;
+                                // Reflect provider/toggle in all duplicate controls
+                                document.querySelectorAll('#useDebridToggle').forEach(cb => { try { cb.checked = true; } catch {} });
+                                document.querySelectorAll('#debridProvider').forEach(sel => { try { sel.value = 'realdebrid'; } catch {} });
+                                // Persist provider and enable Debrid so caching is used
+                                try { await fetch(`${API_BASE_URL}/settings`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ useDebrid: true, debridProvider: 'realdebrid' }) }); } catch {}
+                                showNotification('Real‑Debrid connected');
+                                setTimeout(() => { if (codePanel) codePanel.style.display = 'none'; }, 800);
+                            } else {
+                                const txt = await pr.text();
+                                if (/expired|invalid/i.test(txt)) { stopRdPolling(); if (loginStatusEl) loginStatusEl.textContent = 'Code expired. Try again.'; }
+                            }
+                        } catch (_) {}
+                    }, intervalMs);
+
+                    // Bind inline controls once
+                    if (container && !container.dataset.rdBound) {
+                        container.dataset.rdBound = '1';
+                        if (openVerifyBtn) openVerifyBtn.addEventListener('click', async () => {
+                            const href = verifyUrlEl?.href || 'https://real-debrid.com/device';
+                            if (window.electronAPI?.openExternal) await window.electronAPI.openExternal(href); else window.open(href, '_blank');
+                        });
+                        if (copyCodeBtn) copyCodeBtn.addEventListener('click', async () => { try { await navigator.clipboard.writeText(userCodeEl?.textContent || ''); showNotification('Code copied'); } catch(_) {} });
+                        if (cancelBtn) cancelBtn.addEventListener('click', () => { stopRdPolling(); if (codePanel) codePanel.style.display = 'none'; });
+                    }
+                } catch (_) {
+                    showNotification('Failed to start device login');
+                }
+            }
+
+            // Scoped AllDebrid PIN login
+            async function beginAdPinLoginScoped(buttonEl) {
+                const container = buttonEl.closest('#adSection') || buttonEl.parentElement;
+                const pinPanel = qIn(container, '[id="adPinPanel"]');
+                const pinCodeEl = qIn(container, '[id="adPinCode"]');
+                const userUrlEl = qIn(container, '[id="adUserUrl"]');
+                const loginStatusEl = qIn(container, '[id="adLoginStatus"]');
+                const openUserBtn = qIn(container, '[id="adOpenUserUrl"]');
+                const copyPinBtn = qIn(container, '[id="adCopyPin"]');
+                const cancelBtn = qIn(container, '[id="adCancelPin"]');
+
+                try { await ensureDebridState(); } catch {}
+                if (useDebrid && debridProvider === 'alldebrid' && debridAuth) { showNotification('Already logged in to AllDebrid'); return; }
+                try {
+                    const r = await fetch(`${API_BASE_URL}/debrid/ad/pin`);
+                    const j = await r.json();
+                    if (r.ok && j.pin && j.check) {
+                        adPin = j.pin; adCheck = j.check;
+                        if (pinPanel) pinPanel.style.display = 'block';
+                        if (pinCodeEl) pinCodeEl.textContent = adPin;
+                        if (userUrlEl) userUrlEl.href = j.user_url || 'https://alldebrid.com/pin/';
+                        if (loginStatusEl) loginStatusEl.textContent = 'Waiting…';
+                        stopAdPolling();
+                        adPollTimer = setInterval(async () => {
+                            try {
+                                const pr = await fetch(`${API_BASE_URL}/debrid/ad/check`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ pin: adPin, check: adCheck }) });
+                                const pj = await pr.json();
+                                if (pr.ok && pj.success) {
+                                    stopAdPolling();
+                                    document.querySelectorAll('#debridStatus').forEach(status => { status.textContent = 'Logged in'; });
+                                    debridAuth = true;
+                                    if (loginStatusEl) loginStatusEl.textContent = 'Logged in!';
+                                    // Reflect provider/toggle in all duplicate controls
+                                    document.querySelectorAll('#useDebridToggle').forEach(cb => { try { cb.checked = true; } catch {} });
+                                    document.querySelectorAll('#debridProvider').forEach(sel => { try { sel.value = 'alldebrid'; } catch {} });
+                                    // Persist provider and enable Debrid
+                                    try { await fetch(`${API_BASE_URL}/settings`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ useDebrid: true, debridProvider: 'alldebrid' }) }); } catch {}
+                                    showNotification('AllDebrid connected');
+                                    setTimeout(() => { if (pinPanel) pinPanel.style.display = 'none'; }, 800);
+                                } else if (!pr.ok) {
+                                    stopAdPolling();
+                                    if (loginStatusEl) loginStatusEl.textContent = pj?.error || 'PIN expired';
+                                }
+                            } catch (_) {}
+                        }, 5000);
+
+                        if (container && !container.dataset.adBound) {
+                            container.dataset.adBound = '1';
+                            if (openUserBtn) openUserBtn.addEventListener('click', async () => { const href = userUrlEl?.href || 'https://alldebrid.com/pin/'; if (window.electronAPI?.openExternal) await window.electronAPI.openExternal(href); else window.open(href, '_blank'); });
+                            if (copyPinBtn) copyPinBtn.addEventListener('click', async () => { try { await navigator.clipboard.writeText(pinCodeEl?.textContent || ''); showNotification('PIN copied'); } catch(_) {} });
+                            if (cancelBtn) cancelBtn.addEventListener('click', () => { stopAdPolling(); if (pinPanel) pinPanel.style.display = 'none'; });
+                        }
+                    } else {
+                        showNotification(j?.error || 'Failed to start AllDebrid PIN');
+                    }
+                } catch (_) {
+                    showNotification('Failed to start AllDebrid PIN');
+                }
+            }
+
+            // Attach scoped handlers to ALL duplicates
+            document.querySelectorAll('#rdDeviceLogin').forEach(btn => {
+                if (!btn.dataset.boundRd) { btn.dataset.boundRd = '1'; btn.addEventListener('click', () => beginRdDeviceLoginScoped(btn)); }
+            });
+            document.querySelectorAll('#adStartPin').forEach(btn => {
+                if (!btn.dataset.boundAd) { btn.dataset.boundAd = '1'; btn.addEventListener('click', () => beginAdPinLoginScoped(btn)); }
+            });
             // Attach to ALL duplicate AllDebrid Save buttons
             document.querySelectorAll('#adSaveApiKey').forEach(btn => btn.addEventListener('click', async () => {
                 // Get visible adApiKey input
@@ -12404,29 +12563,33 @@ Your browser does not support the video tag.
 
             // ===== FEBBOX TOKEN EVENT LISTENER =====
             
-            const febboxTokenInput = document.getElementById('febboxTokenInput');
-            const saveFebboxTokenBtn = document.getElementById('saveFebboxToken');
-            
-            // Load saved token on page load
-            if (febboxTokenInput) {
-                const savedToken = localStorage.getItem('febboxToken');
-                if (savedToken) {
-                    febboxTokenInput.value = savedToken;
+            // Febbox token (attach to ALL duplicate inputs/buttons)
+            const febboxInputs = document.querySelectorAll('#febboxTokenInput');
+            const savedFebboxToken = localStorage.getItem('febboxToken');
+            if (savedFebboxToken) {
+                febboxInputs.forEach(inp => { try { inp.value = savedFebboxToken; } catch(_){} });
+            }
+            const saveFebboxBtns = document.querySelectorAll('#saveFebboxToken');
+            saveFebboxBtns.forEach(btn => btn.addEventListener('click', () => {
+                // Prefer token from the input in the same card/section as the clicked button
+                const scope = btn.closest('.settings-card-body, .api-input-group, .form-group') || document;
+                let input = scope.querySelector('#febboxTokenInput');
+                if (!input) {
+                    // Fallback: use the visible input if any
+                    for (const el of febboxInputs) { if (el.offsetParent !== null) { input = el; break; } }
                 }
-            }
-            
-            if (saveFebboxTokenBtn) {
-                saveFebboxTokenBtn.addEventListener('click', () => {
-                    const token = (febboxTokenInput?.value || '').trim();
-                    if (token) {
-                        localStorage.setItem('febboxToken', token);
-                        showNotification('Febbox token saved successfully', 'success');
-                    } else {
-                        localStorage.removeItem('febboxToken');
-                        showNotification('Febbox token cleared, using default', 'success');
-                    }
-                });
-            }
+                const token = (input?.value || '').trim();
+                if (token) {
+                    localStorage.setItem('febboxToken', token);
+                    // Reflect into all duplicate inputs for consistency
+                    febboxInputs.forEach(inp => { try { inp.value = token; } catch(_){} });
+                    showNotification('Febbox token saved successfully', 'success');
+                } else {
+                    localStorage.removeItem('febboxToken');
+                    febboxInputs.forEach(inp => { try { inp.value = ''; } catch(_){} });
+                    showNotification('Febbox token cleared, using default', 'success');
+                }
+            }));
 
             // ===== TRAKT EVENT LISTENERS - attach to ALL instances =====
             
