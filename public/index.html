@@ -14672,6 +14672,10 @@ Your browser does not support the video tag.
                     showNotification('No tracks to play', 'info');
                     return;
                 }
+                // Ensure Autoplay Next is ON for Play All so it advances through the queue
+                musicAutoPlayNext = true;
+                try { localStorage.setItem(MUSIC_AUTOPLAY_KEY, '1'); } catch(_) {}
+                updateAutoplayToggleUI();
                 
                 // Store the queue
                 currentPlayQueue = tracks;
