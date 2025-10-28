@@ -2281,7 +2281,29 @@
             width: 38px; height: 38px; display: inline-flex; align-items: center; justify-content: center;
             border-radius: 10px; border: 1px solid rgba(56,189,248,0.35); background: rgba(56,189,248,0.12); color: #38bdf8; cursor: pointer;
         }
-        .music-play-btn:hover, .music-open-btn:hover, .music-heart-btn:hover, .music-plus-btn:hover {
+        .music-download-btn {
+            width: 38px; height: 38px; display: inline-flex; align-items: center; justify-content: center;
+            border-radius: 10px; border: 1px solid rgba(34,197,94,0.35); background: rgba(34,197,94,0.12); color: #22c55e; cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .music-download-btn.downloaded {
+            border-color: rgba(34,197,94,0.6);
+            background: rgba(34,197,94,0.25);
+            color: #22c55e;
+        }
+        .music-download-btn:hover {
+            filter: brightness(1.15);
+            transform: scale(1.05);
+        }
+        .music-folder-btn {
+            width: 38px; height: 38px; display: inline-flex; align-items: center; justify-content: center;
+            border-radius: 10px; border: 1px solid rgba(251,191,36,0.35); background: rgba(251,191,36,0.12); color: #fbbf24; cursor: pointer;
+        }
+        .music-delete-downloaded-btn {
+            width: 38px; height: 38px; display: inline-flex; align-items: center; justify-content: center;
+            border-radius: 10px; border: 1px solid rgba(239,68,68,0.35); background: rgba(239,68,68,0.12); color: #ef4444; cursor: pointer;
+        }
+        .music-play-btn:hover, .music-open-btn:hover, .music-heart-btn:hover, .music-plus-btn:hover, .music-folder-btn:hover, .music-delete-downloaded-btn:hover {
             filter: brightness(1.08);
         }
         /* Playlist open view header tweak */
@@ -5273,6 +5295,11 @@
             50% { opacity: 0.4; }
         }
         
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+        
         /* Hide connection status in OLD UI */
         body.ui-old .connection-status {
             display: none;
@@ -5959,24 +5986,28 @@
         </button>
         <h2 class="discord-title" style="display: flex; align-items: center; gap: 1rem; font-size: 1.8rem;">
             <i class="fas fa-rocket" style="color: var(--vlc-orange);"></i>
-            New in v1.4.9
+            New in v1.5.3
         </h2>
         <div class="discord-message" style="text-align: left;">
             <p style="font-size: 1.1rem; margin-bottom: 1.2rem;">
-                This update brings more streaming servers (Turn on streaming mode in settings) and a nicer reading experience:
+                This update delivers enhanced media playback, optimized streaming, and new entertainment options:
             </p>
             <ul style="list-style: none; padding: 0; margin-bottom: 1.2rem;">
                 <li style="margin-bottom: 0.9rem; padding-left: 2rem; position: relative;">
-                    <i class="fas fa-film" style="position: absolute; left: 0; color: var(--vlc-orange); margin-top: 0.2rem;"></i>
-                    <strong>More Streaming Servers</strong> – Added lots of new providers and improved ordering for quicker access.
+                    <i class="fas fa-play-circle" style="position: absolute; left: 0; color: var(--vlc-orange); margin-top: 0.2rem;"></i>
+                    <strong>VLC Media Player Integration</strong> – Added VLC as a new external player option alongside MPV for superior format compatibility and playback control.
                 </li>
                 <li style="margin-bottom: 0.9rem; padding-left: 2rem; position: relative;">
-                    <i class="fas fa-book-reader" style="position: absolute; left: 0; color: var(--vlc-orange); margin-top: 0.2rem;"></i>
-                    <strong>EPUB Reader Update</strong> – Shows total chapters and lets you jump directly to a chapter number.
+                    <i class="fas fa-filter" style="position: absolute; left: 0; color: var(--vlc-orange); margin-top: 0.2rem;"></i>
+                    <strong>Optimized Streaming Servers</strong> – Removed non-functional providers and refined server selection for faster, more reliable streaming.
+                </li>
+                <li style="margin-bottom: 0.9rem; padding-left: 2rem; position: relative;">
+                    <i class="fas fa-gamepad" style="position: absolute; left: 0; color: var(--vlc-orange); margin-top: 0.2rem;"></i>
+                    <strong>MiniGames Platform</strong> – Introducing PlayTorrio MiniGames – access a curated collection of browser-based games directly within the app.
                 </li>
             </ul>
             <p style="color: var(--secondary); font-size: 0.95rem; margin-top: 0.5rem;">
-                <i class="fas fa-info-circle"></i> Thanks for updating! Enjoy the new servers and reader improvements.
+                <i class="fas fa-info-circle"></i> Thank you for updating! Enjoy the enhanced media experience and new features.
             </p>
         </div>
         <button class="discord-join-btn" id="updateGotItBtn" style="background: var(--vlc-orange); width: 100%;">
@@ -6675,6 +6706,10 @@
                     <i class="fas fa-list"></i>
                     <span>Playlists</span>
                 </button>
+                <button class="action-btn" id="music-downloaded-btn" title="Open Downloaded Music">
+                    <i class="fas fa-download"></i>
+                    <span>Downloaded</span>
+                </button>
                 
             </div>
         </div>
@@ -6810,8 +6845,82 @@
                 </div>
             </div>
 
+            <!-- Downloaded Music Section -->
+            <div id="music-downloaded" class="books-results" style="display: none;">
+                <div class="books-results-header" style="align-items:center; gap:1rem;">
+                    <h3><i class="fas fa-download" style="color:#10b981"></i> Downloaded Music</h3>
+                    <div id="music-downloaded-count" class="books-results-count"></div>
+                    <button id="music-downloaded-play-all-btn" class="action-btn" style="margin-left:auto; background: linear-gradient(135deg, #10b981, #059669);">
+                        <i class="fas fa-play"></i>
+                        <span>Play All</span>
+                    </button>
+                </div>
+                <div id="music-downloaded-grid" class="books-results-grid"></div>
+                <div id="music-downloaded-empty" class="books-empty" style="display:none;">
+                    <div class="books-empty-icon"><i class="fas fa-download"></i></div>
+                    <h3>No downloaded tracks yet</h3>
+                    <p>Download tracks to listen offline.</p>
+                </div>
+            </div>
+
             
         </div>
+    </div>
+
+    <!-- Download Progress Modal -->
+    <div id="music-download-modal" class="books-reader-modal" style="display:none; background: rgba(0,0,0,0.85); backdrop-filter: blur(10px); align-items: center; justify-content: center; padding: 0.75rem;">
+        <div class="books-reader-content" style="max-width:300px; width:90%; margin: 0 auto; border:2px solid rgba(16,185,129,0.4); border-radius:12px; overflow:hidden; box-shadow: 0 12px 36px rgba(0,0,0,0.55);">
+            <div style="background: linear-gradient(135deg, rgba(16,185,129,0.15), rgba(5,150,105,0.15)); border-bottom: 1px solid rgba(16,185,129,0.2); padding: 0.6rem 0.85rem; display: flex; align-items: center; justify-content: space-between;">
+                <div style="display:flex; align-items:center; gap:0.4rem;">
+                    <i class="fas fa-download" style="color:#10b981; font-size:0.85rem;"></i>
+                    <span style="font-size:0.85rem; font-weight:600; color:var(--light);">Downloading</span>
+                </div>
+                <div style="display:flex; gap:0.25rem;">
+                    <button id="music-download-minimize-btn" style="background:none; border:none; color:#38bdf8; cursor:pointer; padding:0.2rem 0.4rem; font-size:0.85rem; border-radius:4px; transition: background 0.2s;" onmouseover="this.style.background='rgba(56,189,248,0.1)'" onmouseout="this.style.background='none'" title="Minimize">
+                        <i class="fas fa-minus"></i>
+                    </button>
+                    <button id="music-download-cancel-btn" style="background:none; border:none; color:#ef4444; cursor:pointer; padding:0.2rem 0.4rem; font-size:0.85rem; border-radius:4px; transition: background 0.2s;" onmouseover="this.style.background='rgba(239,68,68,0.1)'" onmouseout="this.style.background='none'" title="Cancel">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+            <div style="padding:0.85rem;">
+                <div id="music-download-info" style="margin-bottom:0.6rem;">
+                    <div id="music-download-song-name" style="font-weight:600; color:var(--light); margin-bottom:0.1rem; font-size:0.8rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"></div>
+                    <div id="music-download-artist-name" style="color:#10b981; font-size:0.75rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"></div>
+                </div>
+                <div style="width:100%; height:5px; background: rgba(16,185,129,0.15); border-radius:2.5px; overflow:hidden; border: 1px solid rgba(16,185,129,0.2);">
+                    <div id="music-download-progress-fill" style="height:100%; width:0%; background: linear-gradient(90deg, #10b981, #059669, #10b981); background-size: 200% 100%; animation: shimmer 2s infinite; transition: width 0.4s ease;"></div>
+                </div>
+                <div id="music-download-status" style="margin-top:0.4rem; text-align:center; color:var(--secondary); font-size:0.75rem;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Minimized Download Progress (in notification area) -->
+    <div id="music-download-minimized" style="display:none; position:fixed; bottom:20px; right:20px; background:rgba(26,26,46,0.95); border:2px solid rgba(16,185,129,0.4); border-radius:10px; padding:0.75rem 1rem; min-width:280px; box-shadow: 0 8px 24px rgba(0,0,0,0.4); z-index:9999;">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:0.5rem;">
+            <div style="display:flex; align-items:center; gap:0.5rem;">
+                <i class="fas fa-download" style="color:#10b981; font-size:0.9rem;"></i>
+                <span style="font-size:0.85rem; font-weight:600; color:var(--light);">Downloading...</span>
+            </div>
+            <div style="display:flex; gap:0.25rem;">
+                <button id="music-download-restore-btn" style="background:none; border:none; color:#38bdf8; cursor:pointer; padding:0.2rem 0.4rem; font-size:0.85rem; border-radius:4px; transition: background 0.2s;" onmouseover="this.style.background='rgba(56,189,248,0.1)'" onmouseout="this.style.background='none'" title="Restore">
+                    <i class="fas fa-window-maximize"></i>
+                </button>
+                <button id="music-download-cancel-minimized-btn" style="background:none; border:none; color:#ef4444; cursor:pointer; padding:0.2rem 0.4rem; font-size:0.85rem; border-radius:4px; transition: background 0.2s;" onmouseover="this.style.background='rgba(239,68,68,0.1)'" onmouseout="this.style.background='none'" title="Cancel">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        </div>
+        <div id="music-download-minimized-info" style="margin-bottom:0.5rem;">
+            <div id="music-download-minimized-song" style="font-weight:600; color:var(--light); font-size:0.8rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"></div>
+            <div id="music-download-minimized-artist" style="color:#10b981; font-size:0.75rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"></div>
+        </div>
+        <div style="width:100%; height:5px; background: rgba(16,185,129,0.15); border-radius:2.5px; overflow:hidden; border: 1px solid rgba(16,185,129,0.2);">
+            <div id="music-download-minimized-progress" style="height:100%; width:0%; background: linear-gradient(90deg, #10b981, #059669, #10b981); background-size: 200% 100%; animation: shimmer 2s infinite; transition: width 0.4s ease;"></div>
+        </div>
+        <div id="music-download-minimized-status" style="margin-top:0.4rem; text-align:center; color:var(--secondary); font-size:0.75rem;"></div>
     </div>
 
     <!-- Music Player Modal (transparent overlay + custom controls) -->
@@ -9343,13 +9452,13 @@ Your browser does not support the video tag.
         
         // Check if user has seen the update announcement
         function checkUpdateAnnouncement() {
-            // Update key for v1.4.9 so existing users see the new notes
-            const hasSeenUpdate = localStorage.getItem('hasSeenUpdate_v149');
+            // Update key for v1.5.3 so existing users see the new notes
+            const hasSeenUpdate = localStorage.getItem('hasSeenUpdate_v153');
             if (!hasSeenUpdate) {
                 // Wait a bit for the page to fully load before showing the update modal
                 setTimeout(() => {
                     showUpdateModal();
-                    localStorage.setItem('hasSeenUpdate_v149', 'true');
+                    localStorage.setItem('hasSeenUpdate_v153', 'true');
                 }, 1500);
             }
         }
@@ -13734,6 +13843,10 @@ Your browser does not support the video tag.
             }
 
             function displayMusicResults(results, q) {
+                // Store results for re-rendering after download
+                window.currentMusicResults = results;
+                window.currentMusicQuery = q;
+                
                 musicResultsTitle.textContent = `Search Results for "${q}"`;
                 musicResultsCount.textContent = `${results.length} item${results.length !== 1 ? 's' : ''} found`;
                 // Ensure we are not in playlist-open mode when showing generic results
@@ -13759,6 +13872,7 @@ Your browser does not support the video tag.
                     const card = document.createElement('div');
                     card.className = 'music-card';
                     const isSaved = getMyMusic().some(x => x.id == trackId);
+                    const isDownloaded = isTrackDownloaded(trackId);
                     card.innerHTML = `
                         <div class="music-cover">
                             <img src="${img}" alt="${title}">
@@ -13770,8 +13884,10 @@ Your browser does not support the video tag.
                                 <button class="music-play-btn" data-id="${trackId}" data-title="${title.replace(/\"/g,'&quot;')}" data-artist="${artistName.replace(/\"/g,'&quot;')}" data-cover="${img}"><i class="fas fa-play"></i> Play</button>
                                 <button class="music-heart-btn ${isSaved ? 'added' : ''}" title="${isSaved ? 'In My Music' : 'Add to My Music'}" data-id="${trackId}" data-title="${title.replace(/\"/g,'&quot;')}" data-artist="${artistName.replace(/\"/g,'&quot;')}" data-cover="${img}"><i class="fas ${isSaved ? 'fa-heart' : 'fa-heart'}"></i></button>
                                 <button class="music-plus-btn" title="Add to Playlist" data-id="${trackId}" data-title="${title.replace(/\"/g,'&quot;')}" data-artist="${artistName.replace(/\"/g,'&quot;')}" data-cover="${img}"><i class="fas fa-plus"></i></button>
-                                
-                                <button class="music-open-btn" title="Open in TIDAL" data-id="${trackId}"><i class="fas fa-external-link-alt"></i></button>
+                                ${isDownloaded ? 
+                                    `<button class="music-download-btn downloaded" title="Downloaded" data-id="${trackId}" data-title="${title.replace(/\"/g,'&quot;')}" data-artist="${artistName.replace(/\"/g,'&quot;')}" data-cover="${img}"><i class="fas fa-check-circle"></i></button>` : 
+                                    `<button class="music-download-btn" title="Download" data-id="${trackId}" data-title="${title.replace(/\"/g,'&quot;')}" data-artist="${artistName.replace(/\"/g,'&quot;')}" data-cover="${img}"><i class="fas fa-download"></i></button>`
+                                }
                             </div>
                         </div>
                     `;
@@ -13791,18 +13907,6 @@ Your browser does not support the video tag.
                             const artistName = card.querySelector('.music-artist')?.textContent || 'Unknown Artist';
                             const coverSrc = card.querySelector('img')?.src || '';
                             await playMusicTrack({ trackId, title, artistName, coverSrc });
-                        }
-                    });
-                });
-
-                musicResultsGrid.querySelectorAll('.music-open-btn').forEach(btn => {
-                    btn.addEventListener('click', (e) => {
-                        const trackId = e.currentTarget.getAttribute('data-id');
-                        const url = trackId ? `https://tidal.com/browse/track/${trackId}` : null;
-                        if (url && window.electronAPI?.openExternal) {
-                            window.electronAPI.openExternal(url);
-                        } else if (url) {
-                            window.open(url, '_blank');
                         }
                     });
                 });
@@ -13841,6 +13945,24 @@ Your browser does not support the video tag.
                             cover: el.getAttribute('data-cover')
                         };
                         showPlaylistChooser(track);
+                    });
+                });
+
+                // Download music
+                musicResultsGrid.querySelectorAll('.music-download-btn').forEach(btn => {
+                    btn.addEventListener('click', async (e) => {
+                        const el = e.currentTarget;
+                        const trackId = el.getAttribute('data-id');
+                        const title = el.getAttribute('data-title');
+                        const artist = el.getAttribute('data-artist');
+                        const cover = el.getAttribute('data-cover');
+                        
+                        if (isTrackDownloaded(trackId)) {
+                            showNotification('Track already downloaded', 'info');
+                            return;
+                        }
+                        
+                        await downloadMusicTrack(trackId, title, artist, cover);
                     });
                 });
 
@@ -14172,6 +14294,7 @@ Your browser does not support the video tag.
                     const empty = document.getElementById('music-empty');
                     const mySec = document.getElementById('my-music');
                     const plsSec = document.getElementById('music-playlists');
+                    const downloadedSec = document.getElementById('music-downloaded');
                     const albListSec = document.getElementById('music-albums');
                     const albumViewSec = document.getElementById('music-album-view');
                     const showing = sec.style.display !== 'none';
@@ -14188,6 +14311,7 @@ Your browser does not support the video tag.
                         empty.style.display = 'none';
                         mySec.style.display = 'none';
                         plsSec.style.display = 'none';
+                        if (downloadedSec) downloadedSec.style.display = 'none';
                         if (albListSec) albListSec.style.display = 'none';
                         if (albumViewSec) albumViewSec.style.display = 'none';
                     }
@@ -14222,6 +14346,331 @@ Your browser does not support the video tag.
                     return true;
                 }
                 return false;
+            }
+
+            // Downloaded Music storage helpers
+            const DOWNLOADED_MUSIC_KEY = 'pt_downloaded_music_v1';
+            function getDownloadedMusic() {
+                try { return JSON.parse(localStorage.getItem(DOWNLOADED_MUSIC_KEY) || '[]'); } catch(_) { return []; }
+            }
+            function setDownloadedMusic(arr) {
+                try { localStorage.setItem(DOWNLOADED_MUSIC_KEY, JSON.stringify(arr)); } catch(_) {}
+            }
+            function isTrackDownloaded(trackId) {
+                const downloaded = getDownloadedMusic();
+                return downloaded.some(d => d.id === String(trackId));
+            }
+            function addToDownloaded(track) {
+                const downloaded = getDownloadedMusic();
+                if (!downloaded.find(d => d.id === track.id)) {
+                    downloaded.push(track);
+                    setDownloadedMusic(downloaded);
+                    return true;
+                }
+                return false;
+            }
+            function removeFromDownloaded(trackId) {
+                const downloaded = getDownloadedMusic().filter(d => d.id !== String(trackId));
+                setDownloadedMusic(downloaded);
+            }
+
+            // Track current download for cancellation
+            let currentDownloadController = null;
+            let currentDownloadFilePath = null;
+            let currentDownloadId = null;
+            let currentDownloadPoll = null;
+            let currentDownloadCancelled = false;
+            let isDownloadMinimized = false;
+
+            // Helper: fetch image and return as data URL for offline cover storage
+            async function fetchImageAsDataURL(url) {
+                try {
+                    if (!url || url.startsWith('data:')) return url || '';
+                    const res = await fetch(url);
+                    if (!res.ok) throw new Error('Image fetch failed');
+                    const blob = await res.blob();
+                    return await new Promise((resolve, reject) => {
+                        const reader = new FileReader();
+                        reader.onloadend = () => resolve(reader.result);
+                        reader.onerror = reject;
+                        reader.readAsDataURL(blob);
+                    });
+                } catch (e) {
+                    console.warn('Cover to dataURL failed, keeping URL:', e?.message || e);
+                    return url || '';
+                }
+            }
+
+            function updateBothProgressBars(width, status) {
+                // Update modal progress
+                const progressBar = document.getElementById('music-download-progress-fill');
+                const statusText = document.getElementById('music-download-status');
+                if (progressBar) progressBar.style.width = width;
+                if (statusText) statusText.textContent = status;
+                
+                // Update minimized progress
+                const minProgressBar = document.getElementById('music-download-minimized-progress');
+                const minStatusText = document.getElementById('music-download-minimized-status');
+                if (minProgressBar) minProgressBar.style.width = width;
+                if (minStatusText) minStatusText.textContent = status;
+            }
+
+            // Download music track function
+            async function downloadMusicTrack(trackId, title, artistName, coverSrc) {
+                // Create new AbortController for this download
+                currentDownloadController = new AbortController();
+                currentDownloadFilePath = null;
+                isDownloadMinimized = false;
+                // Assign a downloadId immediately so cancel works even before network calls
+                currentDownloadId = Date.now().toString();
+                
+                try {
+                    // Show download modal
+                    const modal = document.getElementById('music-download-modal');
+                    const minimized = document.getElementById('music-download-minimized');
+                    const songNameEl = document.getElementById('music-download-song-name');
+                    const artistNameEl = document.getElementById('music-download-artist-name');
+                    const minSongEl = document.getElementById('music-download-minimized-song');
+                    const minArtistEl = document.getElementById('music-download-minimized-artist');
+                    
+                    // Immediately show minimized notification instead of full modal
+                    modal.style.display = 'none';
+                    minimized.style.display = 'block';
+                    isDownloadMinimized = true;
+                    if (songNameEl) songNameEl.textContent = title;
+                    if (artistNameEl) artistNameEl.textContent = artistName;
+                    if (minSongEl) minSongEl.textContent = title;
+                    if (minArtistEl) minArtistEl.textContent = artistName;
+
+                    updateBothProgressBars('0%', 'Fetching track information...');
+
+                    // Use the same API as playMusicTrack
+                    const data = await musicFetchJson(`/track/?id=${encodeURIComponent(trackId)}&quality=LOSSLESS`);
+                    let trackUrl = null;
+                    if (Array.isArray(data) && data.length >= 3) {
+                        trackUrl = data[2]?.OriginalTrackUrl || data[2]?.originalTrackUrl;
+                    }
+                    if (!trackUrl && Array.isArray(data)) {
+                        for (const item of data) {
+                            const candidate = item?.OriginalTrackUrl || item?.originalTrackUrl;
+                            if (candidate && !candidate.startsWith('http://www.tidal.com')) {
+                                trackUrl = candidate;
+                                break;
+                            }
+                        }
+                    }
+
+                    if (!trackUrl) throw new Error('No valid track URL found');
+
+                    updateBothProgressBars('10%', 'Starting download...');
+
+                    // Use the pre-assigned unique download ID
+                    const downloadId = currentDownloadId;
+                    currentDownloadCancelled = false;
+                    // Real-time updates (no step snapping)
+
+                    // Poll for progress updates BEFORE starting download
+                    const pollProgress = setInterval(async () => {
+                        try {
+                            const progressRes = await fetch(`/api/music/download/progress/${downloadId}`);
+                            if (progressRes.ok) {
+                                const progressData = await progressRes.json();
+                                if (typeof progressData.progress === 'number') {
+                                    const pct = Math.max(0, Math.min(100, progressData.progress));
+                                    updateBothProgressBars(`${pct}%`, `Converting... ${pct}%  (If it looks stuck, please wait a bit longer)`);
+                                }
+                                if (progressData.filePath) {
+                                    currentDownloadFilePath = progressData.filePath;
+                                }
+                                if (progressData.complete) {
+                                    clearInterval(pollProgress);
+                                }
+                            }
+                        } catch (e) {
+                            console.error('Progress poll error:', e);
+                        }
+                    }, 300);
+                    currentDownloadPoll = pollProgress;
+
+                    // Start download (non-blocking with progress polling)
+                    fetch('/api/music/download', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            trackUrl,
+                            songName: title,
+                            artistName,
+                            downloadId,
+                            cover: coverSrc
+                        }),
+                        signal: currentDownloadController.signal
+                    }).then(async (downloadRes) => {
+                        clearInterval(pollProgress);
+                        currentDownloadPoll = null;
+                        
+                        if (!downloadRes.ok) {
+                            const err = await downloadRes.json();
+                            throw new Error(err.error || 'Download failed');
+                        }
+
+                        const result = await downloadRes.json();
+                        currentDownloadFilePath = result.filePath;
+                        
+                        // Add to downloaded list with cover image (stored as data URL for offline when possible)
+                        let coverToStore = coverSrc;
+                        try { coverToStore = await fetchImageAsDataURL(coverSrc); } catch(_) {}
+                        addToDownloaded({
+                            id: String(trackId),
+                            title,
+                            artist: artistName,
+                            cover: coverToStore,
+                            filePath: result.filePath
+                        });
+
+                        // Update UI
+                        updateBothProgressBars('100%', '✓ Download complete!');
+                        
+                        setTimeout(() => {
+                            const modal = document.getElementById('music-download-modal');
+                            const minimized = document.getElementById('music-download-minimized');
+                            modal.style.display = 'none';
+                            minimized.style.display = 'none';
+                            currentDownloadController = null;
+                            currentDownloadFilePath = null;
+                        }, 1500);
+
+                        showNotification(`Downloaded "${title}"`, 'success');
+                        
+                        // Re-render music results to update button
+                        const currentResults = window.currentMusicResults || [];
+                        const currentQuery = window.currentMusicQuery || '';
+                        if (currentResults.length > 0) {
+                            displayMusicResults(currentResults, currentQuery);
+                        }
+                    }).catch((error) => {
+                        clearInterval(pollProgress);
+                        currentDownloadPoll = null;
+                        console.error('Download error:', error);
+                        const modal = document.getElementById('music-download-modal');
+                        const minimized = document.getElementById('music-download-minimized');
+                        modal.style.display = 'none';
+                        minimized.style.display = 'none';
+                        
+                        // Delete partial file if download was cancelled or failed
+                        if (!currentDownloadCancelled && currentDownloadFilePath) {
+                            fetch('/api/music/delete', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ filePath: currentDownloadFilePath })
+                            }).catch(e => console.error('Failed to delete partial file:', e));
+                        }
+                        
+                        currentDownloadController = null;
+                        currentDownloadFilePath = null;
+                        currentDownloadId = null;
+                        
+                        if (error.name === 'AbortError') {
+                            showNotification('Download cancelled', 'info');
+                        } else {
+                            showNotification(`Download failed: ${error.message}`, 'error');
+                        }
+                    });
+
+                } catch (error) {
+                    console.error('Initial download error:', error);
+                    const modal = document.getElementById('music-download-modal');
+                    const minimized = document.getElementById('music-download-minimized');
+                    modal.style.display = 'none';
+                    minimized.style.display = 'none';
+                    currentDownloadController = null;
+                    showNotification(`Failed to start download: ${error.message}`, 'error');
+                }
+            }
+
+            // Minimize download button handler
+            const minimizeDownloadBtn = document.getElementById('music-download-minimize-btn');
+            if (minimizeDownloadBtn) {
+                minimizeDownloadBtn.addEventListener('click', () => {
+                    const modal = document.getElementById('music-download-modal');
+                    const minimized = document.getElementById('music-download-minimized');
+                    modal.style.display = 'none';
+                    minimized.style.display = 'block';
+                    isDownloadMinimized = true;
+                });
+            }
+
+            // Restore download button handler
+            const restoreDownloadBtn = document.getElementById('music-download-restore-btn');
+            if (restoreDownloadBtn) {
+                restoreDownloadBtn.addEventListener('click', () => {
+                    const modal = document.getElementById('music-download-modal');
+                    const minimized = document.getElementById('music-download-minimized');
+                    modal.style.display = 'flex';
+                    minimized.style.display = 'none';
+                    isDownloadMinimized = false;
+                });
+            }
+
+            // Cancel download button handler (modal)
+            const cancelDownloadBtn = document.getElementById('music-download-cancel-btn');
+            if (cancelDownloadBtn) {
+                cancelDownloadBtn.addEventListener('click', async () => {
+                    try {
+                        currentDownloadCancelled = true;
+                        if (currentDownloadPoll) { clearInterval(currentDownloadPoll); currentDownloadPoll = null; }
+                        if (currentDownloadController) {
+                            try { currentDownloadController.abort(); } catch(_) {}
+                        }
+                        if (currentDownloadId) {
+                            await fetch('/api/music/download/cancel', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ downloadId: currentDownloadId })
+                            }).catch(()=>{});
+                        }
+                    } finally {
+                        const modal = document.getElementById('music-download-modal');
+                        const minimized = document.getElementById('music-download-minimized');
+                        if (modal) modal.style.display = 'none';
+                        if (minimized) minimized.style.display = 'none';
+                        currentDownloadController = null;
+                        currentDownloadFilePath = null;
+                        currentDownloadId = null;
+                        updateBothProgressBars('0%', '');
+                        showNotification('Download cancelled', 'info');
+                    }
+                });
+            }
+
+            // Cancel download button handler (minimized)
+            const cancelDownloadMinBtn = document.getElementById('music-download-cancel-minimized-btn');
+            if (cancelDownloadMinBtn) {
+                cancelDownloadMinBtn.addEventListener('click', async () => {
+                    try {
+                        currentDownloadCancelled = true;
+                        if (currentDownloadPoll) { clearInterval(currentDownloadPoll); currentDownloadPoll = null; }
+                        if (currentDownloadController) {
+                            try { currentDownloadController.abort(); } catch(_) {}
+                        }
+                        if (currentDownloadId) {
+                            await fetch('/api/music/download/cancel', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ downloadId: currentDownloadId })
+                            }).catch(()=>{});
+                        }
+                    } finally {
+                        const modal = document.getElementById('music-download-modal');
+                        const minimized = document.getElementById('music-download-minimized');
+                        if (modal) modal.style.display = 'none';
+                        if (minimized) minimized.style.display = 'none';
+                        currentDownloadController = null;
+                        currentDownloadFilePath = null;
+                        currentDownloadId = null;
+                        updateBothProgressBars('0%', '');
+                        showNotification('Download cancelled', 'info');
+                    }
+                });
             }
 
             function renderPlaylists() {
@@ -14419,6 +14868,117 @@ Your browser does not support the video tag.
                 if (playlistChooserNewName) playlistChooserNewName.value = '';
             }
 
+            function renderDownloadedMusic() {
+                const wrap = document.getElementById('music-downloaded');
+                if (!wrap) return;
+                const grid = document.getElementById('music-downloaded-grid');
+                const empty = document.getElementById('music-downloaded-empty');
+                const countEl = document.getElementById('music-downloaded-count');
+                const downloaded = getDownloadedMusic();
+                grid.innerHTML = '';
+                if (!downloaded.length) {
+                    if (countEl) countEl.textContent = '0 items';
+                    empty.style.display = '';
+                    return;
+                }
+                empty.style.display = 'none';
+                if (countEl) countEl.textContent = `${downloaded.length} item${downloaded.length !== 1 ? 's' : ''}`;
+                downloaded.forEach(track => {
+                    const card = document.createElement('div');
+                    card.className = 'music-card';
+                    card.innerHTML = `
+                        <div class="music-cover"><img src="${track.cover}" alt="${track.title}"></div>
+                        <div class="music-info">
+                            <div class="music-title">${track.title}</div>
+                            <div class="music-artist">${track.artist}</div>
+                            <div class="music-actions">
+                                <button class="music-play-btn" data-id="${track.id}" data-title="${track.title}" data-artist="${track.artist}" data-cover="${track.cover}"><i class="fas fa-play"></i> Play</button>
+                                <button class="music-folder-btn" data-path="${track.filePath}" title="Open Folder"><i class="fas fa-folder-open"></i></button>
+                                <button class="music-delete-downloaded-btn" data-id="${track.id}" data-path="${track.filePath}" title="Delete"><i class="fas fa-trash"></i></button>
+                            </div>
+                        </div>`;
+                    grid.appendChild(card);
+                });
+
+                // Play button handler
+                grid.querySelectorAll('.music-play-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const el = e.currentTarget;
+                        const tracks = downloaded.map(t => ({ id: String(t.id), title: t.title, artist: t.artist, cover: t.cover }));
+                        const idx = tracks.findIndex(t => String(t.id) === String(el.getAttribute('data-id')));
+                        if (idx >= 0 && tracks.length) {
+                            setPlayQueue(tracks, idx);
+                        } else {
+                            playMusicTrack({
+                                trackId: el.getAttribute('data-id'),
+                                title: el.getAttribute('data-title'),
+                                artistName: el.getAttribute('data-artist'),
+                                coverSrc: el.getAttribute('data-cover')
+                            });
+                        }
+                    });
+                });
+
+                // Open folder button handler
+                grid.querySelectorAll('.music-folder-btn').forEach(btn => {
+                    btn.addEventListener('click', async (e) => {
+                        const filePath = e.currentTarget.getAttribute('data-path');
+                        if (filePath && window.electronAPI?.showFolderInExplorer) {
+                            try {
+                                // Get the directory path from file path
+                                const dirPath = filePath.substring(0, filePath.lastIndexOf('\\'));
+                                await window.electronAPI.showFolderInExplorer(dirPath);
+                            } catch (error) {
+                                console.error('Failed to open folder:', error);
+                                showNotification('Failed to open folder', 'error');
+                            }
+                        }
+                    });
+                });
+
+                // Delete button handler
+                grid.querySelectorAll('.music-delete-downloaded-btn').forEach(btn => {
+                    btn.addEventListener('click', async (e) => {
+                        const trackId = e.currentTarget.getAttribute('data-id');
+                        const filePath = e.currentTarget.getAttribute('data-path');
+                        
+                        if (!confirm('Delete this downloaded track?')) return;
+
+                        try {
+                            // Delete file from disk
+                            const res = await fetch('/api/music/delete', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ filePath })
+                            });
+
+                            if (!res.ok) {
+                                const err = await res.json();
+                                throw new Error(err.error || 'Delete failed');
+                            }
+
+                            // Remove from downloaded list
+                            removeFromDownloaded(trackId);
+                            
+                            // Re-render
+                            renderDownloadedMusic();
+                            showNotification('Track deleted', 'success');
+
+                            // Re-render current music results if showing to update button
+                            const currentResults = window.currentMusicResults || [];
+                            const currentQuery = window.currentMusicQuery || '';
+                            if (currentResults.length > 0) {
+                                displayMusicResults(currentResults, currentQuery);
+                            }
+
+                        } catch (error) {
+                            console.error('Delete error:', error);
+                            showNotification(`Delete failed: ${error.message}`, 'error');
+                        }
+                    });
+                });
+            }
+
             // Playlist chooser events
             if (playlistChooserBack && playlistChooser) {
                 playlistChooserBack.addEventListener('click', closePlaylistChooser);
@@ -14468,7 +15028,6 @@ Your browser does not support the video tag.
                             <div class="music-artist">${item.artist}</div>
                             <div class="music-actions">
                                 <button class="music-play-btn" data-id="${item.id}"><i class="fas fa-play"></i> Play</button>
-                                <button class="music-open-btn" title="Open in TIDAL" data-id="${item.id}"><i class="fas fa-external-link-alt"></i></button>
                                 <button class="music-add-btn" title="Remove from My Music" data-remove="true" data-id="${item.id}"><i class="fas fa-trash"></i></button>
                             </div>
                         </div>`;
@@ -14491,14 +15050,6 @@ Your browser does not support the video tag.
                         }
                     });
                 });
-                grid.querySelectorAll('.music-open-btn').forEach(btn => {
-                    btn.addEventListener('click', (e) => {
-                        const id = e.currentTarget.getAttribute('data-id');
-                        const url = id ? `https://tidal.com/browse/track/${id}` : null;
-                        if (url && window.electronAPI?.openExternal) window.electronAPI.openExternal(url);
-                        else if (url) window.open(url, '_blank');
-                    });
-                });
                 grid.querySelectorAll('.music-add-btn[data-remove="true"]').forEach(btn => {
                     btn.addEventListener('click', (e) => {
                         const id = e.currentTarget.getAttribute('data-id');
@@ -14518,6 +15069,7 @@ Your browser does not support the video tag.
                     const resSec = document.getElementById('music-results');
                     const empty = document.getElementById('music-empty');
                     const plsSec = document.getElementById('music-playlists');
+                    const downloadedSec = document.getElementById('music-downloaded');
                     const myAlbumsSec2 = document.getElementById('my-albums');
                     const albumListSec2 = document.getElementById('music-albums');
                     const albumViewSec2 = document.getElementById('music-album-view');
@@ -14533,6 +15085,7 @@ Your browser does not support the video tag.
                             empty.style.display = '';
                         }
                         plsSec.style.display = 'none';
+                        if (downloadedSec) downloadedSec.style.display = 'none';
                         if (myAlbumsSec2) myAlbumsSec2.style.display = 'none';
                         if (albumListSec2) albumListSec2.style.display = 'none';
                         if (albumViewSec2) albumViewSec2.style.display = 'none';
@@ -14544,6 +15097,7 @@ Your browser does not support the video tag.
                         resSec.style.display = 'none';
                         empty.style.display = 'none';
                         plsSec.style.display = 'none';
+                        if (downloadedSec) downloadedSec.style.display = 'none';
                         if (myAlbumsSec2) myAlbumsSec2.style.display = 'none';
                         if (albumListSec2) albumListSec2.style.display = 'none';
                         if (albumViewSec2) albumViewSec2.style.display = 'none';
@@ -14561,6 +15115,7 @@ Your browser does not support the video tag.
                     const resSec = document.getElementById('music-results');
                     const empty = document.getElementById('music-empty');
                     const mySec = document.getElementById('my-music');
+                    const downloadedSec = document.getElementById('music-downloaded');
                     const myAlbumsSec3 = document.getElementById('my-albums');
                     const showing = sec.style.display !== 'none';
                     if (showing) {
@@ -14576,12 +15131,46 @@ Your browser does not support the video tag.
                         resSec.style.display = 'none';
                         empty.style.display = 'none';
                         mySec.style.display = 'none';
+                        if (downloadedSec) downloadedSec.style.display = 'none';
                         if (myAlbumsSec3) myAlbumsSec3.style.display = 'none';
                         const musicPage = document.getElementById('music-page');
                         if (musicPage) musicPage.classList.remove('playlist-open');
                     }
                 });
             }
+
+            // Toggle Downloaded
+            const downloadedBtn = document.getElementById('music-downloaded-btn');
+            if (downloadedBtn) {
+                downloadedBtn.addEventListener('click', () => {
+                    const sec = document.getElementById('music-downloaded');
+                    const resSec = document.getElementById('music-results');
+                    const empty = document.getElementById('music-empty');
+                    const mySec = document.getElementById('my-music');
+                    const plsSec = document.getElementById('music-playlists');
+                    const myAlbumsSec = document.getElementById('my-albums');
+                    const showing = sec.style.display !== 'none';
+                    if (showing) {
+                        sec.style.display = 'none';
+                        if (musicResultsGrid && musicResultsGrid.children.length) { resSec.style.display = 'block'; empty.style.display = 'none'; }
+                        else { resSec.style.display = 'none'; empty.style.display = ''; }
+                        const musicPage = document.getElementById('music-page');
+                        if (musicPage) musicPage.classList.remove('playlist-open');
+                        if (myAlbumsSec) myAlbumsSec.style.display = 'none';
+                    } else {
+                        renderDownloadedMusic();
+                        sec.style.display = 'block';
+                        resSec.style.display = 'none';
+                        empty.style.display = 'none';
+                        mySec.style.display = 'none';
+                        if (plsSec) plsSec.style.display = 'none';
+                        if (myAlbumsSec) myAlbumsSec.style.display = 'none';
+                        const musicPage = document.getElementById('music-page');
+                        if (musicPage) musicPage.classList.remove('playlist-open');
+                    }
+                });
+            }
+
             const createPlBtn = document.getElementById('playlist-create-btn');
             const plNameInput = document.getElementById('playlist-name-input');
             if (createPlBtn) {
@@ -14607,6 +15196,47 @@ Your browser does not support the video tag.
                     return;
                 }
                 try {
+                    // Check if this track is already downloaded
+                    const downloaded = getDownloadedMusic();
+                    const downloadedTrack = downloaded.find(t => t.id === String(trackId));
+                    
+                    if (downloadedTrack && downloadedTrack.filePath) {
+                        // Play from downloaded file
+                        console.log('[MUSIC] Playing downloaded file:', downloadedTrack.filePath);
+                        
+                        musicModal.style.display = 'flex';
+                        musicModalTitle.textContent = 'Now Playing (Offline)';
+                        musicSongTitle.textContent = title;
+                        musicArtist.textContent = artistName;
+                        if (coverSrc) musicCover.src = coverSrc;
+                        musicPlayPauseBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+
+                        // Clear existing sources
+                        while (musicAudio.firstChild) musicAudio.removeChild(musicAudio.firstChild);
+                        
+                        // Use local file endpoint
+                        const source = document.createElement('source');
+                        source.src = `/api/music/serve/${encodeURIComponent(downloadedTrack.filePath)}`;
+                        source.type = 'audio/flac';
+                        musicAudio.appendChild(source);
+
+                        // Load then play
+                        musicAudio.load();
+                        try {
+                            await musicAudio.play();
+                        } catch (err) {
+                            await new Promise(r => setTimeout(r, 150));
+                            await musicAudio.play();
+                        }
+                        musicPlayPauseBtn.innerHTML = '<i class="fas fa-pause"></i>';
+                        updateTimeDisplays();
+                        
+                        // Update Discord presence for music
+                        updateDiscordForMusic(title, artistName, '');
+                        return;
+                    }
+                    
+                    // Not downloaded - stream from TIDAL
                     musicModal.style.display = 'flex';
                     musicModalTitle.textContent = 'Now Playing';
                     musicSongTitle.textContent = title;
@@ -16417,6 +17047,20 @@ Your browser does not support the video tag.
                 if (section === 'trakt' && el && !el.dataset.initialized) {
                     initializeTraktPage();
                     el.dataset.initialized = 'true';
+                }
+                
+                // Update Discord presence for MiniGames
+                if (section === 'minigames') {
+                    if (window.electronAPI?.updateDiscordPresence) {
+                        window.electronAPI.updateDiscordPresence({
+                            details: 'Playing mini games',
+                            state: 'PlayTorrio MiniGames',
+                            largeImageKey: 'playtorrio',
+                            largeImageText: 'PlayTorrio',
+                            smallImageKey: 'gaming',
+                            smallImageText: 'Gaming'
+                        }).catch(err => console.error('Discord presence error:', err));
+                    }
                 }
             }
 
