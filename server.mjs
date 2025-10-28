@@ -3944,8 +3944,21 @@ export function startServer(userDataPath) {
             }
 
             // Start ffmpeg process
-            console.log('[Music Download] Starting FFmpeg process...');
-            const ffmpeg = spawn(ffmpegPath, [
+            // Resolve ffmpeg binary path (handle asar packaging)
+            let resolvedFfmpegPath = ffmpegPath || 'ffmpeg';
+            try {
+                if (resolvedFfmpegPath && resolvedFfmpegPath.includes('app.asar')) {
+                    resolvedFfmpegPath = resolvedFfmpegPath.replace('app.asar', 'app.asar.unpacked');
+                }
+                // If path doesn't exist (packaged quirks), fall back to PATH lookup
+                if (resolvedFfmpegPath && !fs.existsSync(resolvedFfmpegPath)) {
+                    console.warn(`[Music Download] ffmpeg binary not found at ${resolvedFfmpegPath}. Falling back to PATH executable.`);
+                    resolvedFfmpegPath = 'ffmpeg';
+                }
+            } catch (_) {}
+
+            console.log('[Music Download] Starting FFmpeg process using:', resolvedFfmpegPath);
+            const ffmpeg = spawn(resolvedFfmpegPath, [
                 '-i', trackUrl,
                 '-vn',
                 '-ar', '44100',
