@@ -6825,10 +6825,18 @@
                         <span id="music-current-time">0:00</span>
                         <span id="music-total-time">0:00</span>
                     </div>
-                    <div class="audio-controls-buttons" style="display:flex; justify-content:center; align-items:center; gap:1rem; margin-top:1rem;">
+                    <div class="audio-controls-buttons" style="display:flex; justify-content:center; align-items:center; gap:1rem; margin-top:1rem; flex-wrap:wrap;">
+                        <button class="audio-control-btn" id="music-prev-track-btn" title="Previous track" style="background: rgba(236,72,153,0.1); border:1px solid rgba(236,72,153,0.3); color:#ec4899; border-radius:50%; width:42px; height:42px; display:flex; align-items:center; justify-content:center;"><i class="fas fa-step-backward"></i></button>
                         <button class="audio-control-btn" id="music-backward-btn" title="Back 10s" style="background: rgba(236,72,153,0.1); border:1px solid rgba(236,72,153,0.3); color:#ec4899; border-radius:50%; width:46px; height:46px; display:flex; align-items:center; justify-content:center;"><i class="fas fa-backward"></i></button>
                         <button class="audio-control-btn" id="music-play-pause-btn" title="Play/Pause" style="background: linear-gradient(135deg, #ec4899, #a855f7); color:white; border:none; border-radius:50%; width:56px; height:56px; display:flex; align-items:center; justify-content:center; font-size:1.1rem;"><i class="fas fa-play"></i></button>
                         <button class="audio-control-btn" id="music-forward-btn" title="Forward 10s" style="background: rgba(236,72,153,0.1); border:1px solid rgba(236,72,153,0.3); color:#ec4899; border-radius:50%; width:46px; height:46px; display:flex; align-items:center; justify-content:center;"><i class="fas fa-forward"></i></button>
+                        <button class="audio-control-btn" id="music-next-track-btn" title="Next track" style="background: rgba(236,72,153,0.1); border:1px solid rgba(236,72,153,0.3); color:#ec4899; border-radius:50%; width:42px; height:42px; display:flex; align-items:center; justify-content:center;"><i class="fas fa-step-forward"></i></button>
+                    </div>
+                    <div style="display:flex; justify-content:center; align-items:center; margin-top:0.5rem;">
+                        <button id="music-autoplay-toggle" title="Autoplay next track" style="display:inline-flex; align-items:center; gap:0.4rem; padding:0.35rem 0.7rem; border-radius:999px; background: rgba(236,72,153,0.08); border:1px solid rgba(236,72,153,0.35); color:#ec4899; font-weight:600;">
+                            <i class="fas fa-play-circle"></i>
+                            <span>Autoplay Next</span>
+                        </button>
                     </div>
                     <div class="audio-volume-control" style="display:flex; align-items:center; gap:0.75rem; margin-top:1rem;">
                         <i class="fas fa-volume-up" id="music-volume-icon" style="color:#ec4899;"></i>
@@ -13540,12 +13548,15 @@ Your browser does not support the video tag.
             const musicPlayPauseBtn = document.getElementById('music-play-pause-btn');
             const musicBackwardBtn = document.getElementById('music-backward-btn');
             const musicForwardBtn = document.getElementById('music-forward-btn');
+            const musicPrevTrackBtn = document.getElementById('music-prev-track-btn');
+            const musicNextTrackBtn = document.getElementById('music-next-track-btn');
             const musicProgressBar = document.getElementById('music-progress-bar');
             const musicProgressFill = document.getElementById('music-progress-fill');
             const musicCurrentTime = document.getElementById('music-current-time');
             const musicTotalTime = document.getElementById('music-total-time');
             const musicVolumeSlider = document.getElementById('music-volume-slider');
             const musicVolumeFill = document.getElementById('music-volume-fill');
+            const musicAutoplayToggle = document.getElementById('music-autoplay-toggle');
             // Playlist chooser modal refs
             const playlistChooser = document.getElementById('music-playlist-chooser');
             const playlistChooserBack = document.getElementById('playlist-chooser-back');
@@ -13668,12 +13679,15 @@ Your browser does not support the video tag.
                 if (albumViewSec) albumViewSec.style.display = 'none';
                 musicResultsGrid.innerHTML = '';
 
+                // Store for building a queue from search results
+                const currentSearchTracks = [];
                 results.forEach(item => {
                     const trackId = item.id || item.trackId || item.itemId;
                     const title = item.title || item.trackTitle || 'Unknown Title';
                     const artistName = (item.artist && (item.artist.name || item.artist)) || (item.artists && item.artists[0]?.name) || 'Unknown Artist';
                     const cover = item.album?.cover || item.cover || item.albumCover || '';
                     const img = tidalCoverUrl(cover) || 'https://via.placeholder.com/320x320?text=Music';
+                    if (trackId) currentSearchTracks.push({ id: String(trackId), title, artist: artistName, cover: img });
 
                     const card = document.createElement('div');
                     card.className = 'music-card';
@@ -13700,12 +13714,17 @@ Your browser does not support the video tag.
                 // Wire up buttons
                 musicResultsGrid.querySelectorAll('.music-play-btn').forEach(btn => {
                     btn.addEventListener('click', async (e) => {
-                        const trackId = e.currentTarget.getAttribute('data-id');
-                        const card = e.currentTarget.closest('.music-card');
-                        const title = card.querySelector('.music-title')?.textContent || 'Unknown Title';
-                        const artistName = card.querySelector('.music-artist')?.textContent || 'Unknown Artist';
-                        const coverSrc = card.querySelector('img')?.src || '';
-                        await playMusicTrack({ trackId, title, artistName, coverSrc });
+                        const trackId = String(e.currentTarget.getAttribute('data-id'));
+                        const idx = currentSearchTracks.findIndex(t => String(t.id) === trackId);
+                        if (idx >= 0) {
+                            setPlayQueue(currentSearchTracks, idx);
+                        } else {
+                            const card = e.currentTarget.closest('.music-card');
+                            const title = card.querySelector('.music-title')?.textContent || 'Unknown Title';
+                            const artistName = card.querySelector('.music-artist')?.textContent || 'Unknown Artist';
+                            const coverSrc = card.querySelector('img')?.src || '';
+                            await playMusicTrack({ trackId, title, artistName, coverSrc });
+                        }
                     });
                 });
 
@@ -13933,7 +13952,13 @@ Your browser does not support the video tag.
 
                     row.querySelector('.track-play-btn').addEventListener('click', () => {
                         if (!t.id) { showNotification('Unable to play: missing track id', 'error'); return; }
-                        playMusicTrack({ trackId: t.id, title: trackTitle, artistName, coverSrc });
+                        // Use the prebuilt album queue so next/prev works
+                        const idx = currentAlbumTracks.findIndex(x => String(x.id) === String(t.id));
+                        if (idx >= 0) {
+                            setPlayQueue(currentAlbumTracks, idx);
+                        } else {
+                            playMusicTrack({ trackId: t.id, title: trackTitle, artistName, coverSrc });
+                        }
                     });
                     row.querySelector('.track-plus-btn').addEventListener('click', () => {
                         if (!t.id) { showNotification('Unable to add: missing track id', 'error'); return; }
@@ -14254,12 +14279,19 @@ Your browser does not support the video tag.
                 musicResultsGrid.querySelectorAll('.music-play-btn').forEach(btn => {
                     btn.addEventListener('click', (e) => {
                         const el = e.currentTarget;
-                        playMusicTrack({
-                            trackId: el.getAttribute('data-id'),
-                            title: el.getAttribute('data-title'),
-                            artistName: el.getAttribute('data-artist'),
-                            coverSrc: el.getAttribute('data-cover')
-                        });
+                        // When inside a playlist, set queue to that playlist's tracks
+                        const tracks = (pl.tracks || []).map(t => ({ id: String(t.id), title: t.title, artist: t.artist, cover: t.cover }));
+                        const idx = tracks.findIndex(t => String(t.id) === String(el.getAttribute('data-id')));
+                        if (idx >= 0 && tracks.length) {
+                            setPlayQueue(tracks, idx);
+                        } else {
+                            playMusicTrack({
+                                trackId: el.getAttribute('data-id'),
+                                title: el.getAttribute('data-title'),
+                                artistName: el.getAttribute('data-artist'),
+                                coverSrc: el.getAttribute('data-cover')
+                            });
+                        }
                     });
                 });
                 musicResultsGrid.querySelectorAll('.playlist-remove-btn').forEach(btn => {
@@ -14378,12 +14410,18 @@ Your browser does not support the video tag.
                 // wire play/open
                 grid.querySelectorAll('.music-play-btn').forEach(btn => {
                     btn.addEventListener('click', async (e) => {
-                        const id = e.currentTarget.getAttribute('data-id');
-                        const card = e.currentTarget.closest('.music-card');
-                        const title = card.querySelector('.music-title')?.textContent || 'Unknown Title';
-                        const artistName = card.querySelector('.music-artist')?.textContent || 'Unknown Artist';
-                        const coverSrc = card.querySelector('img')?.src || '';
-                        await playMusicTrack({ trackId: id, title, artistName, coverSrc });
+                        const id = String(e.currentTarget.getAttribute('data-id'));
+                        const list = getMyMusic().map(x => ({ id: String(x.id), title: x.title, artist: x.artist, cover: x.cover }));
+                        const idx = list.findIndex(x => String(x.id) === id);
+                        if (idx >= 0 && list.length) {
+                            setPlayQueue(list, idx);
+                        } else {
+                            const card = e.currentTarget.closest('.music-card');
+                            const title = card.querySelector('.music-title')?.textContent || 'Unknown Title';
+                            const artistName = card.querySelector('.music-artist')?.textContent || 'Unknown Artist';
+                            const coverSrc = card.querySelector('img')?.src || '';
+                            await playMusicTrack({ trackId: id, title, artistName, coverSrc });
+                        }
                     });
                 });
                 grid.querySelectorAll('.music-open-btn').forEach(btn => {
@@ -14582,9 +14620,52 @@ Your browser does not support the video tag.
                 if (musicModal) musicModal.style.display = 'none';
             }
 
-            // Play All functionality
+            // Play All functionality and queue management
             let currentPlayQueue = [];
             let currentQueueIndex = 0;
+            const MUSIC_AUTOPLAY_KEY = 'pt_music_autoplay_next_v1';
+            let musicAutoPlayNext = false;
+
+            // hydrate autoplay setting
+            try {
+                const savedAuto = localStorage.getItem(MUSIC_AUTOPLAY_KEY);
+                musicAutoPlayNext = savedAuto === '1';
+            } catch(_) {}
+
+            function updateAutoplayToggleUI() {
+                if (!musicAutoplayToggle) return;
+                if (musicAutoPlayNext) {
+                    musicAutoplayToggle.style.background = 'linear-gradient(135deg, rgba(236,72,153,0.25), rgba(168,85,247,0.25))';
+                    musicAutoplayToggle.style.borderColor = 'rgba(236,72,153,0.55)';
+                    musicAutoplayToggle.style.color = '#fff';
+                } else {
+                    musicAutoplayToggle.style.background = 'rgba(236,72,153,0.08)';
+                    musicAutoplayToggle.style.borderColor = 'rgba(236,72,153,0.35)';
+                    musicAutoplayToggle.style.color = '#ec4899';
+                }
+            }
+            updateAutoplayToggleUI();
+            if (musicAutoplayToggle) {
+                musicAutoplayToggle.addEventListener('click', () => {
+                    musicAutoPlayNext = !musicAutoPlayNext;
+                    try { localStorage.setItem(MUSIC_AUTOPLAY_KEY, musicAutoPlayNext ? '1' : '0'); } catch(_) {}
+                    updateAutoplayToggleUI();
+                    showNotification(`Autoplay ${musicAutoPlayNext ? 'enabled' : 'disabled'}`, 'info');
+                });
+            }
+
+            function setPlayQueue(tracks, startIndex) {
+                if (!Array.isArray(tracks) || tracks.length === 0) {
+                    currentPlayQueue = [];
+                    currentQueueIndex = 0;
+                    return false;
+                }
+                currentPlayQueue = tracks;
+                currentQueueIndex = Math.max(0, Math.min(startIndex || 0, tracks.length - 1));
+                const t = currentPlayQueue[currentQueueIndex];
+                playMusicTrack({ trackId: t.id, title: t.title, artistName: t.artist, coverSrc: t.cover });
+                return true;
+            }
 
             function playAllTracks(tracks) {
                 if (!tracks || tracks.length === 0) {
@@ -14618,6 +14699,10 @@ Your browser does not support the video tag.
                     currentPlayQueue = [];
                     currentQueueIndex = 0;
                     showNotification('Queue finished', 'info');
+                    if (musicAutoPlayNext) {
+                        // exit the player when autoplay is on and queue ends
+                        closeMusicModal();
+                    }
                     return;
                 }
                 
@@ -14628,6 +14713,24 @@ Your browser does not support the video tag.
                     title: nextTrack.title,
                     artistName: nextTrack.artist,
                     coverSrc: nextTrack.cover
+                });
+            }
+
+            function playPreviousInQueue() {
+                if (currentPlayQueue.length === 0) return;
+                // If we're >3s into the current track, just restart it
+                if ((musicAudio?.currentTime || 0) > 3) {
+                    try { musicAudio.currentTime = 0; } catch(_) {}
+                    return;
+                }
+                if (currentQueueIndex <= 0) return;
+                currentQueueIndex--;
+                const prev = currentPlayQueue[currentQueueIndex];
+                playMusicTrack({
+                    trackId: prev.id,
+                    title: prev.title,
+                    artistName: prev.artist,
+                    coverSrc: prev.cover
                 });
             }
 
@@ -14644,9 +14747,16 @@ Your browser does not support the video tag.
                 musicAudio.addEventListener('loadedmetadata', updateTimeDisplays);
                 musicAudio.addEventListener('ended', () => {
                     musicPlayPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
-                    // Auto-play next track in queue if available
-                    if (currentPlayQueue.length > 0 && currentQueueIndex < currentPlayQueue.length - 1) {
-                        setTimeout(() => playNextInQueue(), 500);
+                    // Auto-play next track in queue if available and enabled
+                    if (musicAutoPlayNext) {
+                        if (currentPlayQueue.length > 0 && currentQueueIndex < currentPlayQueue.length - 1) {
+                            setTimeout(() => playNextInQueue(), 400);
+                            return;
+                        }
+                        // If queue is empty or finished, exit player when autoplay is enabled
+                        if (currentPlayQueue.length === 0 || currentQueueIndex >= currentPlayQueue.length - 1) {
+                            setTimeout(() => closeMusicModal(), 250);
+                        }
                     }
                 });
             }
@@ -14675,6 +14785,21 @@ Your browser does not support the video tag.
                     const dur = musicAudio.duration || 0;
                     musicAudio.currentTime = Math.min(dur, (musicAudio.currentTime || 0) + 10);
                     updateTimeDisplays();
+                });
+            }
+
+            if (musicNextTrackBtn) {
+                musicNextTrackBtn.addEventListener('click', () => {
+                    if (currentPlayQueue.length === 0) return;
+                    // Jump to next or finish
+                    if (currentQueueIndex < currentPlayQueue.length - 1) playNextInQueue();
+                    else closeMusicModal();
+                });
+            }
+
+            if (musicPrevTrackBtn) {
+                musicPrevTrackBtn.addEventListener('click', () => {
+                    playPreviousInQueue();
                 });
             }
 
