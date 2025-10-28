@@ -46,6 +46,137 @@ function createAxiosInstance() {
 }
 
 // ============================================================================
+// GAMES SERVICE (Steam Underground scraper)
+// ============================================================================
+
+// Helper function to get download links from a game page
+async function getGameDownloadLinks(url) {
+    try {
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        const response = await axios.get(url, {
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+                'Accept-Language': 'en-US,en;q=0.9',
+                'Referer': 'https://steamunderground.net/'
+            },
+            timeout: 15000
+        });
+
+        const $ = cheerio.load(response.data);
+        const downloadLinks = [];
+
+        $('.download-mirrors-container .DownloadButtonContainer a').each((index, element) => {
+            const $link = $(element);
+            const linkUrl = $link.attr('href');
+            const linkName = $link.text().trim();
+            
+            if (linkUrl && linkName) {
+                downloadLinks.push({
+                    name: linkName,
+                    url: linkUrl
+                });
+            }
+        });
+
+        return downloadLinks;
+    } catch (error) {
+        console.error(`Error getting download links for ${url}:`, error.message);
+        return [];
+    }
+}
+
+// Games search endpoint
+app.get('/api/games/search/:query', async (req, res) => {
+    const query = req.params.query || '';
+    
+    if (!query) {
+        return res.status(400).json({ error: 'Query parameter is required' });
+    }
+
+    try {
+        const searchUrl = `https://steamunderground.net/?s=${encodeURIComponent(query)}`;
+        
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        const response = await axios.get(searchUrl, {
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+                'Accept-Language': 'en-US,en;q=0.9',
+                'Referer': 'https://steamunderground.net/'
+            },
+            timeout: 15000,
+            validateStatus: function (status) {
+                return status >= 200 && status < 500;
+            }
+        });
+
+        if (response.status === 403) {
+            return res.status(403).json({ 
+                error: 'Access blocked by website', 
+                message: 'The website is blocking automated requests.'
+            });
+        }
+
+        const $ = cheerio.load(response.data);
+        const games = [];
+
+        // Parse search results (limit to 20)
+        const gamePromises = [];
+        
+        $('li.row-type.content_out').each((index, element) => {
+            // Limit to 20 results
+            if (index >= 20) return false;
+            
+            const $item = $(element);
+            
+            const $titleLink = $item.find('h4.title a');
+            const title = $titleLink.text().trim();
+            const link = $titleLink.attr('href');
+            const image = $item.find('.thumb img').attr('src');
+            const excerpt = $item.find('.excerpt').text().trim();
+            const date = $item.find('.post-date').text().trim();
+            
+            const versionMatch = title.match(/\(([^)]+)\)$/);
+            const version = versionMatch ? versionMatch[1] : 'Latest';
+            
+            if (title && link) {
+                // Create a promise to get download links for each game
+                const gamePromise = getGameDownloadLinks(link.trim()).then(downloadLinks => ({
+                    title,
+                    link: link.trim(),
+                    image: image || null,
+                    version: version,
+                    excerpt: excerpt.substring(0, 150) || null,
+                    date: date || null,
+                    downloadLinks: downloadLinks
+                }));
+                
+                gamePromises.push(gamePromise);
+            }
+        });
+
+        // Wait for all download links to be fetched
+        const gamesWithDownloads = await Promise.all(gamePromises);
+
+        res.json({ 
+            query: query,
+            count: gamesWithDownloads.length,
+            games: gamesWithDownloads 
+        });
+
+    } catch (error) {
+        console.error('Error scraping games:', error.message);
+        res.status(500).json({ 
+            error: 'Failed to scrape data', 
+            message: error.message 
+        });
+    }
+});
+
+// ============================================================================
 // ANIME SERVICE (from anime.js - Nyaa.si scraper)
 // ============================================================================
 
