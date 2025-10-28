@@ -12,6 +12,8 @@ import os from 'os';
 import zlib from 'zlib';
 import crypto from 'crypto';
 import { createRequire } from 'module';
+import { spawn } from 'child_process';
+import ffmpegPath from 'ffmpeg-static';
 
 // Import the CommonJS api.cjs module
 const require = createRequire(import.meta.url);
@@ -3895,6 +3897,300 @@ export function startServer(userDataPath) {
             return res.json({ success: true });
         } catch (e) {
             res.status(500).json({ success: false, error: e?.message || 'Failed to delete subtitle' });
+        }
+    });
+
+    // ===== MUSIC DOWNLOAD ENDPOINT =====
+    
+    // Store download progress and processes in memory
+    const downloadProgress = new Map();
+    const downloadProcesses = new Map(); // downloadId -> { proc, outputPath }
+    
+    app.post('/api/music/download', async (req, res) => {
+        try {
+            const { trackUrl, songName, artistName, downloadId } = req.body;
+            
+            console.log('\n[Music Download] Starting download...');
+            console.log(`[Music Download] Song: "${songName}" by ${artistName}`);
+            console.log(`[Music Download] Track URL: ${trackUrl}`);
+            console.log(`[Music Download] Download ID: ${downloadId}`);
+            
+            if (!trackUrl || !songName || !artistName) {
+                return res.status(400).json({ success: false, error: 'Missing required fields' });
+            }
+
+            // Create download directory in app data
+            const downloadDir = path.join(userDataPath, 'Music Downloads');
+            if (!fs.existsSync(downloadDir)) {
+                fs.mkdirSync(downloadDir, { recursive: true });
+                console.log(`[Music Download] Created download directory: ${downloadDir}`);
+            }
+
+            // Sanitize filename
+            const sanitize = (str) => str.replace(/[<>:"/\\|?*]/g, '_').replace(/\s+/g, ' ').trim();
+            const filename = `${sanitize(songName)} - ${sanitize(artistName)}.flac`;
+            const outputPath = path.join(downloadDir, filename);
+
+            console.log(`[Music Download] Output path: ${outputPath}`);
+
+            // Check if file already exists
+            if (fs.existsSync(outputPath)) {
+                console.log('[Music Download] File already exists, skipping download');
+                return res.json({ 
+                    success: true, 
+                    message: 'File already exists',
+                    filePath: outputPath 
+                });
+            }
+
+            // Start ffmpeg process
+            console.log('[Music Download] Starting FFmpeg process...');
+            const ffmpeg = spawn(ffmpegPath, [
+                '-i', trackUrl,
+                '-vn',
+                '-ar', '44100',
+                '-ac', '2',
+                '-c:a', 'flac',
+                '-y', // Overwrite output file if exists
+                outputPath
+            ]);
+
+            let currentProgress = 0;
+            let duration = 0;
+
+            // Initialize progress tracking
+            if (downloadId) {
+                downloadProgress.set(downloadId, { 
+                    progress: 0, 
+                    complete: false,
+                    filePath: outputPath 
+                });
+                downloadProcesses.set(downloadId, { proc: ffmpeg, outputPath });
+            }
+
+            // Parse ffmpeg output for progress
+            ffmpeg.stderr.on('data', (data) => {
+                const output = data.toString();
+                
+                // Extract duration
+                const durationMatch = output.match(/Duration: (\d{2}):(\d{2}):(\d{2}.\d{2})/);
+                if (durationMatch) {
+                    const hours = parseInt(durationMatch[1]);
+                    const minutes = parseInt(durationMatch[2]);
+                    const seconds = parseFloat(durationMatch[3]);
+                    duration = hours * 3600 + minutes * 60 + seconds;
+                    console.log(`[Music Download] Duration detected: ${durationMatch[0]}`);
+                }
+
+                // Extract current time for progress
+                const timeMatch = output.match(/time=(\d{2}):(\d{2}):(\d{2}.\d{2})/);
+                if (timeMatch && duration > 0) {
+                    const hours = parseInt(timeMatch[1]);
+                    const minutes = parseInt(timeMatch[2]);
+                    const seconds = parseFloat(timeMatch[3]);
+                    const currentTime = hours * 3600 + minutes * 60 + seconds;
+                    const newProgress = Math.min(100, Math.round((currentTime / duration) * 100));
+                    
+                    // Update progress map
+                    if (downloadId && downloadProgress.has(downloadId)) {
+                        downloadProgress.get(downloadId).progress = newProgress;
+                    }
+                    
+                    // Only log every 10% change
+                    if (newProgress >= currentProgress + 10 || newProgress === 100) {
+                        console.log(`[Music Download] Progress: ${newProgress}%`);
+                        currentProgress = newProgress;
+                    }
+                }
+            });
+
+            ffmpeg.on('close', (code) => {
+                // Remove process reference
+                if (downloadId) downloadProcesses.delete(downloadId);
+                if (code === 0) {
+                    console.log('[Music Download] ✓ Download complete!');
+                    console.log(`[Music Download] Saved to: ${outputPath}\n`);
+                    
+                    // Mark as complete
+                    if (downloadId && downloadProgress.has(downloadId)) {
+                        downloadProgress.get(downloadId).complete = true;
+                        downloadProgress.get(downloadId).progress = 100;
+                    }
+                    
+                    res.json({ 
+                        success: true, 
+                        message: 'Download complete',
+                        filePath: outputPath 
+                    });
+                    
+                    // Clean up progress after 5 seconds
+                    setTimeout(() => {
+                        if (downloadId) downloadProgress.delete(downloadId);
+                    }, 5000);
+                } else {
+                    console.error(`[Music Download] ✗ FFmpeg exited with code ${code}`);
+                    // Clean up partial file
+                    if (fs.existsSync(outputPath)) {
+                        try { 
+                            fs.unlinkSync(outputPath); 
+                            console.log('[Music Download] Deleted partial file');
+                        } catch(_) {}
+                    }
+                    
+                    if (downloadId) downloadProgress.delete(downloadId);
+                    
+                    res.status(500).json({ 
+                        success: false, 
+                        error: `FFmpeg exited with code ${code}` 
+                    });
+                }
+            });
+
+            ffmpeg.on('error', (err) => {
+                if (downloadId) downloadProcesses.delete(downloadId);
+                console.error('[Music Download] ✗ FFmpeg error:', err);
+                // Clean up partial file
+                if (fs.existsSync(outputPath)) {
+                    try { 
+                        fs.unlinkSync(outputPath); 
+                        console.log('[Music Download] Deleted partial file');
+                    } catch(_) {}
+                }
+                
+                if (downloadId) downloadProgress.delete(downloadId);
+                
+                if (!res.headersSent) {
+                    res.status(500).json({ 
+                        success: false, 
+                        error: 'Failed to start download: ' + err.message 
+                    });
+                }
+            });
+
+        } catch (error) {
+            console.error('[Music Download] Error:', error);
+            res.status(500).json({ success: false, error: error.message });
+        }
+    });
+
+    // Get download progress
+    app.get('/api/music/download/progress/:downloadId', (req, res) => {
+        const { downloadId } = req.params;
+        const progress = downloadProgress.get(downloadId);
+        if (progress) {
+            res.json(progress);
+        } else {
+            res.json({ progress: 0, complete: false });
+        }
+    });
+
+    // Cancel a music download
+    app.post('/api/music/download/cancel', (req, res) => {
+        try {
+            const { downloadId } = req.body || {};
+            if (!downloadId) return res.status(400).json({ success: false, error: 'Missing downloadId' });
+            const procEntry = downloadProcesses.get(downloadId);
+            const progEntry = downloadProgress.get(downloadId);
+            if (!procEntry && !progEntry) {
+                return res.status(404).json({ success: false, error: 'Download not found' });
+            }
+            // Kill ffmpeg process if exists
+            if (procEntry && procEntry.proc && !procEntry.proc.killed) {
+                try {
+                    procEntry.proc.kill('SIGKILL');
+                } catch (_) {
+                    try { procEntry.proc.kill(); } catch (_) {}
+                }
+            }
+            // Delete partial file if exists
+            const outputPath = (procEntry && procEntry.outputPath) || (progEntry && progEntry.filePath);
+            if (outputPath && fs.existsSync(outputPath)) {
+                try { fs.unlinkSync(outputPath); } catch (_) {}
+            }
+            downloadProcesses.delete(downloadId);
+            downloadProgress.delete(downloadId);
+            console.log(`[Music Download] ✗ Cancelled download ${downloadId} and cleaned up`);
+            return res.json({ success: true });
+        } catch (error) {
+            console.error('[Music Download] Cancel error:', error);
+            return res.status(500).json({ success: false, error: error.message });
+        }
+    });
+
+    // Serve downloaded music files
+    app.get('/api/music/serve/:filePath(*)', (req, res) => {
+        try {
+            const filePath = decodeURIComponent(req.params.filePath);
+            console.log(`[Music Serve] Request to serve: ${filePath}`);
+            
+            const downloadDir = path.join(userDataPath, 'Music Downloads');
+            // Ensure the path is within our download directory
+            if (!filePath.startsWith(downloadDir)) {
+                console.log('[Music Serve] ✗ Invalid path - outside download directory');
+                return res.status(400).json({ error: 'Invalid path' });
+            }
+            
+            if (!fs.existsSync(filePath)) {
+                console.log('[Music Serve] ✗ File not found');
+                return res.status(404).json({ error: 'File not found' });
+            }
+            
+            console.log('[Music Serve] ✓ Serving file');
+            res.setHeader('Content-Type', 'audio/flac');
+            res.setHeader('Accept-Ranges', 'bytes');
+            
+            const stat = fs.statSync(filePath);
+            const fileSize = stat.size;
+            const range = req.headers.range;
+            
+            if (range) {
+                const parts = range.replace(/bytes=/, "").split("-");
+                const start = parseInt(parts[0], 10);
+                const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
+                const chunksize = (end - start) + 1;
+                const file = fs.createReadStream(filePath, { start, end });
+                
+                res.writeHead(206, {
+                    'Content-Range': `bytes ${start}-${end}/${fileSize}`,
+                    'Content-Length': chunksize
+                });
+                file.pipe(res);
+            } else {
+                res.writeHead(200, { 'Content-Length': fileSize });
+                fs.createReadStream(filePath).pipe(res);
+            }
+        } catch (error) {
+            console.error('[Music Serve] ✗ Error:', error);
+            res.status(500).json({ error: error.message });
+        }
+    });
+
+    // Delete downloaded music file
+    app.post('/api/music/delete', (req, res) => {
+        try {
+            const { filePath } = req.body;
+            console.log(`[Music Delete] Request to delete: ${filePath}`);
+            
+            if (!filePath) return res.status(400).json({ success: false, error: 'Missing filePath' });
+            
+            const downloadDir = path.join(userDataPath, 'Music Downloads');
+            // Ensure the path is within our download directory
+            if (!filePath.startsWith(downloadDir)) {
+                console.log('[Music Delete] ✗ Invalid path - outside download directory');
+                return res.status(400).json({ success: false, error: 'Invalid path' });
+            }
+            
+            if (fs.existsSync(filePath)) {
+                fs.unlinkSync(filePath);
+                console.log('[Music Delete] ✓ File deleted successfully');
+                return res.json({ success: true });
+            } else {
+                console.log('[Music Delete] ✗ File not found');
+                return res.status(404).json({ success: false, error: 'File not found' });
+            }
+        } catch (error) {
+            console.error('[Music Delete] ✗ Error:', error);
+            res.status(500).json({ success: false, error: error.message });
         }
     });
 
