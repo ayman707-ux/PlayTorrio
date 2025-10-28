@@ -22866,6 +22866,17 @@ Your browser does not support the video tag.
                     }
                 });
             }
+            
+            // Offline/Online UX: show a small banner so users know they can access offline music
+            try {
+                const notifyOffline = () => showNotification('You are offline. Offline Music Library is available.', 'warning', 5000);
+                const notifyOnline = () => showNotification('Back online.', 'success', 3000);
+                if (typeof navigator !== 'undefined' && navigator && navigator.onLine === false) {
+                    notifyOffline();
+                }
+                window.addEventListener('offline', notifyOffline);
+                window.addEventListener('online', notifyOnline);
+            } catch(_) {}
         } catch(_){ }
 
         // ---- My List functionality ----
