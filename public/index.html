@@ -6474,13 +6474,17 @@
             <i class="fas fa-music"></i>
             <span>Music</span>
         </div>
+        <div class="floating-nav-item" data-action="games-downloader">
+            <i class="fas fa-download"></i>
+            <span>Games Downloader</span>
+        </div>
         <div class="floating-nav-item" data-action="minigames">
             <i class="fas fa-gamepad"></i>
             <span>MiniGames</span>
         </div>
         <div class="floating-nav-item" data-action="downloader">
             <i class="fas fa-download"></i>
-            <span>Downloader</span>
+            <span>Media Downloader</span>
         </div>
         <div class="floating-nav-item" data-action="trakt">
             <i class="fab fa-trakt"></i>
@@ -6563,6 +6567,11 @@
                 <span>Music</span>
                 <span class="nav-badge" style="background: linear-gradient(135deg, #ec4899, #db2777);">HiFi</span>
             </div>
+            <div class="nav-item" data-page="games-downloader">
+                <i class="fas fa-download" style="color: #8b5cf6;"></i>
+                <span>Games Downloader</span>
+                <span class="nav-badge" style="background: linear-gradient(135deg, #8b5cf6, #7c3aed);">PC</span>
+            </div>
             <div class="nav-item" data-page="minigames">
                 <i class="fas fa-gamepad" style="color: #10b981;"></i>
                 <span>MiniGames</span>
@@ -6570,7 +6579,7 @@
             </div>
             <div class="nav-item" data-page="downloader">
                 <i class="fas fa-download" style="color: #a855f7;"></i>
-                <span>Downloader</span>
+                <span>Media Downloader</span>
             </div>
             <div class="nav-item" id="sidebarClearCache">
                 <i class="fas fa-trash"></i>
@@ -7807,6 +7816,52 @@
                 style="width: 100%; height: 100%; border: none; border-radius: 8px;"
                 allowfullscreen>
             </iframe>
+        </div>
+    </div>
+
+    <!-- Games Downloader Page -->
+    <div id="games-downloader-page" class="page-wrapper" style="display: none;">
+        <div class="page-header">
+            <h2><i class="fas fa-download" style="color:#8b5cf6"></i> Games Downloader</h2>
+        </div>
+
+        <div class="page-content">
+            <!-- Search Section -->
+            <div class="search-section" style="max-width: 800px; margin: 2rem auto; text-align: center;">
+                <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem;">
+                    <input 
+                        type="text" 
+                        id="games-search-input" 
+                        placeholder="Search for PC games (e.g., Call of Duty, GTA, Cyberpunk)..." 
+                        style="flex: 1; padding: 0.75rem 1rem; border: 2px solid rgba(139,92,246,0.3); border-radius: 8px; background: rgba(139,92,246,0.05); color: var(--light); font-size: 1rem;"
+                    >
+                    <button 
+                        id="games-search-btn" 
+                        style="padding: 0.75rem 1.5rem; background: linear-gradient(135deg, #8b5cf6, #7c3aed); border: none; border-radius: 8px; color: white; font-weight: 600; cursor: pointer; transition: transform 0.2s;"
+                        onmouseover="this.style.transform='scale(1.05)'" 
+                        onmouseout="this.style.transform='scale(1)'"
+                    >
+                        <i class="fas fa-search"></i> Search
+                    </button>
+                </div>
+                <div id="games-search-status" style="color: var(--secondary); font-size: 0.9rem; min-height: 1.5rem;"></div>
+            </div>
+
+            <!-- Results Section -->
+            <div id="games-results-section" style="display: none;">
+                <div class="books-results-header" style="align-items:center; gap:1rem; margin-bottom: 1rem;">
+                    <h3><i class="fas fa-list" style="color:#8b5cf6"></i> Search Results</h3>
+                    <div id="games-results-count" class="books-results-count"></div>
+                </div>
+                <div id="games-results-grid" class="books-results-grid"></div>
+            </div>
+
+            <!-- Empty State -->
+            <div id="games-empty-state" class="books-empty">
+                <div class="books-empty-icon"><i class="fas fa-search"></i></div>
+                <h3>Search for PC Games</h3>
+                <p>Enter a game name above to find downloadable PC games</p>
+            </div>
         </div>
     </div>
 
@@ -11653,6 +11708,119 @@ Your browser does not support the video tag.
                 console.log('[IPTV] Page cleared - stopping all streams');
             }
         }
+
+        // Games Downloader page functions
+        function showGamesDownloaderPage() {
+            window.location.hash = '#/games-downloader';
+        }
+
+        async function searchGames(query) {
+            const statusEl = document.getElementById('games-search-status');
+            const resultsSection = document.getElementById('games-results-section');
+            const emptyState = document.getElementById('games-empty-state');
+            const resultsGrid = document.getElementById('games-results-grid');
+            const resultsCount = document.getElementById('games-results-count');
+
+            if (!query || !query.trim()) {
+                statusEl.textContent = 'Please enter a game name';
+                statusEl.style.color = '#ef4444';
+                return;
+            }
+
+            try {
+                statusEl.textContent = 'Searching...';
+                statusEl.style.color = '#8b5cf6';
+                resultsSection.style.display = 'none';
+                emptyState.style.display = 'none';
+
+                const response = await fetch(`http://localhost:3000/api/games/search/${encodeURIComponent(query)}`);
+                if (!response.ok) throw new Error('Search failed');
+
+                const data = await response.json();
+                
+                if (!data.games || data.games.length === 0) {
+                    statusEl.textContent = 'No games found';
+                    statusEl.style.color = '#ef4444';
+                    emptyState.style.display = '';
+                    return;
+                }
+
+                // Display results
+                statusEl.textContent = `Found ${data.count} game${data.count !== 1 ? 's' : ''}`;
+                statusEl.style.color = '#10b981';
+                resultsCount.textContent = `${data.count} game${data.count !== 1 ? 's' : ''}`;
+                
+                resultsGrid.innerHTML = '';
+                data.games.forEach(game => {
+                    const card = document.createElement('div');
+                    card.className = 'music-card';
+                    card.style.cursor = 'default';
+                    
+                    const downloadLinksHtml = game.downloadLinks && game.downloadLinks.length > 0
+                        ? game.downloadLinks.map(link => `
+                            <button class="game-download-link" data-url="${link.url}" style="padding: 0.4rem 0.8rem; background: linear-gradient(135deg, #8b5cf6, #7c3aed); border: none; border-radius: 6px; color: white; font-size: 0.85rem; cursor: pointer; margin: 0.2rem; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+                                <i class="fas fa-download"></i> ${link.name}
+                            </button>
+                        `).join('')
+                        : '<span style="color: var(--secondary); font-size: 0.85rem;">No download links available</span>';
+
+                    card.innerHTML = `
+                        <div class="music-cover">
+                            <img src="${game.image || 'https://via.placeholder.com/300x400?text=No+Image'}" alt="${game.title}" onerror="this.src='https://via.placeholder.com/300x400?text=No+Image'">
+                        </div>
+                        <div class="music-info">
+                            <div class="music-title">${game.title}</div>
+                            <div class="music-artist" style="color: #8b5cf6;">${game.version || 'Latest'}</div>
+                            ${game.date ? `<div style="color: var(--secondary); font-size: 0.85rem; margin: 0.3rem 0;"><i class="fas fa-calendar"></i> ${game.date}</div>` : ''}
+                            ${game.excerpt ? `<div style="color: var(--secondary); font-size: 0.85rem; margin: 0.5rem 0; line-height: 1.4;">${game.excerpt}</div>` : ''}
+                            <div class="music-actions" style="flex-wrap: wrap; margin-top: 0.5rem;">
+                                ${downloadLinksHtml}
+                            </div>
+                        </div>
+                    `;
+                    resultsGrid.appendChild(card);
+                });
+
+                // Add click handlers to download links
+                resultsGrid.querySelectorAll('.game-download-link').forEach(btn => {
+                    btn.addEventListener('click', async (e) => {
+                        const url = e.currentTarget.getAttribute('data-url');
+                        if (url && window.electronAPI?.openExternal) {
+                            await window.electronAPI.openExternal(url);
+                            showNotification('Opening download link in browser...', 'info');
+                        }
+                    });
+                });
+
+                resultsSection.style.display = '';
+                emptyState.style.display = 'none';
+
+            } catch (error) {
+                console.error('Games search error:', error);
+                statusEl.textContent = 'Search failed. Please try again.';
+                statusEl.style.color = '#ef4444';
+                emptyState.style.display = '';
+            }
+        }
+
+        // Initialize Games Downloader search
+        document.addEventListener('DOMContentLoaded', () => {
+            const searchInput = document.getElementById('games-search-input');
+            const searchBtn = document.getElementById('games-search-btn');
+
+            if (searchInput && searchBtn) {
+                searchBtn.addEventListener('click', () => {
+                    searchGames(searchInput.value);
+                });
+
+                searchInput.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') {
+                        searchGames(searchInput.value);
+                    }
+                });
+            }
+        });
+
         
         // MiniGames page functions
         function showMiniGamesPage() {
@@ -13442,6 +13610,8 @@ Your browser does not support the video tag.
                         showLiveTvPage();
                     } else if (page === 'iptv') {
                         showIptvPage();
+                    } else if (page === 'games-downloader') {
+                        showGamesDownloaderPage();
                     } else if (page === 'minigames') {
                         showMiniGamesPage();
                     } else if (page === 'books') {
@@ -13516,6 +13686,9 @@ Your browser does not support the video tag.
                                 break;
                             case 'iptv':
                                 showIptvPage();
+                                break;
+                            case 'games-downloader':
+                                showGamesDownloaderPage();
                                 break;
                             case 'minigames':
                                 showMiniGamesPage();
@@ -16952,6 +17125,10 @@ Your browser does not support the video tag.
     showSection('iptv');
     reloadIptvPage();
     return;
+} else if (hash === '#/games-downloader') {
+    activeRoute = 'games-downloader';
+    showSection('games-downloader');
+    return;
 } else if (hash === '#/minigames') {
     activeRoute = 'minigames';
     showSection('minigames');
@@ -16997,7 +17174,7 @@ Your browser does not support the video tag.
             // Hide ALL known top-level pages first to avoid stacking
             const allPageIds = [
                 'homePage','genresPage','genreDetailsPage','myListPage','doneWatchingPage',
-                'trakt-page','livetv-page','iptv-page','minigames-page','books-page','music-page',
+                'trakt-page','livetv-page','iptv-page','games-downloader-page','minigames-page','books-page','music-page',
                 'booktorrio-page','anime-page','manga-page','manga-reader-page','downloader-page','settings-page'
             ];
             allPageIds.forEach(id => { const el = document.getElementById(id); if (el) el.style.display = 'none'; });
@@ -17029,6 +17206,7 @@ Your browser does not support the video tag.
                 'trakt': 'trakt-page',
                 'livetv': 'livetv-page',
                 'iptv': 'iptv-page',
+                'games-downloader': 'games-downloader-page',
                 'minigames': 'minigames-page',
                 'books': 'books-page',
                 'music': 'music-page',
@@ -17059,6 +17237,20 @@ Your browser does not support the video tag.
                             largeImageText: 'PlayTorrio',
                             smallImageKey: 'gaming',
                             smallImageText: 'Gaming'
+                        }).catch(err => console.error('Discord presence error:', err));
+                    }
+                }
+                
+                // Update Discord presence for Games Downloader
+                if (section === 'games-downloader') {
+                    if (window.electronAPI?.updateDiscordPresence) {
+                        window.electronAPI.updateDiscordPresence({
+                            details: 'Browsing PC games',
+                            state: 'Games Downloader',
+                            largeImageKey: 'playtorrio',
+                            largeImageText: 'PlayTorrio',
+                            smallImageKey: 'download',
+                            smallImageText: 'Downloading'
                         }).catch(err => console.error('Discord presence error:', err));
                     }
                 }
