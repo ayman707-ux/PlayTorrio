@@ -1619,6 +1619,26 @@ if (!gotLock) {
         }
     });
 
+    // IPC: show folder in file explorer
+    ipcMain.handle('show-folder-in-explorer', async (event, inputPath) => {
+        try {
+            // Accept either a file path or a directory path
+            let directory = inputPath;
+            if (fs.existsSync(inputPath)) {
+                const stat = fs.statSync(inputPath);
+                if (stat.isFile()) {
+                    directory = path.dirname(inputPath);
+                }
+            }
+            console.log('[Show Folder] Opening directory:', directory);
+            await shell.openPath(directory);
+            return { success: true };
+        } catch (err) {
+            console.error('[Show Folder] Error:', err);
+            return { success: false, message: err?.message || 'Failed to open folder' };
+        }
+    });
+
     // Optional IPC: allow renderer to install the downloaded update
     // Change: Close the app and DO NOT relaunch automatically.
     ipcMain.handle('updater-install', async () => {
@@ -2155,4 +2175,4 @@ app.on('will-quit', () => {
 
 app.on('window-all-closed', () => {
     if (process.platform !== 'darwin') app.quit();
-});a
+});
