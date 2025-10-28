@@ -8,6 +8,7 @@ import os from 'os';
 import got from 'got';
 import { pipeline as streamPipelineCb } from 'stream';
 import { promisify } from 'util';
+import dns from 'dns';
 
 // electron-updater is CommonJS; use default import + destructure for ESM
 import updaterPkg from 'electron-updater';
@@ -18,6 +19,7 @@ import { startServer } from './server.mjs'; // Import the server
 
 const { autoUpdater } = updaterPkg;
 const streamPipeline = promisify(streamPipelineCb);
+const dnsLookup = promisify(dns.lookup);
 
 let httpServer;
 let webtorrentClient;
@@ -206,7 +208,7 @@ function setupAutoUpdater() {
             }
         });
 
-        // Perform initial check with retry logic
+        // Perform initial check with connectivity guard and retry logic
         let checkAttempts = 0;
         const maxRetries = 3;
         const checkForUpdatesWithRetry = () => {
@@ -220,7 +222,30 @@ function setupAutoUpdater() {
                 }
             }
         };
-        setTimeout(checkForUpdatesWithRetry, 4000);
+
+        const isOnline = async (timeoutMs = 1500) => {
+            try {
+                const p = dnsLookup('github.com');
+                await Promise.race([
+                    p,
+                    new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), timeoutMs))
+                ]);
+                return true;
+            } catch (_) {
+                return false;
+            }
+        };
+
+        const scheduleInitialCheck = async () => {
+            const online = await isOnline(1500);
+            if (!online) {
+                console.log('[Updater] Offline at startup, delaying update check...');
+                setTimeout(scheduleInitialCheck, 10000);
+                return;
+            }
+            checkForUpdatesWithRetry();
+        };
+        setTimeout(scheduleInitialCheck, 4000);
     } catch (e) {
         console.error('[Updater] setup failed:', e?.message || e);
     }
@@ -1247,9 +1272,18 @@ if (!gotLock) {
         }
     });
 
-    app.whenReady().then(() => {
-    // Initialize Discord RPC
-    try { setupDiscordRPC(); } catch(_) {}
+    app.whenReady().then(async () => {
+    // Initialize Discord RPC (guard on connectivity)
+    try {
+        const online = await (async () => {
+            try { await dnsLookup('discord.com'); return true; } catch { return false; }
+        })();
+        if (online) {
+            setupDiscordRPC();
+        } else {
+            console.log('[Discord RPC] Skipping init: offline');
+        }
+    } catch(_) {}
     // Start the unified server (port 3000) - handles all API routes including anime, books, torrents, etc.
     const { server, client, clearCache } = startServer(app.getPath('userData'));
     httpServer = server;
