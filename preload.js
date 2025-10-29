@@ -15,6 +15,8 @@ try {
 contextBridge.exposeInMainWorld('electronAPI', {
   openInMPV: (data) => ipcRenderer.invoke('open-in-mpv', data),
   openMPVDirect: (url) => ipcRenderer.invoke('open-mpv-direct', url),
+  // Advanced MPV opener with headers and options
+  openMpvWithHeaders: (options) => ipcRenderer.invoke('open-mpv-headers', options),
   // VLC external player
   openInVLC: (data) => ipcRenderer.invoke('open-in-vlc', data),
   openVLCDirect: (url) => ipcRenderer.invoke('open-vlc-direct', url),
