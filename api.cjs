@@ -2331,4 +2331,3 @@ process.on('uncaughtException', (err) => {
 
 // Export the function to register routes instead of starting a server
 module.exports = { registerApiRoutes };
-
