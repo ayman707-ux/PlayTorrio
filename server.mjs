@@ -4207,6 +4207,36 @@ export function startServer(userDataPath) {
         }
     });
 
+    // Batch check for existence of downloaded music files
+    app.post('/api/music/exists-batch', (req, res) => {
+        try {
+            const { filePaths } = req.body || {};
+            if (!Array.isArray(filePaths)) {
+                return res.status(400).json({ success: false, error: 'filePaths must be an array' });
+            }
+
+            const downloadDir = path.join(userDataPath, 'Music Downloads');
+            const normDownloadDir = path.normalize(downloadDir);
+
+            const results = {};
+            for (const fp of filePaths) {
+                try {
+                    if (!fp || typeof fp !== 'string') { results[String(fp)] = false; continue; }
+                    const norm = path.normalize(fp);
+                    // Security: ensure within downloads directory
+                    if (!norm.startsWith(normDownloadDir)) { results[fp] = false; continue; }
+                    results[fp] = fs.existsSync(norm);
+                } catch (_) {
+                    results[String(fp)] = false;
+                }
+            }
+            return res.json({ success: true, results });
+        } catch (error) {
+            console.error('[Music Exists Batch] ✗ Error:', error);
+            res.status(500).json({ success: false, error: error.message });
+        }
+    });
+
     // ===== GLOBAL ERROR HANDLERS =====
     
     // Catch-all 404 handler for undefined routes
