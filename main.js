@@ -1314,6 +1314,82 @@ if (!gotLock) {
             return openInMPV(mainWindow, streamUrl, infoHash, startSeconds);
     });
 
+    // Advanced MPV launcher with headers (for MovieBox/FMovies)
+    ipcMain.handle('open-mpv-headers', async (event, options) => {
+        try {
+            const {
+                url,
+                userAgent,
+                referer,
+                cookie,
+                startSeconds,
+                hlsBitrate
+            } = options || {};
+
+            if (!url) {
+                return { success: false, message: 'Missing URL' };
+            }
+
+            const mpvPath = resolveMpvExe();
+            if (!mpvPath) {
+                return { success: false, message: 'Bundled MPV not found' };
+            }
+
+            const args = [];
+            const start = Number(startSeconds || 0);
+            if (!isNaN(start) && start > 10) {
+                args.push(`--start=${Math.floor(start)}`);
+            }
+
+            if (userAgent) {
+                args.push(`--user-agent=${userAgent}`);
+            }
+            if (referer) {
+                args.push(`--referrer=${referer}`);
+            }
+            if (cookie) {
+                // Pass cookie via HTTP header fields
+                args.push(`--http-header-fields=Cookie: ${cookie}`);
+            }
+            if (typeof hlsBitrate === 'number' && hlsBitrate > 0) {
+                args.push(`--hls-bitrate=${Math.floor(hlsBitrate)}`);
+            }
+
+            // Finally add the URL
+            args.push(url);
+
+            const mpvProcess = spawn(mpvPath, args, { stdio: 'ignore' });
+
+            mpvProcess.on('close', async (code) => {
+                console.log(`MPV (headers) closed with code ${code}`);
+                try {
+                    if (discordRpc && discordRpcReady) {
+                        await discordRpc.setActivity({
+                            details: 'Browsing PlayTorrio',
+                            startTimestamp: new Date(),
+                            largeImageKey: 'icon',
+                            largeImageText: 'PlayTorrio App',
+                            buttons: [
+                                { label: 'Download App', url: 'https://github.com/ayman707-ux/PlayTorrio' }
+                            ]
+                        });
+                    }
+                } catch (err) {
+                    console.error('[Discord RPC] Failed to clear on MPV (headers) close:', err);
+                }
+            });
+
+            mpvProcess.on('error', (err) => {
+                console.error('Failed to start MPV (headers):', err);
+            });
+
+            return { success: true, message: 'MPV launched with headers' };
+        } catch (e) {
+            console.error('Error launching MPV with headers:', e);
+            return { success: false, message: e?.message || 'Failed to launch MPV with headers' };
+        }
+    });
+
     // Direct MPV launch for external URLs (111477, etc.)
     ipcMain.handle('open-mpv-direct', async (event, url) => {
         try {
