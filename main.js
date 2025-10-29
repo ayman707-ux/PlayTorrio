@@ -485,6 +485,8 @@ function createWindow() {
             webSecurity: false, // Disable web security to allow iframes from different origins
             allowRunningInsecureContent: true, // Allow mixed content
             experimentalFeatures: true, // Enable experimental features for better iframe support
+            spellcheck: false,
+            backgroundThrottling: true
         },
         backgroundColor: '#120a1f',
     });
