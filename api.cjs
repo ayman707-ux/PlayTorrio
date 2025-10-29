@@ -4,6 +4,7 @@ const cors = require('cors');
 const cheerio = require('cheerio');
 const path = require('path');
 const rateLimit = require('express-rate-limit');
+const fs = require('fs').promises;
 
 // Export a function that registers all API routes on an existing Express app
 function registerApiRoutes(app) {
@@ -1412,6 +1413,516 @@ app.get('/otherbook/', (req, res) => {
 });
 
 // ============================================================================
+// MOVIEBOX SERVICE (MovieBox.id search + FMovies play API client)
+// ============================================================================
+
+// Build MovieBox search URL
+function moviebox_searchUrl(q) {
+    return `https://moviebox.id/web/searchResult?keyword=${encodeURIComponent(q)}`;
+}
+
+function moviebox_pickSlugCandidates(text) {
+    const slugRegex = /"([a-z0-9-]+-[A-Za-z0-9]{6,})"/g;
+    const slugs = new Set();
+    let m;
+    while ((m = slugRegex.exec(text))) slugs.add(m[1]);
+    return Array.from(slugs);
+}
+
+function moviebox_pickIdCandidates(text) {
+    const idRegex = /"(\d{15,})"/g;
+    const ids = new Set();
+    let m;
+    while ((m = idRegex.exec(text))) ids.add(m[1]);
+    return Array.from(ids);
+}
+
+function moviebox_tryStructuredParse(html) {
+    const $ = cheerio.load(html);
+    let jsonText = '';
+    $('script').each((_, el) => {
+        const content = $(el).html() || '';
+        if (/detailPath|subjectId|search_abt|appointmentCnt/.test(content)) jsonText += '\n' + content;
+    });
+    return jsonText || html;
+}
+
+function moviebox_slugifyBase(s) {
+    return String(s).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').trim();
+}
+
+async function moviebox_getIdentifiersListFromQuery(query, opts = {}) {
+    const offline = !!opts.offline;
+    const debug = { mode: offline ? 'offline' : 'online' };
+    let html = '';
+
+    if (offline) {
+        const file = opts.offlineFile || 'moviebox crack.txt';
+        html = await fs.readFile(file, 'utf8');
+        debug.file = file;
+    } else {
+        const url = moviebox_searchUrl(query);
+        const resp = await axios.get(url, {
+            timeout: 15000,
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36',
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+                'Accept-Language': 'en-US,en;q=0.9',
+                'Cache-Control': 'no-cache',
+                'Pragma': 'no-cache',
+                'Referer': 'https://moviebox.id/',
+            },
+            validateStatus: (s) => s >= 200 && s < 500,
+        });
+        if (resp.status >= 400) {
+            const err = new Error(`MovieBox search failed with status ${resp.status}`);
+            err.status = resp.status;
+            throw err;
+        }
+        html = resp.data;
+        debug.searchUrl = url;
+        debug.status = resp.status;
+    }
+
+    const textBlock = moviebox_tryStructuredParse(html);
+    const slugs = moviebox_pickSlugCandidates(textBlock);
+    const ids = moviebox_pickIdCandidates(textBlock);
+
+    const list = [];
+    for (const slug of slugs) {
+        const iSlug = textBlock.indexOf(slug);
+        if (iSlug === -1) continue;
+        let best = null;
+        for (const id of ids) {
+            const iId = textBlock.indexOf(id);
+            if (iId === -1) continue;
+            const dist = Math.abs(iId - iSlug);
+            if (!best || dist < best.dist) best = { subjectId: id, dist };
+        }
+        if (best) list.push({ detailPath: slug, subjectId: best.subjectId, distance: best.dist });
+    }
+
+    const base = moviebox_slugifyBase(query);
+    const filtered = base ? list.filter(x => x.detailPath.toLowerCase().includes(base)) : list;
+    filtered.sort((a, b) => (a.detailPath.length - b.detailPath.length) || (a.distance - b.distance));
+    return { items: filtered, debug: { ...debug, slugsFound: slugs, idsFound: ids, base } };
+}
+
+// FMovies endpoints used by MovieBox
+function moviebox_PLAY_URL({ subjectId, se = '0', ep = '0', detailPath }) {
+    return `https://fmoviesunblocked.net/wefeed-h5-bff/web/subject/play?subjectId=${encodeURIComponent(subjectId)}&se=${encodeURIComponent(se)}&ep=${encodeURIComponent(ep)}&detail_path=${encodeURIComponent(detailPath)}`;
+}
+function moviebox_SPA_URL({ detailPath, subjectId }) {
+    return `https://fmoviesunblocked.net/spa/videoPlayPage/movies/${encodeURIComponent(detailPath)}?id=${encodeURIComponent(subjectId)}`;
+}
+
+function moviebox_baseHeaders(forwardHeaders = {}) {
+    const ua = forwardHeaders['user-agent'] || 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36';
+    const h = {
+        'User-Agent': ua,
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Cache-Control': 'no-cache',
+        'Pragma': 'no-cache',
+        'Sec-Ch-Ua': '"Chromium";v="128", "Google Chrome";v="128", ";Not A Brand";v="99"',
+        'Sec-Ch-Ua-Mobile': '?0',
+        'Sec-Ch-Ua-Platform': '"Windows"',
+    };
+    if (forwardHeaders['x-forwarded-for']) h['X-Forwarded-For'] = forwardHeaders['x-forwarded-for'];
+    return h;
+}
+
+function moviebox_mergeCookies(list) {
+    const jar = new Map();
+    for (const raw of list) {
+        if (!raw) continue;
+        const parts = raw.split(/;\s*/);
+        for (const p of parts) {
+            if (!p) continue;
+            const [k, ...rest] = p.split('=');
+            if (!k || !rest.length) continue;
+            const key = k.trim();
+            const val = rest.join('=').trim();
+            if (!key || !val) continue;
+            if (/^(Path|Domain|Expires|Max-Age|Secure|HttpOnly|SameSite)$/i.test(key)) continue;
+            jar.set(key, val);
+        }
+    }
+    return Array.from(jar.entries()).map(([k, v]) => `${k}=${v}`).join('; ');
+}
+
+async function moviebox_fetchStreamsFromFMovies({ subjectId, detailPath, se = '0', ep = '0', forwardCookie = '', forwardHeaders = {} }) {
+    const playUrl = moviebox_PLAY_URL({ subjectId, se, ep, detailPath });
+    const spaUrl = moviebox_SPA_URL({ detailPath, subjectId });
+
+    // Warm-up request to get cookies
+    const warmHeaders = moviebox_baseHeaders(forwardHeaders);
+    warmHeaders['Accept'] = 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8';
+    warmHeaders['Referer'] = 'https://fmoviesunblocked.net/';
+    let warmCookies = '';
+    try {
+        const warm = await axios.get(spaUrl, { timeout: 20000, headers: warmHeaders, validateStatus: s => s >= 200 && s < 500 });
+        const setCookie = warm.headers['set-cookie'];
+        if (Array.isArray(setCookie)) warmCookies = setCookie.map(c => c.split(';')[0]).join('; ');
+    } catch {}
+
+    const headers = moviebox_baseHeaders(forwardHeaders);
+    headers['Accept'] = 'application/json, text/plain, */*';
+    headers['Origin'] = 'https://fmoviesunblocked.net';
+    headers['Referer'] = spaUrl;
+    headers['Sec-Fetch-Site'] = 'same-origin';
+    headers['Sec-Fetch-Mode'] = 'cors';
+    headers['Sec-Fetch-Dest'] = 'empty';
+    const mergedCookie = moviebox_mergeCookies([forwardCookie, warmCookies]);
+    if (mergedCookie) headers['Cookie'] = mergedCookie;
+
+    const resp = await axios.get(playUrl, { timeout: 20000, headers, validateStatus: s => s >= 200 && s < 500 });
+    if (resp.status >= 400) {
+        const err = new Error(`fmovies play failed with status ${resp.status}`);
+        err.status = resp.status;
+        throw err;
+    }
+    const data = typeof resp.data === 'string' ? moviebox_safeJson(resp.data) : resp.data;
+    if (!data || data.code !== 0 || !data.data) {
+        const hint = mergedCookie ? 'Cookies forwarded but still unauthorized.' : 'No cookies forwarded; authentication may be required.';
+        const err = new Error(`fmovies response invalid or unauthorized (code=${data?.code ?? 'n/a'}). ${hint}`);
+        err.status = 502;
+        err.details = { playUrl, referer: headers['Referer'] };
+        throw err;
+    }
+    const refererHeader = spaUrl;
+    const cookieHeader = mergedCookie;
+    const uaHeader = headers['User-Agent'];
+    const streams = Array.isArray(data.data.streams) ? data.data.streams.map(s => ({
+        format: s.format,
+        id: String(s.id),
+        url: s.url,
+        resolutions: String(s.resolutions),
+        size: s.size,
+        duration: s.duration,
+        codecName: s.codecName,
+        headers: {
+            referer: refererHeader,
+            cookie: cookieHeader,
+            userAgent: uaHeader
+        }
+    })) : [];
+    return { streams, raw: data };
+}
+
+function moviebox_safeJson(t) { try { return JSON.parse(t); } catch (_) { return null; } }
+
+// TMDB title resolution for MovieBox
+const MOVIEBOX_TMDB_API_KEY = 'b3556f3b206e16f82df4d1f6fd4545e6';
+async function moviebox_getTitleForTmdbId(id, preferredType) {
+    const order = preferredType === 'tv' ? ['tv', 'movie'] : preferredType === 'movie' ? ['movie', 'tv'] : ['movie', 'tv'];
+    let lastError;
+    for (const kind of order) {
+        try {
+            const url = `https://api.themoviedb.org/3/${kind}/${encodeURIComponent(id)}?api_key=${MOVIEBOX_TMDB_API_KEY}&language=en-US`;
+            const resp = await axios.get(url, { timeout: 12000, validateStatus: s => s >= 200 && s < 500 });
+            if (resp.status === 200 && resp.data) {
+                const data = resp.data;
+                const title = kind === 'movie' ? (data.title || data.original_title) : (data.name || data.original_name);
+                const year = (kind === 'movie' ? data.release_date : data.first_air_date)?.slice(0, 4) || undefined;
+                if (title) return { title, kind, year, tmdbId: String(id) };
+            }
+            lastError = new Error(`TMDB ${kind} lookup failed with status ${resp.status}`);
+        } catch (e) { lastError = e; }
+    }
+    lastError = lastError || new Error('TMDB lookup failed');
+    lastError.status = lastError.status || 502;
+    throw lastError;
+}
+
+async function moviebox_handleSearch(req, res) {
+    let { query } = req.params;
+    try {
+        // If query is numeric TMDB id, resolve title first
+        let tmdbDebug;
+        if (/^\d+$/.test(query)) {
+            const preferredType = typeof req.query.type === 'string' ? req.query.type : undefined; // 'movie' | 'tv'
+            const { title, kind, year } = await moviebox_getTitleForTmdbId(query, preferredType);
+            tmdbDebug = { tmdbId: query, resolvedTitle: title, kind, year };
+            query = title;
+        }
+
+        const listRes = await moviebox_getIdentifiersListFromQuery(query, {
+            offline: req.query.offline === 'true' || req.query.offline === '1',
+            offlineFile: 'moviebox crack.txt',
+        });
+        const items = listRes.items || [];
+        const debug = listRes.debug;
+
+        if (!items.length) {
+            return res.status(404).json({ ok: false, error: 'No matching detailPath/subjectId found', debug });
+        }
+
+        const primary = items[0];
+        const detailPath = primary.detailPath;
+        const subjectId = primary.subjectId;
+
+        const cookie = req.headers['x-cookie'] || req.headers['cookie'] || '';
+        const fwd = { 'x-forwarded-for': req.headers['x-forwarded-for'], 'user-agent': req.headers['user-agent'] };
+        const se = req.query.se || '0';
+        const ep = req.query.ep || '0';
+
+        const variants = await Promise.all(items.map(async (it) => {
+            try {
+                const { streams } = await moviebox_fetchStreamsFromFMovies({
+                    subjectId: it.subjectId,
+                    detailPath: it.detailPath,
+                    se, ep,
+                    forwardCookie: cookie,
+                    forwardHeaders: fwd,
+                });
+                return { ...it, streams };
+            } catch (e) {
+                return { ...it, error: e.message };
+            }
+        }));
+
+        const primaryVar = variants.find(v => v.detailPath === detailPath) || variants[0];
+        const streams = primaryVar.streams || [];
+        const raw = undefined;
+
+        return res.json({
+            ok: true,
+            query,
+            subjectId,
+            detailPath,
+            streams,
+            variants,
+            _raw: req.query.debug_raw === 'true' ? raw : undefined,
+            _debug: req.query.debug === 'true' ? { ...debug, tmdb: tmdbDebug } : undefined,
+        });
+    } catch (err) {
+        const status = err.status || 500;
+        return res.status(status).json({
+            ok: false,
+            error: err.message || 'Unexpected error',
+            stack: req.query.debug === 'true' ? err.stack : undefined,
+        });
+    }
+}
+
+// MovieBox movie endpoint by TMDB ID
+app.get('/moviebox/:tmdbId', async (req, res) => {
+    const { tmdbId } = req.params;
+    
+    if (!tmdbId || !/^\d+$/.test(tmdbId)) {
+        return res.status(400).json({ ok: false, error: 'Valid numeric TMDB ID is required' });
+    }
+
+    try {
+        // Resolve TMDB ID to title (movie)
+        const { title, kind, year } = await moviebox_getTitleForTmdbId(tmdbId, 'movie');
+        const tmdbDebug = { tmdbId, resolvedTitle: title, kind, year };
+        
+        const listRes = await moviebox_getIdentifiersListFromQuery(title, {
+            offline: req.query.offline === 'true' || req.query.offline === '1',
+            offlineFile: 'moviebox crack.txt',
+        });
+        const items = listRes.items || [];
+        const debug = listRes.debug;
+
+        if (!items.length) {
+            return res.status(404).json({ ok: false, error: 'No matching detailPath/subjectId found for this movie', debug, tmdb: tmdbDebug });
+        }
+
+        const cookie = req.headers['x-cookie'] || req.headers['cookie'] || '';
+        const fwd = { 'x-forwarded-for': req.headers['x-forwarded-for'], 'user-agent': req.headers['user-agent'] };
+
+        // Fetch streams for ALL matching variants
+        const variants = await Promise.all(items.map(async (it) => {
+            try {
+                const { streams } = await moviebox_fetchStreamsFromFMovies({
+                    subjectId: it.subjectId,
+                    detailPath: it.detailPath,
+                    se: '0',
+                    ep: '0',
+                    forwardCookie: cookie,
+                    forwardHeaders: fwd,
+                });
+                return { 
+                    detailPath: it.detailPath,
+                    subjectId: it.subjectId,
+                    distance: it.distance,
+                    streams,
+                    streamCount: streams.length
+                };
+            } catch (e) {
+                return { 
+                    detailPath: it.detailPath,
+                    subjectId: it.subjectId,
+                    distance: it.distance,
+                    error: e.message,
+                    streamCount: 0
+                };
+            }
+        }));
+
+        // Collect all streams from all variants
+        const allStreams = [];
+        variants.forEach(variant => {
+            if (variant.streams && variant.streams.length > 0) {
+                variant.streams.forEach(stream => {
+                    allStreams.push({
+                        ...stream,
+                        source: variant.detailPath,
+                        sourceSubjectId: variant.subjectId
+                    });
+                });
+            }
+        });
+
+        return res.json({
+            ok: true,
+            tmdbId,
+            type: 'movie',
+            title,
+            year,
+            totalStreams: allStreams.length,
+            totalVariants: variants.length,
+            streams: allStreams,
+            variants,
+            _debug: req.query.debug === 'true' ? { ...debug, tmdb: tmdbDebug } : undefined,
+        });
+    } catch (err) {
+        const status = err.status || 500;
+        return res.status(status).json({
+            ok: false,
+            error: err.message || 'Unexpected error',
+            stack: req.query.debug === 'true' ? err.stack : undefined,
+        });
+    }
+});
+
+// MovieBox TV endpoint by TMDB ID + season + episode
+app.get('/moviebox/tv/:tmdbId/:season/:episode', async (req, res) => {
+    const { tmdbId, season, episode } = req.params;
+    
+    if (!tmdbId || !/^\d+$/.test(tmdbId)) {
+        return res.status(400).json({ ok: false, error: 'Valid numeric TMDB ID is required' });
+    }
+    if (!season || !/^\d+$/.test(season)) {
+        return res.status(400).json({ ok: false, error: 'Valid season number is required' });
+    }
+    if (!episode || !/^\d+$/.test(episode)) {
+        return res.status(400).json({ ok: false, error: 'Valid episode number is required' });
+    }
+
+    try {
+        // Resolve TMDB ID to title (tv)
+        const { title, kind, year } = await moviebox_getTitleForTmdbId(tmdbId, 'tv');
+        const tmdbDebug = { tmdbId, resolvedTitle: title, kind, year };
+        
+        const listRes = await moviebox_getIdentifiersListFromQuery(title, {
+            offline: req.query.offline === 'true' || req.query.offline === '1',
+            offlineFile: 'moviebox crack.txt',
+        });
+        const items = listRes.items || [];
+        const debug = listRes.debug;
+
+        if (!items.length) {
+            return res.status(404).json({ ok: false, error: 'No matching detailPath/subjectId found for this TV show', debug, tmdb: tmdbDebug });
+        }
+
+        const cookie = req.headers['x-cookie'] || req.headers['cookie'] || '';
+        const fwd = { 'x-forwarded-for': req.headers['x-forwarded-for'], 'user-agent': req.headers['user-agent'] };
+
+        // Fetch streams for ALL matching variants
+        const variants = await Promise.all(items.map(async (it) => {
+            try {
+                const { streams } = await moviebox_fetchStreamsFromFMovies({
+                    subjectId: it.subjectId,
+                    detailPath: it.detailPath,
+                    se: season,
+                    ep: episode,
+                    forwardCookie: cookie,
+                    forwardHeaders: fwd,
+                });
+                return { 
+                    detailPath: it.detailPath,
+                    subjectId: it.subjectId,
+                    distance: it.distance,
+                    streams,
+                    streamCount: streams.length
+                };
+            } catch (e) {
+                return { 
+                    detailPath: it.detailPath,
+                    subjectId: it.subjectId,
+                    distance: it.distance,
+                    error: e.message,
+                    streamCount: 0
+                };
+            }
+        }));
+
+        // Collect all streams from all variants
+        const allStreams = [];
+        variants.forEach(variant => {
+            if (variant.streams && variant.streams.length > 0) {
+                variant.streams.forEach(stream => {
+                    allStreams.push({
+                        ...stream,
+                        source: variant.detailPath,
+                        sourceSubjectId: variant.subjectId
+                    });
+                });
+            }
+        });
+
+        return res.json({
+            ok: true,
+            tmdbId,
+            type: 'tv',
+            title,
+            year,
+            season: parseInt(season),
+            episode: parseInt(episode),
+            totalStreams: allStreams.length,
+            totalVariants: variants.length,
+            streams: allStreams,
+            variants,
+            _debug: req.query.debug === 'true' ? { ...debug, tmdb: tmdbDebug } : undefined,
+        });
+    } catch (err) {
+        const status = err.status || 500;
+        return res.status(status).json({
+            ok: false,
+            error: err.message || 'Unexpected error',
+            stack: req.query.debug === 'true' ? err.stack : undefined,
+        });
+    }
+});
+
+// Legacy search endpoint (kept for backward compatibility)
+app.get('/moviebox/api/:query', moviebox_handleSearch);
+app.get('/api/moviebox/:query', moviebox_handleSearch);
+
+app.get('/moviebox/health', (_req, res) => {
+    res.json({ ok: true, service: 'moviebox', time: new Date().toISOString() });
+});
+
+app.get('/moviebox/', (_req, res) => {
+    res.json({
+        status: 'running',
+        endpoints: {
+            movie: '/moviebox/:tmdbId',
+            tv: '/moviebox/tv/:tmdbId/:season/:episode',
+            search: '/moviebox/api/:query (legacy)',
+            health: '/moviebox/health'
+        },
+        examples: {
+            movie: '/moviebox/438631 (Dune by TMDB ID)',
+            tvEpisode: '/moviebox/tv/95557/6/5 (The Vampire Diaries S6E5)',
+            search: '/moviebox/api/Dune (legacy search)'
+        }
+    });
+});
+
+// ============================================================================
 // ROOT ENDPOINT - API INFO
 // ============================================================================
 
@@ -1470,6 +1981,21 @@ app.get('/', (req, res) => {
                     health: '/otherbook/health'
                 },
                 example: 'http://localhost:3000/otherbook/api/search/The%20midnight%20library'
+            },
+            moviebox: {
+                description: 'MovieBox.id search with FMovies stream extraction',
+                endpoints: {
+                    movie: '/moviebox/{tmdbId}',
+                    tv: '/moviebox/tv/{tmdbId}/{season}/{episode}',
+                    search: '/moviebox/api/{query} (legacy)',
+                    info: '/moviebox/',
+                    health: '/moviebox/health'
+                },
+                examples: {
+                    movie: '/moviebox/438631',
+                    tvEpisode: '/moviebox/tv/95557/6/5',
+                    search: '/moviebox/api/Dune'
+                }
             },
             lib111477: {
                 description: 'Movie/TV show directory parser with TMDB integration',
@@ -2331,3 +2857,4 @@ process.on('uncaughtException', (err) => {
 
 // Export the function to register routes instead of starting a server
 module.exports = { registerApiRoutes };
+
