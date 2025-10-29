@@ -8351,7 +8351,7 @@
 <div class="modal-runtime" id="animeModalEpisodes">24 Episodes</div>
 </div>
 <p class="modal-tagline" id="animeModalGenres">Action, Adventure</p>
-<div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+<div style="display: flex; gap: 0.75rem; flex-wrap: wrap; align-items: flex-start;">
     <button class="btn btn-primary" id="animeFindTorrentsBtn">
         <i class="fas fa-magnet"></i> Find Torrents
     </button>
@@ -8453,9 +8453,18 @@ Can't find what you're looking for? Try a custom search
 </div>
 <p class="modal-tagline" id="modalTagline">Tagline goes here</p>
 <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
-    <button class="btn btn-primary" id="watchNowBtn">
-        <i class="fas fa-play"></i> Find Torrents
-    </button>
+    <div style="display:flex; flex-direction:column; gap:0.5rem; align-items:flex-start;">
+        <button class="btn btn-primary" id="watchNowBtn">
+            <i class="fas fa-play"></i> Find Torrents
+        </button>
+        <button class="btn btn-outline" id="useStreamsBtn">
+            <i class="fas fa-broadcast-tower"></i> Use Streams instead
+        </button>
+        <div id="watchNowNote" style="display:none; color: var(--light); opacity: 0.85; font-size: 0.9rem; padding-left: 0.1rem;">
+            <i class="fas fa-info-circle" style="color:#a78bfa;"></i>
+            Please select an episode
+        </div>
+    </div>
     <button class="btn btn-secondary" id="traktWatchlistBtn" style="display: none;">
         <i class="fas fa-plus"></i> Add to Watchlist
     </button>
@@ -8528,7 +8537,7 @@ If you experience audio problems or no audio at all, click <strong>"Open in MPV"
 </div>
 <div class="provider-buttons">
 <button class="provider-btn active" data-provider="playtorrio">
-<i class="fas fa-magnet"></i> Playtorrio (Configure in the settings)
+<i class="fas fa-magnet"></i> Playtorrio
                     </button>
 <button class="provider-btn" data-provider="nuvio">
 <i class="fas fa-stream"></i> Nuvio <span style="font-size: 0.8em; opacity: 0.8;">(ShowBox)</span>
@@ -8538,6 +8547,9 @@ If you experience audio problems or no audio at all, click <strong>"Open in MPV"
 </button>
 <button class="provider-btn" data-provider="111477">
 <i class="fas fa-play-circle"></i> 111477
+</button>
+<button class="provider-btn" data-provider="moviebox">
+<i class="fas fa-film"></i> MovieBox
 </button>
 </div>
 <div style="margin-bottom: 1rem;">
@@ -9232,7 +9244,7 @@ Your browser does not support the video tag.
         let currentSubtitles = [];
     let subtitleTrack = null;
     let currentSubtitleFile = null; // filename served under /subtitles to delete on switch
-    let selectedProvider = 'playtorrio'; // Default provider: playtorrio, nuvio, comet, or 111477
+    let selectedProvider = 'playtorrio'; // Default provider: playtorrio, nuvio, comet, 111477, moviebox
     let lastSearchedSeason = null; // Track last searched season for provider switching
     let lastSearchedEpisode = null; // Track last searched episode for provider switching
     
@@ -13166,11 +13178,42 @@ Your browser does not support the video tag.
             watchNowBtn.addEventListener('click', (e) => {
                 console.log('[DEBUG] Watch button clicked!');
                 try {
-                    showTorrents(e);
+                    const streamingMode = localStorage.getItem('useStreamingServers') === 'true';
+                    if (streamingMode && currentMediaType === 'movie') {
+                        // Build mediaData for server selection
+                        const mediaData = {
+                            id: currentContent?.id,
+                            type: 'movie',
+                            title: currentContent?.title || currentContent?.name || 'Untitled',
+                            subtitle: '',
+                            year: (currentContent?.release_date || currentContent?.first_air_date || '').substring(0,4),
+                            rating: Number(currentContent?.vote_average || 0).toFixed(1),
+                            poster: currentContent?.poster_path ? `https://image.tmdb.org/t/p/w342${currentContent.poster_path}` : ''
+                        };
+                        showServerSelection(mediaData);
+                    } else {
+                        showTorrents(e);
+                    }
                 } catch (error) {
-                    console.error('[DEBUG] Error in showTorrents:', error);
+                    console.error('[DEBUG] Error in Watch Now handler:', error);
                 }
             });
+
+            // Toggle streaming mode from details modal
+            const useStreamsBtn = document.getElementById('useStreamsBtn');
+            if (useStreamsBtn) {
+                useStreamsBtn.addEventListener('click', () => {
+                    const current = localStorage.getItem('useStreamingServers') === 'true';
+                    const next = !current;
+                    localStorage.setItem('useStreamingServers', next ? 'true' : 'false');
+                    // Sync settings toggles in the UI
+                    const toggles = document.querySelectorAll('#useStreamingServersToggle');
+                    toggles.forEach(t => t.checked = next);
+                    // Update main button text and hint
+                    updateWatchButtonText();
+                    showNotification(`Streaming mode ${next ? 'enabled' : 'disabled'}`, next ? 'success' : 'info');
+                });
+            }
             
             // Refresh torrents
             refreshTorrents.addEventListener('click', () => {
@@ -13184,14 +13227,30 @@ Your browser does not support the video tag.
                     // Update active state
                     document.querySelectorAll('.provider-btn').forEach(b => b.classList.remove('active'));
                     btn.classList.add('active');
-                    
+
                     // Update selected provider
                     selectedProvider = btn.dataset.provider;
                     console.log('[Provider] Switched to:', selectedProvider);
-                    
-                    // Fetch torrents with new provider using last searched parameters
+
+                    // Always show a searching indicator immediately
+                    try {
+                        const tl = document.getElementById('torrentsList');
+                        if (tl) {
+                            const label = selectedProvider === 'moviebox' ? 'MovieBox' :
+                                          selectedProvider === 'nuvio' ? 'Nuvio' :
+                                          selectedProvider === 'comet' ? 'Comet' :
+                                          selectedProvider === '111477' ? '111477' : 'torrents';
+                            tl.innerHTML = `<div class="loading"><i class="fas fa-spinner"></i> Searching ${label}...</div>`;
+                        }
+                    } catch(_) {}
+
+                    // Fetch with new provider using last searched parameters; call MovieBox directly to avoid any gating
                     torrentsLoaded = false;
-                    fetchTorrents(lastSearchedSeason, lastSearchedEpisode);
+                    if (selectedProvider === 'moviebox') {
+                        fetchMovieBoxStreams(lastSearchedSeason, lastSearchedEpisode);
+                    } else {
+                        fetchTorrents(lastSearchedSeason, lastSearchedEpisode);
+                    }
                 });
             });
             
@@ -15877,6 +15936,13 @@ Your browser does not support the video tag.
                             : `https://player.videasy.net/tv/${id}/${season}/${episode}`
                 },
                 {
+                    name: 'LunaStream',
+                    getUrl: (type, id, season, episode) =>
+                        type === 'movie'
+                            ? `https://lunastream.fun/watch/movie/${id}`
+                            : `https://lunastream.fun/watch/tv/${id}/${season}/${episode}`
+                },
+                {
                     name: 'VidRock',
                     getUrl: (type, id, season, episode) =>
                         type === 'movie'
@@ -16086,6 +16152,8 @@ Your browser does not support the video tag.
                     provider = 'Comet';
                 } else if (selectedProvider === '111477') {
                     provider = '111477';
+                } else if (selectedProvider === 'moviebox') {
+                    provider = 'MovieBox';
                 } else {
                     provider = 'App Sources';  // Default fallback
                 }
@@ -16148,6 +16216,7 @@ Your browser does not support the video tag.
                     'xprime.tv': /^https:\/\/xprime\.tv\/watch\/\d+(\?.*)?$/,
                     'vidnest.fun': /^https:\/\/vidnest\.fun\/(movie|tv)\/\d+(\?.*)?$/,
                     'player.videasy.net': /^https:\/\/player\.videasy\.net\/(movie|tv)\/\d+(\?.*)?$/,
+                    'lunastream.fun': /^https:\/\/lunastream\.fun\/watch\/(movie\/\d+|tv\/\d+\/\d+\/\d+)(\?.*)?$/,
                     'veloratv.ru': /^https:\/\/veloratv\.ru\/watch\/(movie|tv)\/\d+(\?.*)?$/,
                     'vidfast.pro': /^https:\/\/vidfast\.pro\/(movie\/\d+|tv\/\d+\/\d+\/\d+)(\?.*)?$/,
                     'vidfast.to': /^https:\/\/vidfast\.to\/embed\/(movie\/\d+|tv\/\d+\/\d+\/\d+)(\?.*)?$/,
@@ -16307,6 +16376,10 @@ Your browser does not support the video tag.
                         type === 'movie'
                             ? `https://player.videasy.net/movie/${id}`
                             : `https://player.videasy.net/tv/${id}/${season}/${episode}`,
+                    'LunaStream': (type, id, season, episode) =>
+                        type === 'movie'
+                            ? `https://lunastream.fun/watch/movie/${id}`
+                            : `https://lunastream.fun/watch/tv/${id}/${season}/${episode}`,
                     'VidRock': (type, id, season, episode) =>
                         type === 'movie'
                             ? `https://vidrock.net/movie/${id}`
@@ -16628,12 +16701,33 @@ Your browser does not support the video tag.
             // Update watch button text based on streaming mode
             function updateWatchButtonText() {
                 const watchBtn = document.getElementById('watchNowBtn');
+                const note = document.getElementById('watchNowNote');
+                const toggleBtn = document.getElementById('useStreamsBtn');
+                const streamingMode = localStorage.getItem('useStreamingServers') === 'true';
                 if (watchBtn) {
-                    const streamingMode = localStorage.getItem('useStreamingServers') === 'true';
                     if (streamingMode) {
-                        watchBtn.innerHTML = '<i class="fas fa-play"></i> Watch Now';
+                        // For TV shows in streaming mode, hide the button and show hint
+                        if (currentMediaType === 'tv') {
+                            watchBtn.style.display = 'none';
+                            if (note) note.style.display = '';
+                        } else {
+                            watchBtn.style.display = '';
+                            watchBtn.innerHTML = '<i class="fas fa-play"></i> Watch Now';
+                            if (note) note.style.display = 'none';
+                        }
                     } else {
+                        watchBtn.style.display = '';
                         watchBtn.innerHTML = '<i class="fas fa-play"></i> Find Torrents';
+                        if (note) note.style.display = 'none';
+                    }
+                }
+
+                // Update the toggle button label between Streams/Torrents
+                if (toggleBtn) {
+                    if (streamingMode) {
+                        toggleBtn.innerHTML = '<i class="fas fa-magnet"></i> Use Torrents instead';
+                    } else {
+                        toggleBtn.innerHTML = '<i class="fas fa-broadcast-tower"></i> Use Streams instead';
                     }
                 }
             }
@@ -17802,6 +17896,9 @@ Your browser does not support the video tag.
 
             detailsModal.classList.add('active');
             document.body.style.overflow = 'hidden';
+
+            // Ensure the Watch Now UI reflects current mode and media type when opening
+            try { updateWatchButtonText(); } catch(_) {}
         }
 
         // Close details modal
@@ -18167,14 +18264,10 @@ Your browser does not support the video tag.
                     const currentSelectedServer = localStorage.getItem('selectedServer') || 'Videasy';
                     serverDropdown.innerHTML = '';
                     
-                    // Define servers inline (serverConfig not accessible from this scope)
-                    // Ordered preference:
-                    // 1) New: CinemaOS first, then Videasy, then Vidfast
-                    // 2) Other new ones: 111Movies, VidSrc 1-4, PrimeSrc
-                    // 3) Existing/older ones afterwards
                     const servers = [
                         { name: 'CinemaOS' },
                         { name: 'Videasy' },
+                        { name: 'LunaStream' },
                         { name: 'Vidfast 1' },
                         { name: 'Vidfast 2' },
                         { name: '111Movies' },
@@ -18183,14 +18276,12 @@ Your browser does not support the video tag.
                         { name: 'VidSrc 3' },
                         { name: 'VidSrc 4' },
                         { name: 'PrimeSrc' },
-                        // Existing ones
                         { name: 'VidRock' },
                         { name: 'HexaWatch' },
                         { name: 'FMovies' },
                         { name: 'Xprime' },
                         { name: 'Vidnest' },
                         { name: 'veloratv' },
-                        
                         { name: 'MovieClub' },
                         { name: 'MapleTV' },
                         { name: '2Embed' },
@@ -18198,17 +18289,11 @@ Your browser does not support the video tag.
                         { name: 'Autoembed' },
                         { name: 'GoDrivePlayer' },
                         { name: 'VidWTF Premium' },
-                        // New additional servers
-                        
                         { name: 'GDrivePlayer API' },
-                        
                         { name: 'Nontongo' },
-                        
                         { name: 'SpencerDevs' },
-                        
                         { name: 'VidAPI' },
                         { name: 'Vidify' },
-                        
                         { name: 'VidSrc CX' },
                         { name: 'VidSrc ME' },
                         { name: 'VidSrc TO' },
@@ -18243,7 +18328,7 @@ Your browser does not support the video tag.
         }
 
         // Fetch streams from Nuvio API (direct streaming links)
-        async function fetchNuvioStreams(season = null, episode = null) {
+    async function fetchNuvioStreams(season = null, episode = null) {
             if (!currentContent) return;
 
             const torrentsList = document.getElementById('torrentsList');
@@ -18265,28 +18350,50 @@ Your browser does not support the video tag.
                     throw new Error('No IMDB ID found for this content');
                 }
 
-                // Default Febbox JWT token for Nuvio
+                // Febbox JWT token for Nuvio (supports custom UI token)
                 const defaultFebboxToken = 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpYXQiOjE3NTU5MzQ2NzcsIm5iZiI6MTc1NTkzNDY3NywiZXhwIjoxNzg3MDM4Njk3LCJkYXRhIjp7InVpZCI6OTY3OTA3LCJ0b2tlbiI6ImRjZTBiZTUyNzgzODU1Njg5ZjNlMjBhZTIzODU2YzlkIn19.yAuVwTgLyO7sTH5rOi_-UaVAHqO0YzUkykXgQC2ci2E';
-                
-                // Use custom token from settings if available, otherwise use default
-                const savedToken = localStorage.getItem('febboxToken');
-                const febboxToken = savedToken && savedToken.trim() ? savedToken.trim() : defaultFebboxToken;
+                const savedToken = (localStorage.getItem('febboxToken') || '').trim();
+                const febboxToken = savedToken || defaultFebboxToken;
 
-                let nuvioUrl;
+                // Build new Nuviostreams URL with cookies, region, providers
+                const base = 'https://nuviostreams.hayd.uk';
+                const cookiesSeg = `cookies=${encodeURIComponent(JSON.stringify([febboxToken]))}`; // cookies=%5B"<JWT>"%5D
+                const regionSeg = 'region=UK3';
+                const providersSeg = 'providers=showbox,vidzee,vidsrc,vixsrc,mp4hydra,uhdmovies,moviesmod,4khdhub,topmovies';
+                let nuvioExternalUrl;
                 if (mediaType === 'movie') {
-                    nuvioUrl = `${API_BASE_URL}/nuvio/stream/movie/${imdbId}?cookie=ui%3D${febboxToken}&region=US`;
+                    nuvioExternalUrl = `${base}/${cookiesSeg}/${regionSeg}/${providersSeg}/stream/movie/${encodeURIComponent(imdbId)}.json`;
                 } else if (season && episode) {
-                    nuvioUrl = `${API_BASE_URL}/nuvio/stream/series/${imdbId}:${season}:${episode}?cookie=ui%3D${febboxToken}&region=US`;
+                    nuvioExternalUrl = `${base}/${cookiesSeg}/${regionSeg}/${providersSeg}/stream/series/${encodeURIComponent(imdbId)}:${encodeURIComponent(season)}:${encodeURIComponent(episode)}.json`;
                 } else {
                     throw new Error('Season and episode required for TV shows');
                 }
 
-                console.log('[Nuvio] Fetching from:', nuvioUrl);
+                console.log('[Nuvio] Trying direct URL:', nuvioExternalUrl);
 
-                const response = await fetch(nuvioUrl);
-                if (!response.ok) throw new Error(`Nuvio error: ${response.statusText}`);
-                
-                const data = await response.json();
+                let data = null;
+                let responseOk = false;
+                try {
+                    const response = await fetch(nuvioExternalUrl);
+                    responseOk = response.ok;
+                    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                    data = await response.json();
+                } catch (directErr) {
+                    console.warn('[Nuvio] Direct fetch failed, falling back to backend proxy:', directErr?.message || directErr);
+                    // Fallback to existing backend proxy if available
+                    let proxyUrl;
+                    if (mediaType === 'movie') {
+                        proxyUrl = `${API_BASE_URL}/nuvio/stream/movie/${imdbId}?cookie=ui%3D${encodeURIComponent(febboxToken)}&region=US`;
+                    } else {
+                        proxyUrl = `${API_BASE_URL}/nuvio/stream/series/${imdbId}:${season}:${episode}?cookie=ui%3D${encodeURIComponent(febboxToken)}&region=US`;
+                    }
+                    console.log('[Nuvio] Fetching via proxy:', proxyUrl);
+                    const response = await fetch(proxyUrl);
+                    if (!response.ok) throw new Error(`Proxy Nuvio error: ${response.statusText}`);
+                    data = await response.json();
+                    responseOk = true;
+                }
+                if (!responseOk || !data) throw new Error('Failed to load Nuvio streams');
                 const streams = data.streams || [];
                 
                 console.log('[Nuvio] Found', streams.length, 'streams');
@@ -18296,8 +18403,28 @@ Your browser does not support the video tag.
                     return;
                 }
 
+                // Reorder streams: all MoviesMod first (1080p preferred), then others in original order
+                const withIndex = streams.map((s, i) => ({ s, i }));
+                const mmRegex = /moviesmod/i;
+                const p1080 = /1080p/i;
+                withIndex.sort((a, b) => {
+                    const aMM = mmRegex.test(a.s?.name || '') || mmRegex.test(a.s?.title || '');
+                    const bMM = mmRegex.test(b.s?.name || '') || mmRegex.test(b.s?.title || '');
+                    if (aMM && !bMM) return -1;
+                    if (!aMM && bMM) return 1;
+                    if (aMM && bMM) {
+                        const a1080 = p1080.test(a.s?.name || '') || p1080.test(a.s?.title || '');
+                        const b1080 = p1080.test(b.s?.name || '') || p1080.test(b.s?.title || '');
+                        if (a1080 && !b1080) return -1;
+                        if (!a1080 && b1080) return 1;
+                    }
+                    // Preserve original order otherwise
+                    return a.i - b.i;
+                });
+                const prioritizedStreams = withIndex.map(x => x.s);
+
                 // Display Nuvio streams as direct play buttons
-                displayNuvioStreams(streams);
+                displayNuvioStreams(prioritizedStreams);
 
             } catch (error) {
                 console.error('[Nuvio] Error:', error);
@@ -18779,9 +18906,168 @@ Your browser does not support the video tag.
             }
         }
 
+        // Fetch streams from MovieBox (aggregated variants)
+        async function fetchMovieBoxStreams(season = null, episode = null) {
+            if (!currentContent) return;
+
+            const torrentsList = document.getElementById('torrentsList');
+            torrentsList.innerHTML = '<div class="loading"><i class="fas fa-spinner"></i> Searching MovieBox...</div>';
+
+            try {
+                const tmdbId = currentContent.id;
+                const mediaType = currentMediaType; // 'movie' or 'tv'
+
+                let apiUrl;
+                if (mediaType === 'movie') {
+                    apiUrl = `http://localhost:3000/moviebox/${encodeURIComponent(tmdbId)}`;
+                } else if (season && episode) {
+                    apiUrl = `http://localhost:3000/moviebox/tv/${encodeURIComponent(tmdbId)}/${encodeURIComponent(season)}/${encodeURIComponent(episode)}`;
+                } else {
+                    throw new Error('Season and episode required for TV shows');
+                }
+
+                console.log('[MovieBox] Fetching:', apiUrl);
+                const response = await fetch(apiUrl, { credentials: 'include' });
+                if (!response.ok) throw new Error(`MovieBox error: ${response.statusText}`);
+                const data = await response.json();
+                const streams = Array.isArray(data.streams) ? data.streams : [];
+
+                console.log('[MovieBox] Found', streams.length, 'streams');
+                if (streams.length === 0) {
+                    torrentsList.innerHTML = '<div class="error-message"><i class="fas fa-info-circle"></i> No MovieBox streams found</div>';
+                    return;
+                }
+
+                // Group by source (detailPath)
+                const groups = {};
+                for (const s of streams) {
+                    const src = s.source || 'unknown';
+                    groups[src] = groups[src] || [];
+                    groups[src].push(s);
+                }
+
+                displayMovieBoxGroups(groups);
+            } catch (error) {
+                console.error('[MovieBox] Error:', error);
+                torrentsList.innerHTML = `<div class="error-message"><i class="fas fa-exclamation-triangle"></i> MovieBox Error: ${error.message}</div>`;
+            }
+        }
+
+        // Map resolution to approximate HLS bitrate (bits/sec)
+        function mapResolutionToBitrate(res) {
+            const n = parseInt(String(res).replace(/[^0-9]/g, ''), 10) || 0;
+            if (n >= 1080) return 5000000;
+            if (n >= 720) return 2500000;
+            if (n >= 480) return 1200000;
+            if (n >= 360) return 600000;
+            return 0; // mpv will pick automatically
+        }
+
+        // Render MovieBox groups with resolution buttons
+        function displayMovieBoxGroups(groups) {
+            const torrentsList = document.getElementById('torrentsList');
+            torrentsList.innerHTML = '';
+
+            const groupNames = Object.keys(groups);
+            if (groupNames.length === 0) {
+                torrentsList.innerHTML = '<div class="error-message"><i class="fas fa-info-circle"></i> No streams available</div>';
+                return;
+            }
+
+            groupNames.forEach((src) => {
+                const items = groups[src] || [];
+                
+                // Build a map of resolution -> stream for this source
+                const resolutionMap = {};
+                items.forEach(stream => {
+                    const resStr = (stream.resolutions || '').trim();
+                    const resList = resStr.split(',').map(s => s.trim()).filter(Boolean);
+                    resList.forEach(res => {
+                        // Store the stream for each resolution it supports
+                        if (!resolutionMap[res]) {
+                            resolutionMap[res] = stream;
+                        }
+                    });
+                });
+
+                const resolutions = Object.keys(resolutionMap).sort((a,b) => (parseInt(a)||0)-(parseInt(b)||0));
+                const sample = items[0]; // fallback for display info
+
+                const div = document.createElement('div');
+                div.className = 'torrent-item';
+                div.style.cursor = 'default';
+                div.innerHTML = `
+                    <div class="torrent-info">
+                        <div class="torrent-name">MovieBox - ${src}</div>
+                        <div class="torrent-details"><span>${sample ? (sample.format || '') : ''}${sample && sample.codecName ? ' • ' + sample.codecName : ''}</span></div>
+                    </div>
+                    <div class="torrent-actions" data-src="${encodeURIComponent(src)}"></div>
+                `;
+                torrentsList.appendChild(div);
+
+                const actions = div.querySelector('.torrent-actions');
+                
+                if (resolutions.length === 0 && sample) {
+                    // Fallback: single play button using first available stream
+                    const btn = document.createElement('button');
+                    btn.className = 'torrent-btn';
+                    btn.innerHTML = '<i class="fas fa-external-link-alt"></i> Open in MPV';
+                    btn.addEventListener('click', () => openMovieBoxInMPV(sample));
+                    actions.appendChild(btn);
+                } else {
+                    // Create a button for each resolution, using the correct stream
+                    resolutions.forEach(res => {
+                        const stream = resolutionMap[res];
+                        const btn = document.createElement('button');
+                        btn.className = 'torrent-btn';
+                        btn.textContent = `${res}p`;
+                        btn.addEventListener('click', () => openMovieBoxInMPV(stream, res));
+                        actions.appendChild(btn);
+                    });
+                }
+            });
+        }
+
+        async function openMovieBoxInMPV(stream, resolution = null) {
+            try {
+                if (!window.electronAPI || !window.electronAPI.openMpvWithHeaders) {
+                    showNotification('MPV (advanced) integration not available', 'error');
+                    return;
+                }
+
+                const url = stream.url;
+                const headers = stream.headers || {};
+                const ua = headers.userAgent || 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36';
+                const ref = headers.referer || 'https://fmoviesunblocked.net/';
+                const cookie = headers.cookie || '';
+
+                const bitrate = resolution ? mapResolutionToBitrate(resolution) : 0;
+
+                const result = await window.electronAPI.openMpvWithHeaders({
+                    url,
+                    userAgent: ua,
+                    referer: ref,
+                    cookie,
+                    hlsBitrate: bitrate || undefined
+                });
+
+                if (result?.success) {
+                    showNotification('Opened in MPV', 'success');
+                } else {
+                    showNotification(`MPV Error: ${result?.message || 'Unknown error'}`, 'error');
+                }
+            } catch (e) {
+                console.error('[MovieBox] MPV open error:', e);
+                showNotification('Failed to open in MPV', 'error');
+            }
+        }
+
         // Fetch torrents from the backend
         async function fetchTorrents(season = null, episode = null) {
-            if (!currentContent) return;
+            if (!currentContent) {
+                try { showNotification('Select a movie/show first'); } catch(_) {}
+                return;
+            }
 
             // Track last searched parameters for provider switching
             lastSearchedSeason = season;
@@ -18797,6 +19083,9 @@ Your browser does not support the video tag.
             } else if (selectedProvider === '111477') {
                 console.log('[Provider] Routing to 111477');
                 return fetch111477Streams(season, episode);
+            } else if (selectedProvider === 'moviebox') {
+                console.log('[Provider] Routing to MovieBox');
+                return fetchMovieBoxStreams(season, episode);
             }
 
             // Playtorrio (default) - use existing torrent search logic
@@ -19692,6 +19981,8 @@ Your browser does not support the video tag.
                 provider = 'Comet';
             } else if (selectedProvider === '111477') {
                 provider = '111477';
+            } else if (selectedProvider === 'moviebox') {
+                provider = 'MovieBox';
             } else {
                 provider = 'App Sources';  // Default fallback
             }
@@ -19730,6 +20021,7 @@ Your browser does not support the video tag.
             else if (selectedProvider === 'nuvio') provider = 'Nuvio';
             else if (selectedProvider === 'comet') provider = 'Comet';
             else if (selectedProvider === '111477') provider = '111477';
+            else if (selectedProvider === 'moviebox') provider = 'MovieBox';
             else provider = 'App Sources';
 
             const seasonNum = (currentMediaType === 'tv' && currentSeason) ? currentSeason : null;
