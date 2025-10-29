@@ -1,6 +1,6 @@
 {
   "name": "playtorrio",
-  "version": "1.5.7",
+  "version": "1.5.9",
   "description": "Ayman's PlayTorrio an all in one media center",
   "author": {
     "name": "ayman",
@@ -80,6 +80,7 @@
     ],
     "win": {
       "icon": "build/icon.ico",
+      "artifactName": "PlayTorrio.installer.${ext}",
       "target": [
         "nsis"
       ]
