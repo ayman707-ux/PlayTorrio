@@ -1393,12 +1393,30 @@ if (!gotLock) {
     // Direct MPV launch for external URLs (111477, etc.)
     ipcMain.handle('open-mpv-direct', async (event, url) => {
         try {
-            console.log('Opening URL in MPV:', url);
+            console.log('Opening URL in MPV (direct):', url);
             const mpvPath = resolveMpvExe();
             if (!mpvPath) {
                 throw new Error('MPV not found');
             }
-            const mpvProcess = spawn(mpvPath, [url], { stdio: 'ignore', detached: true });
+
+            // Performance-friendly defaults and UA header for direct HTTP playback (111477, etc.)
+            const userAgent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36';
+            const args = [
+                '--cache=yes',
+                '--cache-secs=30',
+                '--demuxer-readahead-secs=20',
+                '--cache-pause=yes',
+                '--force-seekable=yes',
+                `--http-header-fields=User-Agent: ${userAgent}`,
+                '--vd-lavc-threads=4',
+                '--hwdec=d3d11va',
+                '--gpu-context=d3d11',
+                '--profile=fast',
+                '--cache-on-disk=yes',
+                url
+            ];
+
+            const mpvProcess = spawn(mpvPath, args, { stdio: 'ignore', detached: true });
             
             // Listen for process close to clear Discord presence
             mpvProcess.on('close', async (code) => {
