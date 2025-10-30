@@ -1421,6 +1421,41 @@ function moviebox_searchUrl(q) {
     return `https://moviebox.id/web/searchResult?keyword=${encodeURIComponent(q)}`;
 }
 
+// Fallback search bases (try in order) to handle regional blocks
+const MOVIEBOX_SEARCH_BASES = [
+    'https://moviebox.id',
+    'https://moviebox.ph'
+];
+
+async function moviebox_fetchSearchHtml(query) {
+    let lastErr = null;
+    for (const base of MOVIEBOX_SEARCH_BASES) {
+        const url = `${base}/web/searchResult?keyword=${encodeURIComponent(query)}`;
+        try {
+            const resp = await axios.get(url, {
+                timeout: 20000,
+                headers: {
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36',
+                    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+                    'Accept-Language': 'en-US,en;q=0.9',
+                    'Cache-Control': 'no-cache',
+                    'Pragma': 'no-cache',
+                    'Referer': base + '/',
+                },
+                validateStatus: (s) => s >= 200 && s < 500,
+            });
+            if (resp.status >= 400) {
+                lastErr = new Error(`MovieBox search failed with status ${resp.status} @ ${base}`);
+                continue;
+            }
+            return { html: String(resp.data || ''), base };
+        } catch (e) {
+            lastErr = e;
+        }
+    }
+    throw lastErr || new Error('MovieBox search failed on all bases');
+}
+
 function moviebox_pickSlugCandidates(text) {
     const slugRegex = /"([a-z0-9-]+-[A-Za-z0-9]{6,})"/g;
     const slugs = new Set();
@@ -1461,27 +1496,9 @@ async function moviebox_getIdentifiersListFromQuery(query, opts = {}) {
         html = await fs.readFile(file, 'utf8');
         debug.file = file;
     } else {
-        const url = moviebox_searchUrl(query);
-        const resp = await axios.get(url, {
-            timeout: 15000,
-            headers: {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36',
-                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
-                'Accept-Language': 'en-US,en;q=0.9',
-                'Cache-Control': 'no-cache',
-                'Pragma': 'no-cache',
-                'Referer': 'https://moviebox.id/',
-            },
-            validateStatus: (s) => s >= 200 && s < 500,
-        });
-        if (resp.status >= 400) {
-            const err = new Error(`MovieBox search failed with status ${resp.status}`);
-            err.status = resp.status;
-            throw err;
-        }
-        html = resp.data;
-        debug.searchUrl = url;
-        debug.status = resp.status;
+        const { html: fetchedHtml, base } = await moviebox_fetchSearchHtml(query);
+        html = fetchedHtml;
+        debug.searchBase = base;
     }
 
     const textBlock = moviebox_tryStructuredParse(html);
@@ -1509,21 +1526,36 @@ async function moviebox_getIdentifiersListFromQuery(query, opts = {}) {
 }
 
 // FMovies endpoints used by MovieBox
-function moviebox_PLAY_URL({ subjectId, se = '0', ep = '0', detailPath }) {
-    return `https://fmoviesunblocked.net/wefeed-h5-bff/web/subject/play?subjectId=${encodeURIComponent(subjectId)}&se=${encodeURIComponent(se)}&ep=${encodeURIComponent(ep)}&detail_path=${encodeURIComponent(detailPath)}`;
+// Candidate hosts and URL builders to handle regional differences and auth paths
+const MOVIEBOX_FALLBACK_HOSTS = [
+    'https://fmoviesunblocked.net',
+    'https://moviebox.id',
+    'https://moviebox.ph',
+];
+
+function moviebox_PLAY_URL(base, { subjectId, se = '0', ep = '0', detailPath }) {
+    return `${base}/wefeed-h5-bff/web/subject/play?subjectId=${encodeURIComponent(subjectId)}&se=${encodeURIComponent(se)}&ep=${encodeURIComponent(ep)}&detail_path=${encodeURIComponent(detailPath)}`;
 }
-function moviebox_SPA_URL({ detailPath, subjectId }) {
-    return `https://fmoviesunblocked.net/spa/videoPlayPage/movies/${encodeURIComponent(detailPath)}?id=${encodeURIComponent(subjectId)}`;
+function moviebox_SPA_URLS(base, { detailPath, subjectId, isTv }) {
+    const typeSeg = isTv ? 'tv' : 'movies';
+    const slug = encodeURIComponent(detailPath);
+    const idq = `id=${encodeURIComponent(subjectId)}`;
+    return Array.from(new Set([
+        `${base}/spa/videoPlayPage/${typeSeg}/${slug}?${idq}`,
+        `${base}/spa/videoPlayPage/${slug}?${idq}`,
+        `${base}/spa/videoPlayPage/${typeSeg}/${slug}?${idq}&lang=en`,
+        `${base}/spa/videoPlayPage/${slug}?${idq}&type=${isTv ? 'tv' : 'movie'}&lang=en`
+    ]));
 }
 
 function moviebox_baseHeaders(forwardHeaders = {}) {
-    const ua = forwardHeaders['user-agent'] || 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36';
+    const ua = forwardHeaders['user-agent'] || 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36';
     const h = {
         'User-Agent': ua,
         'Accept-Language': 'en-US,en;q=0.9',
         'Cache-Control': 'no-cache',
         'Pragma': 'no-cache',
-        'Sec-Ch-Ua': '"Chromium";v="128", "Google Chrome";v="128", ";Not A Brand";v="99"',
+        'Sec-Ch-Ua': '"Chromium";v="141", "Google Chrome";v="141", ";Not A Brand";v="99"',
         'Sec-Ch-Ua-Mobile': '?0',
         'Sec-Ch-Ua-Platform': '"Windows"',
     };
@@ -1551,62 +1583,83 @@ function moviebox_mergeCookies(list) {
 }
 
 async function moviebox_fetchStreamsFromFMovies({ subjectId, detailPath, se = '0', ep = '0', forwardCookie = '', forwardHeaders = {} }) {
-    const playUrl = moviebox_PLAY_URL({ subjectId, se, ep, detailPath });
-    const spaUrl = moviebox_SPA_URL({ detailPath, subjectId });
+    const isTv = String(se) !== '0' || String(ep) !== '0';
+    const baseHeadersTemplate = moviebox_baseHeaders(forwardHeaders);
 
-    // Warm-up request to get cookies
-    const warmHeaders = moviebox_baseHeaders(forwardHeaders);
-    warmHeaders['Accept'] = 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8';
-    warmHeaders['Referer'] = 'https://fmoviesunblocked.net/';
-    let warmCookies = '';
-    try {
-        const warm = await axios.get(spaUrl, { timeout: 20000, headers: warmHeaders, validateStatus: s => s >= 200 && s < 500 });
-        const setCookie = warm.headers['set-cookie'];
-        if (Array.isArray(setCookie)) warmCookies = setCookie.map(c => c.split(';')[0]).join('; ');
-    } catch {}
+    const tried = [];
+    let lastError = null;
 
-    const headers = moviebox_baseHeaders(forwardHeaders);
-    headers['Accept'] = 'application/json, text/plain, */*';
-    headers['Origin'] = 'https://fmoviesunblocked.net';
-    headers['Referer'] = spaUrl;
-    headers['Sec-Fetch-Site'] = 'same-origin';
-    headers['Sec-Fetch-Mode'] = 'cors';
-    headers['Sec-Fetch-Dest'] = 'empty';
-    const mergedCookie = moviebox_mergeCookies([forwardCookie, warmCookies]);
-    if (mergedCookie) headers['Cookie'] = mergedCookie;
+    for (const host of MOVIEBOX_FALLBACK_HOSTS) {
+        try {
+            // Warm multiple SPA URL variants for this host
+            let warmCookies = '';
+            let usedSpa = '';
+            const spaUrls = moviebox_SPA_URLS(host, { detailPath, subjectId, isTv });
+            for (const spaUrl of spaUrls) {
+                try {
+                    const warmHeaders = { ...baseHeadersTemplate };
+                    warmHeaders['Accept'] = 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8';
+                    warmHeaders['Referer'] = host + '/';
+                    const warm = await axios.get(spaUrl, { timeout: 20000, headers: warmHeaders, validateStatus: s => s >= 200 && s < 500 });
+                    const setCookie = warm.headers['set-cookie'];
+                    if (Array.isArray(setCookie)) warmCookies = setCookie.map(c => c.split(';')[0]).join('; ');
+                    usedSpa = spaUrl;
+                    break;
+                } catch (e) {
+                    tried.push({ host, spa: true, url: spaUrl, err: e?.message || String(e) });
+                }
+            }
 
-    const resp = await axios.get(playUrl, { timeout: 20000, headers, validateStatus: s => s >= 200 && s < 500 });
-    if (resp.status >= 400) {
-        const err = new Error(`fmovies play failed with status ${resp.status}`);
-        err.status = resp.status;
-        throw err;
-    }
-    const data = typeof resp.data === 'string' ? moviebox_safeJson(resp.data) : resp.data;
-    if (!data || data.code !== 0 || !data.data) {
-        const hint = mergedCookie ? 'Cookies forwarded but still unauthorized.' : 'No cookies forwarded; authentication may be required.';
-        const err = new Error(`fmovies response invalid or unauthorized (code=${data?.code ?? 'n/a'}). ${hint}`);
-        err.status = 502;
-        err.details = { playUrl, referer: headers['Referer'] };
-        throw err;
-    }
-    const refererHeader = spaUrl;
-    const cookieHeader = mergedCookie;
-    const uaHeader = headers['User-Agent'];
-    const streams = Array.isArray(data.data.streams) ? data.data.streams.map(s => ({
-        format: s.format,
-        id: String(s.id),
-        url: s.url,
-        resolutions: String(s.resolutions),
-        size: s.size,
-        duration: s.duration,
-        codecName: s.codecName,
-        headers: {
-            referer: refererHeader,
-            cookie: cookieHeader,
-            userAgent: uaHeader
+            const playUrl = moviebox_PLAY_URL(host, { subjectId, se, ep, detailPath });
+            const headers = { ...baseHeadersTemplate };
+            headers['Accept'] = 'application/json, text/plain, */*';
+            headers['Origin'] = host;
+            headers['Referer'] = usedSpa || (host + '/');
+            headers['Sec-Fetch-Site'] = 'same-origin';
+            headers['Sec-Fetch-Mode'] = 'cors';
+            headers['Sec-Fetch-Dest'] = 'empty';
+            const mergedCookie = moviebox_mergeCookies([forwardCookie, warmCookies]);
+            if (mergedCookie) headers['Cookie'] = mergedCookie;
+
+            const resp = await axios.get(playUrl, { timeout: 20000, headers, validateStatus: s => s >= 200 && s < 500 });
+            if (resp.status >= 400) {
+                tried.push({ host, spa: false, url: playUrl, status: resp.status });
+                lastError = new Error(`fmovies play failed with status ${resp.status} @ ${host}`);
+                continue;
+            }
+            const data = typeof resp.data === 'string' ? moviebox_safeJson(resp.data) : resp.data;
+            if (!data || data.code !== 0 || !data.data) {
+                tried.push({ host, spa: false, url: playUrl, code: data?.code, note: 'invalid data' });
+                lastError = new Error(`fmovies response invalid (code=${data?.code ?? 'n/a'}) @ ${host}`);
+                continue;
+            }
+
+            const refererHeader = headers['Referer'];
+            const cookieHeader = headers['Cookie'] || '';
+            const uaHeader = headers['User-Agent'];
+            const streams = Array.isArray(data.data.streams) ? data.data.streams.map(s => ({
+                format: s.format,
+                id: String(s.id),
+                url: s.url,
+                resolutions: String(s.resolutions),
+                size: s.size,
+                duration: s.duration,
+                codecName: s.codecName,
+                headers: {
+                    referer: refererHeader,
+                    cookie: cookieHeader,
+                    userAgent: uaHeader
+                }
+            })) : [];
+            return { streams, raw: data, debug: { hostUsed: host, spaUsed: usedSpa, tried } };
+        } catch (e) {
+            lastError = e;
         }
-    })) : [];
-    return { streams, raw: data };
+    }
+
+    const e = lastError || new Error('All MovieBox/FMovies hosts failed');
+    e.tried = tried;
+    throw e;
 }
 
 function moviebox_safeJson(t) { try { return JSON.parse(t); } catch (_) { return null; } }
@@ -2857,4 +2910,3 @@ process.on('uncaughtException', (err) => {
 
 // Export the function to register routes instead of starting a server
 module.exports = { registerApiRoutes };
-
