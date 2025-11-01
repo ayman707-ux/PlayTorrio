@@ -352,6 +352,7 @@ export function startServer(userDataPath) {
         try {
             const s = JSON.parse(fs.readFileSync(SETTINGS_PATH, 'utf8'));
             return {
+                autoUpdate: true,
                 useTorrentless: false,
                 torrentSource: 'torrentio',
                 useDebrid: false,
@@ -367,7 +368,7 @@ export function startServer(userDataPath) {
                 ...s,
             };
         } catch {
-            return { useTorrentless: false, torrentSource: 'torrentio', useDebrid: false, debridProvider: 'realdebrid', rdToken: null, rdRefresh: null, rdClientId: null, rdCredId: null, rdCredSecret: null, adApiKey: null, tbApiKey: null, pmApiKey: null };
+            return { autoUpdate: true, useTorrentless: false, torrentSource: 'torrentio', useDebrid: false, debridProvider: 'realdebrid', rdToken: null, rdRefresh: null, rdClientId: null, rdCredId: null, rdCredSecret: null, adApiKey: null, tbApiKey: null, pmApiKey: null };
         }
     }
     function writeSettings(obj) {
@@ -396,6 +397,7 @@ export function startServer(userDataPath) {
             : provider === 'premiumize' ? !!s.pmApiKey 
             : !!s.rdToken;
         res.json({
+            autoUpdate: s.autoUpdate !== false,
             useTorrentless: !!s.useTorrentless,
             torrentSource: s.torrentSource || 'torrentio',
             useDebrid: !!s.useDebrid,
@@ -410,6 +412,7 @@ export function startServer(userDataPath) {
         const s = readSettings();
         const next = {
             ...s,
+            autoUpdate: req.body.autoUpdate !== undefined ? !!req.body.autoUpdate : (s.autoUpdate !== false),
             useTorrentless: req.body.useTorrentless != null ? !!req.body.useTorrentless : !!s.useTorrentless,
             torrentSource: req.body.torrentSource !== undefined ? req.body.torrentSource : (s.torrentSource || 'torrentio'),
             useDebrid: req.body.useDebrid != null ? !!req.body.useDebrid : !!s.useDebrid,
@@ -3453,8 +3456,22 @@ export function startServer(userDataPath) {
                 .filter(Boolean);
             res.json(torrents);
         } catch (error) {
-            console.error('Error fetching torrents:', error);
-            res.status(500).json({ error: error.message });
+            console.error('[Jackett] Error fetching torrents:', error);
+            try {
+                const msg = String(error?.message || '').toLowerCase();
+                // Detect common connection failures to Jackett (e.g., ECONNREFUSED 127.0.0.1:9117)
+                const isConnRefused = msg.includes('econnrefused');
+                const isConnReset = msg.includes('econnreset');
+                const isNotFound = msg.includes('enotfound');
+                const isTimeout = msg.includes('timeout') || msg.includes('timed out');
+                if (isConnRefused || isConnReset || isNotFound || isTimeout) {
+                    return res.status(503).json({
+                        error: 'Jackett is not enabled or not installed, please enable it and try again, other providers dont need jackett',
+                        code: 'JACKETT_UNAVAILABLE'
+                    });
+                }
+            } catch {}
+            res.status(500).json({ error: error?.message || 'Jackett error' });
         }
     });
 
