@@ -25,24 +25,6 @@ let httpServer;
 let webtorrentClient;
 let mainWindow;
 
-// ============================================================================
-// NOTE: Microservice process variables no longer used
-// All services now integrated into server.mjs via api.cjs on port 3000
-// ============================================================================
-// let torrentlessProc = null;
-// let svc111477Proc = null;
-// let booksProc = null;
-// let booksDesiredPort = 3004;
-// let booksBaseUrl = 'http://127.0.0.1:3004';
-// let randomBookProc = null;
-// let randomBookDesiredPort = 5000;
-// let randomBookBaseUrl = 'http://127.0.0.1:5000';
-// let animeProc = null;
-// let animeDesiredPort = 7000;
-// let animeBaseUrl = 'http://127.0.0.1:7000';
-// let torrentioProc = null;
-// let torrentioDesiredPort = 5500;
-// let torrentioBaseUrl = 'http://127.0.0.1:5500';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -50,6 +32,18 @@ const __dirname = path.dirname(__filename);
 
 // Ensure a stable AppUserModelID to prevent Windows taskbar/shortcut icon issues after updates
 try { app.setAppUserModelId('com.ayman.PlayTorrio'); } catch(_) {}
+
+// Read auto-update preference from persisted settings (server.mjs uses settings.json in userData)
+function readAutoUpdateEnabled() {
+    try {
+        const settingsPath = path.join(app.getPath('userData'), 'settings.json');
+        if (fs.existsSync(settingsPath)) {
+            const s = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
+            return s.autoUpdate !== false; // default ON if missing
+        }
+    } catch (_) {}
+    return true; // default ON
+}
 
 // ----------------------
 // Discord Rich Presence
@@ -2243,8 +2237,17 @@ if (!gotLock) {
         }
     });
 
-        // Initialize the auto-updater (main-process only, no renderer changes)
-        setupAutoUpdater();
+        // Initialize the auto-updater based on user preference (default ON)
+        try {
+            if (readAutoUpdateEnabled()) {
+                setupAutoUpdater();
+            } else {
+                console.log('[Updater] Disabled by settings (autoUpdate=false)');
+            }
+        } catch (_) {
+            // Fallback: still try to setup to avoid being stuck on old versions silently
+            try { setupAutoUpdater(); } catch (_) {}
+        }
     });
 }
 
