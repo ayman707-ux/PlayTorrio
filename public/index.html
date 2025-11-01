@@ -1507,11 +1507,15 @@
             display: flex;
             gap: 0.75rem;
             margin-bottom: 1.5rem;
-            flex-wrap: wrap;
+            flex-wrap: nowrap; /* keep on one line */
+            overflow-x: auto; /* horizontal scroll */
+            -webkit-overflow-scrolling: touch;
+            scroll-snap-type: x proximity;
+            padding-bottom: 0.25rem;
         }
         
         .provider-btn {
-            padding: 0.75rem 1.5rem;
+            padding: 0.75rem 1.25rem;
             background: rgba(255, 255, 255, 0.08);
             border: 2px solid rgba(255, 255, 255, 0.15);
             border-radius: 8px;
@@ -1521,6 +1525,9 @@
             font-weight: 600;
             transition: all 0.2s ease;
             white-space: nowrap;
+            flex: 0 0 auto; /* don't shrink */
+            scroll-snap-align: start;
+            min-width: 120px;
         }
         
         .provider-btn:hover {
@@ -1539,6 +1546,13 @@
             transform: translateY(-1px);
             box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
         }
+
+        /* Pretty pill/ghost button helpers */
+        .btn-pill { border-radius: 999px; padding: 0.6rem 1rem; font-weight: 700; letter-spacing: .2px; }
+        .btn-ghost { background: transparent; border: 2px solid rgba(255,255,255,0.15); color: var(--light); }
+        .btn-ghost:hover { border-color: rgba(255,255,255,0.35); background: rgba(255,255,255,0.06); }
+        .btn-accent { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none; color: #fff; box-shadow: 0 8px 22px rgba(102,126,234,.35); }
+        .btn-accent:hover { transform: translateY(-1px); box-shadow: 0 10px 28px rgba(102,126,234,.45); }
         
         .torrent-btn {
             padding: 0.5rem 1rem;
@@ -2530,6 +2544,25 @@
             transform: translateY(-1px);
             box-shadow: 0 6px 20px rgba(245, 158, 11, 0.3);
         }
+        /* Ensure Library "Read" buttons look styled as well */
+        .read-btn {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            border: none;
+            border-radius: 12px;
+            color: #fff;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            box-shadow: 0 4px 14px rgba(245, 158, 11, 0.25);
+        }
+        .read-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 22px rgba(245, 158, 11, 0.35); }
+        .read-btn:active { transform: translateY(0); }
 
         .books-download-btn {
             padding: 0.75rem;
@@ -3168,6 +3201,31 @@
             z-index: 2000;
             display: flex;
             flex-direction: column;
+            /* Solid bar theming variables (no transparency) */
+            --bar-bg: #202225; /* solid by default (dark) */
+            --bar-border: rgba(255,255,255,0.1);
+            --bar-btn-bg: #2b2b2b;       /* dark default */
+            --bar-btn-border: #3a3a3a;
+            --bar-input-bg: #1f1f1f;
+            --bar-input-border: #3a3a3a;
+        }
+        /* Light theme overrides */
+        #epubReaderOverlay.theme-light {
+            --bar-bg: #ffffff;
+            --bar-border: rgba(0,0,0,0.08);
+            --bar-btn-bg: #f3f4f6;      /* slate-100 */
+            --bar-btn-border: #e5e7eb;  /* slate-200 */
+            --bar-input-bg: #ffffff;
+            --bar-input-border: #e5e7eb;
+        }
+        /* Night theme overrides */
+        #epubReaderOverlay.theme-night {
+            --bar-bg: #000000;
+            --bar-border: rgba(255,255,255,0.12);
+            --bar-btn-bg: #111111;
+            --bar-btn-border: #262626;
+            --bar-input-bg: #0b0b0b;
+            --bar-input-border: #262626;
         }
         .reader-header {
             display: flex;
@@ -3175,8 +3233,11 @@
             justify-content: space-between;
             gap: 1rem;
             padding: 0.75rem 1rem;
-            background: rgba(0,0,0,0.15);
-            backdrop-filter: blur(8px);
+            background-color: var(--bar-bg) !important;
+            /* Solid header bar, no transparency */
+            backdrop-filter: none;
+            border-bottom: 1px solid var(--bar-border);
+            box-shadow: 0 2px 6px rgba(0,0,0,0.22);
             position: sticky;
             top: 0;
             z-index: 2100;
@@ -3184,8 +3245,12 @@
         .reader-esc-hint {
             color: var(--text);
             font-size: 0.85rem;
-            opacity: 0.7;
             white-space: nowrap;
+            /* Make the hint itself solid (no transparency) */
+            background: var(--bar-btn-bg);
+            border: 1px solid var(--bar-btn-border);
+            padding: 0.35rem 0.6rem;
+            border-radius: 6px;
         }
         .reader-title { 
             text-align: center; 
@@ -3210,8 +3275,11 @@
             justify-content: space-between;
             gap: 1rem;
             padding: 0.75rem 1rem;
-            background: rgba(0,0,0,0.15);
-            backdrop-filter: blur(8px);
+            background-color: var(--bar-bg) !important;
+            /* Solid footer bar, no transparency */
+            backdrop-filter: none;
+            border-top: 1px solid var(--bar-border);
+            box-shadow: 0 -2px 6px rgba(0,0,0,0.22);
             position: sticky;
             bottom: 0;
             z-index: 2100;
@@ -3239,8 +3307,8 @@
             height: 36px;
             padding: 0 0.5rem;
             border-radius: 6px;
-            border: 1px solid rgba(255,255,255,0.15);
-            background: rgba(255,255,255,0.06);
+            border: 1px solid var(--bar-input-border);
+            background: var(--bar-input-bg);
             color: var(--text);
             outline: none;
         }
@@ -3255,27 +3323,29 @@
             height: 44px;
             padding: 0 1rem;
             border-radius: 8px;
-            border: 1px solid rgba(255,255,255,0.12);
-            background: rgba(255,255,255,0.06);
+            border: 1px solid var(--bar-btn-border);
+            background: var(--bar-btn-bg);
             color: var(--text);
             cursor: pointer;
             transition: all 0.2s;
             gap: 0.5rem;
             font-size: 0.9rem;
-            font-weight: 500;
+            font-weight: 600;
         }
         .reader-nav-btn {
             min-width: 44px;
             padding: 0;
         }
         .reader-nav-btn:hover:not(:disabled), .reader-gear:hover, .reader-back-btn:hover {
-            background: rgba(168,85,247,0.22);
-            border-color: rgba(168,85,247,0.5);
+            background: #6d28d9; /* solid purple on hover */
+            border-color: #7c3aed;
+            color: #fff;
             transform: translateY(-2px);
         }
         .reader-back-btn:hover {
-            background: rgba(244,63,94,0.22);
-            border-color: rgba(244,63,94,0.5);
+            background: #dc2626; /* solid red for back hover */
+            border-color: #ef4444;
+            color: #fff;
         }
         .reader-nav-btn:disabled {
             opacity: 0.3;
@@ -3287,7 +3357,7 @@
             right: 0;
             width: 320px;
             max-height: 400px;
-            background: rgba(20,20,20,0.95);
+            background: var(--bg);
             color: #eee;
             border: 1px solid rgba(255,255,255,0.1);
             border-radius: 12px 0 0 0;
@@ -6069,36 +6139,7 @@
                 <input type="text" id="jackettUrl" class="api-input" placeholder="http://127.0.0.1:9117/api/v2.0/indexers/all/results/torznab" />
                 <small style="color:var(--secondary); font-size:0.85rem; margin-top:0.25rem;">Default: http://127.0.0.1:9117/api/v2.0/indexers/all/results/torznab</small>
             </div>
-            <div style="margin-top:1rem; padding:1rem; border:1px solid rgba(255,255,255,0.15); border-radius:8px; background: rgba(255,255,255,0.05);">
-                <label style="display:flex; align-items:center; gap:0.6rem; cursor:pointer;">
-                    <input type="checkbox" id="useTorrentlessToggle" />
-                    <span>Watch without Jackett (use built-in sources)</span>
-                </label>
-                <div style="margin-top:0.75rem;">
-                    <label style="display:block; margin-bottom:0.75rem; color:var(--text); font-weight:500; font-size:0.95rem;">
-                        <i class="fas fa-server" style="margin-right:0.3rem; color:var(--primary);"></i>
-                        Torrent Source:
-                    </label>
-                    <div style="display:flex; gap:1rem;">
-                        <button id="torrentioBtn" class="torrent-source-btn active" data-source="torrentio" style="flex:1; padding:0.75rem 1rem; background: rgba(76, 175, 80, 0.2); border:2px solid #4CAF50; border-radius:8px; color:#fff; font-size:0.95rem; font-weight:600; cursor:pointer; transition: all 0.3s ease; display:flex; align-items:center; justify-content:center; gap:0.5rem;">
-                            <i class="fas fa-rocket"></i>
-                            <span>Torrentio</span>
-                        </button>
-                        <button id="inAppScraperBtn" class="torrent-source-btn" data-source="in-app-scraper" style="flex:1; padding:0.75rem 1rem; background: rgba(255,255,255,0.08); border:2px solid rgba(255,255,255,0.2); border-radius:8px; color:var(--text); font-size:0.95rem; font-weight:600; cursor:pointer; transition: all 0.3s ease; display:flex; align-items:center; justify-content:center; gap:0.5rem;">
-                            <i class="fas fa-tools"></i>
-                            <span>In-App Scraper</span>
-                        </button>
-                    </div>
-                </div>
-                <div style="margin-top:0.5rem; color:#ffc107; font-size:0.9rem;">
-                    Warning: may result in fewer sources and slower buffering.
-                </div>
-                <div style="margin-top:0.75rem;">
-                    <button class="api-btn" id="videoTutorialBtn" style="background:#0d6efd; color:#fff;">
-                        <i class="fas fa-video"></i> Video Tutorial
-                    </button>
-                </div>
-            </div>
+            <!-- Removed: Watch without Jackett & Torrent Source options -->
         </div>
 
         <div class="settings-section" style="margin-top:1.25rem;">
@@ -7357,41 +7398,7 @@
                         </div>
                     </div>
                     
-                    <div class="settings-card">
-                        <div class="settings-card-header">
-                            <h3><i class="fas fa-tools"></i> Built-in Scrapers</h3>
-                        </div>
-                        <div class="settings-card-body">
-                            <div class="checkbox-group">
-                                <input type="checkbox" id="useTorrentlessToggle" />
-                                <label for="useTorrentlessToggle">Watch without Jackett (use built-in sources)</label>
-                            </div>
-                            <div class="form-group" style="margin-top:1rem;">
-                                <label style="display:block; margin-bottom:0.75rem; color:var(--text); font-weight:500; font-size:0.95rem;">
-                                    <i class="fas fa-server" style="margin-right:0.3rem; color:var(--primary);"></i>
-                                    Torrent Source:
-                                </label>
-                                <div style="display:flex; gap:1rem;">
-                                    <button id="torrentioBtn" class="torrent-source-btn active" data-source="torrentio" style="flex:1; padding:0.75rem 1rem; background: rgba(76, 175, 80, 0.2); border:2px solid #4CAF50; border-radius:8px; color:#fff; font-size:0.95rem; font-weight:600; cursor:pointer; transition: all 0.3s ease; display:flex; align-items:center; justify-content:center; gap:0.5rem;">
-                                        <i class="fas fa-rocket"></i>
-                                        <span>Torrentio</span>
-                                    </button>
-                                    <button id="inAppScraperBtn" class="torrent-source-btn" data-source="in-app-scraper" style="flex:1; padding:0.75rem 1rem; background: rgba(255,255,255,0.08); border:2px solid rgba(255,255,255,0.2); border-radius:8px; color:var(--text); font-size:0.95rem; font-weight:600; cursor:pointer; transition: all 0.3s ease; display:flex; align-items:center; justify-content:center; gap:0.5rem;">
-                                        <i class="fas fa-tools"></i>
-                                        <span>In-App Scraper</span>
-                                    </button>
-                                </div>
-                            </div>
-                            <div style="margin-top:0.5rem; color:#ffc107; font-size:0.9rem;">
-                                Warning: may result in fewer sources and slower buffering.
-                            </div>
-                            <div style="margin-top:0.75rem;">
-                                <button class="api-btn" id="videoTutorialBtn" style="background:#0d6efd; color:#fff;">
-                                    <i class="fas fa-video"></i> Video Tutorial
-                                </button>
-                            </div>
-                        </div>
-                    </div>
+                    
                     
                     <div class="settings-card">
                         <div class="settings-card-header">
@@ -7653,6 +7660,21 @@
                                 <small style="margin-top:0.5rem; color:var(--secondary); font-size:0.85rem; display:block;">
                                     <i class="fas fa-info-circle"></i> Choose your preferred color scheme
                                 </small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="settings-card">
+                        <div class="settings-card-header">
+                            <h3><i class="fas fa-sync-alt"></i> Auto‑Updater</h3>
+                        </div>
+                        <div class="settings-card-body">
+                            <div class="checkbox-group">
+                                <input type="checkbox" id="autoUpdateToggle" checked />
+                                <label for="autoUpdateToggle">Automatically download and install updates</label>
+                            </div>
+                            <div style="margin-top:0.5rem; color:#9ca3af; font-size:0.9rem;">
+                                When enabled, the app will check for updates on launch and install them when available.
                             </div>
                         </div>
                     </div>
@@ -8454,10 +8476,10 @@ Can't find what you're looking for? Try a custom search
 <p class="modal-tagline" id="modalTagline">Tagline goes here</p>
 <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
     <div style="display:flex; flex-direction:column; gap:0.5rem; align-items:flex-start;">
-        <button class="btn btn-primary" id="watchNowBtn">
-            <i class="fas fa-play"></i> Find Torrents
+        <button class="btn btn-primary btn-pill btn-accent" id="watchNowBtn">
+            <i class="fas fa-play"></i> Find Media
         </button>
-        <button class="btn btn-outline" id="useStreamsBtn">
+        <button class="btn btn-ghost btn-pill" id="useStreamsBtn">
             <i class="fas fa-broadcast-tower"></i> Use Streams instead
         </button>
         <div id="watchNowNote" style="display:none; color: var(--light); opacity: 0.85; font-size: 0.9rem; padding-left: 0.1rem;">
@@ -8465,7 +8487,7 @@ Can't find what you're looking for? Try a custom search
             Please select an episode
         </div>
     </div>
-    <button class="btn btn-secondary" id="traktWatchlistBtn" style="display: none;">
+    <button class="btn btn-ghost btn-pill" id="traktWatchlistBtn" style="display: none;">
         <i class="fas fa-plus"></i> Add to Watchlist
     </button>
 </div>
@@ -8536,9 +8558,15 @@ If you experience audio problems or no audio at all, click <strong>"Open in MPV"
 </div>
 </div>
 <div class="provider-buttons">
-<button class="provider-btn active" data-provider="playtorrio">
-<i class="fas fa-magnet"></i> Playtorrio
-                    </button>
+<button class="provider-btn active" data-provider="jackett">
+<i class="fas fa-link"></i> Jackett
+</button>
+<button class="provider-btn" data-provider="torrentio">
+<i class="fas fa-rocket"></i> Torrentio
+</button>
+<button class="provider-btn" data-provider="torrentless">
+<i class="fas fa-tools"></i> PlayTorrio
+</button>
 <button class="provider-btn" data-provider="nuvio">
 <i class="fas fa-stream"></i> Nuvio <span style="font-size: 0.8em; opacity: 0.8;">(ShowBox)</span>
 </button>
@@ -9244,7 +9272,7 @@ Your browser does not support the video tag.
         let currentSubtitles = [];
     let subtitleTrack = null;
     let currentSubtitleFile = null; // filename served under /subtitles to delete on switch
-    let selectedProvider = 'playtorrio'; // Default provider: playtorrio, nuvio, comet, 111477, moviebox
+    let selectedProvider = 'jackett'; // Default provider: jackett, torrentio, torrentless, nuvio, comet, 111477, moviebox
     let lastSearchedSeason = null; // Track last searched season for provider switching
     let lastSearchedEpisode = null; // Track last searched episode for provider switching
     
@@ -9711,13 +9739,17 @@ Your browser does not support the video tag.
                 }
             }
             
-            // Load useTorrentless setting state for ALL instances
+                    // Load useTorrentless setting state for ALL instances
             try {
                 const res = await fetch(`${API_BASE_URL}/settings`);
                 if (res.ok) {
                     const s = await res.json();
                     console.log('[Settings] Loaded settings:', s);
                     useTorrentless = !!s.useTorrentless;
+                            // Auto‑Updater toggle (default ON if missing)
+                            const autoUpdate = s.autoUpdate !== false; // treat undefined as true
+                            const autoUpdateToggles = document.querySelectorAll('#autoUpdateToggle');
+                            autoUpdateToggles.forEach(t => { t.checked = !!autoUpdate; });
                     
                     const useTorrentlessToggles = document.querySelectorAll('#useTorrentlessToggle');
                     useTorrentlessToggles.forEach(toggle => {
@@ -11510,6 +11542,16 @@ Your browser does not support the video tag.
                     if (el.offsetParent !== null) break;
                 }
             }
+
+            // Get Auto‑Updater setting (prefer visible)
+            const autoUpdateToggles = document.querySelectorAll('#autoUpdateToggle');
+            let autoUpdateEnabled = true; // default ON
+            for (const el of autoUpdateToggles) {
+                if (el.offsetParent !== null) {
+                    autoUpdateEnabled = !!el.checked;
+                    break;
+                }
+            }
             
             // Handle fullscreen toggle - get the visible one
             const fullscreenToggles = document.querySelectorAll('#fullscreenToggle');
@@ -11566,7 +11608,7 @@ Your browser does not support the video tag.
             let apiResult = null;
             try {
                 // Build settings object
-                const settings = { useTorrentless: desiredTorrentless };
+                const settings = { useTorrentless: desiredTorrentless, autoUpdate: !!autoUpdateEnabled };
                 if (jackettUrl) settings.jackettUrl = jackettUrl;
                 if (cacheLocation) settings.cacheLocation = cacheLocation;
                 
@@ -13193,6 +13235,11 @@ Your browser does not support the video tag.
                         showServerSelection(mediaData);
                     } else {
                         showTorrents(e);
+                        // Auto-scroll to provider buttons for quick access
+                        setTimeout(() => {
+                            const pb = document.querySelector('.provider-buttons');
+                            if (pb) pb.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        }, 200);
                     }
                 } catch (error) {
                     console.error('[DEBUG] Error in Watch Now handler:', error);
@@ -16144,8 +16191,8 @@ Your browser does not support the video tag.
                 
                 // Determine provider based on selectedProvider setting
                 let provider;
-                if (selectedProvider === 'playtorrio') {
-                    provider = 'App Sources';  // PlayTorrio configured in settings
+                if (selectedProvider === 'jackett') {
+                    provider = 'Jackett';
                 } else if (selectedProvider === 'nuvio') {
                     provider = 'Nuvio';
                 } else if (selectedProvider === 'comet') {
@@ -16154,6 +16201,10 @@ Your browser does not support the video tag.
                     provider = '111477';
                 } else if (selectedProvider === 'moviebox') {
                     provider = 'MovieBox';
+                } else if (selectedProvider === 'torrentio') {
+                    provider = 'Torrentio';
+                } else if (selectedProvider === 'torrentless') {
+                    provider = 'PlayTorrio';
                 } else {
                     provider = 'App Sources';  // Default fallback
                 }
@@ -16717,7 +16768,7 @@ Your browser does not support the video tag.
                         }
                     } else {
                         watchBtn.style.display = '';
-                        watchBtn.innerHTML = '<i class="fas fa-play"></i> Find Torrents';
+                        watchBtn.innerHTML = '<i class="fas fa-play"></i> Find Media';
                         if (note) note.style.display = 'none';
                     }
                 }
@@ -18888,21 +18939,83 @@ Your browser does not support the video tag.
             try {
                 const tmdbId = currentContent.id;
                 const mediaType = currentMediaType; // 'movie' or 'tv'
+                // Local helper to format byte sizes (kept here to avoid scope issues)
+                const fmtBytes = (bytes) => {
+                    const n = Number(bytes) || 0;
+                    if (n <= 0) return '';
+                    const units = ['Bytes','KB','MB','GB','TB'];
+                    const i = Math.floor(Math.log(n) / Math.log(1024));
+                    return `${(n / Math.pow(1024, i)).toFixed(2)} ${units[i]}`;
+                };
 
                 let apiUrl;
                 if (mediaType === 'movie') {
-                    apiUrl = `http://localhost:3000/moviebox/${encodeURIComponent(tmdbId)}`;
+                    apiUrl = `privateurl/moviebox/${encodeURIComponent(tmdbId)}`;
                 } else if (season && episode) {
-                    apiUrl = `http://localhost:3000/moviebox/tv/${encodeURIComponent(tmdbId)}/${encodeURIComponent(season)}/${encodeURIComponent(episode)}`;
+                    apiUrl = `privateurl/moviebox/tv/${encodeURIComponent(tmdbId)}/${encodeURIComponent(season)}/${encodeURIComponent(episode)}`;
                 } else {
                     throw new Error('Season and episode required for TV shows');
                 }
 
                 console.log('[MovieBox] Fetching:', apiUrl);
                 const response = await fetch(apiUrl, { credentials: 'include' });
-                if (!response.ok) throw new Error(`MovieBox error: ${response.statusText}`);
-                const data = await response.json();
-                const streams = Array.isArray(data.streams) ? data.streams : [];
+
+                // Read body as text first, then try JSON, so we can handle non-200s with JSON or plain text
+                let rawBody = '';
+                let data = null;
+                try {
+                    rawBody = await response.text();
+                    try { data = JSON.parse(rawBody); } catch (_) { /* non-JSON */ }
+                } catch (_) { /* ignore */ }
+
+                // Helper to extract cooldown seconds
+                const extractWaitSeconds = (str) => {
+                    if (!str || typeof str !== 'string') return null;
+                    const m = str.match(/\((\d+)\s*seconds?\)/i);
+                    return m ? parseInt(m[1], 10) : null;
+                };
+
+                // If response not OK, try to surface cooldown nicely before erroring
+                if (!response.ok) {
+                    const errStr = (data && typeof data.error === 'string' && data.error) || rawBody || response.statusText || '';
+                    const secs = extractWaitSeconds(errStr);
+                    if (secs) {
+                        torrentsList.innerHTML = `<div class="error-message"><i class="fas fa-hourglass-half"></i> MovieBox cooldown: Please wait ${secs} seconds and try again.</div>`;
+                        return;
+                    }
+                    const msg = `MovieBox error: ${response.status} ${response.statusText || ''}`.trim();
+                    throw new Error(msg);
+                }
+
+                // Handle MovieBox cooldown-style errors like: {"ok":false,"error":"please wait (30 seconds)"}
+                if (data && data.ok === false && typeof data.error === 'string') {
+                    const secs = extractWaitSeconds(data.error);
+                    const waitMsg = secs ? `Please wait ${secs} seconds and try again.` : 'Please wait a bit and try again.';
+                    torrentsList.innerHTML = `<div class="error-message"><i class="fas fa-hourglass-half"></i> MovieBox cooldown: ${waitMsg}</div>`;
+                    return;
+                }
+                let streams = [];
+                if (Array.isArray(data.streams)) {
+                    // Legacy shape
+                    streams = data.streams;
+                } else if (Array.isArray(data.results)) {
+                    // New simplified shape from MovieBox proxy
+                    streams = data.results.map(r => {
+                        const bytes = parseInt(r.size, 10) || 0;
+                        return {
+                            source: r.source || 'unknown',
+                            url: r.url,
+                            resolutions: (r.resolutions ?? '').toString(),
+                            size: fmtBytes(bytes),
+                            // minimal compat fields used by UI/MPV launcher
+                            format: 'MP4',
+                            codecName: '',
+                            headers: {}
+                        };
+                    });
+                } else {
+                    streams = [];
+                }
 
                 console.log('[MovieBox] Found', streams.length, 'streams');
                 if (streams.length === 0) {
@@ -19037,6 +19150,103 @@ Your browser does not support the video tag.
             } else if (selectedProvider === 'moviebox') {
                 console.log('[Provider] Routing to MovieBox');
                 return fetchMovieBoxStreams(season, episode);
+            } else if (selectedProvider === 'torrentio' || selectedProvider === 'torrentless' || selectedProvider === 'jackett') {
+                // Explicit provider override buttons
+                console.log('[Provider] Explicit override:', selectedProvider);
+                // Bypass settings and force the desired path
+                if (selectedProvider === 'jackett') {
+                    // Go straight to Jackett mode below
+                } else if (selectedProvider === 'torrentio') {
+                    // Force torrentio branch
+                    try {
+                        const tmdbId = currentContent.id;
+                        const mediaType = currentMediaType;
+                        const externalIdsUrl = `https://api.themoviedb.org/3/${mediaType}/${tmdbId}/external_ids?api_key=${TMDB_API_KEY}`;
+                        const externalIdsRes = await fetch(externalIdsUrl);
+                        if (!externalIdsRes.ok) throw new Error('Failed to get IMDB ID from TMDB');
+                        const externalIds = await externalIdsRes.json();
+                        const imdbId = externalIds.imdb_id;
+                        if (!imdbId) throw new Error('No IMDB ID found for this content');
+                        let torrentioUrl;
+                        if (mediaType === 'movie') {
+                            torrentioUrl = `http://localhost:3000/torrentio/api/${imdbId}`;
+                        } else if (season && episode) {
+                            torrentioUrl = `http://localhost:3000/torrentio/api/${imdbId}/${season}/${episode}`;
+                        } else {
+                            throw new Error('Season and episode required for TV shows');
+                        }
+                        torrentsList.innerHTML = '<div class="loading"><i class="fas fa-spinner"></i> Searching Torrentio...</div>';
+                        const response = await fetch(torrentioUrl);
+                        if (!response.ok) throw new Error(`Torrentio error: ${response.statusText}`);
+                        const data = await response.json();
+                        const streams = data.streams || [];
+                        const torrents = streams.map(stream => {
+                            const magnetLink = stream.magnetLink || (stream.infoHash ? `magnet:?xt=urn:btih:${stream.infoHash}` : null);
+                            if (!magnetLink) return null;
+                            const titleMatch = (stream.title || '').match(/👤\s*(\d+)/);
+                            const sizeMatch = (stream.title || '').match(/💾\s*([\d.]+\s*[KMGT]B)/i);
+                            const seeders = titleMatch ? parseInt(titleMatch[1]) : 0;
+                            const sizeStr = sizeMatch ? sizeMatch[1] : '0 B';
+                            const sizeParts = sizeStr.match(/([\d.]+)\s*([KMGT]?B)/i);
+                            let sizeBytes = 0;
+                            if (sizeParts) {
+                                const num = parseFloat(sizeParts[1]);
+                                const unit = sizeParts[2].toUpperCase();
+                                const multipliers = { 'B': 1, 'KB': 1024, 'MB': 1024**2, 'GB': 1024**3, 'TB': 1024**4 };
+                                sizeBytes = Math.round(num * (multipliers[unit] || 1));
+                            }
+                            return { title: (stream.title || stream.name || '').split('\n')[0], magnet: magnetLink, seeders, size: sizeBytes };
+                        }).filter(Boolean);
+                        displayTorrents(torrents, season, episode);
+                        return;
+                    } catch (error) {
+                        console.error('[Torrentio] Error:', error);
+                        torrentsList.innerHTML = `<div class="error-message"><i class="fas fa-exclamation-triangle"></i> Torrentio Error: ${error.message}</div>`;
+                        return;
+                    }
+                } else if (selectedProvider === 'torrentless') {
+                    // Force in-app scraper branch
+                    try {
+                        let query = currentContent.title || currentContent.name;
+                        if (currentMediaType === 'movie') {
+                            const year = (currentContent.release_date || '').substring(0, 4);
+                            if (year) query = `${query} ${year}`;
+                        } else if (currentMediaType === 'tv') {
+                            if (season && episode) {
+                                const seasonStr = String(season).padStart(2, '0');
+                                const episodeStr = String(episode).padStart(2, '0');
+                                query = `${query} S${seasonStr}.E${episodeStr}`;
+                            } else if (season) {
+                                const seasonStr = String(season).padStart(2, '0');
+                                query = `${query} S${seasonStr}`;
+                            }
+                        }
+                        const torrentlessUrl = `http://localhost:3000/torrentless/api/search?q=${encodeURIComponent(query)}&page=1`;
+                        torrentsList.innerHTML = '<div class="loading"><i class="fas fa-spinner"></i> Searching Torrentless...</div>';
+                        const response = await fetch(torrentlessUrl);
+                        if (!response.ok) throw new Error(`In-App Scraper error: ${response.statusText}`);
+                        const data = await response.json();
+                        const items = data.items || [];
+                        const torrents = items.map(item => {
+                            const sizeStr = item.size || '0 B';
+                            const sizeParts = sizeStr.match(/([\d.]+)\s*([KMGT]?B)/i);
+                            let sizeBytes = 0;
+                            if (sizeParts) {
+                                const num = parseFloat(sizeParts[1]);
+                                const unit = sizeParts[2].toUpperCase();
+                                const multipliers = { 'B': 1, 'KB': 1024, 'MB': 1024**2, 'GB': 1024**3, 'TB': 1024**4 };
+                                sizeBytes = Math.round(num * (multipliers[unit] || 1));
+                            }
+                            return { title: item.title, magnet: item.magnet, seeders: item.seeds || 0, size: sizeBytes };
+                        });
+                        displayTorrents(torrents, season, episode);
+                        return;
+                    } catch (error) {
+                        console.error('[Torrentless] Error:', error);
+                        torrentsList.innerHTML = `<div class=\"error-message\"><i class=\"fas fa-exclamation-triangle\"></i> In-App Scraper Error: ${error.message}</div>`;
+                        return;
+                    }
+                }
             }
 
             // Playtorrio (default) - use existing torrent search logic
@@ -19924,8 +20134,8 @@ Your browser does not support the video tag.
             
             // Determine provider based on selectedProvider setting
             let provider;
-            if (selectedProvider === 'playtorrio') {
-                provider = 'App Sources';  // PlayTorrio configured in settings
+            if (selectedProvider === 'jackett') {
+                provider = 'Jackett';
             } else if (selectedProvider === 'nuvio') {
                 provider = 'Nuvio';
             } else if (selectedProvider === 'comet') {
@@ -19934,6 +20144,8 @@ Your browser does not support the video tag.
                 provider = '111477';
             } else if (selectedProvider === 'moviebox') {
                 provider = 'MovieBox';
+            } else if (selectedProvider === 'torrentless') {
+                provider = 'PlayTorrio';
             } else {
                 provider = 'App Sources';  // Default fallback
             }
@@ -19968,11 +20180,12 @@ Your browser does not support the video tag.
 
             const title = currentContent?.title || currentContent?.name || 'Video';
             let provider;
-            if (selectedProvider === 'playtorrio') provider = 'App Sources';
+            if (selectedProvider === 'jackett') provider = 'Jackett';
             else if (selectedProvider === 'nuvio') provider = 'Nuvio';
             else if (selectedProvider === 'comet') provider = 'Comet';
             else if (selectedProvider === '111477') provider = '111477';
             else if (selectedProvider === 'moviebox') provider = 'MovieBox';
+            else if (selectedProvider === 'torrentless') provider = 'PlayTorrio';
             else provider = 'App Sources';
 
             const seasonNum = (currentMediaType === 'tv' && currentSeason) ? currentSeason : null;
@@ -20185,14 +20398,16 @@ Your browser does not support the video tag.
             
             // Determine provider based on selectedProvider setting
             let provider;
-            if (selectedProvider === 'playtorrio') {
-                provider = 'App Sources';
+            if (selectedProvider === 'jackett') {
+                provider = 'Jackett';
             } else if (selectedProvider === 'nuvio') {
                 provider = 'Nuvio';
             } else if (selectedProvider === 'comet') {
                 provider = 'Comet';
             } else if (selectedProvider === '111477') {
                 provider = '111477';
+            } else if (selectedProvider === 'torrentless') {
+                provider = 'PlayTorrio';
             } else {
                 provider = 'App Sources';
             }
@@ -21384,30 +21599,24 @@ Your browser does not support the video tag.
                             <div class="books-grid">
                                 ${result.books.map(book => `
                                     <div class="book-card">
-                                        <img src="${book.coverUrl || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjMDZiNmQ0Ci8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNHB4IiBmaWxsPSJ3aGl0ZSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPkJvb2s8L3RleHQ+PC9zdmc+'}" 
-                                             alt="${book.title}" 
+                                        <img src="${book.coverUrl || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjMDZiNmQ0Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNHB4IiBmaWxsPSJ3aGl0ZSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPkJvb2s8L3RleHQ+PC9zdmc+'}"
+                                             alt="${book.title}"
                                              class="book-cover"
-                                             onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjMDZiNmQ0Ci8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNHB4IiBmaWxsPSJ3aGl0ZSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPkJvb2s8L3RleHQ+PC9zdmc+'">
+                                             onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjMDZiNmQ0Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNHB4IiBmaWxsPSJ3aGl0ZSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPkJvb2s8L3RleHQ+PC9zdmc+'">
                                         <div class="book-title">${book.title}</div>
-                                        <div class="book-author">${Array.isArray(book.author) ? book.author.join(', ') : book.author}</div>
+                                        <div class="book-author">${Array.isArray(book.author) ? book.author.join(', ') : (book.author || '')}</div>
                                         <div class="book-details">
-                                            <span class="book-tag epub-highlight"><i class="fas fa-file"></i> EPUB</span>
-                                            <span class="book-tag"><i class="fas fa-calendar"></i> ${book.year}</span>
-                                            <span class="book-tag"><i class="fas fa-download"></i> Downloaded</span>
+                                            <span class="book-tag"><i class="fas fa-file"></i> EPUB</span>
+                                            ${book.fileSize ? `<span class="book-tag"><i class=\"fas fa-hdd\"></i> ${formatFileSize(book.fileSize)}</span>` : ''}
                                         </div>
-                                        <div style="margin-top: 0.5rem;">
-                                            <button class="download-btn read-btn" data-local-path="${book.localPath}" data-title="${book.title}">
-                                                <i class="fas fa-book-open"></i> Read Now
-                                            </button>
-                                        </div>
-                                        <div style="font-size: 0.8rem; color: var(--gray); margin-top: 0.5rem;">
-                                            Downloaded: ${new Date(book.downloadedAt).toLocaleDateString()}
-                                        </div>
+                                        <button class="read-btn" data-local-path="${book.localPath}" data-title="${book.title}">
+                                            <i class="fas fa-book-open"></i>
+                                            Read
+                                        </button>
                                     </div>
                                 `).join('')}
                             </div>
                         `;
-                        // Wire up Read Now buttons
                         libraryContent.querySelectorAll('.read-btn').forEach(btn => {
                             btn.addEventListener('click', () => {
                                 const p = btn.getAttribute('data-local-path');
