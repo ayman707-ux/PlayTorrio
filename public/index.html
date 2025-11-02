@@ -753,6 +753,28 @@
             pointer-events: all;
         }
 
+        /* Modal dropdowns (sort/filter) */
+        .modal-select {
+            background: rgba(255,255,255,0.08);
+            color: var(--light);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 8px;
+            padding: 0.35rem 0.6rem;
+            font-size: 0.95rem;
+            font-weight: 600;
+            letter-spacing: 0.2px;
+        }
+        .modal-select:focus {
+            outline: none;
+            border-color: rgba(168,85,247,0.45);
+            box-shadow: 0 0 0 3px rgba(168,85,247,0.15);
+        }
+        .modal-select option {
+            background: #1f1140;
+            color: #fff;
+            font-weight: 600;
+        }
+
         /* Episode details overlay used in showEpisodeDetails() */
         .modal-overlay {
             position: fixed;
@@ -2064,6 +2086,11 @@
             border-radius: 16px;
             padding: 0.5rem 0;
             min-width: 160px;
+            /* Make the menu usable on small screens */
+            max-height: calc(100vh - 140px); /* leave room for FAB and margins */
+            overflow-y: auto;
+            overscroll-behavior: contain;
+            -webkit-overflow-scrolling: touch;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
             opacity: 0;
             transform: translateY(10px) scale(0.95);
@@ -6066,10 +6093,16 @@
         <div class="discord-message">
             <p>Suggest features, report bugs, be a part of the community, and help me make a better app.</p>
         </div>
-        <button class="discord-join-btn" id="discordJoinBtn">
-            <i class="fab fa-discord"></i>
-            Join Discord
-        </button>
+        <div style="display:flex; gap:0.75rem; flex-wrap: wrap;">
+            <button class="discord-join-btn" id="discordJoinBtn" style="flex:1;">
+                <i class="fab fa-discord"></i>
+                Join Discord
+            </button>
+            <button class="discord-join-btn" id="discordDontShowBtn" style="background: rgba(255,255,255,0.12); flex:1;">
+                <i class="fas fa-eye-slash"></i>
+                Don't show again
+            </button>
+        </div>
     </div>
 </div>
 
@@ -6110,6 +6143,86 @@
             Got It!
         </button>
     </div>
+</div>
+
+<!-- What's New v1.6.3 Modal -->
+<div class="discord-modal" id="version163Modal" style="display: none;">
+    <div class="discord-content" style="max-width: 600px;">
+        <button class="discord-close" id="version163Close">
+            <i class="fas fa-times"></i>
+        </button>
+        <h2 class="discord-title" style="display: flex; align-items: center; gap: 1rem; font-size: 1.8rem;">
+            <i class="fas fa-sparkles" style="color: var(--vlc-orange);"></i>
+            Welcome to v1.6.3
+        </h2>
+        <div class="discord-message" style="text-align: left;">
+            <p style="font-size: 1.05rem; margin-bottom: 1rem;">
+                Thanks for updating! Here's what's new in this version:
+            </p>
+            
+            <div style="background: rgba(255,255,255,0.05); padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
+                <h3 style="color: #ec4899; margin-bottom: 0.75rem; font-size: 1.1rem;">
+                    <i class="fas fa-music"></i> Music Player Enhancements
+                </h3>
+                <ul style="list-style: none; padding-left: 0; color: #e5e7eb;">
+                    <li style="margin-bottom: 0.5rem;">• <strong>Minimize Mode:</strong> Keep music playing in a compact notification-style player while browsing other sections</li>
+                    <li style="margin-bottom: 0.5rem;">• <strong>Background Playback:</strong> Navigate freely through the app without interrupting your music</li>
+                    <li style="margin-bottom: 0.5rem;">• <strong>Full Controls:</strong> Play/pause, skip, rewind, and track navigation from the mini player</li>
+                </ul>
+            </div>
+            
+            <div style="background: rgba(255,255,255,0.05); padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
+                <h3 style="color: #10b981; margin-bottom: 0.75rem; font-size: 1.1rem;">
+                    <i class="fas fa-sort-amount-down"></i> Torrent Sorting & Filtering
+                </h3>
+                <ul style="list-style: none; padding-left: 0; color: #e5e7eb;">
+                    <li style="margin-bottom: 0.5rem;">• <strong>Sort by File Size:</strong> Organize torrents by size (ascending/descending) or seeders</li>
+                    <li style="margin-bottom: 0.5rem;">• <strong>Size Filters:</strong> Filter torrents by size ranges (1GB+, 2GB+, 2-4GB, 4-8GB, 8GB+)</li>
+                    <li style="margin-bottom: 0.5rem;">• <strong>Instant Updates:</strong> Results update immediately when changing sort or filter options</li>
+                </ul>
+            </div>
+            
+            <div style="background: rgba(255,255,255,0.05); padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
+                <h3 style="color: #3b82f6; margin-bottom: 0.75rem; font-size: 1.1rem;">
+                    <i class="fas fa-cloud-download-alt"></i> Improved Debrid Support
+                </h3>
+                <ul style="list-style: none; padding-left: 0; color: #e5e7eb;">
+                    <li style="margin-bottom: 0.5rem;">• <strong>Single File Downloads:</strong> Real-Debrid now only downloads your selected file, not the entire torrent</li>
+                    <li style="margin-bottom: 0.5rem;">• <strong>Bandwidth Optimization:</strong> Saves bandwidth and storage across all debrid providers</li>
+                    <li style="margin-bottom: 0.5rem;">• <strong>Default Client ID:</strong> Automatic fallback for Real-Debrid authentication</li>
+                </ul>
+            </div>
+            
+            <div style="background: rgba(255,255,255,0.05); padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
+                <h3 style="color: #f59e0b; margin-bottom: 0.75rem; font-size: 1.1rem;">
+                    <i class="fas fa-book-reader"></i> Manga Reader Improvements
+                </h3>
+                <ul style="list-style: none; padding-left: 0; color: #e5e7eb;">
+                    <li style="margin-bottom: 0.5rem;">• <strong>Cleaner Interface:</strong> Removed top navigation bar for distraction-free reading</li>
+                    <li style="margin-bottom: 0.5rem;">• <strong>Floating Back Button:</strong> Sticky back button stays accessible while reading</li>
+                    <li style="margin-bottom: 0.5rem;">• <strong>Keyboard Hint:</strong> On-screen reminder to use arrow keys for navigation</li>
+                </ul>
+            </div>
+            
+            <p style="font-size: 0.95rem; margin-top: 1rem; color: #9ca3af;">
+                If you enjoy PlayTorrio, consider supporting development!
+            </p>
+        </div>
+        <div style="display:flex; gap:0.75rem;">
+            <button class="discord-join-btn" id="version163DonateBtn" style="background: var(--vlc-orange); flex:1;">
+                <i class="fas fa-heart"></i>
+                Donate
+            </button>
+            <button class="discord-join-btn" id="version163GotItBtn" style="background: rgba(255,255,255,0.12); flex:1;">
+                <i class="fas fa-check"></i>
+                Got it
+            </button>
+        </div>
+    </div>
+    <style>
+        /* Ensure modal uses same visibility behavior as others */
+        #version163Modal.active { display: flex !important; }
+    </style>
 </div>
 
 <!-- Settings Modal -->
@@ -6684,7 +6797,7 @@
                     </a>
         <div class="search-container">
         <i class="fas fa-search search-icon"></i>
-        <input id="searchInput" placeholder="Search for movies, shows, actors..." type="text"/>
+        <input id="searchInput" placeholder="Search for movies, shows, anime..." type="text"/>
         </div>
         <div class="user-actions">
         <!-- Connection Status (NEW UI only) -->
@@ -6708,9 +6821,9 @@
         <button class="btn btn-outline" id="myListBtn">
         <i class="fas fa-heart"></i> My List
                         </button>
-        <div style="color: var(--light); font-size: 0.9rem; opacity: 0.8; margin-left: 1rem; display: flex; align-items: center; gap: 0.5rem;">
-            <i class="fas fa-code"></i> Made by Ayman
-        </div>
+        <button class="btn btn-primary" id="donateBtn" title="Support development" style="margin-left: 1rem;">
+        <i class="fas fa-heart"></i> Donate
+                        </button>
         <!-- Install MPV button removed -->
         </div>
         </div>
@@ -7004,6 +7117,10 @@
                     Back
                 </button>
                 <h3 id="music-player-title">Now Playing</h3>
+                <button id="music-player-minimize" class="books-reader-back-btn" style="margin-left: auto; margin-right: 0;">
+                    <i class="fas fa-minus"></i>
+                    Minimize
+                </button>
             </div>
             <div class="books-reader-frame-container" style="display:flex; flex-direction:column; align-items:center; justify-content:center; padding: 1.75rem; background: linear-gradient(135deg, rgba(26,26,46,0.95), rgba(22,33,62,0.95));">
                 <img id="music-player-cover" src="" alt="Album Cover" style="width: 240px; height: 240px; object-fit: cover; border-radius: 12px; margin-bottom: 1rem; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);">
@@ -7042,6 +7159,37 @@
 
                 <audio id="music-player-audio" style="display:none;" crossorigin="anonymous" preload="metadata"></audio>
             </div>
+        </div>
+    </div>
+
+    <!-- Mini Music Player (Notification Style) -->
+    <div id="music-mini-player" style="display: none; position: fixed; bottom: 1.5rem; right: 1.5rem; z-index: 10000; background: linear-gradient(135deg, rgba(26,26,46,0.98), rgba(22,33,62,0.98)); border: 2px solid #ec4899; border-radius: 12px; padding: 1rem; box-shadow: 0 10px 40px rgba(0,0,0,0.6); backdrop-filter: blur(10px); width: 340px;">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem;">
+            <h4 id="mini-player-song-title" style="color: var(--light); margin: 0; font-size: 0.95rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1;"></h4>
+            <button id="music-player-maximize" style="background: rgba(236,72,153,0.1); border: 1px solid rgba(236,72,153,0.3); color: #ec4899; border-radius: 6px; padding: 0.4rem 0.6rem; cursor: pointer; margin-left: 0.5rem;">
+                <i class="fas fa-expand"></i>
+            </button>
+        </div>
+        <p id="mini-player-artist" style="color: #ec4899; font-size: 0.85rem; margin: 0 0 0.75rem 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"></p>
+        
+        <!-- Mini Progress Bar -->
+        <div class="audio-progress-bar" id="mini-progress-bar" style="width:100%; height:4px; background: rgba(255,255,255,0.12); border-radius:2px; cursor:pointer; overflow:hidden; margin-bottom: 0.5rem;">
+            <div class="audio-progress-fill" id="mini-progress-fill" style="height:100%; width:0%; background: linear-gradient(90deg, #ec4899, #a855f7);"></div>
+        </div>
+        
+        <!-- Mini Time Display -->
+        <div style="display:flex; justify-content:space-between; color:#9ca3af; font-size:0.75rem; margin-bottom:0.75rem;">
+            <span id="mini-current-time">0:00</span>
+            <span id="mini-total-time">0:00</span>
+        </div>
+        
+        <!-- Mini Controls -->
+        <div style="display:flex; justify-content:center; align-items:center; gap:0.75rem;">
+            <button class="audio-control-btn" id="mini-prev-track-btn" style="background: rgba(236,72,153,0.1); border:1px solid rgba(236,72,153,0.3); color:#ec4899; border-radius:50%; width:36px; height:36px; display:flex; align-items:center; justify-content:center; font-size:0.85rem;"><i class="fas fa-step-backward"></i></button>
+            <button class="audio-control-btn" id="mini-backward-btn" style="background: rgba(236,72,153,0.1); border:1px solid rgba(236,72,153,0.3); color:#ec4899; border-radius:50%; width:36px; height:36px; display:flex; align-items:center; justify-content:center; font-size:0.85rem;"><i class="fas fa-backward"></i></button>
+            <button class="audio-control-btn" id="mini-play-pause-btn" style="background: linear-gradient(135deg, #ec4899, #a855f7); color:white; border:none; border-radius:50%; width:44px; height:44px; display:flex; align-items:center; justify-content:center; font-size:1rem;"><i class="fas fa-play"></i></button>
+            <button class="audio-control-btn" id="mini-forward-btn" style="background: rgba(236,72,153,0.1); border:1px solid rgba(236,72,153,0.3); color:#ec4899; border-radius:50%; width:36px; height:36px; display:flex; align-items:center; justify-content:center; font-size:0.85rem;"><i class="fas fa-forward"></i></button>
+            <button class="audio-control-btn" id="mini-next-track-btn" style="background: rgba(236,72,153,0.1); border:1px solid rgba(236,72,153,0.3); color:#ec4899; border-radius:50%; width:36px; height:36px; display:flex; align-items:center; justify-content:center; font-size:0.85rem;"><i class="fas fa-step-forward"></i></button>
         </div>
     </div>
 
@@ -7904,7 +8052,7 @@
             <div id="games-empty-state" class="books-empty">
                 <div class="books-empty-icon"><i class="fas fa-search"></i></div>
                 <h3>Search for PC Games</h3>
-                <p>Enter a game name above to find downloadable PC games</p>
+                <p>Enter a game name above to find downloadable PC games, Scrape SteamUnderground for games</p>
             </div>
         </div>
     </div>
@@ -8270,12 +8418,22 @@
     </div>
 
     <!-- Manga Reader Page -->
-    <div id="manga-reader-page" style="display: none; background: #000; min-height: 100vh;">
-        <div style="position: sticky; top: 0; z-index: 100; background: rgba(0,0,0,0.9); padding: 1rem; backdrop-filter: blur(10px); box-shadow: 0 2px 10px rgba(0,0,0,0.5);">
-            <button id="mangaReaderBack" style="background: var(--secondary); border: none; padding: 0.75rem 1.5rem; border-radius: 8px; color: white; font-size: 1rem; cursor: pointer; display: flex; align-items: center; gap: 0.5rem; transition: all 0.3s ease;">
-                <i class="fas fa-arrow-left"></i> Back
-            </button>
+    <div id="manga-reader-page" style="display: none; background: #000; min-height: 100vh; position: relative;">
+        <!-- Floating Back Button -->
+        <button id="mangaReaderBack" style="position: sticky; top: 1rem; left: 1rem; z-index: 1000; background: var(--secondary); border: none; padding: 0.75rem 1.5rem; border-radius: 8px; color: white; font-size: 1rem; cursor: pointer; display: flex; align-items: center; gap: 0.5rem; transition: all 0.3s ease; box-shadow: 0 4px 12px rgba(0,0,0,0.5); width: fit-content; margin-bottom: 1rem;">
+            <i class="fas fa-arrow-left"></i> Back
+        </button>
+        
+        <!-- Keyboard Navigation Hint -->
+        <div style="position: fixed; right: 1.5rem; top: 50%; transform: translateY(-50%); z-index: 900; background: rgba(0,0,0,0.7); padding: 1rem; border-radius: 8px; color: white; font-size: 0.9rem; text-align: center; backdrop-filter: blur(10px); box-shadow: 0 4px 12px rgba(0,0,0,0.5); max-width: 120px;">
+            <i class="fas fa-keyboard" style="font-size: 1.5rem; margin-bottom: 0.5rem; display: block;"></i>
+            <p style="margin: 0; line-height: 1.4;">Use arrow keys to scroll</p>
+            <div style="margin-top: 0.5rem; font-size: 1.2rem;">
+                <div><i class="fas fa-arrow-up"></i></div>
+                <div><i class="fas fa-arrow-down"></i></div>
+            </div>
         </div>
+
         <div id="mangaReaderTitle" style="text-align: center; padding: 1rem; color: white; font-size: 1.5rem; font-weight: 600;">
             <!-- Chapter title will be here -->
         </div>
@@ -8541,6 +8699,21 @@ Can't find what you're looking for? Try a custom search
 <i class="fas fa-magnet"></i> Available Torrents
                         </h3>
 <div class="torrent-actions">
+    <label for="torrentSortSelect" style="margin-right: 0.5rem; font-size:0.9rem; opacity:0.85;">Sort:</label>
+    <select id="torrentSortSelect" class="modal-select" style="margin-right: 0.5rem;">
+        <option value="seeders">Seeds (default)</option>
+        <option value="size-desc">Size: High → Low</option>
+        <option value="size-asc">Size: Low → High</option>
+    </select>
+    <label for="torrentSizeFilterSelect" style="margin: 0 0.5rem 0 0.25rem; font-size:0.9rem; opacity:0.85;">Size:</label>
+    <select id="torrentSizeFilterSelect" class="modal-select" style="margin-right: 0.5rem;">
+        <option value="all">All sizes</option>
+        <option value="gte-1g">≥ 1 GB</option>
+        <option value="gte-2g">≥ 2 GB</option>
+        <option value="2-4g">2–4 GB</option>
+        <option value="4-8g">4–8 GB</option>
+        <option value="gte-8g">≥ 8 GB</option>
+    </select>
 <button class="btn btn-outline" id="refreshTorrents">
 <i class="fas fa-sync"></i> Refresh
                             </button>
@@ -9080,9 +9253,10 @@ Your browser does not support the video tag.
     // Donate modal removed - no DOM elements
         
         // Discord Modal elements
-        const discordModal = document.getElementById('discordModal');
-        const discordClose = document.getElementById('discordClose');
-        const discordJoinBtn = document.getElementById('discordJoinBtn');
+    const discordModal = document.getElementById('discordModal');
+    const discordClose = document.getElementById('discordClose');
+    const discordJoinBtn = document.getElementById('discordJoinBtn');
+    const discordDontShowBtn = document.getElementById('discordDontShowBtn');
         const discordBtn = document.getElementById('discordBtn');
         
         // Settings Modal elements
@@ -9295,6 +9469,9 @@ Your browser does not support the video tag.
         let allTorrents = [];
         let torrentsPage = 1;
         const torrentsPerPage = 20;
+        let torrentSortMode = 'seeders'; // 'seeders' | 'size-asc' | 'size-desc'
+        let torrentSizeFilter = 'all'; // 'all' | 'gte-1g' | 'gte-2g' | '2-4g' | '4-8g' | 'gte-8g'
+        let allNuvioStreams = []; // Cache for Nuvio streams to enable sorting
 
         // Discord Rich Presence tracking
         let discordStreamingActive = false;
@@ -9589,6 +9766,22 @@ Your browser does not support the video tag.
                     showDonateModal();
                     localStorage.setItem('hasSeenDonateModal', 'true');
                 }, 500);
+            }
+        }
+
+        // v1.6.3 modal controls
+        function showVersion163Modal() {
+            const modal = document.getElementById('version163Modal');
+            if (modal) {
+                modal.classList.add('active');
+                document.body.style.overflow = 'hidden';
+            }
+        }
+        function hideVersion163Modal() {
+            const modal = document.getElementById('version163Modal');
+            if (modal) {
+                modal.classList.remove('active');
+                document.body.style.overflow = 'auto';
             }
         }
 
@@ -12262,6 +12455,14 @@ Your browser does not support the video tag.
                     }
                 });
             }
+            if (discordDontShowBtn) {
+                discordDontShowBtn.addEventListener('click', () => {
+                    // Persist user's preference to never show this modal again
+                    localStorage.setItem('hasJoinedDiscord', 'true');
+                    hideDiscordModal();
+                    showNotification("We'll stop showing this.", 'success');
+                });
+            }
             
             // Update Modal
             const updateClose = document.getElementById('updateClose');
@@ -12271,6 +12472,29 @@ Your browser does not support the video tag.
             }
             if (updateGotItBtn) {
                 updateGotItBtn.addEventListener('click', hideUpdateModal);
+            }
+            // v1.6.3 Modal
+            const version163Close = document.getElementById('version163Close');
+            const version163DonateBtn = document.getElementById('version163DonateBtn');
+            const version163GotItBtn = document.getElementById('version163GotItBtn');
+            version163Close?.addEventListener('click', hideVersion163Modal);
+            version163GotItBtn?.addEventListener('click', hideVersion163Modal);
+            if (version163DonateBtn) {
+                version163DonateBtn.addEventListener('click', async () => {
+                    const url = 'https://ko-fi.com/ayman228x';
+                    try {
+                        if (window.electronAPI?.openExternal) {
+                            await window.electronAPI.openExternal(url);
+                        } else {
+                            window.open(url, '_blank', 'noopener');
+                        }
+                        hideVersion163Modal();
+                        showNotification('Opening Ko-fi...', 'success');
+                    } catch(err) {
+                        console.error('Failed to open Ko-fi link:', err);
+                        showNotification('Failed to open Ko-fi link', 'error');
+                    }
+                });
             }
             
             if (discordBtn) {
@@ -12286,6 +12510,24 @@ Your browser does not support the video tag.
                     } catch(err) {
                         console.error('Failed to open Discord:', err);
                         showNotification('Failed to open Discord link', 'error');
+                    }
+                });
+            }
+            // Donate button (persistent)
+            const donateBtn = document.getElementById('donateBtn');
+            if (donateBtn) {
+                donateBtn.addEventListener('click', async () => {
+                    const url = 'https://ko-fi.com/ayman228x';
+                    try {
+                        if (window.electronAPI?.openExternal) {
+                            await window.electronAPI.openExternal(url);
+                        } else {
+                            window.open(url, '_blank', 'noopener');
+                        }
+                        showNotification('Opening Ko-fi...', 'success');
+                    } catch(err) {
+                        console.error('Failed to open Ko-fi:', err);
+                        showNotification('Failed to open Ko-fi link', 'error');
                     }
                 });
             }
@@ -13268,6 +13510,65 @@ Your browser does not support the video tag.
                 fetchTorrents(lastSearchedSeason, lastSearchedEpisode);
             });
             
+            // Sort selector for torrents
+            const torrentSortSelect = document.getElementById('torrentSortSelect');
+            function handleSortChange() {
+                const newMode = torrentSortSelect ? torrentSortSelect.value : 'seeders';
+                console.log('[SORT] Changing from', torrentSortMode, 'to', newMode);
+                torrentSortMode = newMode;
+                try { if (typeof torrentsPage === 'number') torrentsPage = 1; } catch(_) {}
+                
+                // Re-render based on active provider
+                if (selectedProvider === 'nuvio' && allNuvioStreams.length > 0) {
+                    console.log('[SORT] Re-rendering Nuvio streams with mode:', torrentSortMode);
+                    try { displayNuvioStreams(allNuvioStreams); } catch(_) {}
+                } else if (selectedProvider === 'moviebox') {
+                    console.log('[SORT] Skipping re-render for provider:', selectedProvider, '(sorting not supported)');
+                    return;
+                } else if (selectedProvider === '111477' && window._last111477Files) {
+                    console.log('[SORT] Re-rendering 111477 files with mode:', torrentSortMode);
+                    try { render111477Files(window._last111477Files); } catch(_) {}
+                } else {
+                    // Comet, Jackett, Torrentio, PlayTorrio all use standard torrent rendering
+                    console.log('[SORT] Re-rendering torrents page with mode:', torrentSortMode);
+                    try { renderTorrentsPage(); } catch(_) {}
+                }
+            }
+            if (torrentSortSelect) {
+                torrentSortSelect.addEventListener('change', handleSortChange);
+                // Fire during selection as well for more immediate updates in some environments
+                torrentSortSelect.addEventListener('input', handleSortChange);
+            }
+
+            // Size filter selector for torrents
+            const torrentSizeFilterSelect = document.getElementById('torrentSizeFilterSelect');
+            function handleSizeFilterChange() {
+                torrentSizeFilter = (torrentSizeFilterSelect && torrentSizeFilterSelect.value) ? torrentSizeFilterSelect.value : 'all';
+                console.log('[FILTER] Size filter changed to:', torrentSizeFilter);
+                try { if (typeof torrentsPage === 'number') torrentsPage = 1; } catch(_) {}
+                
+                // Re-render based on active provider
+                if (selectedProvider === 'nuvio' && allNuvioStreams.length > 0) {
+                    console.log('[FILTER] Re-rendering Nuvio streams with filter:', torrentSizeFilter);
+                    try { displayNuvioStreams(allNuvioStreams); } catch(_) {}
+                } else if (selectedProvider === 'moviebox') {
+                    console.log('[FILTER] Skipping re-render for provider:', selectedProvider, '(filtering not supported)');
+                    return;
+                } else if (selectedProvider === '111477' && window._last111477Files) {
+                    console.log('[FILTER] Re-rendering 111477 files with filter:', torrentSizeFilter);
+                    try { render111477Files(window._last111477Files); } catch(_) {}
+                } else {
+                    // Comet, Jackett, Torrentio, PlayTorrio all use standard torrent rendering
+                    console.log('[FILTER] Re-rendering torrents page with filter:', torrentSizeFilter);
+                    try { renderTorrentsPage(); } catch(_) {}
+                }
+            }
+            if (torrentSizeFilterSelect) {
+                torrentSizeFilterSelect.addEventListener('change', handleSizeFilterChange);
+                // Fire during selection as well for more immediate updates in some environments
+                torrentSizeFilterSelect.addEventListener('input', handleSizeFilterChange);
+            }
+            
             // Provider buttons
             document.querySelectorAll('.provider-btn').forEach(btn => {
                 btn.addEventListener('click', () => {
@@ -14031,6 +14332,7 @@ Your browser does not support the video tag.
 
             const musicModal = document.getElementById('music-player-modal');
             const musicModalBack = document.getElementById('music-player-back');
+            const musicModalMinimize = document.getElementById('music-player-minimize');
             const musicModalTitle = document.getElementById('music-player-title');
             const musicSongTitle = document.getElementById('music-player-song-title');
             const musicArtist = document.getElementById('music-player-artist');
@@ -14048,6 +14350,21 @@ Your browser does not support the video tag.
             const musicVolumeSlider = document.getElementById('music-volume-slider');
             const musicVolumeFill = document.getElementById('music-volume-fill');
             const musicAutoplayToggle = document.getElementById('music-autoplay-toggle');
+            
+            // Mini player elements
+            const miniPlayer = document.getElementById('music-mini-player');
+            const miniPlayerMaximize = document.getElementById('music-player-maximize');
+            const miniPlayerSongTitle = document.getElementById('mini-player-song-title');
+            const miniPlayerArtist = document.getElementById('mini-player-artist');
+            const miniPlayPauseBtn = document.getElementById('mini-play-pause-btn');
+            const miniBackwardBtn = document.getElementById('mini-backward-btn');
+            const miniForwardBtn = document.getElementById('mini-forward-btn');
+            const miniPrevTrackBtn = document.getElementById('mini-prev-track-btn');
+            const miniNextTrackBtn = document.getElementById('mini-next-track-btn');
+            const miniProgressBar = document.getElementById('mini-progress-bar');
+            const miniProgressFill = document.getElementById('mini-progress-fill');
+            const miniCurrentTime = document.getElementById('mini-current-time');
+            const miniTotalTime = document.getElementById('mini-total-time');
             // Playlist chooser modal refs
             const playlistChooser = document.getElementById('music-playlist-chooser');
             const playlistChooserBack = document.getElementById('playlist-chooser-back');
@@ -15575,12 +15892,25 @@ Your browser does not support the video tag.
                         // Play from downloaded file
                         console.log('[MUSIC] Playing downloaded file:', downloadedTrack.filePath);
                         
-                        musicModal.style.display = 'flex';
+                        // Show modal or mini player based on current state
+                        if (isPlayerMinimized) {
+                            miniPlayer.style.display = 'block';
+                            musicModal.style.display = 'none';
+                        } else {
+                            musicModal.style.display = 'flex';
+                            miniPlayer.style.display = 'none';
+                        }
+                        
                         musicModalTitle.textContent = 'Now Playing (Offline)';
                         musicSongTitle.textContent = title;
                         musicArtist.textContent = artistName;
                         if (coverSrc) musicCover.src = coverSrc;
                         musicPlayPauseBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+                        
+                        // Update mini player info
+                        if (miniPlayerSongTitle) miniPlayerSongTitle.textContent = title;
+                        if (miniPlayerArtist) miniPlayerArtist.textContent = artistName;
+                        if (miniPlayPauseBtn) miniPlayPauseBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
 
                         // Clear existing sources
                         while (musicAudio.firstChild) musicAudio.removeChild(musicAudio.firstChild);
@@ -15600,6 +15930,7 @@ Your browser does not support the video tag.
                             await musicAudio.play();
                         }
                         musicPlayPauseBtn.innerHTML = '<i class="fas fa-pause"></i>';
+                        if (miniPlayPauseBtn) miniPlayPauseBtn.innerHTML = '<i class="fas fa-pause"></i>';
                         updateTimeDisplays();
                         
                         // Update Discord presence for music
@@ -15608,12 +15939,25 @@ Your browser does not support the video tag.
                     }
                     
                     // Not downloaded - stream from TIDAL
-                    musicModal.style.display = 'flex';
+                    // Show modal or mini player based on current state
+                    if (isPlayerMinimized) {
+                        miniPlayer.style.display = 'block';
+                        musicModal.style.display = 'none';
+                    } else {
+                        musicModal.style.display = 'flex';
+                        miniPlayer.style.display = 'none';
+                    }
+                    
                     musicModalTitle.textContent = 'Now Playing';
                     musicSongTitle.textContent = title;
                     musicArtist.textContent = artistName;
                     if (coverSrc) musicCover.src = coverSrc;
                     musicPlayPauseBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+                    
+                    // Update mini player info
+                    if (miniPlayerSongTitle) miniPlayerSongTitle.textContent = title;
+                    if (miniPlayerArtist) miniPlayerArtist.textContent = artistName;
+                    if (miniPlayPauseBtn) miniPlayPauseBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
 
                     const data = await musicFetchJson(`/track/?id=${encodeURIComponent(trackId)}&quality=LOSSLESS`);
                     let url = null;
@@ -15654,6 +15998,7 @@ Your browser does not support the video tag.
                         await musicAudio.play();
                     }
                     musicPlayPauseBtn.innerHTML = '<i class="fas fa-pause"></i>';
+                    if (miniPlayPauseBtn) miniPlayPauseBtn.innerHTML = '<i class="fas fa-pause"></i>';
                     updateTimeDisplays();
                     
                     // Update Discord presence for music
@@ -15686,6 +16031,8 @@ Your browser does not support the video tag.
                 if (musicTotalTime) musicTotalTime.textContent = '0:00';
                 if (musicPlayPauseBtn) musicPlayPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
                 if (musicModal) musicModal.style.display = 'none';
+                if (miniPlayer) miniPlayer.style.display = 'none';
+                isPlayerMinimized = false;
             }
 
             // Play All functionality and queue management
@@ -15693,6 +16040,7 @@ Your browser does not support the video tag.
             let currentQueueIndex = 0;
             const MUSIC_AUTOPLAY_KEY = 'pt_music_autoplay_next_v1';
             let musicAutoPlayNext = false;
+            let isPlayerMinimized = false; // Track if player is minimized
 
             // hydrate autoplay setting
             try {
@@ -15812,6 +16160,28 @@ Your browser does not support the video tag.
                 musicTotalTime.textContent = fmtTime(musicAudio.duration || 0);
                 const p = (musicAudio.currentTime || 0) / (musicAudio.duration || 1) * 100;
                 musicProgressFill.style.width = `${p}%`;
+                
+                // Update mini player displays too
+                if (miniCurrentTime) miniCurrentTime.textContent = fmtTime(musicAudio.currentTime || 0);
+                if (miniTotalTime) miniTotalTime.textContent = fmtTime(musicAudio.duration || 0);
+                if (miniProgressFill) miniProgressFill.style.width = `${p}%`;
+            }
+            
+            // Minimize/Maximize functions
+            function minimizeMusicPlayer() {
+                if (musicModal) musicModal.style.display = 'none';
+                if (miniPlayer) miniPlayer.style.display = 'block';
+                isPlayerMinimized = true;
+                // Sync play/pause state
+                if (miniPlayPauseBtn) {
+                    miniPlayPauseBtn.innerHTML = musicAudio.paused ? '<i class="fas fa-play"></i>' : '<i class="fas fa-pause"></i>';
+                }
+            }
+            
+            function maximizeMusicPlayer() {
+                if (miniPlayer) miniPlayer.style.display = 'none';
+                if (musicModal) musicModal.style.display = 'flex';
+                isPlayerMinimized = false;
             }
 
             if (musicAudio) {
@@ -15819,6 +16189,7 @@ Your browser does not support the video tag.
                 musicAudio.addEventListener('loadedmetadata', updateTimeDisplays);
                 musicAudio.addEventListener('ended', () => {
                     musicPlayPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
+                    if (miniPlayPauseBtn) miniPlayPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
                     // Auto-play next track in queue if available and enabled
                     if (musicAutoPlayNext) {
                         if (currentPlayQueue.length > 0 && currentQueueIndex < currentPlayQueue.length - 1) {
@@ -15838,9 +16209,11 @@ Your browser does not support the video tag.
                     if (musicAudio.paused) {
                         try { await musicAudio.play(); } catch(_) {}
                         musicPlayPauseBtn.innerHTML = '<i class="fas fa-pause"></i>';
+                        if (miniPlayPauseBtn) miniPlayPauseBtn.innerHTML = '<i class="fas fa-pause"></i>';
                     } else {
                         musicAudio.pause();
                         musicPlayPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
+                        if (miniPlayPauseBtn) miniPlayPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
                     }
                 });
             }
@@ -15902,6 +16275,76 @@ Your browser does not support the video tag.
                     if (e.target === musicModal) closeMusicModal();
                 });
             }
+            
+            // Minimize/Maximize button handlers
+            if (musicModalMinimize) {
+                musicModalMinimize.addEventListener('click', () => {
+                    minimizeMusicPlayer();
+                    // Update mini player info
+                    if (miniPlayerSongTitle) miniPlayerSongTitle.textContent = musicSongTitle.textContent;
+                    if (miniPlayerArtist) miniPlayerArtist.textContent = musicArtist.textContent;
+                });
+            }
+            
+            if (miniPlayerMaximize) {
+                miniPlayerMaximize.addEventListener('click', maximizeMusicPlayer);
+            }
+            
+            // Mini player controls
+            if (miniPlayPauseBtn) {
+                miniPlayPauseBtn.addEventListener('click', async () => {
+                    if (musicAudio.paused) {
+                        try { await musicAudio.play(); } catch(_) {}
+                        miniPlayPauseBtn.innerHTML = '<i class="fas fa-pause"></i>';
+                        musicPlayPauseBtn.innerHTML = '<i class="fas fa-pause"></i>';
+                    } else {
+                        musicAudio.pause();
+                        miniPlayPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
+                        musicPlayPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
+                    }
+                });
+            }
+            
+            if (miniBackwardBtn) {
+                miniBackwardBtn.addEventListener('click', () => {
+                    musicAudio.currentTime = Math.max(0, (musicAudio.currentTime || 0) - 10);
+                    updateTimeDisplays();
+                });
+            }
+            
+            if (miniForwardBtn) {
+                miniForwardBtn.addEventListener('click', () => {
+                    const dur = musicAudio.duration || 0;
+                    musicAudio.currentTime = Math.min(dur, (musicAudio.currentTime || 0) + 10);
+                    updateTimeDisplays();
+                });
+            }
+            
+            if (miniPrevTrackBtn) {
+                miniPrevTrackBtn.addEventListener('click', () => {
+                    if (currentPlayQueue.length > 0 && currentQueueIndex > 0) {
+                        playPreviousInQueue();
+                    }
+                });
+            }
+            
+            if (miniNextTrackBtn) {
+                miniNextTrackBtn.addEventListener('click', () => {
+                    if (currentPlayQueue.length > 0 && currentQueueIndex < currentPlayQueue.length - 1) {
+                        playNextInQueue();
+                    }
+                });
+            }
+            
+            if (miniProgressBar) {
+                miniProgressBar.addEventListener('click', (e) => {
+                    const rect = miniProgressBar.getBoundingClientRect();
+                    const x = e.clientX - rect.left;
+                    const ratio = Math.min(1, Math.max(0, x / rect.width));
+                    musicAudio.currentTime = ratio * (musicAudio.duration || 0);
+                    updateTimeDisplays();
+                });
+            }
 
             // Keyboard controls when modal open
             document.addEventListener('keydown', (e) => {
@@ -15916,9 +16359,11 @@ Your browser does not support the video tag.
                     if (musicAudio.paused) {
                         musicAudio.play();
                         musicPlayPauseBtn.innerHTML = '<i class="fas fa-pause"></i>';
+                        if (miniPlayPauseBtn) miniPlayPauseBtn.innerHTML = '<i class="fas fa-pause"></i>';
                     } else {
                         musicAudio.pause();
                         musicPlayPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
+                        if (miniPlayPauseBtn) miniPlayPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
                     }
                 }
             });
@@ -17417,12 +17862,18 @@ Your browser does not support the video tag.
             allPageIds.forEach(id => { const el = document.getElementById(id); if (el) el.style.display = 'none'; });
 
             // Special leave-behavior
-            // Stop music if we are not showing the music page
+            // Stop music if we are not showing the music page AND player is not minimized
             if (section !== 'music') {
                 const audio = document.getElementById('music-player-audio');
                 const modal = document.getElementById('music-player-modal');
-                if (audio) { try { audio.pause(); } catch(_) {} }
-                if (modal) modal.style.display = 'none';
+                const miniPlayer = document.getElementById('music-mini-player');
+                
+                // Only pause if mini player is not visible (not minimized)
+                const isMiniPlayerVisible = miniPlayer && miniPlayer.style.display !== 'none';
+                if (!isMiniPlayerVisible) {
+                    if (audio) { try { audio.pause(); } catch(_) {} }
+                    if (modal) modal.style.display = 'none';
+                }
             }
             // Clear IPTV iframe if not on IPTV page
             if (section !== 'iptv') {
@@ -18474,8 +18925,20 @@ Your browser does not support the video tag.
                 });
                 const prioritizedStreams = withIndex.map(x => x.s);
 
+                // Cache streams globally and add size info for sorting
+                allNuvioStreams = prioritizedStreams.map(stream => {
+                    const sizeMatch = (stream.title || '').match(/([\d.]+)\s*(GB|MB)/i);
+                    let sizeBytes = 0;
+                    if (sizeMatch) {
+                        const num = parseFloat(sizeMatch[1]);
+                        const unit = sizeMatch[2].toUpperCase();
+                        sizeBytes = unit === 'GB' ? num * 1024 * 1024 * 1024 : num * 1024 * 1024;
+                    }
+                    return { ...stream, sizeBytes };
+                });
+
                 // Display Nuvio streams as direct play buttons
-                displayNuvioStreams(prioritizedStreams);
+                displayNuvioStreams(allNuvioStreams);
 
             } catch (error) {
                 console.error('[Nuvio] Error:', error);
@@ -18492,9 +18955,37 @@ Your browser does not support the video tag.
                 return;
             }
 
+            // Apply size filter first
+            let filteredStreams = streams.slice();
+            if (typeof torrentSizeFilter === 'string' && torrentSizeFilter !== 'all') {
+                console.log('[Nuvio] Applying size filter:', torrentSizeFilter);
+                filteredStreams = filteredStreams.filter(stream => bytesMatchesSizeFilter(stream.sizeBytes));
+                console.log('[Nuvio] After filter:', filteredStreams.length, 'of', streams.length, 'streams remain');
+            }
+
+            // Check if filter eliminated all results
+            if (filteredStreams.length === 0) {
+                torrentsList.innerHTML = '<p>No streams match your size filter.</p>';
+                return;
+            }
+
+            // Apply sorting if sort mode is size-based
+            let sortedStreams = filteredStreams.slice();
+            const mode = (typeof torrentSortMode === 'string') ? torrentSortMode : 'seeders';
+            
+            if (mode === 'size-asc') {
+                console.log('[Nuvio] Sorting by size ascending');
+                sortedStreams.sort((a, b) => (a.sizeBytes || 0) - (b.sizeBytes || 0));
+            } else if (mode === 'size-desc') {
+                console.log('[Nuvio] Sorting by size descending');
+                sortedStreams.sort((a, b) => (b.sizeBytes || 0) - (a.sizeBytes || 0));
+            } else {
+                console.log('[Nuvio] Using default priority order (MoviesMod first)');
+            }
+
             torrentsList.innerHTML = '';
             
-            streams.forEach((stream, index) => {
+            sortedStreams.forEach((stream, index) => {
                 const streamDiv = document.createElement('div');
                 streamDiv.className = 'torrent-item';
                 streamDiv.style.cursor = 'default';
@@ -18773,7 +19264,7 @@ Your browser does not support the video tag.
         }
 
         // Fetch streams from 111477 API (direct streaming links)
-        async function fetch111477Streams(season = null, episode = null) {
+    async function fetch111477Streams(season = null, episode = null) {
             if (!currentContent) return;
 
             const torrentsList = document.getElementById('torrentsList');
@@ -18856,77 +19347,109 @@ Your browser does not support the video tag.
                     };
                 });
 
-                // Sort by size: smallest to largest
-                processedFiles.sort((a, b) => a.sizeBytes - b.sizeBytes);
-
-                // Display 111477 streams
-                torrentsList.innerHTML = '';
-                processedFiles.forEach(file => {
-                    const item = document.createElement('div');
-                    item.className = 'torrent-item';
-                    item.style.display = 'flex';
-                    item.style.justifyContent = 'space-between';
-                    item.style.alignItems = 'center';
-                    item.style.padding = '1rem';
-                    item.style.marginBottom = '0.5rem';
-                    item.style.background = 'rgba(255,255,255,0.05)';
-                    item.style.borderRadius = '8px';
-                    item.style.cursor = 'pointer';
-
-                    const info = document.createElement('div');
-                    info.style.flex = '1';
-
-                    const title = document.createElement('div');
-                    title.style.fontWeight = '500';
-                    title.style.marginBottom = '0.25rem';
-                    title.textContent = file.name || 'Unknown';
-
-                    const meta = document.createElement('div');
-                    meta.style.fontSize = '0.85rem';
-                    meta.style.opacity = '0.7';
-                    meta.textContent = `${file.quality} • ${file.sizeFormatted}`;
-
-                    info.appendChild(title);
-                    info.appendChild(meta);
-
-                    const playBtn = document.createElement('button');
-                    playBtn.className = 'btn';
-                    playBtn.innerHTML = '<i class="fas fa-play"></i> Open in MPV';
-                    playBtn.style.marginLeft = '1rem';
-                    playBtn.onclick = async (e) => {
-                        e.stopPropagation();
-                        if (file.url) {
-                            console.log('[111477] Opening in MPV:', file.url);
-                            try {
-                                // Update Discord presence for 111477 MPV streaming
-                                const title = currentContent?.title || currentContent?.name || 'Video';
-                                const seasonNum = (currentMediaType === 'tv' && currentSeason) ? currentSeason : null;
-                                updateDiscordForStreaming(title, '111477', seasonNum);
-                                
-                                const result = await window.electronAPI.openMPVDirect(file.url);
-                                if (result.success) {
-                                    showNotification('Opening stream in MPV... Please Wait', 'success', 5000);
-                                } else {
-                                    showNotification('Failed to open in MPV: ' + (result.error || 'Unknown error'));
-                                }
-                            } catch (error) {
-                                console.error('[111477] MPV error:', error);
-                                showNotification('Failed to open in MPV: ' + error.message);
-                            }
-                        } else {
-                            showNotification('No stream URL available');
-                        }
-                    };
-
-                    item.appendChild(info);
-                    item.appendChild(playBtn);
-                    torrentsList.appendChild(item);
-                });
+                // Cache and render with current sort selection
+                window._last111477Files = processedFiles;
+                render111477Files(processedFiles);
 
             } catch (error) {
                 console.error('[111477] Error:', error);
                 torrentsList.innerHTML = `<div class="error-message"><i class="fas fa-exclamation-triangle"></i> 111477 Error: ${error.message}</div>`;
             }
+        }
+
+        // Helper: size filter matcher shared by torrent renders
+        function bytesMatchesSizeFilter(bytes) {
+            const n = Number(bytes) || 0;
+            try {
+                switch (torrentSizeFilter) {
+                    case 'gte-1g': return n >= (1024 ** 3);
+                    case 'gte-2g': return n >= (2 * 1024 ** 3);
+                    case '2-4g':  return n >= (2 * 1024 ** 3) && n < (4 * 1024 ** 3);
+                    case '4-8g':  return n >= (4 * 1024 ** 3) && n < (8 * 1024 ** 3);
+                    case 'gte-8g': return n >= (8 * 1024 ** 3);
+                    case 'all':
+                    default: return true;
+                }
+            } catch(_) {
+                return true;
+            }
+        }
+
+        // Render helper for 111477 files honoring global sort and size filter
+        function render111477Files(files) {
+            const torrentsList = document.getElementById('torrentsList');
+            torrentsList.innerHTML = '';
+            let list = (files || []).slice();
+            try {
+                // Use the same torrentSortMode variable defined near the selector
+                const mode = (typeof torrentSortMode === 'string') ? torrentSortMode : 'seeders';
+                // Apply size filter first
+                list = list.filter(f => bytesMatchesSizeFilter(f.sizeBytes));
+                if (mode === 'size-desc') list.sort((a,b) => (Number(b.sizeBytes||0) - Number(a.sizeBytes||0)));
+                else /* size-asc or default */ list.sort((a,b) => (Number(a.sizeBytes||0) - Number(b.sizeBytes||0)));
+            } catch(_) {}
+
+            list.forEach(file => {
+                const item = document.createElement('div');
+                item.className = 'torrent-item';
+                item.style.display = 'flex';
+                item.style.justifyContent = 'space-between';
+                item.style.alignItems = 'center';
+                item.style.padding = '1rem';
+                item.style.marginBottom = '0.5rem';
+                item.style.background = 'rgba(255,255,255,0.05)';
+                item.style.borderRadius = '8px';
+                item.style.cursor = 'pointer';
+
+                const info = document.createElement('div');
+                info.style.flex = '1';
+
+                const title = document.createElement('div');
+                title.style.fontWeight = '500';
+                title.style.marginBottom = '0.25rem';
+                title.textContent = file.name || 'Unknown';
+
+                const meta = document.createElement('div');
+                meta.style.fontSize = '0.85rem';
+                meta.style.opacity = '0.7';
+                meta.textContent = `${file.quality} • ${file.sizeFormatted}`;
+
+                info.appendChild(title);
+                info.appendChild(meta);
+
+                const playBtn = document.createElement('button');
+                playBtn.className = 'btn';
+                playBtn.innerHTML = '<i class="fas fa-play"></i> Open in MPV';
+                playBtn.style.marginLeft = '1rem';
+                playBtn.onclick = async (e) => {
+                    e.stopPropagation();
+                    if (file.url) {
+                        console.log('[111477] Opening in MPV:', file.url);
+                        try {
+                            // Update Discord presence for 111477 MPV streaming
+                            const title = currentContent?.title || currentContent?.name || 'Video';
+                            const seasonNum = (currentMediaType === 'tv' && currentSeason) ? currentSeason : null;
+                            updateDiscordForStreaming(title, '111477', seasonNum);
+                            
+                            const result = await window.electronAPI.openMPVDirect(file.url);
+                            if (result.success) {
+                                showNotification('Opening stream in MPV... Please Wait', 'success', 5000);
+                            } else {
+                                showNotification('Failed to open in MPV: ' + (result.error || 'Unknown error'));
+                            }
+                        } catch (error) {
+                            console.error('[111477] MPV error:', error);
+                            showNotification('Failed to open in MPV: ' + error.message);
+                        }
+                    } else {
+                        showNotification('No stream URL available');
+                    }
+                };
+
+                item.appendChild(info);
+                item.appendChild(playBtn);
+                torrentsList.appendChild(item);
+            });
         }
 
         // Fetch streams from MovieBox (aggregated variants)
@@ -18950,9 +19473,9 @@ Your browser does not support the video tag.
 
                 let apiUrl;
                 if (mediaType === 'movie') {
-                    apiUrl = `privateurl/moviebox/${encodeURIComponent(tmdbId)}`;
+                    apiUrl = `private/moviebox/${encodeURIComponent(tmdbId)}`;
                 } else if (season && episode) {
-                    apiUrl = `privateurl/moviebox/tv/${encodeURIComponent(tmdbId)}/${encodeURIComponent(season)}/${encodeURIComponent(episode)}`;
+                    apiUrl = `private/moviebox/tv/${encodeURIComponent(tmdbId)}/${encodeURIComponent(season)}/${encodeURIComponent(episode)}`;
                 } else {
                     throw new Error('Season and episode required for TV shows');
                 }
@@ -19518,22 +20041,14 @@ Your browser does not support the video tag.
 
         // Display torrents
         function displayTorrents(torrents, season = null, episode = null) {
-            // Smart sorting: exact episode matches first, then by seeders
+            // Compute episode match scores if TV ep context; actual sorting applied in renderTorrentsPage based on current sort mode
             if (season && episode && currentMediaType === 'tv') {
                 allTorrents = (torrents || []).map(t => ({
                     ...t,
                     episodeMatchScore: getEpisodeMatchScore(t.title, season, episode)
-                })).sort((a, b) => {
-                    // First sort by episode match score
-                    if (b.episodeMatchScore !== a.episodeMatchScore) {
-                        return b.episodeMatchScore - a.episodeMatchScore;
-                    }
-                    // Then by seeders
-                    return b.seeders - a.seeders;
-                });
+                }));
             } else {
-                // For movies or full seasons, just sort by seeders
-                allTorrents = (torrents || []).sort((a, b) => b.seeders - a.seeders);
+                allTorrents = (torrents || []).slice();
             }
             torrentsPage = 1;
             renderTorrentsPage();
@@ -19542,14 +20057,61 @@ Your browser does not support the video tag.
         function renderTorrentsPage() {
             torrentsList.innerHTML = '';
             
+            console.log('[RENDER] Starting renderTorrentsPage with sort mode:', torrentSortMode);
+            
+            // Apply sorting according to mode (keeping episode match priority for TV episodes)
+            const isTvEp = currentMediaType === 'tv' && lastSearchedSeason && lastSearchedEpisode;
+            const toSort = (allTorrents || []).slice();
+            
+            console.log('[RENDER] Total torrents to sort:', toSort.length, 'isTvEp:', isTvEp);
+            
+            toSort.sort((a, b) => {
+                // TV episode exact match priority (always first)
+                if (isTvEp) {
+                    const ea = Number(a.episodeMatchScore || 0);
+                    const eb = Number(b.episodeMatchScore || 0);
+                    if (eb !== ea) return eb - ea; // primary: episode match
+                }
+                
+                // Apply selected sort mode
+                const mode = (typeof torrentSortMode === 'string') ? torrentSortMode : 'seeders';
+                
+                if (mode === 'size-asc') {
+                    const sa = Number(a.size || 0);
+                    const sb = Number(b.size || 0);
+                    return sa - sb; // smallest first
+                } else if (mode === 'size-desc') {
+                    const sa = Number(a.size || 0);
+                    const sb = Number(b.size || 0);
+                    return sb - sa; // largest first
+                } else {
+                    // default: seeders desc
+                    const seeda = Number(a.seeders || 0);
+                    const seedb = Number(b.seeders || 0);
+                    return seedb - seeda;
+                }
+            });
+            
+            console.log('[RENDER] After sort, first 3 torrents:');
+            toSort.slice(0, 3).forEach((t, i) => {
+                console.log(`  ${i+1}. Size: ${((t.size||0)/1024/1024/1024).toFixed(2)}GB, Seeds: ${t.seeders}, Title: ${t.title?.substring(0, 50)}`);
+            });
+            
             // Apply keyword filter
-            let filteredTorrents = allTorrents;
+            let filteredTorrents = toSort;
             const keyword = torrentKeywordFilter ? torrentKeywordFilter.value.trim().toLowerCase() : '';
             if (keyword) {
-                filteredTorrents = allTorrents.filter(t => 
+                filteredTorrents = toSort.filter(t => 
                     (t.title || '').toLowerCase().includes(keyword)
                 );
             }
+
+            // Apply size filter
+            try {
+                if (typeof torrentSizeFilter === 'string' && torrentSizeFilter !== 'all') {
+                    filteredTorrents = filteredTorrents.filter(t => bytesMatchesSizeFilter(t.size));
+                }
+            } catch(_) {}
             
             if (filteredTorrents.length === 0) {
                 torrentsList.innerHTML = keyword 
@@ -19630,6 +20192,13 @@ Your browser does not support the video tag.
                     (t.title || '').toLowerCase().includes(keyword)
                 );
             }
+
+            // Apply size filter as well for accurate page count
+            try {
+                if (typeof torrentSizeFilter === 'string' && torrentSizeFilter !== 'all') {
+                    filteredTorrents = filteredTorrents.filter(t => bytesMatchesSizeFilter(t.size));
+                }
+            } catch(_) {}
             
             const totalPages = Math.ceil(filteredTorrents.length / torrentsPerPage);
             if (totalPages <= 1) {
@@ -22574,6 +23143,14 @@ Your browser does not support the video tag.
                 document.getElementById('manga-page').style.display = '';
             });
             
+            // Add hover effect for back button
+            mangaReaderBack.addEventListener('mouseenter', () => {
+                mangaReaderBack.style.transform = 'scale(1.05)';
+            });
+            mangaReaderBack.addEventListener('mouseleave', () => {
+                mangaReaderBack.style.transform = 'scale(1)';
+            });
+            
             function setupMangaInfiniteScroll() {
                 const mainElement = document.querySelector('main');
                 const mangaPage = document.getElementById('manga-page');
@@ -23311,6 +23888,15 @@ Your browser does not support the video tag.
                 }
             });
         } catch(_){ }
+
+        // Hook version notice (v1.6.3) from main
+        try {
+            if (window.electronAPI?.onVersionNotice163) {
+                window.electronAPI.onVersionNotice163(() => {
+                    showVersion163Modal();
+                });
+            }
+        } catch(_) {}
 
         // ---- Updater overlay wiring (non-intrusive) ----
         try {
