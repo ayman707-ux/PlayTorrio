@@ -2,9 +2,9 @@
 
 **PlayTorrio** is a clean and efficient media center and torrent streaming app that uses [Jackett](https://github.com/Jackett/Jackett) and built-in scrapers to fetch torrent results and stream magnet links directly — all in one interface.
 
-Built with ❤️ by **Ayman Marwan**.
-PlayTorrio's official [website](https://playtorrio.netlify.app/)
-Donate on KO-FI [Donate](https://ko-fi.com/ayman228x)
+--Built with ❤️ by **Ayman Marwan**.
+--PlayTorrio's official [website](https://playtorrio.netlify.app/)
+--Donate on KO-FI [Donate](https://ko-fi.com/ayman228x)
 
 ---
 
