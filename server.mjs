@@ -516,12 +516,47 @@ export function startServer(userDataPath) {
 
     // --- AllDebrid minimal adapter & auth (PIN flow) ---
     const AD_BASE = 'https://api.alldebrid.com/v4';
+    function isNetworkError(e) {
+        const msg = (e?.message || '').toLowerCase();
+        return (
+            /econnrefused|enotfound|eai_again|network|fetch failed|timeout|timed out|socket hang up/.test(msg)
+        );
+    }
+    function withTimeout(fetchPromise, ms = 8000) {
+        const ac = new AbortController();
+        const t = setTimeout(() => ac.abort(), ms);
+        return fetchPromise(ac.signal).finally(() => clearTimeout(t));
+    }
+    async function safeFetch(url, options = {}, timeoutMs = 8000) {
+        try {
+            const run = (signal) => fetch(url, { ...options, signal });
+            const resp = await withTimeout(run, timeoutMs);
+            return resp;
+        } catch (e) {
+            if (isNetworkError(e)) {
+                const err = new Error('Network unreachable');
+                err.code = 'NETWORK_UNREACHABLE';
+                throw err;
+            }
+            throw e;
+        }
+    }
     async function adFetch(endpoint, opts = {}) {
         const s = readSettings();
         if (!s.adApiKey) throw new Error('Not authenticated with AllDebrid');
         const url = `${AD_BASE}${endpoint}`;
         console.log('[AD][call]', { endpoint, method: (opts.method || 'GET').toUpperCase() });
-        const resp = await fetch(url, { ...opts, headers: { Authorization: `Bearer ${s.adApiKey}`, ...(opts.headers || {}) } });
+        let resp;
+        try {
+            resp = await safeFetch(url, { ...opts, headers: { Authorization: `Bearer ${s.adApiKey}`, ...(opts.headers || {}) } });
+        } catch (e) {
+            if (e?.code === 'NETWORK_UNREACHABLE') {
+                const err = new Error('AllDebrid is unreachable right now.');
+                err.code = 'AD_NETWORK';
+                throw err;
+            }
+            throw e;
+        }
         let bodyText = '';
         try { bodyText = await resp.text(); } catch {}
         // AllDebrid returns 200 with status success/error in JSON
@@ -560,7 +595,17 @@ export function startServer(userDataPath) {
         if (!s.tbApiKey) throw new Error('Not authenticated with TorBox');
         const url = `${TB_BASE}${endpoint}`;
         console.log('[TB][call]', { endpoint, method: (opts.method || 'GET').toUpperCase() });
-        const resp = await fetch(url, { ...opts, headers: { Authorization: `Bearer ${s.tbApiKey}`, Accept: 'application/json', ...(opts.headers || {}) } });
+        let resp;
+        try {
+            resp = await safeFetch(url, { ...opts, headers: { Authorization: `Bearer ${s.tbApiKey}`, Accept: 'application/json', ...(opts.headers || {}) } });
+        } catch (e) {
+            if (e?.code === 'NETWORK_UNREACHABLE') {
+                const err = new Error('TorBox is unreachable right now.');
+                err.code = 'TB_NETWORK';
+                throw err;
+            }
+            throw e;
+        }
         const ct = resp.headers.get('content-type') || '';
         let bodyText = '';
         try { bodyText = await resp.text(); } catch {}
@@ -806,13 +851,23 @@ export function startServer(userDataPath) {
         
         console.log('[PM][call]', { endpoint, method: (opts.method || 'GET').toUpperCase() });
         
-        const resp = await fetch(url.toString(), {
-            ...opts,
-            headers: {
-                'Accept': 'application/json',
-                ...(opts.headers || {})
+        let resp;
+        try {
+            resp = await safeFetch(url.toString(), {
+                ...opts,
+                headers: {
+                    'Accept': 'application/json',
+                    ...(opts.headers || {})
+                }
+            });
+        } catch (e) {
+            if (e?.code === 'NETWORK_UNREACHABLE') {
+                const err = new Error('Premiumize is unreachable right now.');
+                err.code = 'PM_NETWORK';
+                throw err;
             }
-        });
+            throw e;
+        }
         
         const ct = resp.headers.get('content-type') || '';
         let bodyText = '';
@@ -949,7 +1004,9 @@ export function startServer(userDataPath) {
     app.get('/api/debrid/rd/device-code', async (req, res) => {
         try {
             const s = readSettings();
-            const clientId = (req.query.client_id || s.rdClientId || '').toString().trim();
+            // Use official Real-Debrid public client ID if none provided
+            const DEFAULT_RD_CLIENT_ID = 'X245A4XAIBGVM';
+            const clientId = (req.query.client_id || s.rdClientId || DEFAULT_RD_CLIENT_ID).toString().trim();
             if (!clientId) return res.status(400).json({ error: 'Missing Real-Debrid client_id' });
             console.log('[RD][device-code] start', { clientId: mask(clientId) });
             
@@ -982,7 +1039,8 @@ export function startServer(userDataPath) {
     app.post('/api/debrid/rd/poll', async (req, res) => {
         try {
             const s = readSettings();
-            const clientId = (req.body?.client_id || s.rdClientId || '').toString().trim();
+            const DEFAULT_RD_CLIENT_ID = 'X245A4XAIBGVM';
+            const clientId = (req.body?.client_id || s.rdClientId || DEFAULT_RD_CLIENT_ID).toString().trim();
             const deviceCode = (req.body?.device_code || '').toString().trim();
             if (!clientId || !deviceCode) return res.status(400).json({ error: 'Missing client_id or device_code' });
             console.log('[RD][poll] begin', { clientId: mask(clientId), deviceCode: mask(deviceCode) });
@@ -1101,10 +1159,17 @@ export function startServer(userDataPath) {
         const attempt = async (token) => {
             const url = `${RD_BASE}${endpoint}`;
             console.log('[RD][call]', { endpoint, method: (opts.method || 'GET').toUpperCase() });
-            const response = await fetch(url, {
-                ...opts,
-                headers: { Authorization: `Bearer ${token}`, ...(opts.headers || {}) },
-            });
+            let response;
+            try {
+                response = await safeFetch(url, { ...opts, headers: { Authorization: `Bearer ${token}`, ...(opts.headers || {}) } });
+            } catch (e) {
+                if (e?.code === 'NETWORK_UNREACHABLE') {
+                    const err = new Error('Real‑Debrid is unreachable right now.');
+                    err.code = 'RD_NETWORK';
+                    throw err;
+                }
+                throw e;
+            }
             return response;
         };
         let s = readSettings();
@@ -1185,6 +1250,7 @@ export function startServer(userDataPath) {
                 } catch (e) {
                     const msg = e?.message || '';
                     if (e?.code === 'TB_AUTH_INVALID') return res.status(401).json({ error: 'TorBox authentication invalid.', code: 'DEBRID_UNAUTH' });
+                    if (e?.code === 'TB_NETWORK') return res.status(503).json({ error: 'TorBox is unreachable right now. Please try again later.', code: 'TB_UNAVAILABLE' });
                     if (e?.code === 'TB_RATE_LIMIT' || /429/.test(msg)) return res.status(429).json({ error: 'TorBox rate limit. Try again shortly.', code: 'TB_RATE_LIMIT' });
                     return res.status(502).json({ error: 'TorBox availability failed' });
                 }
@@ -1199,6 +1265,7 @@ export function startServer(userDataPath) {
                 } catch (e) {
                     const msg = e?.message || '';
                     if (e?.code === 'PM_AUTH_INVALID') return res.status(401).json({ error: 'Premiumize authentication invalid.', code: 'DEBRID_UNAUTH' });
+                    if (e?.code === 'PM_NETWORK') return res.status(503).json({ error: 'Premiumize is unreachable right now. Please try again later.', code: 'PM_UNAVAILABLE' });
                     if (e?.code === 'PM_RATE_LIMIT' || /429/.test(msg)) return res.status(429).json({ error: 'Premiumize rate limit. Try again shortly.', code: 'PM_RATE_LIMIT' });
                     return res.status(502).json({ error: 'Premiumize availability failed' });
                 }
@@ -1209,6 +1276,9 @@ export function startServer(userDataPath) {
             console.error('[RD][availability] error', msg);
             if (/\s429\s/i.test(msg) || /too_many_requests/i.test(msg)) {
                 return res.status(429).json({ error: 'Real‑Debrid rate limit. Try again shortly.', code: 'RD_RATE_LIMIT' });
+            }
+            if (e?.code === 'RD_NETWORK' || /econnrefused|enotfound|network|timeout/i.test(msg)) {
+                return res.status(503).json({ error: 'Real‑Debrid is unreachable right now. Please try again later.', code: 'RD_UNAVAILABLE' });
             }
             if (/disabled_endpoint/i.test(msg)) {
                 return res.status(403).json({ error: 'Real‑Debrid availability endpoint disabled for this account.', code: 'RD_FEATURE_UNAVAILABLE' });
@@ -1235,6 +1305,11 @@ export function startServer(userDataPath) {
                 const id = addRes?.id;
                 if (!id) return res.status(500).json({ error: 'Failed to add magnet' });
                 console.log('[RD][prepare] added', { id });
+                // DO NOT auto-select files here - wait for user to choose specific file
+                // This prevents RD from downloading all files in multi-file torrents
+                // File selection happens later via /api/debrid/select-files when user clicks
+                console.log('[RD][prepare] Skipping auto-select to prevent bulk download');
+                // Fetch latest info (may already contain links for cached items)
                 const info = await rdFetch(`/torrents/info/${id}`);
                 return res.json({ id, info });
             } else if (provider === 'alldebrid') {
@@ -1254,6 +1329,9 @@ export function startServer(userDataPath) {
                         const cur = readSettings();
                         writeSettings({ ...cur, adApiKey: null });
                         return res.status(401).json({ error: 'AllDebrid authentication invalid. Please login again.', code: 'DEBRID_UNAUTH' });
+                    }
+                    if (e?.code === 'AD_NETWORK') {
+                        return res.status(503).json({ error: 'AllDebrid is unreachable right now. Please try again later.', code: 'AD_UNAVAILABLE' });
                     }
                     if (e?.code === 'AD_AUTH_BLOCKED' || /AUTH_BLOCKED/i.test(msg)) {
                         return res.status(403).json({ error: 'AllDebrid security check: verify the authorization email, then retry.', code: 'AD_AUTH_BLOCKED' });
@@ -1308,6 +1386,7 @@ export function startServer(userDataPath) {
                     const code = e?.code || '';
                     const msg = e?.message || '';
                     if (code === 'TB_AUTH_INVALID') return res.status(401).json({ error: 'TorBox authentication invalid. Please login again.', code: 'DEBRID_UNAUTH' });
+                    if (code === 'TB_NETWORK') return res.status(503).json({ error: 'TorBox is unreachable right now. Please try again later.', code: 'TB_UNAVAILABLE' });
                     if (code === 'TB_RATE_LIMIT') return res.status(429).json({ error: 'TorBox rate limit. Try again shortly.', code: 'TB_RATE_LIMIT' });
                     if (code === 'RD_PREMIUM_REQUIRED') return res.status(403).json({ error: 'TorBox premium is required to add torrents.', code: 'RD_PREMIUM_REQUIRED' });
                     if (/missing_required_option/i.test(msg)) return res.status(400).json({ error: 'TorBox rejected the magnet payload.', code: 'TB_BAD_PAYLOAD' });
@@ -1366,6 +1445,9 @@ export function startServer(userDataPath) {
                         const cur = readSettings();
                         writeSettings({ ...cur, pmApiKey: null });
                         return res.status(401).json({ error: 'Premiumize authentication invalid. Please login again.', code: 'DEBRID_UNAUTH' });
+                    }
+                    if (e?.code === 'PM_NETWORK') {
+                        return res.status(503).json({ error: 'Premiumize is unreachable right now. Please try again later.', code: 'PM_UNAVAILABLE' });
                     }
                     if (e?.code === 'PM_PREMIUM_REQUIRED' || /premium/i.test(msg)) {
                         return res.status(403).json({ error: 'Premiumize premium is required to add torrents.', code: 'RD_PREMIUM_REQUIRED' });
@@ -1486,6 +1568,9 @@ export function startServer(userDataPath) {
             if (/MAGNET_MUST_BE_PREMIUM|MUST_BE_PREMIUM/i.test(msg)) {
                 return res.status(403).json({ error: 'Debrid premium is required to add torrents.', code: 'RD_PREMIUM_REQUIRED' });
             }
+            if (e?.code === 'RD_NETWORK' || /econnrefused|enotfound|network|timeout/i.test(msg)) {
+                return res.status(503).json({ error: 'Real‑Debrid is unreachable right now. Please try again later.', code: 'RD_UNAVAILABLE' });
+            }
             res.status(502).json({ error: msg || 'Debrid prepare failed' });
         }
     });
@@ -1551,6 +1636,9 @@ export function startServer(userDataPath) {
                         writeSettings({ ...cur, adApiKey: null });
                         return res.status(401).json({ error: 'AllDebrid authentication invalid. Please login again.', code: 'DEBRID_UNAUTH' });
                     }
+                    if (e?.code === 'AD_NETWORK') {
+                        return res.status(503).json({ error: 'AllDebrid is unreachable right now. Please try again later.', code: 'AD_UNAVAILABLE' });
+                    }
                     if (e?.code === 'AD_AUTH_BLOCKED' || /AUTH_BLOCKED/i.test(msg)) {
                         return res.status(403).json({ error: 'AllDebrid security check: verify the authorization email, then retry.', code: 'AD_AUTH_BLOCKED' });
                     }
@@ -1603,6 +1691,7 @@ export function startServer(userDataPath) {
                 } catch (e) {
                     const code = e?.code || '';
                     if (code === 'TB_AUTH_INVALID') return res.status(401).json({ error: 'TorBox authentication invalid. Please login again.', code: 'DEBRID_UNAUTH' });
+                    if (code === 'TB_NETWORK') return res.status(503).json({ error: 'TorBox is unreachable right now. Please try again later.', code: 'TB_UNAVAILABLE' });
                     if (code === 'TB_RATE_LIMIT') return res.status(429).json({ error: 'TorBox rate limit. Try again shortly.', code: 'TB_RATE_LIMIT' });
                     throw e;
                 }
@@ -1652,6 +1741,7 @@ export function startServer(userDataPath) {
                 } catch (e) {
                     const code = e?.code || '';
                     if (code === 'PM_AUTH_INVALID') return res.status(401).json({ error: 'Premiumize authentication invalid. Please login again.', code: 'DEBRID_UNAUTH' });
+                    if (code === 'PM_NETWORK') return res.status(503).json({ error: 'Premiumize is unreachable right now. Please try again later.', code: 'PM_UNAVAILABLE' });
                     if (code === 'PM_RATE_LIMIT') return res.status(429).json({ error: 'Premiumize rate limit. Try again shortly.', code: 'PM_RATE_LIMIT' });
                     throw e;
                 }
@@ -1662,6 +1752,9 @@ export function startServer(userDataPath) {
             console.error('[RD][files] error', msg);
             if (/403\s+\{[^}]*permission_denied/i.test(msg)) {
                 return res.status(403).json({ error: 'Real-Debrid premium is required to view torrent info.', code: 'RD_PREMIUM_REQUIRED' });
+            }
+            if (e?.code === 'RD_NETWORK' || /econnrefused|enotfound|network|timeout/i.test(msg)) {
+                return res.status(503).json({ error: 'Real‑Debrid is unreachable right now. Please try again later.', code: 'RD_UNAVAILABLE' });
             }
             res.status(502).json({ error: msg || 'Debrid files failed' });
         }
@@ -1732,6 +1825,9 @@ export function startServer(userDataPath) {
                         const cur = readSettings();
                         writeSettings({ ...cur, adApiKey: null });
                         return res.status(401).json({ error: 'AllDebrid authentication invalid. Please login again.', code: 'DEBRID_UNAUTH' });
+                    }
+                    if (e?.code === 'AD_NETWORK') {
+                        return res.status(503).json({ error: 'AllDebrid is unreachable right now. Please try again later.', code: 'AD_UNAVAILABLE' });
                     }
                     if (e?.code === 'AD_AUTH_BLOCKED' || /AUTH_BLOCKED/i.test(msg)) {
                         return res.status(403).json({ error: 'AllDebrid security check: verify the authorization email, then retry.', code: 'AD_AUTH_BLOCKED' });
@@ -1811,6 +1907,7 @@ export function startServer(userDataPath) {
                     } catch (e) {
                         const msg = e?.message || '';
                         if (/auth|unauthorized|token/i.test(msg)) return res.status(401).json({ error: 'TorBox authentication invalid. Please login again.', code: 'DEBRID_UNAUTH' });
+                        if (e?.code === 'TB_NETWORK') return res.status(503).json({ error: 'TorBox is unreachable right now. Please try again later.', code: 'TB_UNAVAILABLE' });
                         // Fall through to requestdl fallback
                     }
                     // Fallback: request a direct link if stream API path didn’t yield a URL
@@ -1822,6 +1919,7 @@ export function startServer(userDataPath) {
                 } catch (e) {
                     const msg = e?.message || '';
                     if (/authentication invalid/i.test(msg)) return res.status(401).json({ error: 'TorBox authentication invalid. Please login again.', code: 'DEBRID_UNAUTH' });
+                    if (e?.code === 'TB_NETWORK') return res.status(503).json({ error: 'TorBox is unreachable right now. Please try again later.', code: 'TB_UNAVAILABLE' });
                     return res.status(502).json({ error: 'TorBox link request failed' });
                 }
             }
@@ -1843,6 +1941,9 @@ export function startServer(userDataPath) {
             return res.status(400).json({ error: 'Debrid provider not supported' });
         } catch (e) {
             console.error('[RD][unrestrict] error', e?.message);
+            if (e?.code === 'RD_NETWORK' || /econnrefused|enotfound|network|timeout/i.test(e?.message || '')) {
+                return res.status(503).json({ error: 'Real‑Debrid is unreachable right now. Please try again later.', code: 'RD_UNAVAILABLE' });
+            }
             res.status(502).json({ error: e?.message || 'Debrid unrestrict failed' });
         }
     });
@@ -1870,6 +1971,9 @@ export function startServer(userDataPath) {
                         writeSettings({ ...cur, adApiKey: null });
                         return res.status(401).json({ success: false, error: 'AllDebrid authentication invalid. Please login again.', code: 'DEBRID_UNAUTH' });
                     }
+                    if (e?.code === 'AD_NETWORK') {
+                        return res.status(503).json({ success: false, error: 'AllDebrid is unreachable right now. Please try again later.', code: 'AD_UNAVAILABLE' });
+                    }
                     if (e?.code === 'AD_AUTH_BLOCKED' || /AUTH_BLOCKED/i.test(msg)) {
                         return res.status(403).json({ success: false, error: 'AllDebrid security check: verify the authorization email, then retry.', code: 'AD_AUTH_BLOCKED' });
                     }
@@ -1887,6 +1991,7 @@ export function startServer(userDataPath) {
                 } catch (e) {
                     const code = e?.code || '';
                     if (code === 'TB_AUTH_INVALID') return res.status(401).json({ success: false, error: 'TorBox authentication invalid. Please login again.', code: 'DEBRID_UNAUTH' });
+                    if (code === 'TB_NETWORK') return res.status(503).json({ success: false, error: 'TorBox is unreachable right now. Please try again later.', code: 'TB_UNAVAILABLE' });
                     throw e;
                 }
             }
@@ -1908,6 +2013,7 @@ export function startServer(userDataPath) {
                 } catch (e) {
                     const code = e?.code || '';
                     if (code === 'PM_AUTH_INVALID') return res.status(401).json({ success: false, error: 'Premiumize authentication invalid. Please login again.', code: 'DEBRID_UNAUTH' });
+                    if (code === 'PM_NETWORK') return res.status(503).json({ success: false, error: 'Premiumize is unreachable right now. Please try again later.', code: 'PM_UNAVAILABLE' });
                     throw e;
                 }
             }
