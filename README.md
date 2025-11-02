@@ -4,6 +4,7 @@
 
 Built with ❤️ by **Ayman Marwan**.
 PlayTorrio's official [website](https://playtorrio.netlify.app/)
+Donate on KO-FI [Donate](https://ko-fi.com/ayman228x)
 
 ---
 
