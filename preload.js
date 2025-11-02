@@ -40,6 +40,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   onUpdateProgress: (cb) => ipcRenderer.on('update-download-progress', (_e, p) => cb && cb(p)),
   onUpdateDownloaded: (cb) => ipcRenderer.on('update-downloaded', (_e, info) => cb && cb(info)),
   installUpdateNow: () => ipcRenderer.invoke('updater-install'),
+  // Version notice (v1.6.3)
+  onVersionNotice163: (cb) => ipcRenderer.on('version-notice-1-6-3', (_e) => cb && cb()),
   // My List API
   myListRead: () => ipcRenderer.invoke('my-list-read'),
   myListWrite: (data) => ipcRenderer.invoke('my-list-write', data),
