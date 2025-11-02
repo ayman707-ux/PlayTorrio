@@ -362,41 +362,115 @@ function resolveVlcExe() {
 }
 
 // Launch MPV and set up cleanup listeners
-function openInMPV(win, streamUrl, infoHash, startSeconds) {
+async function openInMPV(win, streamUrl, infoHash, startSeconds) {
     try {
-        console.log('Attempting to launch MPV with URL:', streamUrl);
+        console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+        console.log('[MPV] LAUNCH ATTEMPT');
+        console.log('[MPV] Stream URL:', streamUrl);
+        console.log('[MPV] InfoHash:', infoHash);
+        console.log('[MPV] Start Time:', startSeconds || 0, 'seconds');
+        
         const mpvPath = resolveMpvExe();
+        console.log('[MPV] Resolved MPV path:', mpvPath);
+        
         if (!mpvPath) {
             const msg = 'Bundled MPV not found. Place portable mpv.exe under the app\mpv folder.';
-            console.error(msg);
+            console.error('[MPV] ERROR: MPV executable not found!');
+            console.error('[MPV] Error message:', msg);
+            console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
             return { success: false, message: msg };
         }
-        // Improve buffering and playback smoothness for HTTP/HLS debrid streams (TorBox, RD, AD, PM)
-        // Mirrors the performance-friendly defaults used by the direct MPV launcher.
-        const userAgent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36';
-        const args = [
-            '--cache=yes',
-            '--cache-secs=30',
-            '--demuxer-readahead-secs=20',
-            '--cache-pause=yes',
-            '--force-seekable=yes',
-            `--http-header-fields=User-Agent: ${userAgent}`,
-            '--vd-lavc-threads=4',
-            '--hwdec=d3d11va',
-            '--gpu-context=d3d11',
-            '--profile=fast',
-            '--cache-on-disk=yes'
-        ];
-        const start = Number(startSeconds || 0);
-        if (!isNaN(start) && start > 10) {
-            args.push(`--start=${Math.floor(start)}`);
+        
+        // Detect if this is a local torrent stream (file selector from Jackett/Torrentio/Comet/PlayTorrio)
+        const isLocalTorrentStream = streamUrl && (
+            streamUrl.includes('localhost:3000/api/stream-file') || 
+            streamUrl.includes('127.0.0.1:3000/api/stream-file') ||
+            streamUrl.includes('localhost:3000/stream') || 
+            streamUrl.includes('127.0.0.1:3000/stream')
+        );
+        
+        let args = [];
+        
+        if (isLocalTorrentStream) {
+            // Simple command for torrent streams - just open the URL
+            console.log('[MPV] Using SIMPLE mode (torrent stream from file selector)');
+            
+            // Add force-window to show MPV immediately
+            args.push('--force-window=immediate');
+            args.push(streamUrl);
+            
+            // Give WebTorrent 1 second to start buffering before launching MPV
+            // This prevents spam-clicking and ensures torrent is initializing
+            console.log('[MPV] Waiting 1s for WebTorrent to initialize...');
+            await new Promise(resolve => setTimeout(resolve, 1000));
+        } else {
+            // Advanced buffering for debrid/direct HTTP/HLS streams
+            console.log('[MPV] Using ADVANCED mode (debrid/direct stream)');
+            const userAgent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36';
+            args = [
+                '--cache=yes',
+                '--cache-secs=30',
+                '--demuxer-readahead-secs=20',
+                '--cache-pause=yes',
+                '--force-seekable=yes',
+                `--http-header-fields=User-Agent: ${userAgent}`,
+                '--vd-lavc-threads=4',
+                '--hwdec=d3d11va',
+                '--gpu-context=d3d11',
+                '--profile=fast',
+                '--cache-on-disk=yes'
+            ];
+            const start = Number(startSeconds || 0);
+            if (!isNaN(start) && start > 10) {
+                args.push(`--start=${Math.floor(start)}`);
+            }
+            args.push(streamUrl);
         }
-        args.push(streamUrl);
-        const mpvProcess = spawn(mpvPath, args, { stdio: 'ignore' });
+        
+        console.log('[MPV] Full command line arguments:');
+        args.forEach((arg, i) => console.log(`  [${i}]:`, arg));
+        console.log('[MPV] Complete command:', mpvPath, args.join(' '));
+        console.log('[MPV] Spawning process...');
+        
+        const mpvProcess = spawn(mpvPath, args, { 
+            stdio: ['ignore', 'pipe', 'pipe']  // Changed from 'ignore' to capture stdout/stderr
+        });
+        
+        console.log('[MPV] Process spawned with PID:', mpvProcess.pid);
+        console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 
-        mpvProcess.on('close', async (code) => {
+        // Capture and log stdout
+        mpvProcess.stdout.on('data', (data) => {
+            const output = data.toString().trim();
+            if (output) {
+                console.log(`[MPV STDOUT] ${output}`);
+            }
+        });
+
+        // Capture and log stderr
+        mpvProcess.stderr.on('data', (data) => {
+            const error = data.toString().trim();
+            if (error) {
+                console.error(`[MPV STDERR] ${error}`);
+            }
+        });
+
+        mpvProcess.on('close', async (code, signal) => {
+            console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+            console.log('[MPV] PROCESS CLOSED');
+            console.log('[MPV] Exit code:', code);
+            console.log('[MPV] Exit signal:', signal);
+            console.log('[MPV] InfoHash:', infoHash);
+            
+            if (code !== 0 && code !== null) {
+                console.error('[MPV] NON-ZERO EXIT CODE - POTENTIAL CRASH!');
+            }
+            if (signal) {
+                console.error('[MPV] TERMINATED BY SIGNAL:', signal);
+            }
+            
             // By request: do not disconnect torrent or delete temp when MPV closes.
-            console.log(`MPV player closed with code ${code}. Leaving torrent active and temp files intact.`);
+            console.log('[MPV] Leaving torrent active and temp files intact.');
             
             // Clear Discord presence when MPV closes
             try {
@@ -417,15 +491,33 @@ function openInMPV(win, streamUrl, infoHash, startSeconds) {
             
             // Optionally inform renderer that MPV closed (no cleanup performed)
             try { win.webContents.send('mpv-closed', { infoHash, code }); } catch(_) {}
+            console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
         });
 
         mpvProcess.on('error', (err) => {
-            console.error('Failed to start MPV process:', err);
+            console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+            console.error('[MPV] PROCESS ERROR EVENT!');
+            console.error('[MPV] Error type:', err.name);
+            console.error('[MPV] Error message:', err.message);
+            console.error('[MPV] Error code:', err.code);
+            console.error('[MPV] Full error:', err);
+            console.error('[MPV] Stack trace:', err.stack);
+            console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
         });
 
+        mpvProcess.on('exit', (code, signal) => {
+            console.log('[MPV] EXIT event - Code:', code, 'Signal:', signal);
+        });
+
+        console.log('[MPV] All event handlers attached successfully');
         return { success: true, message: 'MPV launched successfully' };
     } catch (error) {
-        console.error('Error launching MPV:', error);
+        console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+        console.error('[MPV] EXCEPTION IN openInMPV FUNCTION!');
+        console.error('[MPV] Exception type:', error.name);
+        console.error('[MPV] Exception message:', error.message);
+        console.error('[MPV] Exception stack:', error.stack);
+        console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
         return { success: false, message: 'Failed to launch MPV: ' + error.message };
     }
 }
