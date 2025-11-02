@@ -371,7 +371,22 @@ function openInMPV(win, streamUrl, infoHash, startSeconds) {
             console.error(msg);
             return { success: false, message: msg };
         }
-        const args = [];
+        // Improve buffering and playback smoothness for HTTP/HLS debrid streams (TorBox, RD, AD, PM)
+        // Mirrors the performance-friendly defaults used by the direct MPV launcher.
+        const userAgent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36';
+        const args = [
+            '--cache=yes',
+            '--cache-secs=30',
+            '--demuxer-readahead-secs=20',
+            '--cache-pause=yes',
+            '--force-seekable=yes',
+            `--http-header-fields=User-Agent: ${userAgent}`,
+            '--vd-lavc-threads=4',
+            '--hwdec=d3d11va',
+            '--gpu-context=d3d11',
+            '--profile=fast',
+            '--cache-on-disk=yes'
+        ];
         const start = Number(startSeconds || 0);
         if (!isNaN(start) && start > 10) {
             args.push(`--start=${Math.floor(start)}`);
@@ -549,6 +564,25 @@ function createWindow() {
     // Always load the local server so all API and subtitle URLs are same-origin HTTP
     setTimeout(() => win.loadURL('http://localhost:3000'), app.isPackaged ? 500 : 2000);
     return win;
+}
+
+// Basic settings read/write for main (aligns with server.mjs using settings.json)
+function readMainSettings() {
+    try {
+        const p = path.join(app.getPath('userData'), 'settings.json');
+        if (fs.existsSync(p)) {
+            return JSON.parse(fs.readFileSync(p, 'utf8')) || {};
+        }
+    } catch(_) {}
+    return {};
+}
+function writeMainSettings(next) {
+    try {
+        const p = path.join(app.getPath('userData'), 'settings.json');
+        fs.mkdirSync(path.dirname(p), { recursive: true });
+        fs.writeFileSync(p, JSON.stringify(next || {}, null, 2));
+        return true;
+    } catch(_) { return false; }
 }
 
 // Launch the Torrentless scraper server
@@ -1300,6 +1334,27 @@ if (!gotLock) {
     // startTorrentio();    // Now: localhost:3000/torrentio/api/*
 
         mainWindow = createWindow();
+
+    // One-time version notice for v1.6.3
+    try {
+        const ver = String(app.getVersion() || '');
+        if (ver.startsWith('1.6.3')) {
+            const s = readMainSettings();
+            const key = 'seenVersionNotice_1_6_3';
+            if (!s[key]) {
+                const sendNotice = () => {
+                    try { mainWindow?.webContents?.send('version-notice-1-6-3'); } catch(_) {}
+                };
+                if (mainWindow?.webContents?.isLoading()) {
+                    mainWindow.webContents.once('did-finish-load', sendNotice);
+                } else {
+                    sendNotice();
+                }
+                s[key] = true;
+                writeMainSettings(s);
+            }
+        }
+    } catch(_) {}
 
     // IPC handler to open MPV from renderer
     ipcMain.handle('open-in-mpv', (event, data) => {
