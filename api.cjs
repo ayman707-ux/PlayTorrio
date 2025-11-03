@@ -415,7 +415,7 @@ app.get('/torrentio/', (req, res) => {
 // ============================================================================
 
 const TORRENTLESS_BASES = ['https://uindex.org', 'http://uindex.org'];
-const TORRENTLESS_ALLOWED_HOSTS = new Set(['uindex.org', 'www.uindex.org', 'knaben.org', 'www.knaben.org']);
+const TORRENTLESS_ALLOWED_HOSTS = new Set(['uindex.org', 'www.uindex.org', 'knaben.org', 'www.knaben.org', 'torrentdownload.info', 'www.torrentdownload.info']);
 
 async function torrentless_searchUIndex(query, { page = 1, category = 0 } = {}) {
     const base = TORRENTLESS_BASES[0];
@@ -505,6 +505,96 @@ async function torrentless_searchKnaben(query, { page = 1 } = {}) {
     });
 
     return { query, page, items, pagination: { hasNext, nextPage } };
+}
+
+// TorrentDownload.info scraper functions
+async function torrentless_searchTorrentDownload(query) {
+    try {
+        const searchUrl = `https://www.torrentdownload.info/search?q=${encodeURIComponent(query)}`;
+        
+        const response = await axios.get(searchUrl, {
+            timeout: 20000,
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
+            }
+        });
+        
+        const $ = cheerio.load(response.data);
+        const searchResults = [];
+        
+        // Find all torrent rows
+        $('tr').each((_, element) => {
+            const $row = $(element);
+            const $nameCell = $row.find('td.tdleft');
+            
+            if ($nameCell.length > 0) {
+                const $link = $nameCell.find('.tt-name a');
+                const href = $link.attr('href');
+                const title = $link.text().trim();
+                
+                // Get all td.tdnormal cells
+                const tdNormal = $row.find('td.tdnormal');
+                // Size is typically the second td.tdnormal (index 1)
+                const sizeText = tdNormal.eq(1).text().trim();
+                
+                const seedsText = $row.find('td.tdseed').text().trim();
+                const leechText = $row.find('td.tdleech').text().trim();
+                
+                if (href && title) {
+                    searchResults.push({
+                        title,
+                        href,
+                        sizeText,
+                        seedsText,
+                        leechText
+                    });
+                }
+            }
+        });
+        
+        console.log(`[TORRENTLESS] TorrentDownload found ${searchResults.length} search results`);
+        
+        // Fetch magnet links in parallel
+        const items = [];
+        const resultsWithMagnets = await Promise.all(
+            searchResults.map(async (result) => {
+                try {
+                    const detailUrl = `https://www.torrentdownload.info${result.href}`;
+                    const detailResponse = await axios.get(detailUrl, {
+                        timeout: 10000,
+                        headers: {
+                            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+                        }
+                    });
+                    
+                    const $detail = cheerio.load(detailResponse.data);
+                    const magnet = $detail('a.tosa[href^="magnet:"]').attr('href');
+                    
+                    if (magnet) {
+                        return {
+                            title: result.title,
+                            magnet: magnet,
+                            size: result.sizeText,
+                            seeds: parseInt(result.seedsText.replace(/,/g, ''), 10) || 0,
+                            leechers: parseInt(result.leechText.replace(/,/g, ''), 10) || 0
+                        };
+                    }
+                    return null;
+                } catch (err) {
+                    return null;
+                }
+            })
+        );
+        
+        const validResults = resultsWithMagnets.filter(item => item !== null);
+        console.log(`[TORRENTLESS] TorrentDownload returning ${validResults.length} items with magnets`);
+        
+        return { query, page: 1, items: validResults, pagination: { hasNext: false, nextPage: undefined } };
+    } catch (error) {
+        console.error('[TORRENTLESS] TorrentDownload error:', error?.message || error);
+        return { query, page: 1, items: [], pagination: { hasNext: false, nextPage: undefined } };
+    }
 }
 
 async function torrentless_fetchWithRetries(urlStr) {
@@ -620,28 +710,51 @@ app.get('/torrentless/api/search', torrentless_apiRateLimiter, async (req, res) 
         }
         const page = Math.max(1, parseInt(req.query.page, 10) || 1);
 
-        const [r1, r2] = await Promise.allSettled([
+        const [r1, r2, r3] = await Promise.allSettled([
             torrentless_searchUIndex(q, { page, category: 0 }),
             torrentless_searchKnaben(q, { page }),
+            torrentless_searchTorrentDownload(q)
         ]);
 
         const items1 = r1.status === 'fulfilled' ? (r1.value.items || []) : [];
         const items2 = r2.status === 'fulfilled' ? (r2.value.items || []) : [];
+        const items3 = r3.status === 'fulfilled' ? (r3.value.items || []) : [];
+        
+        console.log(`[TORRENTLESS] Sources: UIndex=${items1.length}, Knaben=${items2.length}, TorrentDownload=${items3.length}`);
 
-        const seen = new Set();
+        const seen = new Map(); // Changed to Map to track by hash+seeds
         const merged = [];
         function pushUnique(arr) {
             for (const it of arr) {
                 const ih = torrentless_extractInfoHash(it.magnet) || it.title.toLowerCase();
-                if (seen.has(ih)) continue;
-                seen.add(ih);
-                merged.push(it);
+                const seedCount = it.seeds || 0;
+                // Create unique key combining hash and seed count
+                const uniqueKey = `${ih}_${seedCount}`;
+                
+                if (seen.has(uniqueKey)) continue;
+                seen.set(uniqueKey, true);
+                
+                // Transform to exact format: {name, magnet, size, seeds, leech}
+                merged.push({
+                    name: it.title,
+                    magnet: it.magnet,
+                    size: it.size || '',
+                    seeds: (it.seeds || 0).toLocaleString('en-US'),
+                    leech: (it.leechers || 0).toLocaleString('en-US')
+                });
             }
         }
         pushUnique(items1);
         pushUnique(items2);
+        pushUnique(items3);
 
-        merged.sort((a, b) => (b.seeds || 0) - (a.seeds || 0) || (b.leechers || 0) - (a.leechers || 0));
+        merged.sort((a, b) => {
+            const seedsA = parseInt(a.seeds.replace(/,/g, ''), 10) || 0;
+            const seedsB = parseInt(b.seeds.replace(/,/g, ''), 10) || 0;
+            const leechA = parseInt(a.leech.replace(/,/g, ''), 10) || 0;
+            const leechB = parseInt(b.leech.replace(/,/g, ''), 10) || 0;
+            return seedsB - seedsA || leechB - leechA;
+        });
 
         const hasNext = (r1.status === 'fulfilled' && r1.value.pagination?.hasNext) ||
                         (r2.status === 'fulfilled' && r2.value.pagination?.hasNext) || false;
@@ -653,6 +766,31 @@ app.get('/torrentless/api/search', torrentless_apiRateLimiter, async (req, res) 
             ? 'Blocked by remote site (403). Try again later.'
             : 'Failed to fetch results. Please try again later.';
         res.status(502).json({ error: msg });
+    }
+});
+
+// TorrentDownload scraper endpoint
+app.get('/torrentdownload/api/search', torrentless_apiRateLimiter, async (req, res) => {
+    try {
+        const q = (req.query.q || '').toString().trim().slice(0, 100);
+        if (!q) {
+            return res.status(400).json({ error: 'Missing query ?q=' });
+        }
+
+        console.log(`[TORRENTDOWNLOAD] Proxying request to torrentscrapernew server for "${q}"`);
+        
+        // Call the working server at port 3001
+        const response = await axios.get(`http://localhost:3001/api/torrent/search/${encodeURIComponent(q)}`, {
+            timeout: 60000
+        });
+        
+        const items = response.data || [];
+        console.log(`[TORRENTDOWNLOAD] Received ${items.length} results from torrentscrapernew`);
+        
+        res.json({ query: q, items });
+    } catch (err) {
+        console.error('[TORRENTDOWNLOAD] Proxy error:', err?.message || err);
+        res.status(502).json({ error: 'Failed to fetch results from TorrentDownload scraper.' });
     }
 });
 
