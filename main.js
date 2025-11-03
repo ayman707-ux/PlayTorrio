@@ -9,6 +9,7 @@ import got from 'got';
 import { pipeline as streamPipelineCb } from 'stream';
 import { promisify } from 'util';
 import dns from 'dns';
+import { createRequire } from 'module';
 
 // electron-updater is CommonJS; use default import + destructure for ESM
 import updaterPkg from 'electron-updater';
@@ -21,9 +22,13 @@ const { autoUpdater } = updaterPkg;
 const streamPipeline = promisify(streamPipelineCb);
 const dnsLookup = promisify(dns.lookup);
 
+// Create require for CommonJS modules
+const require = createRequire(import.meta.url);
+
 let httpServer;
 let webtorrentClient;
 let mainWindow;
+let torrentScraperServer;
 
 
 const __filename = fileURLToPath(import.meta.url);
@@ -1414,6 +1419,15 @@ if (!gotLock) {
     // Store clearCache function globally for cleanup on exit
     global.clearApiCache = clearCache;
 
+    // Start TorrentDownload scraper server (port 3001)
+    try {
+        const { startTorrentScraperServer } = require('./torrentscrapernew-server.cjs');
+        torrentScraperServer = startTorrentScraperServer();
+        console.log('✅ TorrentDownload scraper server started on port 3001');
+    } catch (err) {
+        console.error('[TorrentScraper] Failed to start:', err?.message || err);
+    }
+
     // ============================================================================
     // NOTE: All microservices below are now integrated into server.mjs via api.cjs
     // No need to start individual servers - all routes available on localhost:3000
@@ -2432,6 +2446,18 @@ app.on('will-quit', () => {
             console.log('HTTP server closed.');
         });
     }
+    
+    // Shut down TorrentDownload scraper server
+    if (torrentScraperServer) {
+        try {
+            const { stopTorrentScraperServer } = require('./torrentscrapernew-server.cjs');
+            stopTorrentScraperServer();
+            console.log('TorrentDownload scraper server closed.');
+        } catch (err) {
+            console.error('[TorrentScraper] Error stopping server:', err?.message);
+        }
+    }
+    
     // ============================================================================
     // NOTE: Microservice processes no longer used - all handled by server.mjs
     // ============================================================================
