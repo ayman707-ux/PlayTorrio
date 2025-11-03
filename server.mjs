@@ -240,6 +240,7 @@ export function startServer(userDataPath) {
     app.use('/zlib', cacheMiddleware);
     app.use('/otherbook/api', cacheMiddleware);
     app.use('/111477/api', cacheMiddleware);
+    app.use('/moviebox', cacheMiddleware);
     app.use('/api/torrents', cacheMiddleware);
     app.use('/api/trakt', cacheMiddleware);
     
