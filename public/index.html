@@ -19473,9 +19473,9 @@ Your browser does not support the video tag.
 
                 let apiUrl;
                 if (mediaType === 'movie') {
-                    apiUrl = `private/moviebox/${encodeURIComponent(tmdbId)}`;
+                    apiUrl = `https://private/moviebox/${encodeURIComponent(tmdbId)}`;
                 } else if (season && episode) {
-                    apiUrl = `private/moviebox/tv/${encodeURIComponent(tmdbId)}/${encodeURIComponent(season)}/${encodeURIComponent(episode)}`;
+                    apiUrl = `https://private/moviebox/tv/${encodeURIComponent(tmdbId)}/${encodeURIComponent(season)}/${encodeURIComponent(episode)}`;
                 } else {
                     throw new Error('Season and episode required for TV shows');
                 }
@@ -19738,7 +19738,7 @@ Your browser does not support the video tag.
                             if (season && episode) {
                                 const seasonStr = String(season).padStart(2, '0');
                                 const episodeStr = String(episode).padStart(2, '0');
-                                query = `${query} S${seasonStr}.E${episodeStr}`;
+                                query = `${query} S${seasonStr}E${episodeStr}`;
                             } else if (season) {
                                 const seasonStr = String(season).padStart(2, '0');
                                 query = `${query} S${seasonStr}`;
@@ -19749,18 +19749,31 @@ Your browser does not support the video tag.
                         const response = await fetch(torrentlessUrl);
                         if (!response.ok) throw new Error(`In-App Scraper error: ${response.statusText}`);
                         const data = await response.json();
+                        // New format: { query, page, items: [{ name, magnet, size, seeds, leech }] }
                         const items = data.items || [];
                         const torrents = items.map(item => {
-                            const sizeStr = item.size || '0 B';
-                            const sizeParts = sizeStr.match(/([\d.]+)\s*([KMGT]?B)/i);
+                            // Parse seeds string (e.g., "12,860" -> 12860)
+                            const seeders = parseInt((item.seeds || '0').replace(/,/g, ''), 10) || 0;
+                            
+                            // Parse size string to bytes
                             let sizeBytes = 0;
-                            if (sizeParts) {
-                                const num = parseFloat(sizeParts[1]);
-                                const unit = sizeParts[2].toUpperCase();
-                                const multipliers = { 'B': 1, 'KB': 1024, 'MB': 1024**2, 'GB': 1024**3, 'TB': 1024**4 };
-                                sizeBytes = Math.round(num * (multipliers[unit] || 1));
+                            if (item.size) {
+                                const sizeStr = item.size;
+                                const sizeParts = sizeStr.match(/([\d.]+)\s*([KMGT]?B)/i);
+                                if (sizeParts) {
+                                    const num = parseFloat(sizeParts[1]);
+                                    const unit = sizeParts[2].toUpperCase();
+                                    const multipliers = { 'B': 1, 'KB': 1024, 'MB': 1024**2, 'GB': 1024**3, 'TB': 1024**4 };
+                                    sizeBytes = Math.round(num * (multipliers[unit] || 1));
+                                }
                             }
-                            return { title: item.title, magnet: item.magnet, seeders: item.seeds || 0, size: sizeBytes };
+                            
+                            return { 
+                                title: item.name,        // New format uses 'name' not 'title'
+                                magnet: item.magnet, 
+                                seeders: seeders, 
+                                size: sizeBytes
+                            };
                         });
                         displayTorrents(torrents, season, episode);
                         return;
@@ -19914,7 +19927,7 @@ Your browser does not support the video tag.
                             if (season && episode) {
                                 const seasonStr = String(season).padStart(2, '0');
                                 const episodeStr = String(episode).padStart(2, '0');
-                                query = `${query} S${seasonStr}.E${episodeStr}`; // Same as Jackett format with dot
+                                query = `${query} S${seasonStr}E${episodeStr}`;
                             } else if (season) {
                                 const seasonStr = String(season).padStart(2, '0');
                                 query = `${query} S${seasonStr}`;
@@ -19932,27 +19945,32 @@ Your browser does not support the video tag.
                         const data = await response.json();
                         console.log('[Torrentless] Raw response:', data);
                         
-                        // Torrentless returns { query, page, items: [...] }
+                        // Torrentless returns { query, page, items: [{ name, magnet, size, seeds, leech }] }
                         const items = data.items || [];
                         console.log('[Torrentless] Found', items.length, 'items');
                         
                         // Convert Torrentless format to our torrent format
                         const torrents = items.map(item => {
-                            // Parse size string to bytes
-                            const sizeStr = item.size || '0 B';
-                            const sizeParts = sizeStr.match(/([\d.]+)\s*([KMGT]?B)/i);
+                            // Parse seeds string (e.g., "12,860" -> 12860)
+                            const seeders = parseInt((item.seeds || '0').replace(/,/g, ''), 10) || 0;
+                            
+                            // Parse size string to bytes (e.g., "2.39 GB" -> bytes)
                             let sizeBytes = 0;
-                            if (sizeParts) {
-                                const num = parseFloat(sizeParts[1]);
-                                const unit = sizeParts[2].toUpperCase();
-                                const multipliers = { 'B': 1, 'KB': 1024, 'MB': 1024**2, 'GB': 1024**3, 'TB': 1024**4 };
-                                sizeBytes = Math.round(num * (multipliers[unit] || 1));
+                            if (item.size) {
+                                const sizeStr = item.size;
+                                const sizeParts = sizeStr.match(/([\d.]+)\s*([KMGT]?B)/i);
+                                if (sizeParts) {
+                                    const num = parseFloat(sizeParts[1]);
+                                    const unit = sizeParts[2].toUpperCase();
+                                    const multipliers = { 'B': 1, 'KB': 1024, 'MB': 1024**2, 'GB': 1024**3, 'TB': 1024**4 };
+                                    sizeBytes = Math.round(num * (multipliers[unit] || 1));
+                                }
                             }
                             
                             return {
-                                title: item.title,
+                                title: item.name,           // New format uses 'name' not 'title'
                                 magnet: item.magnet,
-                                seeders: item.seeds || 0, // Torrentless uses 'seeds' not 'seeders'
+                                seeders: seeders,
                                 size: sizeBytes
                             };
                         });
@@ -20374,8 +20392,21 @@ Your browser does not support the video tag.
                                 // Ensure only this file is selected for RD to process
                                 try {
                                     console.log('[UI][Debrid] select-files', { id: rdId, file: String(f.id || f.file) });
-                                    await fetch(`${API_BASE_URL}/debrid/select-files`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: rdId, files: String(f.id || f.file) }) });
-                                } catch(e) { console.warn('[UI][Debrid] select-files failed', e?.message); }
+                                    const selectRes = await fetch(`${API_BASE_URL}/debrid/select-files`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: rdId, files: String(f.id || f.file) }) });
+                                    if (!selectRes.ok) {
+                                        const errText = await selectRes.text();
+                                        console.warn('[UI][Debrid] select-files failed', errText);
+                                        try {
+                                            const errJson = JSON.parse(errText);
+                                            if (errJson.code === 'DEBRID_UNAUTH') {
+                                                showNotification('Real-Debrid authentication expired. Please logout and login again in Settings.');
+                                                mpvLoading.style.display = 'none';
+                                                if (debridStatus) debridStatus.textContent = 'Not logged in';
+                                                return;
+                                            }
+                                        } catch {}
+                                    }
+                                } catch(e) { console.warn('[UI][Debrid] select-files exception', e?.message); }
                                 // Find current link if already cached, else wait for caching
                                 let link = Array.isArray(f.links) && f.links.length ? f.links[0] : null;
                                 if (!link) {
