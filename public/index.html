@@ -19473,9 +19473,9 @@ Your browser does not support the video tag.
 
                 let apiUrl;
                 if (mediaType === 'movie') {
-                    apiUrl = `private/moviebox/${encodeURIComponent(tmdbId)}`;
+                    apiUrl = `http://localhost:3000/moviebox/${encodeURIComponent(tmdbId)}`;
                 } else if (season && episode) {
-                    apiUrl = `private/moviebox/tv/${encodeURIComponent(tmdbId)}/${encodeURIComponent(season)}/${encodeURIComponent(episode)}`;
+                    apiUrl = `http://localhost:3000/moviebox/tv/${encodeURIComponent(tmdbId)}/${encodeURIComponent(season)}/${encodeURIComponent(episode)}`;
                 } else {
                     throw new Error('Season and episode required for TV shows');
                 }
