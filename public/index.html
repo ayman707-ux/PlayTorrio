@@ -20326,7 +20326,7 @@ Your browser does not support the video tag.
 
                     // Helper to render a small cached status badge
                     const statusBadgeHtml = (file) => {
-                        const cached = Array.isArray(file.links) && file.links.length > 0;
+                        const cached = (file && file.cached === true) || (Array.isArray(file.links) && file.links.length > 0);
                         const label = cached ? 'Cached' : 'Not cached';
                         const bg = cached ? 'background:#198754;' : 'background:#6c757d;';
                         return `<span class="source-badge rd-cache-badge" style="${bg} margin-left:6px;">${label}</span>`;
