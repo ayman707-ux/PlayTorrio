@@ -5,6 +5,13 @@ const cheerio = require('cheerio');
 const path = require('path');
 const rateLimit = require('express-rate-limit');
 const fs = require('fs').promises;
+// Optional MovieBox fetcher module (from bundled MovieBox API)
+let movieboxFetcher = null;
+try {
+    movieboxFetcher = require('./MovieBox API/fetcher.js');
+} catch (_) {
+    movieboxFetcher = null;
+}
 
 // Export a function that registers all API routes on an existing Express app
 function registerApiRoutes(app) {
@@ -848,6 +855,546 @@ app.get('/torrentless/api/proxy', torrentless_apiRateLimiter, async (req, res) =
 });
 
 // ============================================================================
+// MOVIEBOX SERVICE (bundled from MovieBox API)
+// ============================================================================
+
+// Proxy base (Cloudflare Worker); keep requests limited to moviebox/fmovies
+const MOVIEBOX_PROXY_BASE = process.env.MOVIEBOX_PROXY_URL || 'https://movieboxproxy.aymanisthedude1.workers.dev';
+function moviebox_withProxy(url) {
+    try {
+        if (!/^https?:\/\/(moviebox|fmovies)/i.test(url)) return url;
+        return `${MOVIEBOX_PROXY_BASE}?url=${encodeURIComponent(url)}`;
+    } catch {
+        return url;
+    }
+}
+
+// Search helpers
+const MOVIEBOX_SEARCH_BASES = ['https://moviebox.id', 'https://moviebox.ph'];
+async function moviebox_fetchSearchHtml(query) {
+    let lastErr = null;
+    for (const base of MOVIEBOX_SEARCH_BASES) {
+        const url = `${base}/web/searchResult?keyword=${encodeURIComponent(query)}`;
+        try {
+            const resp = await axios.get(moviebox_withProxy(url), {
+                timeout: 20000,
+                headers: {
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36',
+                    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+                    'Accept-Language': 'en-US,en;q=0.9',
+                    'Cache-Control': 'no-cache',
+                    'Pragma': 'no-cache',
+                    'Referer': base + '/',
+                },
+                validateStatus: (s) => s >= 200 && s < 500,
+            });
+            if (resp.status >= 400) {
+                lastErr = new Error(`MovieBox search failed with status ${resp.status} @ ${base}`);
+                continue;
+            }
+            return { html: String(resp.data || ''), base };
+        } catch (e) {
+            lastErr = e;
+        }
+    }
+    throw lastErr || new Error('MovieBox search failed on all bases');
+}
+
+function moviebox_slugifyBase(s) {
+    return String(s).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').trim();
+}
+
+async function moviebox_getIdentifiersListFromQuery(query, opts = {}) {
+    const offline = !!opts.offline;
+    const preferredType = opts.preferredType; // 'movie' | 'tv' | undefined
+    const debug = { mode: offline ? 'offline' : 'online' };
+
+    let html = '';
+    let queryUsed = query;
+    const cleaned = movieboxFetcher && movieboxFetcher.sanitizeQueryName ? movieboxFetcher.sanitizeQueryName(query) : query;
+
+    if (offline) {
+        const file = opts.offlineFile || 'moviebox crack.txt';
+        html = await fs.readFile(file, 'utf8');
+        debug.file = file;
+    } else if (movieboxFetcher && movieboxFetcher.fetchMovieboxSearchHtml) {
+        html = await movieboxFetcher.fetchMovieboxSearchHtml(cleaned);
+        queryUsed = cleaned;
+    } else {
+        const r = await moviebox_fetchSearchHtml(cleaned);
+        html = r.html;
+        queryUsed = cleaned;
+    }
+
+    const pairs = movieboxFetcher && movieboxFetcher.extractSlugIdPairs ? (movieboxFetcher.extractSlugIdPairs(html, queryUsed) || []) : [];
+    const pool = pairs.slice();
+    let items = pool.map(p => ({ detailPath: p.slug, subjectId: String(p.id), distance: 0, _type: p.type }));
+
+    const base = moviebox_slugifyBase(queryUsed);
+    const baseTokens = base.split('-').filter(Boolean);
+
+    const STOPWORDS = new Set(['arabic','hindi','trailer','cam','ts','tc','screener','korean','turkish','thai','spanish','french','russian','subbed','dubbed','latino','portuguese','vietnamese','indonesian','malay','filipino']);
+
+    function baseNameFromSlug(slug) {
+        const m = String(slug).match(/^(.*?)-(?:[A-Za-z0-9]{6,})$/);
+        return (m ? m[1] : String(slug)).toLowerCase();
+    }
+
+    function scoreSlug(slug) {
+        const name = baseNameFromSlug(slug);
+        const nameTokens = name.split('-').filter(Boolean);
+        const nameJoined = nameTokens.join('-');
+        const baseJoined = baseTokens.join('-');
+        let s = 0;
+        if (nameJoined === baseJoined) s += 200;
+        if (nameJoined.startsWith(baseJoined + '-')) s += 300;
+        const contiguousIdx = (() => {
+            for (let i = 0; i <= nameTokens.length - baseTokens.length; i++) {
+                let ok = true;
+                for (let j = 0; j < baseTokens.length; j++) {
+                    if (nameTokens[i + j] !== baseTokens[j]) { ok = false; break; }
+                }
+                if (ok) return i;
+            }
+            return -1;
+        })();
+        if (contiguousIdx === 0) s += 120; else if (contiguousIdx > 0) s += Math.max(0, 80 - contiguousIdx * 20);
+        const setA = new Set(baseTokens);
+        const setB = new Set(nameTokens);
+        let inter = 0; setA.forEach(t => { if (setB.has(t)) inter++; });
+        const jaccard = inter / (new Set([...setA, ...setB]).size || 1);
+        s += Math.round(jaccard * 100);
+        for (const t of nameTokens) { if (STOPWORDS.has(t)) s -= 200; }
+        for (const t of nameTokens) { if (/^20\d{2}$/.test(t)) s += 40; }
+        for (const t of nameTokens) { if (t === 'legacy' || t === 'final' || t === 'remastered' || t === 'extended') s += 60; }
+        s -= Math.max(0, nameTokens.length - baseTokens.length) * 5;
+        return s;
+    }
+
+    function contiguousStart(nameTokens, baseTokens) {
+        for (let i = 0; i <= nameTokens.length - baseTokens.length; i++) {
+            let ok = true;
+            for (let j = 0; j < baseTokens.length; j++) {
+                if (nameTokens[i + j] !== baseTokens[j]) { ok = false; break; }
+            }
+            if (ok) return i;
+        }
+        return -1;
+    }
+
+    const strict = items.filter(it => {
+        const name = baseNameFromSlug(it.detailPath);
+        const nameTokens = name.split('-').filter(Boolean);
+        if (baseTokens.length >= 2) {
+            return contiguousStart(nameTokens, baseTokens) !== -1;
+        }
+        return nameTokens.includes(baseTokens[0] || '');
+    });
+    if (strict.length) items = strict;
+
+    items = items
+        .map(it => {
+            const baseScore = scoreSlug(it.detailPath);
+            const typeBonus = preferredType ? (it._type === preferredType ? 150 : (it._type ? 0 : 60)) : 0;
+            return { ...it, _score: baseScore + typeBonus };
+        })
+        .sort((a, b) => (b._score - a._score) || (a.detailPath.length - b.detailPath.length));
+
+    const slugs = pool.map(p => p.slug);
+    const ids = pool.map(p => String(p.id));
+    return { items, debug: { ...debug, base, baseTokens, slugsFound: slugs, idsFound: ids, count: items.length } };
+}
+
+// FMovies/MovieBox play endpoints
+const MOVIEBOX_FALLBACK_HOSTS = [
+    'https://fmoviesunblocked.net',
+    'https://moviebox.id',
+    'https://moviebox.ph',
+];
+
+function moviebox_PLAY_URL(base, { subjectId, se = '0', ep = '0', detailPath }) {
+    return `${base}/wefeed-h5-bff/web/subject/play?subjectId=${encodeURIComponent(subjectId)}&se=${encodeURIComponent(se)}&ep=${encodeURIComponent(ep)}&detail_path=${encodeURIComponent(detailPath)}`;
+}
+function moviebox_SPA_URLS(base, { detailPath, subjectId, isTv }) {
+    const slug = encodeURIComponent(detailPath);
+    const idq = `id=${encodeURIComponent(subjectId)}`;
+    const urls = new Set();
+    urls.add(`${base}/spa/videoPlayPage/${isTv ? 'tv' : 'movies'}/${slug}?${idq}`);
+    urls.add(`${base}/spa/videoPlayPage/${slug}?${idq}`);
+    urls.add(`${base}/spa/videoPlayPage/${isTv ? 'tv' : 'movies'}/${slug}?${idq}&lang=en`);
+    urls.add(`${base}/spa/videoPlayPage/${slug}?${idq}&type=${isTv ? 'tv' : 'movie'}&lang=en`);
+    if (isTv) {
+        urls.add(`${base}/spa/videoPlayPage/movies/${slug}?${idq}&type=/tv/detail&lang=en`);
+        urls.add(`${base}/spa/videoPlayPage/movies/${slug}?${idq}&type=/tv/detail`);
+        urls.add(`${base}/spa/videoPlayPage/${slug}?${idq}&type=/tv/detail&lang=en`);
+    } else {
+        urls.add(`${base}/spa/videoPlayPage/movies/${slug}?${idq}&type=/movie/detail&lang=en`);
+        urls.add(`${base}/spa/videoPlayPage/${slug}?${idq}&type=/movie/detail&lang=en`);
+    }
+    return Array.from(urls);
+}
+
+function moviebox_baseHeaders(forwardHeaders = {}) {
+    const ua = forwardHeaders['user-agent'] || 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36';
+    const h = {
+        'User-Agent': ua,
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Cache-Control': 'no-cache',
+        'Pragma': 'no-cache',
+        'Sec-Ch-Ua': '"Chromium";v="141", "Google Chrome";v="141", ";Not A Brand";v="99"',
+        'Sec-Ch-Ua-Mobile': '?0',
+        'Sec-Ch-Ua-Platform': '"Windows"',
+    };
+    return h;
+}
+
+function moviebox_mergeCookies(list) {
+    const jar = new Map();
+    for (const raw of list) {
+        if (!raw) continue;
+        const parts = raw.split(/;\s*/);
+        for (const p of parts) {
+            if (!p) continue;
+            const [k, ...rest] = p.split('=');
+            if (!k || !rest.length) continue;
+            const key = k.trim();
+            const val = rest.join('=').trim();
+            if (!key || !val) continue;
+            if (/^(Path|Domain|Expires|Max-Age|Secure|HttpOnly|SameSite)$/i.test(key)) continue;
+            jar.set(key, val);
+        }
+    }
+    return Array.from(jar.entries()).map(([k, v]) => `${k}=${v}`).join('; ');
+}
+
+function moviebox_safeJson(t) { try { return JSON.parse(t); } catch (_) { return null; } }
+
+async function moviebox_fetchStreamsFromFMovies({ subjectId, detailPath, se = '0', ep = '0', forwardCookie = '', forwardHeaders = {} }) {
+    const isTv = String(se) !== '0' || String(ep) !== '0';
+    const baseHeadersTemplate = moviebox_baseHeaders(forwardHeaders);
+    const tried = [];
+    let lastError = null;
+    for (const host of MOVIEBOX_FALLBACK_HOSTS) {
+        try {
+            const playUrl = moviebox_PLAY_URL(host, { subjectId, se, ep, detailPath });
+            const directHeaders = { ...baseHeadersTemplate };
+            directHeaders['Accept'] = 'application/json, text/plain, */*';
+            directHeaders['Origin'] = host;
+            const refererUrl = isTv
+                ? `${host}/spa/videoPlayPage/movies/${encodeURIComponent(detailPath)}?id=${encodeURIComponent(subjectId)}&type=/tv/detail&lang=en`
+                : `${host}/spa/videoPlayPage/movies/${encodeURIComponent(detailPath)}?id=${encodeURIComponent(subjectId)}&lang=en`;
+            directHeaders['Referer'] = refererUrl;
+            directHeaders['Sec-Fetch-Site'] = 'same-origin';
+            directHeaders['Sec-Fetch-Mode'] = 'cors';
+            directHeaders['Sec-Fetch-Dest'] = 'empty';
+            if (forwardCookie) directHeaders['Cookie'] = forwardCookie;
+
+            let resp = await axios.get(playUrl, { timeout: 20000, headers: directHeaders, validateStatus: s => s >= 200 && s < 500 });
+            if (resp.status === 200) {
+                const data = typeof resp.data === 'string' ? moviebox_safeJson(resp.data) : resp.data;
+                if (data && data.code === 0 && data.data) {
+                    const refererHeader = directHeaders['Referer'];
+                    const cookieHeader = directHeaders['Cookie'] || '';
+                    const uaHeader = directHeaders['User-Agent'];
+                    const streams = Array.isArray(data.data.streams) ? data.data.streams.map(s => ({
+                        format: s.format,
+                        id: String(s.id),
+                        url: s.url,
+                        resolutions: String(s.resolutions),
+                        size: s.size,
+                        duration: s.duration,
+                        codecName: s.codecName,
+                        headers: { referer: refererHeader, cookie: cookieHeader, userAgent: uaHeader }
+                    })) : [];
+                    return { streams, raw: data, debug: { hostUsed: host, spaUsed: null, tried } };
+                }
+            }
+
+            let warmCookies = '';
+            let usedSpa = '';
+            const spaUrls = moviebox_SPA_URLS(host, { detailPath, subjectId, isTv });
+            for (const spaUrl of spaUrls) {
+                try {
+                    const warmHeaders = { ...baseHeadersTemplate };
+                    warmHeaders['Accept'] = 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8';
+                    warmHeaders['Referer'] = host + '/';
+                    const warm = await axios.get(moviebox_withProxy(spaUrl), { timeout: 20000, headers: warmHeaders, validateStatus: s => s >= 200 && s < 500 });
+                    const setCookie = warm.headers['set-cookie'];
+                    if (Array.isArray(setCookie)) warmCookies = setCookie.map(c => c.split(';')[0]).join('; ');
+                    usedSpa = spaUrl;
+                    break;
+                } catch (e) {
+                    tried.push({ host, spa: true, url: spaUrl, err: e?.message || String(e) });
+                }
+            }
+
+            const headers = { ...baseHeadersTemplate };
+            headers['Accept'] = 'application/json, text/plain, */*';
+            headers['Origin'] = host;
+            headers['Referer'] = usedSpa || (host + '/');
+            headers['Sec-Fetch-Site'] = 'same-origin';
+            headers['Sec-Fetch-Mode'] = 'cors';
+            headers['Sec-Fetch-Dest'] = 'empty';
+            const mergedCookie = moviebox_mergeCookies([forwardCookie, warmCookies]);
+            if (mergedCookie) headers['Cookie'] = mergedCookie;
+
+            resp = await axios.get(playUrl, { timeout: 20000, headers, validateStatus: s => s >= 200 && s < 500 });
+            if (resp.status >= 400) {
+                tried.push({ host, spa: false, url: playUrl, status: resp.status });
+                lastError = new Error(`fmovies play failed with status ${resp.status} @ ${host}`);
+                continue;
+            }
+            const data = typeof resp.data === 'string' ? moviebox_safeJson(resp.data) : resp.data;
+            if (!data || data.code !== 0 || !data.data) {
+                tried.push({ host, spa: false, url: playUrl, code: data?.code, note: 'invalid data' });
+                lastError = new Error(`fmovies response invalid (code=${data?.code ?? 'n/a'}) @ ${host}`);
+                continue;
+            }
+
+            const refererHeader = headers['Referer'];
+            const cookieHeader = headers['Cookie'] || '';
+            const uaHeader = headers['User-Agent'];
+            const streams = Array.isArray(data.data.streams) ? data.data.streams.map(s => ({
+                format: s.format,
+                id: String(s.id),
+                url: s.url,
+                resolutions: String(s.resolutions),
+                size: s.size,
+                duration: s.duration,
+                codecName: s.codecName,
+                headers: {
+                    referer: refererHeader,
+                    cookie: cookieHeader,
+                    userAgent: uaHeader
+                }
+            })) : [];
+            return { streams, raw: data, debug: { hostUsed: host, spaUsed: usedSpa, tried } };
+        } catch (e) {
+            lastError = e;
+        }
+    }
+    const e = lastError || new Error('All MovieBox/FMovies hosts failed');
+    e.tried = tried;
+    throw e;
+}
+
+// TMDB lookup
+const MOVIEBOX_TMDB_API_KEY = 'b3556f3b206e16f82df4d1f6fd4545e6';
+async function moviebox_getTitleForTmdbId(id, preferredType) {
+    const order = preferredType === 'tv' ? ['tv', 'movie'] : preferredType === 'movie' ? ['movie', 'tv'] : ['movie', 'tv'];
+    let lastError;
+    for (const kind of order) {
+        try {
+            const url = `https://api.themoviedb.org/3/${kind}/${encodeURIComponent(id)}?api_key=${MOVIEBOX_TMDB_API_KEY}&language=en-US`;
+            const resp = await axios.get(url, { timeout: 12000, validateStatus: s => s >= 200 && s < 500 });
+            if (resp.status === 200 && resp.data) {
+                const data = resp.data;
+                const title = kind === 'movie' ? (data.title || data.original_title) : (data.name || data.original_name);
+                const year = (kind === 'movie' ? data.release_date : data.first_air_date)?.slice(0, 4) || undefined;
+                if (title) return { title, kind, year, tmdbId: String(id) };
+            }
+            lastError = new Error(`TMDB ${kind} lookup failed with status ${resp.status}`);
+        } catch (e) { lastError = e; }
+    }
+    lastError = lastError || new Error('TMDB lookup failed');
+    lastError.status = lastError.status || 502;
+    throw lastError;
+}
+
+// MovieBox routes
+async function moviebox_handleSearch(req, res) {
+    let { query } = req.params;
+    try {
+        if (/^\d+$/.test(query)) {
+            const preferredType = typeof req.query.type === 'string' ? req.query.type : undefined;
+            const { title } = await moviebox_getTitleForTmdbId(query, preferredType);
+            query = title;
+        }
+
+        const listRes = await moviebox_getIdentifiersListFromQuery(query, {
+            offline: req.query.offline === 'true' || req.query.offline === '1',
+            offlineFile: 'moviebox crack.txt',
+            preferredType: typeof req.query.type === 'string' ? req.query.type : undefined,
+        });
+        let items = listRes.items || [];
+
+        const mode = (req.query.mode || 'score').toString();
+        const base = (listRes.debug && listRes.debug.base) ? String(listRes.debug.base) : moviebox_slugifyBase(query);
+        if (mode === 'prefix' || mode === 'contains') {
+            const pred = (slug) => {
+                const s = String(slug).toLowerCase();
+                if (mode === 'prefix') return s.startsWith(base + '-') || s === base;
+                return s.includes(base);
+            };
+            const bySlug = new Map(items.map(it => [it.detailPath, it]));
+            const union = new Map();
+            for (const it of items) if (pred(it.detailPath)) union.set(it.detailPath, it);
+            items = Array.from(union.values());
+        }
+
+        if (!items.length) {
+            return res.status(404).json({ error: 'No matching items found' });
+        }
+
+        const cookie = req.headers['x-cookie'] || req.headers['cookie'] || '';
+        const fwd = { 'user-agent': req.headers['user-agent'] };
+        const se = req.query.se || '0';
+        const ep = req.query.ep || '0';
+
+        const variants = await Promise.all(items.map(async (it) => {
+            try {
+                const { streams } = await moviebox_fetchStreamsFromFMovies({
+                    subjectId: it.subjectId,
+                    detailPath: it.detailPath,
+                    se, ep,
+                    forwardCookie: cookie,
+                    forwardHeaders: fwd,
+                });
+                return { ...it, streams };
+            } catch (e) {
+                return { ...it, error: e.message };
+            }
+        }));
+
+        const results = [];
+        for (const v of variants) {
+            if (Array.isArray(v.streams)) {
+                for (const s of v.streams) {
+                    results.push({
+                        source: v.detailPath,
+                        resolutions: s.resolutions,
+                        size: String(s.size ?? ''),
+                        url: s.url
+                    });
+                }
+            }
+        }
+
+        return res.json({ results });
+    } catch (err) {
+        const status = err.status || 500;
+        return res.status(status).json({ error: err.message || 'Unexpected error' });
+    }
+}
+
+// Health & info routes and TMDB ID endpoints
+app.get('/moviebox/health', (_req, res) => {
+    res.json({ ok: true, service: 'moviebox', time: new Date().toISOString() });
+});
+
+app.get('/moviebox/', (_req, res) => {
+    res.json({
+        status: 'running',
+        endpoints: {
+            movie: '/moviebox/:tmdbId',
+            tv: '/moviebox/tv/:tmdbId/:season/:episode',
+            search: '/moviebox/api/:query (supports ?mode=prefix|contains|score&se=&ep=)',
+            health: '/moviebox/health'
+        }
+    });
+});
+
+app.get('/moviebox/:tmdbId', async (req, res) => {
+    const { tmdbId } = req.params;
+    if (!tmdbId || !/^\d+$/.test(tmdbId)) {
+        return res.status(400).json({ ok: false, error: 'Valid numeric TMDB ID is required' });
+    }
+    try {
+        const { title } = await moviebox_getTitleForTmdbId(tmdbId, 'movie');
+        const listRes = await moviebox_getIdentifiersListFromQuery(title, {
+            offline: req.query.offline === 'true' || req.query.offline === '1',
+            offlineFile: 'moviebox crack.txt',
+            preferredType: 'movie',
+        });
+        const items = listRes.items || [];
+        if (!items.length) {
+            return res.status(404).json({ error: 'No matching items found for this movie' });
+        }
+        const cookie = req.headers['x-cookie'] || req.headers['cookie'] || '';
+        const fwd = { 'user-agent': req.headers['user-agent'] };
+        const topOnly = req.query.top === '1';
+        const list = topOnly ? items.slice(0, 1) : items;
+        const variants = await Promise.all(list.map(async (it) => {
+            try {
+                const { streams } = await moviebox_fetchStreamsFromFMovies({
+                    subjectId: it.subjectId,
+                    detailPath: it.detailPath,
+                    se: '0', ep: '0',
+                    forwardCookie: cookie,
+                    forwardHeaders: fwd,
+                });
+                return { detailPath: it.detailPath, subjectId: it.subjectId, streams };
+            } catch (e) {
+                return { detailPath: it.detailPath, subjectId: it.subjectId, error: e.message, streams: [] };
+            }
+        }));
+        const results = [];
+        for (const v of variants) {
+            if (Array.isArray(v.streams)) {
+                for (const s of v.streams) {
+                    results.push({ source: v.detailPath, resolutions: s.resolutions, size: String(s.size ?? ''), url: s.url });
+                }
+            }
+        }
+        return res.json({ results });
+    } catch (err) {
+        const status = err.status || 500;
+        return res.status(status).json({ error: err.message || 'Unexpected error' });
+    }
+});
+
+app.get('/moviebox/tv/:tmdbId/:season/:episode', async (req, res) => {
+    const { tmdbId, season, episode } = req.params;
+    if (!tmdbId || !/^\d+$/.test(tmdbId)) return res.status(400).json({ ok: false, error: 'Valid numeric TMDB ID is required' });
+    if (!season || !/^\d+$/.test(season)) return res.status(400).json({ ok: false, error: 'Valid season number is required' });
+    if (!episode || !/^\d+$/.test(episode)) return res.status(400).json({ ok: false, error: 'Valid episode number is required' });
+    try {
+        const { title } = await moviebox_getTitleForTmdbId(tmdbId, 'tv');
+        const listRes = await moviebox_getIdentifiersListFromQuery(title, {
+            offline: req.query.offline === 'true' || req.query.offline === '1',
+            offlineFile: 'moviebox crack.txt',
+            preferredType: 'tv',
+        });
+        const items = listRes.items || [];
+        if (!items.length) return res.status(404).json({ error: 'No matching items found for this TV show' });
+        const cookie = req.headers['x-cookie'] || req.headers['cookie'] || '';
+        const fwd = { 'user-agent': req.headers['user-agent'] };
+        const topOnly = req.query.top === '1';
+        const list = topOnly ? items.slice(0, 1) : items;
+        const variants = await Promise.all(list.map(async (it) => {
+            try {
+                const { streams } = await moviebox_fetchStreamsFromFMovies({
+                    subjectId: it.subjectId,
+                    detailPath: it.detailPath,
+                    se: season, ep: episode,
+                    forwardCookie: cookie,
+                    forwardHeaders: fwd,
+                });
+                return { detailPath: it.detailPath, subjectId: it.subjectId, streams };
+            } catch (e) {
+                return { detailPath: it.detailPath, subjectId: it.subjectId, error: e.message, streams: [] };
+            }
+        }));
+        const results = [];
+        for (const v of variants) {
+            if (Array.isArray(v.streams)) {
+                for (const s of v.streams) {
+                    results.push({ source: v.detailPath, resolutions: s.resolutions, size: String(s.size ?? ''), url: s.url });
+                }
+            }
+        }
+        return res.json({ results });
+    } catch (err) {
+        const status = err.status || 500;
+        return res.status(status).json({ error: err.message || 'Unexpected error' });
+    }
+});
+
+// Legacy search endpoints
+app.get('/moviebox/api/:query', moviebox_handleSearch);
+app.get('/api/moviebox/:query', moviebox_handleSearch);
+
+// ============================================================================
 // Z-LIBRARY SERVICE (from z-lib.js)
 // ============================================================================
 
@@ -1601,6 +2148,17 @@ app.get('/', (req, res) => {
                     health: '/zlib/health'
                 },
                 example: 'http://localhost:3000/zlib/search/python%20programming'
+            },
+            moviebox: {
+                description: 'MovieBox/FMovies scraper with TMDB lookup',
+                endpoints: {
+                    health: '/moviebox/health',
+                    info: '/moviebox/',
+                    search: '/moviebox/api/{query}',
+                    movieByTmdbId: '/moviebox/{tmdbId}',
+                    tvByTmdbId: '/moviebox/tv/{tmdbId}/{season}/{episode}'
+                },
+                example: 'http://localhost:3000/moviebox/api/Greys%20anatomy?mode=prefix&se=22&ep=1'
             },
             otherbook: {
                 description: 'Book search via RandomBook/LibGen with covers',
