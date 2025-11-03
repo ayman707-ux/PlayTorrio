@@ -1220,9 +1220,17 @@ export function startServer(userDataPath) {
         const attempt = async (token) => {
             const url = `${RD_BASE}${endpoint}`;
             console.log('[RD][call]', { endpoint, method: (opts.method || 'GET').toUpperCase() });
+            
+            const headers = {
+                Authorization: `Bearer ${token}`,
+                Accept: 'application/json',
+                'User-Agent': 'Playtorrio/1.0',
+                ...(opts.headers || {})
+            };
+            
             let response;
             try {
-                response = await safeFetch(url, { ...opts, headers: { Authorization: `Bearer ${token}`, ...(opts.headers || {}) } });
+                response = await safeFetch(url, { ...opts, headers });
             } catch (e) {
                 if (e?.code === 'NETWORK_UNREACHABLE') {
                     const err = new Error('Real‑Debrid is unreachable right now.');
@@ -1233,9 +1241,11 @@ export function startServer(userDataPath) {
             }
             return response;
         };
+        
         let s = readSettings();
         if (!s.rdToken) throw new Error('Not authenticated with Real-Debrid');
         let resp = await attempt(s.rdToken);
+        
         if (resp.status === 401 || resp.status === 403) {
             // Try token refresh if possible (only for OAuth tokens with refresh capability)
             if (!rdRefreshing && s.rdRefresh && s.rdCredId && s.rdCredSecret) {
@@ -1250,7 +1260,13 @@ export function startServer(userDataPath) {
                         grant_type: 'http://oauth.net/grant_type/device/1.0'
                     });
                     const tr = await fetch('https://api.real-debrid.com/oauth/v2/token', {
-                        method: 'POST', headers: { 'Accept': 'application/json', 'Content-Type': 'application/x-www-form-urlencoded' }, body: tb
+                        method: 'POST', 
+                        headers: { 
+                            'Accept': 'application/json', 
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                            'User-Agent': 'Playtorrio/1.0'
+                        }, 
+                        body: tb
                     });
                     if (tr.ok) {
                         const tj = await tr.json();
@@ -1261,8 +1277,9 @@ export function startServer(userDataPath) {
                         // Retry once with new token
                         resp = await attempt(s.rdToken);
                     } else {
-                        console.warn('[RD][refresh] failed, clearing OAuth tokens');
-                        // Refresh failed, clear OAuth tokens (but keep API token if it exists)
+                        const errorText = await tr.text();
+                        console.warn('[RD][refresh] failed:', errorText);
+                        // Refresh failed, clear OAuth tokens
                         const cleared = { ...s, rdToken: null, rdRefresh: null, rdCredId: null, rdCredSecret: null };
                         writeSettings(cleared);
                     }
@@ -1273,7 +1290,8 @@ export function startServer(userDataPath) {
             } else if (!s.rdRefresh && !s.rdCredId && !s.rdCredSecret) {
                 // This is a direct API token (no OAuth credentials)
                 // Don't auto-clear API tokens - they're permanent unless manually revoked
-                console.warn('[RD] Direct API token got 401/403 - may be invalid or account issue');
+                console.warn('[RD] Direct API token got 401/403 - may be invalid, expired, or IP-blocked');
+                console.warn('[RD] Please generate a new API token from Real-Debrid website');
                 // Still throw the error so user gets notified, but don't auto-clear
             } else {
                 // OAuth token but no refresh capability (shouldn't happen normally)
@@ -1282,18 +1300,48 @@ export function startServer(userDataPath) {
                 writeSettings(cleared);
             }
         }
+        
         if (!resp.ok) {
             let msg = resp.statusText;
-            try { msg = await resp.text(); } catch {}
+            let rawBody = '';
+            try { 
+                rawBody = await resp.text();
+                msg = rawBody;
+            } catch {}
+            
+            // Log detailed error info
+            console.error('[RD][call] error', { 
+                endpoint, 
+                status: resp.status, 
+                statusText: resp.statusText,
+                body: truncate(msg, 500) 
+            });
+            
             // For OAuth tokens that failed refresh, we already cleared them above
             // For API tokens, we keep them and just report the error
-            console.error('[RD][call] error', { endpoint, status: resp.status, msg: truncate(msg) });
             throw new Error(`RD ${endpoint} failed: ${resp.status} ${msg}`);
         }
+        
         const ct = resp.headers.get('content-type') || '';
         const elapsed = Date.now() - started;
         console.log('[RD][call] ok', { endpoint, status: resp.status, ms: elapsed });
-        return /json/i.test(ct) ? resp.json() : resp.text();
+        
+        // Handle JSON parsing with error handling
+        if (/json/i.test(ct)) {
+            try {
+                const text = await resp.text();
+                if (!text || text.trim() === '') {
+                    console.warn('[RD][call] Empty JSON response for', endpoint);
+                    return {};
+                }
+                return JSON.parse(text);
+            } catch (e) {
+                console.error('[RD][call] JSON parse error:', e?.message);
+                throw new Error(`RD ${endpoint} returned invalid JSON: ${e?.message}`);
+            }
+        }
+        
+        return resp.text();
     }
 
     // Helper: mark RD cached files using Instant Availability
