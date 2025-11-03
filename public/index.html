@@ -19473,9 +19473,9 @@ Your browser does not support the video tag.
 
                 let apiUrl;
                 if (mediaType === 'movie') {
-                    apiUrl = `https://private/moviebox/${encodeURIComponent(tmdbId)}`;
+                    apiUrl = `private/moviebox/${encodeURIComponent(tmdbId)}`;
                 } else if (season && episode) {
-                    apiUrl = `https://private/moviebox/tv/${encodeURIComponent(tmdbId)}/${encodeURIComponent(season)}/${encodeURIComponent(episode)}`;
+                    apiUrl = `private/moviebox/tv/${encodeURIComponent(tmdbId)}/${encodeURIComponent(season)}/${encodeURIComponent(episode)}`;
                 } else {
                     throw new Error('Season and episode required for TV shows');
                 }
@@ -20261,6 +20261,9 @@ Your browser does not support the video tag.
             // Refresh debrid flags before deciding path
             await ensureDebridState();
             const providerLabel = getProviderDisplayName(debridProvider);
+            
+            console.log('[UI][Stream] Starting with settings:', { useDebrid, debridAuth, debridProvider });
+            
             // If Debrid is enabled but not authenticated, block fallback and prompt login
             if (useDebrid && !debridAuth) {
                 console.warn('[UI][Debrid] blocked: enabled but not logged in');
@@ -20268,8 +20271,10 @@ Your browser does not support the video tag.
                 promptDebridLogin();
                 return;
             }
+            
             // Debrid-exclusive flow when enabled: skip WebTorrent entirely
             if (useDebrid && debridAuth && magnet && magnet.startsWith('magnet:')) {
+                console.log('[UI][Stream] Using Debrid path');
                 try {
                     // Open our player UI first
                     showPlayer();
@@ -20306,6 +20311,7 @@ Your browser does not support the video tag.
                             } catch { /* not json */ }
                         } catch { /* ignore */ }
                         showNotification(notif);
+                        mpvLoading.style.display = 'none';
                         return;
                     }
                     const prepj = await prep.json();
@@ -20508,12 +20514,14 @@ Your browser does not support the video tag.
                     return; // Debrid path handled fully
                 } catch (e) {
                     console.error('[UI][Debrid] flow failed', e?.message);
-                    showNotification('Debrid path failed');
-                    return;
+                    showNotification('Debrid path failed. Falling back to WebTorrent.');
+                    mpvLoading.style.display = 'none';
+                    // Don't return here - let it fall through to WebTorrent
                 }
             }
 
-            // Fallback only if Debrid is not enabled
+            // Fallback to WebTorrent (when Debrid is disabled OR debrid flow failed)
+            console.log('[UI][Stream] Using WebTorrent path');
             showPlayer();
             mpvLoading.style.display = 'flex';
             mpvControls.style.display = 'none';
