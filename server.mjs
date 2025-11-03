@@ -1181,11 +1181,12 @@ export function startServer(userDataPath) {
                 try {
                     rdRefreshing = true;
                     console.warn('[RD][refresh] attempting refresh_token flow');
+                    // Per RD docs, refresh is performed using device grant with code = refresh_token
                     const tb = new URLSearchParams({
                         client_id: s.rdCredId,
                         client_secret: s.rdCredSecret,
                         code: s.rdRefresh,
-                        grant_type: 'refresh_token'
+                        grant_type: 'http://oauth.net/grant_type/device/1.0'
                     });
                     const tr = await fetch('https://api.real-debrid.com/oauth/v2/token', {
                         method: 'POST', headers: { 'Accept': 'application/json', 'Content-Type': 'application/x-www-form-urlencoded' }, body: tb
@@ -1225,6 +1226,48 @@ export function startServer(userDataPath) {
         return /json/i.test(ct) ? resp.json() : resp.text();
     }
 
+    // Helper: mark RD cached files using Instant Availability
+    async function rdMarkCachedFiles(info) {
+        try {
+            if (!info || !Array.isArray(info.files) || info.files.length === 0) return info;
+            const hash = (info.hash || info.btih || '').toString();
+            if (!hash || hash.length < 32) return info;
+            const btihUpper = hash.toUpperCase();
+            let avail;
+            try {
+                avail = await rdFetch(`/torrents/instantAvailability/${btihUpper}`);
+            } catch (e) {
+                console.warn('[RD][avail] failed to fetch instantAvailability:', e?.message || e);
+                return info;
+            }
+            const node = avail?.[btihUpper] || avail?.[btihUpper.toLowerCase()] || null;
+            if (!node || typeof node !== 'object') return info;
+            // RD returns arrays per host; entries include an id that maps to RD file id
+            const cachedIds = new Set();
+            try {
+                for (const key of Object.keys(node)) {
+                    const arr = node[key];
+                    if (Array.isArray(arr)) {
+                        for (const it of arr) {
+                            if (it && (it.id !== undefined && it.id !== null)) {
+                                cachedIds.add(Number(it.id));
+                            }
+                        }
+                    }
+                }
+            } catch {}
+            if (cachedIds.size === 0) return info;
+            for (const f of info.files) {
+                const fid = Number(f.id != null ? f.id : f.file != null ? f.file : -1);
+                if (cachedIds.has(fid)) {
+                    // Set explicit cached flag so UI can render proper badge immediately
+                    f.cached = true;
+                }
+            }
+            return info;
+        } catch (_) { return info; }
+    }
+
     // Debrid availability by info hash (RD instant availability; TorBox cached availability)
     app.get('/api/debrid/availability', async (req, res) => {
         try {
@@ -1236,7 +1279,14 @@ export function startServer(userDataPath) {
             if (provider === 'realdebrid') {
                 console.log('[RD][availability]', { btih });
                 const data = await rdFetch(`/torrents/instantAvailability/${btih}`);
-                const available = !!(data && (data[btih] || data[btih.toLowerCase()]));
+                const node = data && (data[btih] || data[btih.toLowerCase()]);
+                let available = false;
+                if (node && typeof node === 'object') {
+                    for (const key of Object.keys(node)) {
+                        const arr = node[key];
+                        if (Array.isArray(arr) && arr.length > 0) { available = true; break; }
+                    }
+                }
                 return res.json({ provider: 'realdebrid', available, raw: data });
             }
             if (provider === 'torbox') {
@@ -1310,7 +1360,9 @@ export function startServer(userDataPath) {
                 // File selection happens later via /api/debrid/select-files when user clicks
                 console.log('[RD][prepare] Skipping auto-select to prevent bulk download');
                 // Fetch latest info (may already contain links for cached items)
-                const info = await rdFetch(`/torrents/info/${id}`);
+                let info = await rdFetch(`/torrents/info/${id}`);
+                // Augment with cached flags via instant availability
+                info = await rdMarkCachedFiles(info);
                 return res.json({ id, info });
             } else if (provider === 'alldebrid') {
                 console.log('[AD][prepare] magnet/upload');
@@ -1621,7 +1673,9 @@ export function startServer(userDataPath) {
             if (!id) return res.status(400).json({ error: 'Missing id' });
             if (provider === 'realdebrid') {
                 console.log('[RD][files]', { id });
-                const info = await rdFetch(`/torrents/info/${id}`);
+                let info = await rdFetch(`/torrents/info/${id}`);
+                // Augment with cached flags to avoid false 'Not cached' UI
+                info = await rdMarkCachedFiles(info);
                 return res.json(info);
             }
             if (provider === 'alldebrid') {
