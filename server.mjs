@@ -21,6 +21,20 @@ const { registerApiRoutes } = require('./api.cjs');
 
 // This function will be imported and called by main.js
 export function startServer(userDataPath) {
+    // Ensure userDataPath directory exists with proper permissions
+    try {
+        if (!fs.existsSync(userDataPath)) {
+            fs.mkdirSync(userDataPath, { recursive: true, mode: 0o755 });
+            console.log(`✅ Created userDataPath directory: ${userDataPath}`);
+        }
+        // Verify directory is writable
+        fs.accessSync(userDataPath, fs.constants.W_OK);
+        console.log(`✅ userDataPath is writable: ${userDataPath}`);
+    } catch (err) {
+        console.error(`❌ CRITICAL: userDataPath not writable: ${userDataPath}`, err?.message);
+        console.error('❌ Application may not be able to save settings or API keys!');
+    }
+    
     // ============================================================================
     // API CACHE MANAGER - 1 hour cache for all API requests
     // ============================================================================
@@ -445,13 +459,60 @@ export function startServer(userDataPath) {
     });
 
     // Debrid: token storage for Real-Debrid (server-side only)
-    app.post('/api/debrid/token', (req, res) => {
+    app.post('/api/debrid/token', async (req, res) => {
         const { token } = req.body || {};
         const s = readSettings();
-        const next = { ...s, rdToken: typeof token === 'string' && token.trim() ? token.trim() : null };
-        const ok = writeSettings(next);
-        if (ok) return res.json({ success: true });
-        return res.status(500).json({ success: false, error: 'Failed to save token' });
+        
+        // Validate token if provided
+        if (token && typeof token === 'string' && token.trim()) {
+            const tokenToTest = token.trim();
+            try {
+                // Test the token by making a simple API call
+                console.log('[RD][token] Testing API token validity...');
+                const testUrl = 'https://api.real-debrid.com/rest/1.0/user';
+                const testResp = await safeFetch(testUrl, {
+                    headers: { Authorization: `Bearer ${tokenToTest}` }
+                });
+                
+                if (!testResp.ok) {
+                    const errorText = await testResp.text();
+                    console.error('[RD][token] Invalid token:', errorText);
+                    return res.status(401).json({ 
+                        success: false, 
+                        error: 'Invalid Real-Debrid API token. Please check your token and try again.',
+                        code: 'INVALID_TOKEN'
+                    });
+                }
+                
+                const userData = await testResp.json();
+                console.log('[RD][token] Valid API token for user:', userData?.username || 'unknown');
+                
+                // Save token (clear OAuth credentials since this is direct API token)
+                const next = { 
+                    ...s, 
+                    rdToken: tokenToTest,
+                    rdRefresh: null,  // API tokens don't have refresh tokens
+                    rdCredId: null,   // Clear OAuth credentials
+                    rdCredSecret: null
+                };
+                const ok = writeSettings(next);
+                if (ok) return res.json({ success: true, username: userData?.username });
+                return res.status(500).json({ success: false, error: 'Failed to save token' });
+            } catch (e) {
+                console.error('[RD][token] Error testing token:', e?.message);
+                return res.status(502).json({ 
+                    success: false, 
+                    error: 'Failed to validate token with Real-Debrid',
+                    code: 'VALIDATION_FAILED'
+                });
+            }
+        } else {
+            // Clear token
+            const next = { ...s, rdToken: null, rdRefresh: null, rdCredId: null, rdCredSecret: null };
+            const ok = writeSettings(next);
+            if (ok) return res.json({ success: true });
+            return res.status(500).json({ success: false, error: 'Failed to clear token' });
+        }
     });
 
     // --- Playback resume endpoints ---
@@ -1176,7 +1237,7 @@ export function startServer(userDataPath) {
         if (!s.rdToken) throw new Error('Not authenticated with Real-Debrid');
         let resp = await attempt(s.rdToken);
         if (resp.status === 401 || resp.status === 403) {
-            // Try token refresh if possible
+            // Try token refresh if possible (only for OAuth tokens with refresh capability)
             if (!rdRefreshing && s.rdRefresh && s.rdCredId && s.rdCredSecret) {
                 try {
                     rdRefreshing = true;
@@ -1197,26 +1258,35 @@ export function startServer(userDataPath) {
                         writeSettings(next);
                         s = next;
                         console.log('[RD][refresh] success, token rotated');
+                        // Retry once with new token
+                        resp = await attempt(s.rdToken);
+                    } else {
+                        console.warn('[RD][refresh] failed, clearing OAuth tokens');
+                        // Refresh failed, clear OAuth tokens (but keep API token if it exists)
+                        const cleared = { ...s, rdToken: null, rdRefresh: null, rdCredId: null, rdCredSecret: null };
+                        writeSettings(cleared);
                     }
-                } catch {}
+                } catch (e) {
+                    console.error('[RD][refresh] exception:', e?.message);
+                }
                 finally { rdRefreshing = false; }
-                // Retry once
-                resp = await attempt(s.rdToken);
+            } else if (!s.rdRefresh && !s.rdCredId && !s.rdCredSecret) {
+                // This is a direct API token (no OAuth credentials)
+                // Don't auto-clear API tokens - they're permanent unless manually revoked
+                console.warn('[RD] Direct API token got 401/403 - may be invalid or account issue');
+                // Still throw the error so user gets notified, but don't auto-clear
+            } else {
+                // OAuth token but no refresh capability (shouldn't happen normally)
+                console.warn('[RD] OAuth token without refresh capability, clearing');
+                const cleared = { ...s, rdToken: null, rdRefresh: null };
+                writeSettings(cleared);
             }
         }
         if (!resp.ok) {
             let msg = resp.statusText;
             try { msg = await resp.text(); } catch {}
-            // Decide whether this is an auth issue that requires clearing tokens
-            const lowerMsg = (msg || '').toLowerCase();
-            const isAuthInvalid = resp.status === 401 || (resp.status === 403 && (lowerMsg.includes('bad_token') || lowerMsg.includes('invalid_token')));
-            if (isAuthInvalid) {
-                try {
-                    const cleared = { ...s, rdToken: null, rdRefresh: null };
-                    writeSettings(cleared);
-                    console.warn('[RD] cleared invalid token (logged out)');
-                } catch {}
-            }
+            // For OAuth tokens that failed refresh, we already cleared them above
+            // For API tokens, we keep them and just report the error
             console.error('[RD][call] error', { endpoint, status: resp.status, msg: truncate(msg) });
             throw new Error(`RD ${endpoint} failed: ${resp.status} ${msg}`);
         }
@@ -1610,6 +1680,12 @@ export function startServer(userDataPath) {
         } catch (e) {
             const msg = e?.message || '';
             console.error('[DEBRID][prepare] error', msg);
+            
+            // Handle authentication errors
+            if (/401|bad_token|invalid_token/i.test(msg)) {
+                return res.status(401).json({ error: 'Real-Debrid authentication expired. Please login again.', code: 'DEBRID_UNAUTH' });
+            }
+            
             // Map premium-required case to a clearer response
             if (/403\s+\{[^}]*permission_denied/i.test(msg)) {
                 return res.status(403).json({
@@ -1620,9 +1696,17 @@ export function startServer(userDataPath) {
             if (/MAGNET_MUST_BE_PREMIUM|MUST_BE_PREMIUM/i.test(msg)) {
                 return res.status(403).json({ error: 'Debrid premium is required to add torrents.', code: 'RD_PREMIUM_REQUIRED' });
             }
+            
+            // Handle rate limiting
+            if (/429|too_many_requests/i.test(msg)) {
+                return res.status(429).json({ error: 'Real-Debrid rate limit. Please wait a moment.', code: 'RD_RATE_LIMIT' });
+            }
+            
+            // Handle network errors
             if (e?.code === 'RD_NETWORK' || /econnrefused|enotfound|network|timeout/i.test(msg)) {
                 return res.status(503).json({ error: 'Real‑Debrid is unreachable right now. Please try again later.', code: 'RD_UNAVAILABLE' });
             }
+            
             res.status(502).json({ error: msg || 'Debrid prepare failed' });
         }
     });
@@ -1657,9 +1741,27 @@ export function startServer(userDataPath) {
         } catch (e) {
             const msg = e?.message || '';
             console.error('[RD][select-files] error', msg);
+            
+            // Handle authentication errors
+            if (/401|bad_token|invalid_token/i.test(msg)) {
+                return res.status(401).json({ success: false, error: 'Real-Debrid authentication expired. Please login again.', code: 'DEBRID_UNAUTH' });
+            }
+            
+            // Handle permission errors
             if (/403\s+\{[^}]*permission_denied/i.test(msg)) {
                 return res.status(403).json({ success: false, error: 'Real-Debrid premium is required to select files.', code: 'RD_PREMIUM_REQUIRED' });
             }
+            
+            // Handle rate limiting
+            if (/429|too_many_requests/i.test(msg)) {
+                return res.status(429).json({ success: false, error: 'Real-Debrid rate limit. Please wait a moment.', code: 'RD_RATE_LIMIT' });
+            }
+            
+            // Handle network errors
+            if (e?.code === 'RD_NETWORK' || /econnrefused|enotfound|network|timeout/i.test(msg)) {
+                return res.status(503).json({ success: false, error: 'Real-Debrid is unreachable. Please try again later.', code: 'RD_UNAVAILABLE' });
+            }
+            
             res.status(502).json({ success: false, error: msg || 'Debrid select files failed' });
         }
     });
@@ -2904,56 +3006,121 @@ export function startServer(userDataPath) {
                 try {
                     if (fs.existsSync(candidate)) {
                         const raw = fs.readFileSync(candidate, 'utf8');
-                        const key = JSON.parse(raw).apiKey || '';
+                        
+                        // Handle both cases: JSON file and plain text (legacy)
+                        let key = '';
+                        try {
+                            const parsed = JSON.parse(raw);
+                            key = parsed.apiKey || '';
+                        } catch (jsonErr) {
+                            // Not JSON, try as plain text
+                            key = raw.trim();
+                        }
+                        
                         if (key) {
                             API_KEY = key;
                             lastKeyPath = candidate;
-                            // Log only the source path (not the key)
                             console.log(`✅ API Key loaded from ${candidate}`);
                             return true;
+                        } else {
+                            console.warn(`⚠️ API Key file exists but is empty: ${candidate}`);
                         }
                     }
                 } catch (e) {
+                    console.warn(`⚠️ Error reading API key from ${candidate}:`, e?.message);
                     // keep trying other candidates
                 }
             }
 
             // No root-level file found; clear cached key
+            if (API_KEY) {
+                console.log('ℹ️ No API key file found, clearing cached key');
+            }
             API_KEY = '';
         } catch (error) {
-            console.error('Error loading API key:', error);
+            console.error('❌ Error loading API key:', error);
         }
         return false;
     }
 
     function saveAPIKey(apiKey) {
         const payload = JSON.stringify({ apiKey }, null, 2);
-        // Primary: write to userData in installed builds, dev root in dev
-        try {
-            const primary = resolveWritePath();
-            const primaryDir = path.dirname(primary);
-            fs.mkdirSync(primaryDir, { recursive: true });
-            fs.writeFileSync(primary, payload);
-            API_KEY = apiKey;
-            lastKeyPath = primary;
-            console.log(`✅ API Key saved to ${primary}`);
-            return true;
-        } catch (err) {
-            console.warn('⚠️ Failed to write API key to primary location:', err?.message || err);
+        
+        // Try multiple locations in order of preference
+        const writeCandidates = [
+            path.join(userDataPath, 'jackett_api_key.json'),     // Primary: userData (always writable)
+            path.join(installDir, 'jackett_api_key.json'),       // Secondary: next to exe (legacy)
+            path.join(devRoot, 'jackett_api_key.json'),          // Tertiary: dev root
+            path.join(process.cwd(), 'jackett_api_key.json')     // Fallback: current working dir
+        ];
+        
+        let lastError = null;
+        
+        for (const targetPath of writeCandidates) {
+            try {
+                console.log(`[API Key] Attempting to save to: ${targetPath}`);
+                
+                // Ensure directory exists with error handling
+                const targetDir = path.dirname(targetPath);
+                try {
+                    if (!fs.existsSync(targetDir)) {
+                        fs.mkdirSync(targetDir, { recursive: true, mode: 0o755 });
+                        console.log(`[API Key] Created directory: ${targetDir}`);
+                    }
+                    
+                    // Verify directory is writable
+                    fs.accessSync(targetDir, fs.constants.W_OK);
+                } catch (dirErr) {
+                    console.warn(`[API Key] Directory not writable: ${targetDir}`, dirErr?.message);
+                    lastError = dirErr;
+                    continue; // Try next location
+                }
+                
+                // Write the file with explicit error handling
+                fs.writeFileSync(targetPath, payload, { encoding: 'utf8', mode: 0o644 });
+                
+                // Verify the file was written correctly
+                if (fs.existsSync(targetPath)) {
+                    const verification = fs.readFileSync(targetPath, 'utf8');
+                    const parsed = JSON.parse(verification);
+                    if (parsed.apiKey === apiKey) {
+                        API_KEY = apiKey;
+                        lastKeyPath = targetPath;
+                        console.log(`✅ API Key successfully saved to ${targetPath}`);
+                        
+                        // Clean up old files from other locations to avoid confusion
+                        for (const oldPath of writeCandidates) {
+                            if (oldPath !== targetPath) {
+                                try {
+                                    if (fs.existsSync(oldPath)) {
+                                        fs.unlinkSync(oldPath);
+                                        console.log(`🗑️ Removed old API key from ${oldPath}`);
+                                    }
+                                } catch (cleanupErr) {
+                                    // Ignore cleanup errors
+                                }
+                            }
+                        }
+                        
+                        return true;
+                    } else {
+                        console.warn(`[API Key] Verification failed for ${targetPath}`);
+                        lastError = new Error('Verification failed');
+                    }
+                } else {
+                    console.warn(`[API Key] File not found after write: ${targetPath}`);
+                    lastError = new Error('File not found after write');
+                }
+            } catch (err) {
+                console.warn(`[API Key] Failed to write to ${targetPath}:`, err?.message || err);
+                lastError = err;
+                continue; // Try next location
+            }
         }
-
-        // Secondary: attempt next to the exe for legacy compatibility when writable
-        try {
-            const legacy = path.join(installDir, 'jackett_api_key.json');
-            fs.writeFileSync(legacy, payload);
-            API_KEY = apiKey;
-            lastKeyPath = legacy;
-            console.log(`✅ API Key saved to legacy location at ${legacy}`);
-            return true;
-        } catch (error) {
-            console.error('❌ Error saving API key to any location:', error);
-            return false;
-        }
+        
+        // All locations failed
+        console.error('❌ Failed to save API key to any location. Last error:', lastError?.message || lastError);
+        return false;
     }
 
     // Diagnostics: where is the API key stored/loaded from?
@@ -3292,8 +3459,39 @@ export function startServer(userDataPath) {
     app.post('/api/set-api-key', (req, res) => {
         if (!req.body.apiKey) return res.status(400).json({ error: 'Invalid API key' });
         const key = req.body.apiKey.trim();
-        if (saveAPIKey(key)) res.json({ success: true });
-        else res.status(500).json({ error: 'Failed to save API key' });
+        
+        console.log('[API Key] Save request received');
+        
+        if (saveAPIKey(key)) {
+            console.log('[API Key] Save successful, verifying...');
+            
+            // Verify by reading it back
+            loadAPIKey();
+            if (API_KEY === key) {
+                console.log('[API Key] Verification successful');
+                res.json({ 
+                    success: true, 
+                    message: 'API key saved successfully',
+                    path: lastKeyPath 
+                });
+            } else {
+                console.error('[API Key] Verification failed - saved key does not match');
+                res.status(500).json({ 
+                    error: 'API key saved but verification failed',
+                    details: 'The key was written but could not be read back correctly'
+                });
+            }
+        } else {
+            console.error('[API Key] Save failed - no writable location found');
+            res.status(500).json({ 
+                error: 'Failed to save API key',
+                details: 'Could not write to any of the expected locations. Check file permissions.',
+                attemptedPaths: [
+                    path.join(userDataPath, 'jackett_api_key.json'),
+                    path.join(path.dirname(process.execPath), 'jackett_api_key.json')
+                ]
+            });
+        }
     });
 
     app.get('/api/get-api-key', (req, res) => {
