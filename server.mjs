@@ -1242,6 +1242,9 @@ export function startServer(userDataPath) {
         }
     };
 
+    // Track if instant availability endpoint is disabled for this account
+    let rdInstantAvailabilityDisabled = false;
+
     async function rdFetch(endpoint, opts = {}) {
         const started = Date.now();
         
@@ -1374,6 +1377,12 @@ export function startServer(userDataPath) {
                     err.status = 403;
                     throw err;
                 } else if (/disabled_endpoint/i.test(msg)) {
+                    // Check if this is the instant availability endpoint being disabled
+                    if (endpoint.includes('/torrents/instantAvailability/')) {
+                        rdInstantAvailabilityDisabled = true;
+                        console.warn('[RD][availability] Instant availability endpoint is DISABLED for this account (error_code 37)');
+                        console.warn('[RD][availability] Availability checks will be skipped for all future requests');
+                    }
                     const err = new Error('This Real-Debrid feature is disabled for your account.');
                     err.code = 'RD_FEATURE_UNAVAILABLE';
                     err.status = 403;
@@ -1449,6 +1458,11 @@ export function startServer(userDataPath) {
     // Helper: mark RD cached files using Instant Availability
     async function rdMarkCachedFiles(info) {
         try {
+            // Skip if instant availability is disabled for this account
+            if (rdInstantAvailabilityDisabled) {
+                return info;
+            }
+            
             if (!info || !Array.isArray(info.files) || info.files.length === 0) return info;
             const hash = (info.hash || info.btih || '').toString();
             if (!hash || hash.length < 32) return info;
@@ -1497,6 +1511,12 @@ export function startServer(userDataPath) {
             if (!btih || btih.length < 32) return res.status(400).json({ error: 'Invalid btih' });
             const provider = (s.debridProvider || 'realdebrid').toLowerCase();
             if (provider === 'realdebrid') {
+                // Skip if instant availability is disabled for this account
+                if (rdInstantAvailabilityDisabled) {
+                    console.log('[RD][availability] Skipped - instant availability disabled for account');
+                    return res.json({ provider: 'realdebrid', available: false, disabled: true, message: 'Instant availability is disabled for your Real-Debrid account' });
+                }
+                
                 console.log('[RD][availability]', { btih });
                 const data = await rdFetch(`/torrents/instantAvailability/${btih}`);
                 
@@ -1594,7 +1614,8 @@ export function startServer(userDataPath) {
                 const btih = extractInfoHash(magnet);
                 
                 // Step 1: Check instant availability FIRST to avoid re-caching already cached torrents
-                if (btih) {
+                // Skip if instant availability is disabled for this account
+                if (btih && !rdInstantAvailabilityDisabled) {
                     console.log('[RD][prepare] Checking instant availability for', btih);
                     try {
                         const availData = await rdFetch(`/torrents/instantAvailability/${btih}`);
@@ -1649,7 +1670,47 @@ export function startServer(userDataPath) {
                     }
                 }
                 
-                // Step 2: If not cached (or check failed), proceed with normal addMagnet flow
+                // Step 2: Check existing torrents to avoid duplicates
+                if (btih) {
+                    try {
+                        const existing = await rdFetch('/torrents');
+                        if (Array.isArray(existing)) {
+                            const match = existing.find(t => (t?.hash || '').toLowerCase() === btih.toLowerCase());
+                            if (match && match.id) {
+                                console.log('[RD][prepare] Reusing existing torrent', { id: match.id, status: match.status });
+                                let info = await rdFetch(`/torrents/info/${match.id}`);
+                                
+                                // If torrent is already downloaded and has NO selected files, auto-select ALL files
+                                // This ensures links are available immediately for downloaded torrents
+                                if (info.status === 'downloaded' && Array.isArray(info.files)) {
+                                    const hasSelected = info.files.some(f => f.selected === 1);
+                                    if (!hasSelected) {
+                                        console.log('[RD][prepare] Auto-selecting all files for downloaded torrent');
+                                        const allFileIds = info.files.map(f => f.id).join(',');
+                                        try {
+                                            await rdFetch(`/torrents/selectFiles/${match.id}`, {
+                                                method: 'POST',
+                                                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                                                body: new URLSearchParams({ files: allFileIds })
+                                            });
+                                            // Refetch info to get updated links
+                                            info = await rdFetch(`/torrents/info/${match.id}`);
+                                        } catch (e) {
+                                            console.warn('[RD][prepare] Auto-select failed:', e?.message);
+                                        }
+                                    }
+                                }
+                                
+                                info = await rdMarkCachedFiles(info);
+                                return res.json({ id: match.id, info, reused: true });
+                            }
+                        }
+                    } catch (e) {
+                        console.warn('[RD][prepare] Could not check existing torrents:', e?.message);
+                    }
+                }
+                
+                // Step 3: If not cached and not exists, add new magnet
                 console.log('[RD][prepare] Adding magnet to Real-Debrid');
                 const addRes = await rdFetch('/torrents/addMagnet', {
                     method: 'POST',
@@ -2037,8 +2098,61 @@ export function startServer(userDataPath) {
             if (provider === 'realdebrid') {
                 console.log('[RD][files]', { id });
                 let info = await rdFetch(`/torrents/info/${id}`);
+                
+                // DEBUG: Log the raw response structure
+                console.log('[RD][files] Raw response structure:', {
+                    id: info?.id,
+                    status: info?.status,
+                    filesCount: info?.files?.length,
+                    hasTorrentLevelLinks: !!info?.links,
+                    torrentLinksCount: Array.isArray(info?.links) ? info.links.length : 0,
+                    firstFile: info?.files?.[0] ? {
+                        id: info.files[0].id,
+                        selected: info.files[0].selected,
+                        hasLinks: !!info.files[0].links,
+                        linksType: typeof info.files[0].links,
+                        linksLength: Array.isArray(info.files[0].links) ? info.files[0].links.length : 0
+                    } : null
+                });
+                
                 // Augment with cached flags to avoid false 'Not cached' UI
                 info = await rdMarkCachedFiles(info);
+                
+                // CRITICAL: RD API doesn't always populate 'links' in /torrents/info response
+                // For downloaded torrents with selected files, we need to construct the download link manually
+                // Format: https://[host]/d/[torrent_id]/[file_id]
+                if (info && Array.isArray(info.files) && info.status === 'downloaded') {
+                    for (const f of info.files) {
+                        // If file is selected but has no links, generate the download link
+                        if (f.selected === 1 && (!f.links || f.links.length === 0)) {
+                            // RD download links are in the 'links' array when present, but often missing
+                            // We can construct them OR better: use the torrent's 'links' array
+                            // The torrent object itself has a 'links' array mapping file IDs to download URLs
+                            if (Array.isArray(info.links) && info.links[f.id - 1]) {
+                                f.links = [info.links[f.id - 1]];
+                            } else if (typeof f.links === 'string') {
+                                f.links = [f.links];
+                            } else {
+                                // Last resort: set empty array, frontend will need to unrestrict via different method
+                                f.links = [];
+                            }
+                        } else if (f.links && typeof f.links === 'string') {
+                            f.links = [f.links];
+                        } else if (!f.links) {
+                            f.links = [];
+                        }
+                    }
+                }
+                
+                console.log('[RD][files] Response:', { 
+                    id, 
+                    status: info?.status, 
+                    filesCount: info?.files?.length,
+                    selectedFiles: info?.files?.filter(f => f.selected === 1).length,
+                    filesWithLinks: info?.files?.filter(f => Array.isArray(f.links) && f.links.length > 0).length,
+                    torrentLevelLinks: Array.isArray(info?.links) ? info.links.length : 0
+                });
+                
                 return res.json(info);
             }
             if (provider === 'alldebrid') {
@@ -2185,46 +2299,27 @@ export function startServer(userDataPath) {
             const link = (req.body?.link || '').toString();
             if (!link) return res.status(400).json({ error: 'Missing link' });
             if (provider === 'realdebrid') {
-                // RD torrent file links are already direct CDN links; check if streaming is available
-                if (/^https?:\/\//i.test(link)) {
-                    console.log('[RD][link] direct link:', link);
-                    
-                    // Try to get transcoding/streaming URL if available
-                    try {
-                        // Extract file ID from RD download link (format: https://domain/dl/ID/filename)
-                        const match = link.match(/\/dl\/([^\/]+)\//);
-                        if (match && match[1]) {
-                            const fileId = match[1];
-                            console.log('[RD][streaming] checking transcode for ID:', fileId);
-                            try {
-                                const transcodeInfo = await rdFetch(`/streaming/transcode/${fileId}`);
-                                if (transcodeInfo && Array.isArray(transcodeInfo) && transcodeInfo.length > 0) {
-                                    // Use the highest quality transcoded stream if available
-                                    const bestStream = transcodeInfo.sort((a, b) => (b.filesize || 0) - (a.filesize || 0))[0];
-                                    if (bestStream?.download) {
-                                        console.log('[RD][streaming] using transcoded stream:', bestStream.download);
-                                        return res.json({ url: bestStream.download, raw: transcodeInfo });
-                                    }
-                                }
-                            } catch (transcodeError) {
-                                console.log('[RD][streaming] transcode not available:', transcodeError.message);
-                                // Fall back to direct link
-                            }
-                        }
-                    } catch (e) {
-                        console.log('[RD][streaming] streaming check failed:', e.message);
-                    }
-                    
-                    return res.json({ url: link });
-                }
-                // Fallback: if some non-http value slipped through, try unrestrict
+                // ALWAYS unrestrict RD links to get the actual direct download URL
+                // Links from /torrents/info are download page URLs (e.g., /d/...), not direct CDN links
+                console.log('[RD][unrestrict] link:', link);
+                
                 try {
                     const out = await rdFetch('/unrestrict/link', {
-                        method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams({ link })
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                        body: new URLSearchParams({ link })
                     });
-                    return res.json({ url: out?.download || null, raw: out });
+                    
+                    if (!out?.download) {
+                        console.error('[RD][unrestrict] No download URL in response:', out);
+                        return res.status(502).json({ error: 'RD unrestrict returned no download URL' });
+                    }
+                    
+                    console.log('[RD][unrestrict] success, CDN URL:', out.download);
+                    return res.json({ url: out.download, raw: out });
                 } catch (e) {
-                    return res.status(502).json({ error: 'Failed to unrestrict RD link' });
+                    console.error('[RD][unrestrict] failed:', e?.message);
+                    return res.status(502).json({ error: 'Failed to unrestrict RD link: ' + (e?.message || 'unknown error') });
                 }
             }
             if (provider === 'alldebrid') {
@@ -3137,8 +3232,37 @@ export function startServer(userDataPath) {
     // Alias with /api prefix for clients that use API_BASE_URL for streaming
     app.get('/api/stream/debrid', async (req, res) => {
         try {
-            const directUrl = (req.query?.url || '').toString();
-            if (!directUrl.startsWith('http')) return res.status(400).end('Bad URL');
+            console.log('[STREAM] Request received:', {
+                userAgent: req.headers['user-agent'],
+                url: req.url,
+                queryUrl: req.query?.url,
+                method: req.method,
+                headers: req.headers
+            });
+            
+            let directUrl = (req.query?.url || '').toString();
+            
+            if (!directUrl) {
+                console.error('[STREAM] Missing URL parameter');
+                return res.status(400).end('Missing URL parameter');
+            }
+            
+            // Handle double URL encoding: if the URL contains %XX sequences, decode them
+            // This happens when the CDN URL itself has encoded characters that get re-encoded
+            if (directUrl.includes('%')) {
+                try {
+                    directUrl = decodeURIComponent(directUrl);
+                    console.log('[STREAM] Decoded URL to:', directUrl);
+                } catch (e) {
+                    // Already decoded or malformed, use as-is
+                    console.log('[STREAM] URL decode failed, using as-is:', e.message);
+                }
+            }
+            
+            if (!directUrl.startsWith('http')) {
+                console.error('[STREAM] Invalid URL after decode:', directUrl);
+                return res.status(400).end('Bad URL');
+            }
             
             // Check if this is an HLS playlist
             const isHLS = directUrl.includes('.m3u8');
