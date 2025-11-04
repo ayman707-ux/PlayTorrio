@@ -2034,13 +2034,108 @@ export function startServer(userDataPath) {
             console.log('[RD][select-files]', { id, files: files.split(',').slice(0,5) });
             
             try {
+                // For season packs with single file selection: RD doesn't allow changing selected files
+                // Solution: Delete old torrent and re-add with new file selection
+                const fileIds = files.split(',').filter(f => f && f !== 'all');
+                const isSingleFileSelection = fileIds.length === 1;
+                
+                if (isSingleFileSelection) {
+                    // Get current torrent info
+                    const currentInfo = await rdFetch(`/torrents/info/${id}`);
+                    const currentlySelected = currentInfo?.files?.filter(f => f.selected === 1).map(f => f.id) || [];
+                    const requestedFileId = parseInt(fileIds[0]);
+                    
+                    // If a different file is currently selected, delete and re-add torrent
+                    if (currentlySelected.length > 0 && !currentlySelected.includes(requestedFileId)) {
+                        console.log('[RD][select-files] Different file requested. Deleting torrent', id, 'and re-adding with file', requestedFileId);
+                        
+                        // Get magnet link from torrent info to re-add it
+                        const magnetHash = currentInfo?.hash;
+                        if (!magnetHash) {
+                            console.error('[RD][select-files] Cannot re-add torrent: no hash found');
+                            return res.status(500).json({ error: 'Cannot switch files: torrent hash not found' });
+                        }
+                        
+                        // Delete the old torrent
+                        try {
+                            await rdFetch(`/torrents/delete/${id}`, { method: 'DELETE' });
+                            console.log('[RD][select-files] Deleted old torrent:', id);
+                        } catch (e) {
+                            console.warn('[RD][select-files] Failed to delete torrent:', e?.message);
+                        }
+                        
+                        // Re-add the torrent with magnet
+                        const magnet = `magnet:?xt=urn:btih:${magnetHash}`;
+                        console.log('[RD][select-files] Re-adding torrent with magnet:', magnet.substring(0, 50) + '...');
+                        
+                        const addRes = await rdFetch('/torrents/addMagnet', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                            body: new URLSearchParams({ magnet })
+                        });
+                        
+                        const newId = addRes?.id;
+                        if (!newId) {
+                            console.error('[RD][select-files] Failed to re-add torrent');
+                            return res.status(500).json({ error: 'Failed to re-add torrent' });
+                        }
+                        
+                        console.log('[RD][select-files] Re-added torrent with new ID:', newId);
+                        
+                        // Now select the requested file on the NEW torrent
+                        const selectRes = await rdFetch(`/torrents/selectFiles/${newId}`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                            body: new URLSearchParams({ files: requestedFileId.toString() })
+                        });
+                        
+                        console.log('[RD][select-files] File selection response:', selectRes);
+                        
+                        // Get updated info with new links
+                        const newInfo = await rdFetch(`/torrents/info/${newId}`);
+                        console.log('[RD][select-files] New torrent info:', {
+                            id: newInfo?.id,
+                            status: newInfo?.status,
+                            torrentLinks: newInfo?.links,
+                            selectedFiles: newInfo?.files?.filter(f => f.selected === 1).map(f => ({ 
+                                id: f.id, 
+                                path: f.path 
+                            }))
+                        });
+                        
+                        return res.json({ 
+                            id: newId, 
+                            info: newInfo, 
+                            reAddedForFileSwitch: true,
+                            oldId: id
+                        });
+                    }
+                }
+                
+                // Normal file selection (first time or same file)
                 const out = await rdFetch(`/torrents/selectFiles/${id}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                     body: new URLSearchParams({ files })
                 });
                 
-                res.json({ success: true, out });
+                console.log('[RD][select-files] Response:', out);
+                
+                // After selecting, immediately fetch torrent info to see if links are populated
+                const info = await rdFetch(`/torrents/info/${id}`);
+                console.log('[RD][select-files] Updated torrent info:', {
+                    id: info?.id,
+                    status: info?.status,
+                    torrentLinks: info?.links,
+                    selectedFiles: info?.files?.filter(f => f.selected === 1).map(f => ({ 
+                        id: f.id, 
+                        path: f.path, 
+                        hasLinks: !!f.links,
+                        links: f.links 
+                    }))
+                });
+                
+                res.json({ success: true, out, info });
             } catch (e) {
                 // Handle specific RD errors
                 if (e?.status === 429 || e?.code === 'RD_RATE_LIMIT') {
@@ -2088,6 +2183,46 @@ export function startServer(userDataPath) {
         }
     });
 
+    // Cleanup/delete debrid torrent (for when user closes file selector or switches files)
+    app.post('/api/debrid/cleanup', async (req, res) => {
+        try {
+            const s = readSettings();
+            const provider = (s.debridProvider || 'realdebrid').toLowerCase();
+            const id = (req.body?.id || '').toString();
+            
+            if (!id) return res.json({ success: true, message: 'No ID provided, nothing to cleanup' });
+            
+            if (provider === 'realdebrid') {
+                console.log('[RD][cleanup] Deleting torrent:', id);
+                try {
+                    await rdFetch(`/torrents/delete/${id}`, { method: 'DELETE' });
+                    console.log('[RD][cleanup] Successfully deleted torrent:', id);
+                    return res.json({ success: true, deleted: true, id });
+                } catch (e) {
+                    // Torrent might already be deleted, that's okay
+                    console.warn('[RD][cleanup] Failed to delete torrent (might already be deleted):', e?.message);
+                    return res.json({ success: true, deleted: false, message: 'Torrent already deleted or not found' });
+                }
+            } else if (provider === 'alldebrid') {
+                console.log('[AD][cleanup] Deleting magnet:', id);
+                try {
+                    await adFetch(`/magnet/delete?id=${id}`, { method: 'GET' });
+                    console.log('[AD][cleanup] Successfully deleted magnet:', id);
+                    return res.json({ success: true, deleted: true, id });
+                } catch (e) {
+                    console.warn('[AD][cleanup] Failed to delete magnet:', e?.message);
+                    return res.json({ success: true, deleted: false, message: 'Magnet already deleted or not found' });
+                }
+            } else {
+                // Other providers - no-op
+                return res.json({ success: true, message: 'Cleanup not needed for ' + provider });
+            }
+        } catch (e) {
+            console.error('[Debrid][cleanup] error', e?.message);
+            res.status(500).json({ success: false, error: e?.message || 'Cleanup failed' });
+        }
+    });
+
     // List Debrid torrent info/files
     app.get('/api/debrid/files', async (req, res) => {
         try {
@@ -2120,26 +2255,39 @@ export function startServer(userDataPath) {
                 
                 // CRITICAL: RD API doesn't always populate 'links' in /torrents/info response
                 // For downloaded torrents with selected files, we need to construct the download link manually
-                // Format: https://[host]/d/[torrent_id]/[file_id]
-                if (info && Array.isArray(info.files) && info.status === 'downloaded') {
+                // Format: https://real-debrid.com/d/[download_id] (needs unrestricting)
+                if (info && Array.isArray(info.files)) {
+                    // For multi-file torrents (season packs): RD populates info.links with download links
+                    // but ONLY for currently selected files, and the array indexing doesn't match file IDs
+                    // We need to distribute available links to selected files
+                    const selectedFiles = info.files.filter(f => f.selected === 1);
+                    const availableLinks = Array.isArray(info.links) ? info.links.filter(l => l) : [];
+                    
                     for (const f of info.files) {
-                        // If file is selected but has no links, generate the download link
-                        if (f.selected === 1 && (!f.links || f.links.length === 0)) {
-                            // RD download links are in the 'links' array when present, but often missing
-                            // We can construct them OR better: use the torrent's 'links' array
-                            // The torrent object itself has a 'links' array mapping file IDs to download URLs
-                            if (Array.isArray(info.links) && info.links[f.id - 1]) {
-                                f.links = [info.links[f.id - 1]];
-                            } else if (typeof f.links === 'string') {
-                                f.links = [f.links];
-                            } else {
-                                // Last resort: set empty array, frontend will need to unrestrict via different method
-                                f.links = [];
-                            }
-                        } else if (f.links && typeof f.links === 'string') {
+                        // Normalize links to array format first
+                        if (typeof f.links === 'string') {
                             f.links = [f.links];
                         } else if (!f.links) {
                             f.links = [];
+                        }
+                        
+                        // If file is selected but has no links, try to get from torrent-level links array
+                        if (f.selected === 1 && f.links.length === 0) {
+                            // Try direct indexing first (works for single-file torrents)
+                            if (availableLinks[f.id - 1]) {
+                                f.links = [availableLinks[f.id - 1]];
+                            }
+                            // For season packs: if only 1 link available and 1 file selected, use it
+                            else if (selectedFiles.length === 1 && availableLinks.length === 1) {
+                                f.links = [availableLinks[0]];
+                            }
+                            // For season packs with multiple selected files: match by position
+                            else if (selectedFiles.length > 0 && availableLinks.length > 0) {
+                                const selectedIndex = selectedFiles.indexOf(f);
+                                if (selectedIndex >= 0 && availableLinks[selectedIndex]) {
+                                    f.links = [availableLinks[selectedIndex]];
+                                }
+                            }
                         }
                     }
                 }
@@ -2150,7 +2298,13 @@ export function startServer(userDataPath) {
                     filesCount: info?.files?.length,
                     selectedFiles: info?.files?.filter(f => f.selected === 1).length,
                     filesWithLinks: info?.files?.filter(f => Array.isArray(f.links) && f.links.length > 0).length,
-                    torrentLevelLinks: Array.isArray(info?.links) ? info.links.length : 0
+                    torrentLevelLinks: Array.isArray(info?.links) ? info.links.length : 0,
+                    sampleFiles: info?.files?.slice(0, 3).map(f => ({
+                        id: f.id,
+                        selected: f.selected,
+                        path: f.path?.split('/').pop(),
+                        links: f.links
+                    }))
                 });
                 
                 return res.json(info);
