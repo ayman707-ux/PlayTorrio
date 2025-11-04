@@ -1369,6 +1369,35 @@
             font-size: 0.8rem;
         }
         
+        .cached-badge {
+            background: linear-gradient(135deg, #198754 0%, #20c997 100%);
+            color: #fff;
+            padding: 0.25rem 0.6rem;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin-left: 8px;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
+            box-shadow: 0 2px 8px rgba(25, 135, 84, 0.3);
+            animation: pulse-glow 2s ease-in-out infinite;
+        }
+        
+        .cached-badge::before {
+            content: '⚡';
+            font-size: 0.9rem;
+        }
+        
+        @keyframes pulse-glow {
+            0%, 100% {
+                box-shadow: 0 2px 8px rgba(25, 135, 84, 0.3);
+            }
+            50% {
+                box-shadow: 0 2px 12px rgba(25, 135, 84, 0.6);
+            }
+        }
+        
         .torrent-actions {
             display: flex;
             gap: 0.5rem;
@@ -20149,11 +20178,13 @@ Your browser does not support the video tag.
                 item.className = 'torrent-item';
                 item.innerHTML = `
                     <div class="torrent-info">
-                        <p class="torrent-name">${torrent.title}</p>
+                        <p class="torrent-name">
+                            ${torrent.title}
+                            <span class="cached-badge" style="display:none;">Cached</span>
+                        </p>
                         <div class="torrent-details">
                             <span><i class="fas fa-arrow-up"></i> ${torrent.seeders}</span>
                             <span><i class="fas fa-database"></i> ${((torrent.size || 0) / 1024 / 1024 / 1024).toFixed(2)} GB</span>
-                            <span class="cached-badge" style="display:none; background:#198754; color:#fff; padding:2px 6px; border-radius:4px; font-size: 0.8rem; margin-left:8px;">Cached</span>
                         </div>
                     </div>
                     <div class="torrent-actions">
@@ -20316,7 +20347,15 @@ Your browser does not support the video tag.
                     }
                     const prepj = await prep.json();
                     const rdId = prepj.id;
+                    const fromCache = prepj.fromCache || false;
                     let info = prepj.info || null;
+                    
+                    // Show notification if torrent is already cached
+                    if (fromCache && useDebrid && debridProvider === 'realdebrid') {
+                        console.log('[UI][Debrid] ✅ Torrent is already cached on Real-Debrid!');
+                        showNotification('✅ This torrent is already cached on Real-Debrid! Instant streaming available.');
+                    }
+                    
                     if (!info || !Array.isArray(info.files) || !info.files.length) {
                         await new Promise(r => setTimeout(r, 900));
                         const fres = await fetch(`${API_BASE_URL}/debrid/files?id=${encodeURIComponent(rdId)}`);
@@ -20395,24 +20434,32 @@ Your browser does not support the video tag.
                                     resumeKey = `debrid:${debridProvider}:${rdId}:${fileId}`;
                                     resumeInfo = await fetchResume(resumeKey);
                                 } catch(_) {}
-                                // Ensure only this file is selected for RD to process
-                                try {
-                                    console.log('[UI][Debrid] select-files', { id: rdId, file: String(f.id || f.file) });
-                                    const selectRes = await fetch(`${API_BASE_URL}/debrid/select-files`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: rdId, files: String(f.id || f.file) }) });
-                                    if (!selectRes.ok) {
-                                        const errText = await selectRes.text();
-                                        console.warn('[UI][Debrid] select-files failed', errText);
-                                        try {
-                                            const errJson = JSON.parse(errText);
-                                            if (errJson.code === 'DEBRID_UNAUTH') {
-                                                showNotification('Real-Debrid authentication expired. Please logout and login again in Settings.');
-                                                mpvLoading.style.display = 'none';
-                                                if (debridStatus) debridStatus.textContent = 'Not logged in';
-                                                return;
-                                            }
-                                        } catch {}
-                                    }
-                                } catch(e) { console.warn('[UI][Debrid] select-files exception', e?.message); }
+                                
+                                // Only call select-files if NOT from cache (fromCache means torrent was already cached)
+                                // Cached torrents can skip directly to unrestrict
+                                if (!fromCache) {
+                                    // Ensure only this file is selected for RD to process
+                                    try {
+                                        console.log('[UI][Debrid] select-files', { id: rdId, file: String(f.id || f.file) });
+                                        const selectRes = await fetch(`${API_BASE_URL}/debrid/select-files`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: rdId, files: String(f.id || f.file) }) });
+                                        if (!selectRes.ok) {
+                                            const errText = await selectRes.text();
+                                            console.warn('[UI][Debrid] select-files failed', errText);
+                                            try {
+                                                const errJson = JSON.parse(errText);
+                                                if (errJson.code === 'DEBRID_UNAUTH') {
+                                                    showNotification('Real-Debrid authentication expired. Please logout and login again in Settings.');
+                                                    mpvLoading.style.display = 'none';
+                                                    if (debridStatus) debridStatus.textContent = 'Not logged in';
+                                                    return;
+                                                }
+                                            } catch {}
+                                        }
+                                    } catch(e) { console.warn('[UI][Debrid] select-files exception', e?.message); }
+                                } else {
+                                    console.log('[UI][Debrid] Skipping select-files for cached torrent (fromCache=true)');
+                                }
+                                
                                 // Find current link if already cached, else wait for caching
                                 let link = Array.isArray(f.links) && f.links.length ? f.links[0] : null;
                                 if (!link) {
