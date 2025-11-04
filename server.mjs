@@ -1216,11 +1216,41 @@ export function startServer(userDataPath) {
     // --- Real-Debrid minimal adapter ---
     const RD_BASE = 'https://api.real-debrid.com/rest/1.0';
     let rdRefreshing = false;
+    // RD rate limiter: simple token bucket with 250 req/min limit
+    const rdRateLimiter = {
+        tokens: 250,
+        maxTokens: 250,
+        refillRate: 250 / 60, // 250 per minute = ~4.17 per second
+        lastRefill: Date.now(),
+        
+        async acquire() {
+            const now = Date.now();
+            const elapsed = (now - this.lastRefill) / 1000; // seconds
+            this.tokens = Math.min(this.maxTokens, this.tokens + (elapsed * this.refillRate));
+            this.lastRefill = now;
+            
+            if (this.tokens >= 1) {
+                this.tokens -= 1;
+                return;
+            }
+            
+            // Wait until we have a token
+            const waitTime = ((1 - this.tokens) / this.refillRate) * 1000;
+            console.log(`[RD][rate-limit] Waiting ${Math.ceil(waitTime)}ms for token...`);
+            await new Promise(resolve => setTimeout(resolve, waitTime));
+            this.tokens = 0; // consumed the token we waited for
+        }
+    };
+
     async function rdFetch(endpoint, opts = {}) {
         const started = Date.now();
-        const attempt = async (token) => {
+        
+        // Rate limiting: acquire token before making request
+        await rdRateLimiter.acquire();
+        
+        const attempt = async (token, retryCount = 0) => {
             const url = `${RD_BASE}${endpoint}`;
-            console.log('[RD][call]', { endpoint, method: (opts.method || 'GET').toUpperCase() });
+            console.log('[RD][call]', { endpoint, method: (opts.method || 'GET').toUpperCase(), retry: retryCount });
             
             const headers = {
                 Authorization: `Bearer ${token}`,
@@ -1240,6 +1270,24 @@ export function startServer(userDataPath) {
                 }
                 throw e;
             }
+            
+            // Handle 429 rate limit with exponential backoff
+            if (response.status === 429) {
+                if (retryCount < 3) {
+                    const backoffMs = Math.pow(2, retryCount) * 1000; // 1s, 2s, 4s
+                    console.warn(`[RD][429] Rate limited, backing off ${backoffMs}ms (attempt ${retryCount + 1}/3)`);
+                    await new Promise(resolve => setTimeout(resolve, backoffMs));
+                    // Reset rate limiter tokens to prevent cascading issues
+                    rdRateLimiter.tokens = Math.max(0, rdRateLimiter.tokens - 10);
+                    return attempt(token, retryCount + 1);
+                }
+                console.error('[RD][429] Rate limit exceeded after 3 retries');
+                const err = new Error('Real-Debrid rate limit exceeded. Please wait a moment.');
+                err.code = 'RD_RATE_LIMIT';
+                err.status = 429;
+                throw err;
+            }
+            
             return response;
         };
         
@@ -1318,9 +1366,45 @@ export function startServer(userDataPath) {
                 body: truncate(msg, 500) 
             });
             
+            // Provide specific error messages for common status codes
+            if (resp.status === 403) {
+                if (/permission_denied|account_locked|not_premium/i.test(msg)) {
+                    const err = new Error('Real-Debrid premium account is required for this feature.');
+                    err.code = 'RD_PREMIUM_REQUIRED';
+                    err.status = 403;
+                    throw err;
+                } else if (/disabled_endpoint/i.test(msg)) {
+                    const err = new Error('This Real-Debrid feature is disabled for your account.');
+                    err.code = 'RD_FEATURE_UNAVAILABLE';
+                    err.status = 403;
+                    throw err;
+                } else {
+                    const err = new Error('Real-Debrid access denied. Check your account status and IP restrictions.');
+                    err.code = 'RD_FORBIDDEN';
+                    err.status = 403;
+                    throw err;
+                }
+            }
+            
+            if (resp.status === 429) {
+                const err = new Error('Real-Debrid rate limit exceeded. Please wait before retrying.');
+                err.code = 'RD_RATE_LIMIT';
+                err.status = 429;
+                throw err;
+            }
+            
+            if (resp.status === 502 || resp.status === 503) {
+                const err = new Error('Real-Debrid service is temporarily unavailable.');
+                err.code = 'RD_UNAVAILABLE';
+                err.status = resp.status;
+                throw err;
+            }
+            
             // For OAuth tokens that failed refresh, we already cleared them above
             // For API tokens, we keep them and just report the error
-            throw new Error(`RD ${endpoint} failed: ${resp.status} ${msg}`);
+            const err = new Error(`RD ${endpoint} failed: ${resp.status} ${msg}`);
+            err.status = resp.status;
+            throw err;
         }
         
         const ct = resp.headers.get('content-type') || '';
@@ -1337,12 +1421,29 @@ export function startServer(userDataPath) {
                 }
                 return JSON.parse(text);
             } catch (e) {
-                console.error('[RD][call] JSON parse error:', e?.message);
-                throw new Error(`RD ${endpoint} returned invalid JSON: ${e?.message}`);
+                console.error('[RD][call] JSON parse error for', endpoint, ':', e?.message);
+                console.error('[RD][call] Response text:', text?.substring(0, 200));
+                const err = new Error(`RD ${endpoint} returned invalid JSON: ${e?.message}`);
+                err.code = 'RD_PARSE_ERROR';
+                err.status = 502;
+                throw err;
             }
         }
         
         return resp.text();
+    }
+
+    // Helper: extract info hash from magnet link
+    function extractInfoHash(magnet) {
+        const match = magnet.match(/[?&]xt=urn:btih:([a-fA-F0-9]{40}|[a-zA-Z2-7]{32})/i);
+        if (!match) return null;
+        let hash = match[1];
+        // Convert base32 to hex if needed (32 chars = base32, 40 chars = hex)
+        if (hash.length === 32) {
+            // For simplicity, RD API accepts both formats, so just return uppercase
+            return hash.toUpperCase();
+        }
+        return hash.toUpperCase();
     }
 
     // Helper: mark RD cached files using Instant Availability
@@ -1398,15 +1499,38 @@ export function startServer(userDataPath) {
             if (provider === 'realdebrid') {
                 console.log('[RD][availability]', { btih });
                 const data = await rdFetch(`/torrents/instantAvailability/${btih}`);
+                
+                // Handle RD API response format:
+                // - Cached torrents: { "HASH": { "rd": [{id: 1, filename: "...", filesize: 123}] } }
+                // - Uncached torrents (NEW FORMAT): {} (empty object, not {hash: []})
+                // - Not found: {} or undefined
+                
                 const node = data && (data[btih] || data[btih.toLowerCase()]);
                 let available = false;
+                let fileCount = 0;
+                
+                // Check if node exists and has actual data
                 if (node && typeof node === 'object') {
+                    // Iterate through host keys (e.g., "rd", "gp")
                     for (const key of Object.keys(node)) {
                         const arr = node[key];
-                        if (Array.isArray(arr) && arr.length > 0) { available = true; break; }
+                        if (Array.isArray(arr) && arr.length > 0) { 
+                            available = true;
+                            fileCount = arr.length;
+                            break;
+                        }
                     }
                 }
-                return res.json({ provider: 'realdebrid', available, raw: data });
+                
+                // If data is empty object {} or node doesn't exist, torrent is NOT cached
+                // This handles the new RD API behavior where uncached torrents return {}
+                if (!node || Object.keys(node).length === 0) {
+                    console.log('[RD][availability] Torrent NOT cached (empty response)');
+                    available = false;
+                }
+                
+                console.log('[RD][availability]', { btih, available, fileCount });
+                return res.json({ provider: 'realdebrid', available, fileCount, raw: data });
             }
             if (provider === 'torbox') {
                 console.log('[TB][availability]', { btih });
@@ -1464,8 +1588,69 @@ export function startServer(userDataPath) {
             const magnet = (req.body?.magnet || '').toString();
             if (!magnet.startsWith('magnet:')) return res.status(400).json({ error: 'Missing magnet' });
             const provider = (s.debridProvider || 'realdebrid').toLowerCase();
+            
             if (provider === 'realdebrid') {
-                console.log('[RD][prepare] addMagnet');
+                // Extract info hash from magnet
+                const btih = extractInfoHash(magnet);
+                
+                // Step 1: Check instant availability FIRST to avoid re-caching already cached torrents
+                if (btih) {
+                    console.log('[RD][prepare] Checking instant availability for', btih);
+                    try {
+                        const availData = await rdFetch(`/torrents/instantAvailability/${btih}`);
+                        const node = availData?.[btih] || availData?.[btih.toLowerCase()] || null;
+                        
+                        // Check if torrent is cached (has files available)
+                        let cachedFiles = [];
+                        if (node && typeof node === 'object') {
+                            // RD returns arrays per host; entries include file info
+                            for (const key of Object.keys(node)) {
+                                const arr = node[key];
+                                if (Array.isArray(arr) && arr.length > 0) {
+                                    // First array with files = the cached version
+                                    cachedFiles = arr;
+                                    break;
+                                }
+                            }
+                        }
+                        
+                        // If cached, return virtual torrent info without calling addMagnet
+                        if (cachedFiles.length > 0) {
+                            console.log('[RD][prepare] ✅ Torrent is CACHED! Skipping addMagnet, found', cachedFiles.length, 'files');
+                            
+                            // Build a virtual torrent info response that matches RD's torrent/info format
+                            const virtualInfo = {
+                                id: `cached_${btih}`, // Special ID to indicate this is from cache
+                                hash: btih,
+                                filename: `Cached Torrent ${btih.substring(0, 8)}`,
+                                status: 'downloaded', // Mark as already downloaded
+                                cached: true,
+                                files: cachedFiles.map((f, idx) => ({
+                                    id: f.id || (idx + 1),
+                                    path: f.filename || `file_${idx + 1}`,
+                                    bytes: f.filesize || 0,
+                                    selected: 0,
+                                    cached: true // Mark all files as cached
+                                }))
+                            };
+                            
+                            return res.json({ 
+                                id: virtualInfo.id, 
+                                info: virtualInfo,
+                                fromCache: true, // Flag to indicate this came from instant availability
+                                message: 'Torrent is already cached! No need to add to Real-Debrid.'
+                            });
+                        } else {
+                            console.log('[RD][prepare] Torrent not cached, proceeding with addMagnet');
+                        }
+                    } catch (e) {
+                        // If instant availability check fails, fall back to normal flow
+                        console.warn('[RD][prepare] Instant availability check failed, falling back to addMagnet:', e?.message);
+                    }
+                }
+                
+                // Step 2: If not cached (or check failed), proceed with normal addMagnet flow
+                console.log('[RD][prepare] Adding magnet to Real-Debrid');
                 const addRes = await rdFetch('/torrents/addMagnet', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -1474,14 +1659,18 @@ export function startServer(userDataPath) {
                 const id = addRes?.id;
                 if (!id) return res.status(500).json({ error: 'Failed to add magnet' });
                 console.log('[RD][prepare] added', { id });
+                
                 // DO NOT auto-select files here - wait for user to choose specific file
                 // This prevents RD from downloading all files in multi-file torrents
                 // File selection happens later via /api/debrid/select-files when user clicks
                 console.log('[RD][prepare] Skipping auto-select to prevent bulk download');
+                
                 // Fetch latest info (may already contain links for cached items)
                 let info = await rdFetch(`/torrents/info/${id}`);
+                
                 // Augment with cached flags via instant availability
                 info = await rdMarkCachedFiles(info);
+                
                 return res.json({ id, info });
             } else if (provider === 'alldebrid') {
                 console.log('[AD][prepare] magnet/upload');
@@ -1780,13 +1969,36 @@ export function startServer(userDataPath) {
             const id = (req.body?.id || '').toString();
             const files = Array.isArray(req.body?.files) ? req.body.files.join(',') : (req.body?.files || 'all').toString();
             if (!id) return res.status(400).json({ error: 'Missing id' });
+            
             console.log('[RD][select-files]', { id, files: files.split(',').slice(0,5) });
-            const out = await rdFetch(`/torrents/selectFiles/${id}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: new URLSearchParams({ files })
-            });
-            res.json({ success: true, out });
+            
+            try {
+                const out = await rdFetch(`/torrents/selectFiles/${id}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: new URLSearchParams({ files })
+                });
+                
+                res.json({ success: true, out });
+            } catch (e) {
+                // Handle specific RD errors
+                if (e?.status === 429 || e?.code === 'RD_RATE_LIMIT') {
+                    return res.status(429).json({ success: false, error: 'Real-Debrid rate limit. Please wait before retrying.', code: 'RD_RATE_LIMIT' });
+                }
+                if (e?.status === 403 || e?.code === 'RD_PREMIUM_REQUIRED' || e?.code === 'RD_FORBIDDEN') {
+                    return res.status(403).json({ success: false, error: e?.message || 'Real-Debrid premium is required.', code: e?.code || 'RD_FORBIDDEN' });
+                }
+                if (e?.status === 502 || e?.code === 'RD_PARSE_ERROR') {
+                    console.error('[RD][select-files] JSON parse error - response may be malformed');
+                    return res.status(502).json({ success: false, error: 'Real-Debrid returned invalid response. Try again.', code: 'RD_PARSE_ERROR' });
+                }
+                if (e?.code === 'RD_NETWORK' || e?.code === 'RD_UNAVAILABLE') {
+                    return res.status(503).json({ success: false, error: 'Real-Debrid is unreachable. Please try again later.', code: 'RD_UNAVAILABLE' });
+                }
+                
+                // Generic error fallback
+                throw e;
+            }
         } catch (e) {
             const msg = e?.message || '';
             console.error('[RD][select-files] error', msg);
