@@ -9471,6 +9471,7 @@ Your browser does not support the video tag.
         let currentTorrentData = null;
         let currentStreamUrl = null;
     let currentSelectedVideoName = null; // track selected torrent file name
+        let currentDebridTorrentId = null; // track active debrid torrent ID for cleanup
         let currentSubtitleUrl = null;
         let currentSubtitles = [];
     let subtitleTrack = null;
@@ -20356,6 +20357,7 @@ Your browser does not support the video tag.
                     }
                     const prepj = await prep.json();
                     const rdId = prepj.id;
+                    currentDebridTorrentId = rdId; // Track globally for cleanup
                     const fromCache = prepj.fromCache || false;
                     let info = prepj.info || null;
                     
@@ -20520,6 +20522,20 @@ Your browser does not support the video tag.
                             try {
                                 const clickedItem = event?.currentTarget;
                                 
+                                // Disconnect from current debrid torrent before switching files
+                                if (currentDebridTorrentId && currentDebridTorrentId !== rdId) {
+                                    try {
+                                        console.log('[UI][Debrid] Disconnecting from previous torrent before file switch:', currentDebridTorrentId);
+                                        await fetch(`${API_BASE_URL}/debrid/cleanup`, {
+                                            method: 'POST',
+                                            headers: { 'Content-Type': 'application/json' },
+                                            body: JSON.stringify({ id: currentDebridTorrentId })
+                                        });
+                                    } catch(e) {
+                                        console.warn('[UI][Debrid] Error cleaning up previous torrent:', e?.message);
+                                    }
+                                }
+                                
                                 // Set resume key and prefetch resume info for Debrid path
                                 try {
                                     const fileId = String(f.id || f.file || f.filename || f.path || '0');
@@ -20546,6 +20562,48 @@ Your browser does not support the video tag.
                                                     return;
                                                 }
                                             } catch {}
+                                        } else {
+                                            // Check if torrent was re-added with new ID for file switching
+                                            try {
+                                                const selectData = await selectRes.json();
+                                                if (selectData.reAddedForFileSwitch && selectData.id) {
+                                                    console.log('[UI][Debrid] Torrent re-added for file switch. Old ID:', rdId, '→ New ID:', selectData.id);
+                                                    rdId = selectData.id; // Update to new torrent ID
+                                                    currentDebridTorrentId = selectData.id; // Update global tracker
+                                                    showNotification('Switched to episode ' + (f.id || f.file) + ' - Reloading file list...');
+                                                    
+                                                    // Fully reload the file selector with new torrent info
+                                                    if (selectData.info && selectData.info.files) {
+                                                        console.log('[UI][Debrid] Reloading file selector with new torrent info');
+                                                        const newFiles = selectData.info.files;
+                                                        const newVideos = newFiles.filter(f => /\.(mp4|mkv|avi|mov)$/i.test(f.path || f.filename || ''));
+                                                        const newSubs = newFiles.filter(f => /\.(srt|vtt)$/i.test(f.path || f.filename || ''));
+                                                        
+                                                        // Update the arrays
+                                                        rdVideos.length = 0;
+                                                        rdVideos.push(...newVideos);
+                                                        rdSubs.length = 0;
+                                                        rdSubs.push(...newSubs);
+                                                        
+                                                        // Clear and re-render file list
+                                                        fileList.innerHTML = '';
+                                                        rdVideos.forEach((newFile) => {
+                                                            const item = document.createElement('div');
+                                                            item.className = 'file-item';
+                                                            item.innerHTML = `<p class="file-name">${displayName(newFile)} ${statusBadgeHtml(newFile)}</p><p class="file-size">(${displaySize(newFile)})</p>`;
+                                                            item.addEventListener('click', createFileClickHandler(newFile, rdId, fromCache, newSubs));
+                                                            fileList.appendChild(item);
+                                                        });
+                                                        
+                                                        // Update player title with torrent name
+                                                        if (selectData.info.filename) {
+                                                            playerTitle.textContent = selectData.info.filename;
+                                                        }
+                                                    }
+                                                }
+                                            } catch(e) {
+                                                console.warn('[UI][Debrid] Could not parse select-files response:', e?.message);
+                                            }
                                         }
                                     } catch(e) { console.warn('[UI][Debrid] select-files exception', e?.message); }
                                 } else {
@@ -20856,6 +20914,23 @@ Your browser does not support the video tag.
         // Close the MPV player
         async function closePlayer(showNotif = true) {
             mpvPlayerContainer.classList.remove('active');
+            
+            // Cleanup debrid torrent if one is active
+            if (currentDebridTorrentId) {
+                console.log('[UI][Debrid] Cleaning up torrent:', currentDebridTorrentId);
+                try {
+                    await fetch(`${API_BASE_URL}/debrid/cleanup`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ id: currentDebridTorrentId })
+                    });
+                    console.log('[UI][Debrid] Torrent cleanup complete');
+                } catch (e) {
+                    console.warn('[UI][Debrid] Cleanup failed:', e?.message);
+                }
+                currentDebridTorrentId = null; // Clear tracker
+            }
+            
             if (currentTorrentData) {
                 try {
                     await fetch(`${API_BASE_URL}/stop-stream?hash=${currentTorrentData.infoHash}`);
