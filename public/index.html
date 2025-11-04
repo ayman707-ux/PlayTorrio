@@ -9494,6 +9494,7 @@ Your browser does not support the video tag.
     let useDebrid = false; // global toggle for Debrid
     let debridAuth = false; // token presence depending on provider
     let debridProvider = 'realdebrid';
+    let rdAvailabilityDisabled = false; // flag when RD instant availability endpoint is disabled
         let currentCategory = 'all';
         let allTorrents = [];
         let torrentsPage = 1;
@@ -20198,7 +20199,8 @@ Your browser does not support the video tag.
                 torrentsList.appendChild(item);
 
                 // Debrid availability badge (RD only)
-                if (useDebrid && debridAuth && debridProvider === 'realdebrid' && torrent.magnet && rdAvailChecked < rdAvailBudget) {
+                // Skip if availability endpoint is disabled for account
+                if (useDebrid && debridAuth && debridProvider === 'realdebrid' && torrent.magnet && rdAvailChecked < rdAvailBudget && !rdAvailabilityDisabled) {
                     const btih = extractInfoHashFromMagnet(torrent.magnet);
                     if (btih) {
                         (async () => {
@@ -20206,6 +20208,12 @@ Your browser does not support the video tag.
                                 const r = await fetch(`${API_BASE_URL}/debrid/availability?btih=${btih}`);
                                 if (r.ok) {
                                     const j = await r.json();
+                                    if (j && j.disabled) {
+                                        // Endpoint is disabled - set flag to stop all future checks
+                                        rdAvailabilityDisabled = true;
+                                        console.warn('[UI][Debrid] Instant availability disabled for this account - stopping all checks');
+                                        return;
+                                    }
                                     if (j && j.available) {
                                         const b = item.querySelector('.cached-badge');
                                         if (b) b.style.display = 'inline-block';
@@ -20218,7 +20226,8 @@ Your browser does not support the video tag.
                                             console.warn('[UI][Debrid] availability paused due to rate limit');
                                         }
                                         if (/RD_FEATURE_UNAVAILABLE|disabled_endpoint/i.test(txt)) {
-                                            console.warn('[UI][Debrid] availability disabled for this account');
+                                            rdAvailabilityDisabled = true;
+                                            console.warn('[UI][Debrid] Instant availability disabled for this account - stopping all checks');
                                         }
                                     } catch {}
                                 }
@@ -20395,6 +20404,49 @@ Your browser does not support the video tag.
                         return `<span class="source-badge rd-cache-badge" style="${bg} margin-left:6px;">${label}</span>`;
                     };
 
+                    // Poll Debrid files info until ALL files have links (cached) or timeout
+                    async function pollForAllLinks(id, { timeoutMs = 60000, intervalMs = 2000 } = {}) {
+                        const start = Date.now();
+                        console.log('[UI][Debrid] Starting polling for file links...');
+                        while (Date.now() - start < timeoutMs) {
+                            try {
+                                const fres = await fetch(`${API_BASE_URL}/debrid/files?id=${encodeURIComponent(id)}`);
+                                if (!fres.ok) {
+                                    // If rate limited or disabled endpoint reported, stop trying
+                                    try {
+                                        const t = await fres.text();
+                                        if (/RD_RATE_LIMIT|RD_FEATURE_UNAVAILABLE/i.test(t)) return null;
+                                    } catch {}
+                                    await new Promise(r => setTimeout(r, intervalMs));
+                                    continue;
+                                }
+                                const info = await fres.json();
+                                const filesList = Array.isArray(info?.files) ? info.files : [];
+                                const videos = filesList.filter(f => /\.(mp4|mkv|avi|mov)$/i.test(f.path || f.filename || ''));
+                                
+                                // Check if any video files have links
+                                const anyHasLinks = videos.some(f => Array.isArray(f.links) && f.links.length > 0);
+                                
+                                if (anyHasLinks) {
+                                    console.log('[UI][Debrid] Files are ready! Links available.');
+                                    return filesList;
+                                }
+                                
+                                // Show progress if available
+                                const status = info?.status || '';
+                                const progress = info?.progress || 0;
+                                if (status && progress > 0) {
+                                    playerTitle.textContent = `${info?.filename || 'Downloading'} - ${progress}%`;
+                                }
+                            } catch(e) {
+                                console.warn('[UI][Debrid] Polling error:', e?.message);
+                            }
+                            await new Promise(r => setTimeout(r, intervalMs));
+                        }
+                        console.warn('[UI][Debrid] Polling timed out after', timeoutMs, 'ms');
+                        return null; // timed out
+                    }
+
                     // Poll Debrid files info until the specific file has links (cached) or timeout
                     async function waitForRdLinks(id, fileId, { timeoutMs = 30000, intervalMs = 1500 } = {}) {
                         const start = Date.now();
@@ -20421,13 +20473,53 @@ Your browser does not support the video tag.
                         }
                         return null; // timed out
                     }
-
-                    rdVideos.forEach((f) => {
-                        const item = document.createElement('div');
-                        item.className = 'file-item';
-                        item.innerHTML = `<p class="file-name">${displayName(f)} ${statusBadgeHtml(f)}</p><p class="file-size">(${displaySize(f)})</p>`;
-                        item.addEventListener('click', async () => {
+                    
+                    // Check if any files are not cached yet
+                    const hasUncachedFiles = rdVideos.some(f => !Array.isArray(f.links) || f.links.length === 0);
+                    
+                    if (hasUncachedFiles) {
+                        // Show status message
+                        playerTitle.textContent = `${info?.filename || 'Torrent'} - Preparing files...`;
+                        showNotification('Waiting for files to be ready on Real-Debrid...');
+                        
+                        // Poll for links in background
+                        (async () => {
+                            const updatedFiles = await pollForAllLinks(rdId);
+                            if (updatedFiles) {
+                                // Re-render files with updated links
+                                const updatedVideos = updatedFiles.filter(f => /\.(mp4|mkv|avi|mov)$/i.test(f.path || f.filename || ''));
+                                const updatedSubs = updatedFiles.filter(f => /\.(srt|vtt)$/i.test(f.path || f.filename || ''));
+                                
+                                // Update the rdVideos and rdSubs arrays
+                                rdVideos.length = 0;
+                                rdVideos.push(...updatedVideos);
+                                rdSubs.length = 0;
+                                rdSubs.push(...updatedSubs);
+                                
+                                // Re-render file list
+                                fileList.innerHTML = '';
+                                rdVideos.forEach((f) => {
+                                    const item = document.createElement('div');
+                                    item.className = 'file-item';
+                                    item.innerHTML = `<p class="file-name">${displayName(f)} ${statusBadgeHtml(f)}</p><p class="file-size">(${displaySize(f)})</p>`;
+                                    item.addEventListener('click', createFileClickHandler(f, rdId, fromCache, rdSubs));
+                                    fileList.appendChild(item);
+                                });
+                                
+                                playerTitle.textContent = info?.filename || providerLabel;
+                                showNotification('✅ Files are ready! Click to play.');
+                            } else {
+                                showNotification('Files are taking longer than expected. Try again later.');
+                            }
+                        })();
+                    }
+                    
+                    // Extract click handler into a function so we can reuse it
+                    function createFileClickHandler(f, rdId, fromCache, rdSubs) {
+                        return async (event) => {
                             try {
+                                const clickedItem = event?.currentTarget;
+                                
                                 // Set resume key and prefetch resume info for Debrid path
                                 try {
                                     const fileId = String(f.id || f.file || f.filename || f.path || '0');
@@ -20469,9 +20561,9 @@ Your browser does not support the video tag.
                                     const waited = await waitForRdLinks(rdId, (f.id || f.file));
                                     link = waited;
                                     // Update badge to Cached if now available
-                                    if (link) {
+                                    if (link && clickedItem) {
                                         try {
-                                            const badge = item.querySelector('.rd-cache-badge');
+                                            const badge = clickedItem.querySelector('.rd-cache-badge');
                                             if (badge) { badge.textContent = 'Cached'; badge.style.background = '#198754'; }
                                         } catch {}
                                     }
@@ -20492,7 +20584,15 @@ Your browser does not support the video tag.
                                 }
                                 const uj = await unres.json();
                                 if (!uj?.url) { console.error('[UI][Debrid] unrestrict response missing url', uj); showNotification('Invalid Debrid URL'); mpvLoading.style.display = 'none'; return; }
-                                currentStreamUrl = `${API_BASE_URL}/stream/debrid?url=${encodeURIComponent(uj.url)}`;
+                                
+                                // For MPV: Use direct CDN URL to avoid query parameter encoding issues
+                                // MPV's ffmpeg is strict about URL encoding and fails with proxied URLs
+                                // VLC and in-app player can use the proxy for better header control
+                                const cdnUrl = uj.url;
+                                
+                                // Store direct CDN URL for MPV, proxy URL for others
+                                currentStreamUrl = cdnUrl; // Direct CDN URL works for all players
+                                
                                 const fname = baseName(f.path || f.filename || '');
                                 currentSelectedVideoName = fname || displayName(f);
                                 playerTitle.textContent = currentSelectedVideoName || displayName(f);
@@ -20522,7 +20622,15 @@ Your browser does not support the video tag.
                                 console.error('[UI][Debrid] file play failed');
                                 showNotification('Failed to prepare Debrid file');
                             }
-                        });
+                        };
+                    }
+
+                    // Initial render of files
+                    rdVideos.forEach((f) => {
+                        const item = document.createElement('div');
+                        item.className = 'file-item';
+                        item.innerHTML = `<p class="file-name">${displayName(f)} ${statusBadgeHtml(f)}</p><p class="file-size">(${displaySize(f)})</p>`;
+                        item.addEventListener('click', createFileClickHandler(f, rdId, fromCache, rdSubs));
                         fileList.appendChild(item);
                     });
 
