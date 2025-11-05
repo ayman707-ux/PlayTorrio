@@ -584,6 +584,8 @@ function createWindow() {
         height: 900,
         minWidth: 1200,
         minHeight: 800,
+        frame: false,
+        titleBarStyle: 'hidden',
         webPreferences: {
             preload: path.join(__dirname, 'preload.js'),
             nodeIntegration: false,
