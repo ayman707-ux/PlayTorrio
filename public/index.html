@@ -743,7 +743,7 @@
             content: "\f00c"; /* checkmark */
         }
         
-        .done-watching-btn {
+        .movie-card .done-watching-btn {
             position: absolute;
             top: 10px;
             left: 55px; /* Position next to the add-to-list button */
@@ -768,18 +768,18 @@
             transform: scale(1);
         }
         
-        .done-watching-btn:hover {
+        .movie-card .done-watching-btn:hover {
             background-color: #17a2b8; /* info blue color */
             transform: scale(1.1);
         }
         
-        .done-watching-btn.is-done {
+        .movie-card .done-watching-btn.is-done {
             background-color: #17a2b8;
             opacity: 1;
             transform: scale(1);
         }
         
-        .done-watching-btn.is-done i:before {
+        .movie-card .done-watching-btn.is-done i:before {
             content: "\f058"; /* check-circle */
         }
         
@@ -5761,7 +5761,7 @@
         }
         
         /* New UI Done Watching Button */
-        body.ui-new .done-watching-btn {
+        body.ui-new .movie-card .done-watching-btn {
             position: absolute;
             top: 12px;
             left: 60px; /* Position next to the add-to-list button */
@@ -5788,14 +5788,14 @@
             transform: scale(1) translateY(0);
         }
         
-        body.ui-new .done-watching-btn:hover {
+        body.ui-new .movie-card .done-watching-btn:hover {
             background: #17a2b8;
             border-color: #17a2b8;
             transform: scale(1.1) translateY(0);
             box-shadow: 0 4px 15px rgba(23, 162, 184, 0.4);
         }
         
-        body.ui-new .done-watching-btn.is-done {
+        body.ui-new .movie-card .done-watching-btn.is-done {
             background: #17a2b8;
             border-color: #17a2b8;
             opacity: 1;
@@ -5803,7 +5803,7 @@
             box-shadow: 0 4px 15px rgba(23, 162, 184, 0.3);
         }
         
-        body.ui-new .done-watching-btn.is-done i:before {
+        body.ui-new .movie-card .done-watching-btn.is-done i:before {
             content: "\f058"; /* check-circle */
         }
         
@@ -8327,6 +8327,14 @@
                         <i class="fas fa-play"></i>
                         <span>Play All</span>
                     </button>
+                    <button id="album-save-all-btn" class="action-btn" title="Save all tracks to a playlist">
+                        <i class="fas fa-plus"></i>
+                        <span>Save All</span>
+                    </button>
+                    <button id="album-shuffle-btn" class="action-btn" title="Shuffle and play this album">
+                        <i class="fas fa-random"></i>
+                        <span>Shuffle</span>
+                    </button>
                     <button id="album-close-btn" class="playlist-close-btn" style="margin-left:auto;">
                         <i class="fas fa-times"></i>
                         <span>Close Album</span>
@@ -10007,11 +10015,8 @@ Can't find what you're looking for? Try a custom search
         <button class="btn-icon-only" id="traktWatchlistBtn" style="display: none;" title="Add to Watchlist">
             <i class="fas fa-plus"></i>
         </button>
-        <button class="btn-icon-only" title="Share">
-            <i class="fas fa-share-alt"></i>
-        </button>
-        <button class="btn-icon-only" title="More Info">
-            <i class="fas fa-info-circle"></i>
+        <button class="btn-icon-only done-watching-btn" id="modalDoneWatchingBtn" title="Done Watching">
+            <i class="fas fa-check"></i>
         </button>
     </div>
     <div id="watchNowNote" class="action-note" style="display:none;">
@@ -10606,6 +10611,7 @@ Your browser does not support the video tag.
         const torrentsList = document.getElementById('torrentsList');
         const notification = document.getElementById('notification');
         const watchNowBtn = document.getElementById('watchNowBtn');
+    const modalDoneWatchingBtn = document.getElementById('modalDoneWatchingBtn');
         const traktWatchlistBtn = document.getElementById('traktWatchlistBtn');
         const seasonsContainer = document.getElementById('seasonsContainer');
         const seasonSelector = document.getElementById('seasonSelector');
@@ -15845,9 +15851,9 @@ Your browser does not support the video tag.
             let playlistChooserTrack = null;
 
             // Music providers (fallback order)
-            const HIFI_BASES = [
+            let HIFI_BASES = [
+                // Monochrome.tf instances
                 'https://frankfurt.monochrome.tf',
-                'https://hifi.401658.xyz',
                 'https://virginia.monochrome.tf',
                 'https://ohio.monochrome.tf',
                 'https://singapore.monochrome.tf',
@@ -15855,13 +15861,90 @@ Your browser does not support the video tag.
                 'https://oregon.monochrome.tf',
                 'https://jakarta.monochrome.tf',
                 'https://tokyo.monochrome.tf',
-                'https://tidal.401658.xyz',
+                'https://london.monochrome.tf',
+
+                // Squid.wtf instances
+                'https://triton.squid.wtf',
+                'https://aether.squid.wtf',
+                'https://zeus.squid.wtf',
+                'https://kraken.squid.wtf',
+                'https://phoenix.squid.wtf',
+                'https://shiva.squid.wtf',
+                'https://chaos.squid.wtf',
+
+                // QQDL.site instances
                 'https://hund.qqdl.site',
                 'https://katze.qqdl.site',
                 'https://vogel.qqdl.site',
                 'https://maus.qqdl.site',
-                'https://wolf.qqdl.site'
+                'https://wolf.qqdl.site',
+
+                // UI instances that also expose the API
+                'https://monochrome.tf',
+                'https://music.binimum.org',
+                'https://tidal.squid.wtf',
+                'https://tidal.qqdl.site',
+
+                // Existing known instances
+                'https://hifi.401658.xyz',
+                'https://tidal.401658.xyz'
             ];
+
+            // HiFi ranking cache key
+            const HIFI_RANK_KEY = 'pt_hifi_rank_v1';
+
+            // Utility: unique array preserving order
+            function uniq(arr) { return Array.from(new Set(arr)); }
+
+            // Ping a base and return latency in ms (Infinity on failure)
+            async function pingHiFiBase(base, timeoutMs = 2500) {
+                const url = base.replace(/\/$/, '') + '/?_ping=' + Math.floor(Math.random() * 10000);
+                const ctrl = new AbortController();
+                const t0 = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
+                const timer = setTimeout(() => { try { ctrl.abort(); } catch(_){} }, Math.max(500, timeoutMs));
+                try {
+                    // Use no-cors GET to avoid CORS issues; we only need timing
+                    await fetch(url, { method: 'GET', mode: 'no-cors', cache: 'no-store', redirect: 'follow', signal: ctrl.signal });
+                    const t1 = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
+                    clearTimeout(timer);
+                    return Math.max(0, Math.round(t1 - t0));
+                } catch(_) {
+                    clearTimeout(timer);
+                    return Infinity;
+                }
+            }
+
+            // Rank all HiFi bases by measured latency (fastest first) and persist
+            async function rankHiFiBasesOnce() {
+                const bases = [...HIFI_BASES];
+                try {
+                    const timings = await Promise.all(bases.map(b => pingHiFiBase(b)));
+                    const ranked = bases
+                        .map((b, i) => ({ base: b, time: timings[i] }))
+                        .sort((a, b) => a.time - b.time)
+                        .map(x => x.base);
+                    HIFI_BASES = uniq(ranked);
+                    try { localStorage.setItem(HIFI_RANK_KEY, JSON.stringify({ list: HIFI_BASES, ts: Date.now() })); } catch(_) {}
+                } catch(_) { /* keep default order on error */ }
+            }
+
+            // Initialize HiFi ranking on first launch only
+            (function initHiFiRanking() {
+                try {
+                    const cached = JSON.parse(localStorage.getItem(HIFI_RANK_KEY) || 'null');
+                    if (cached && Array.isArray(cached.list) && cached.list.length) {
+                        // Prefer cached order but keep any new bases appended
+                        HIFI_BASES = uniq([ ...cached.list, ...HIFI_BASES ]);
+                        return;
+                    }
+                } catch(_) {}
+                // No cache: rank asynchronously right after load
+                if (document.readyState === 'loading') {
+                    document.addEventListener('DOMContentLoaded', () => { try { rankHiFiBasesOnce(); } catch(_) {} });
+                } else {
+                    try { rankHiFiBasesOnce(); } catch(_) {}
+                }
+            })();
 
             // Helper to fetch from music providers with fallback
             async function musicFetchJson(path) {
@@ -16301,6 +16384,36 @@ Your browser does not support the video tag.
                 });
             }
 
+            // Save All to Playlist (Album view)
+            const albumSaveAllBtn = document.getElementById('album-save-all-btn');
+            if (albumSaveAllBtn) {
+                albumSaveAllBtn.addEventListener('click', () => {
+                    if (!currentAlbumTracks || currentAlbumTracks.length === 0) {
+                        showNotification('No tracks to save', 'info');
+                        return;
+                    }
+                    // Open playlist chooser with entire album track list
+                    showPlaylistChooser([...currentAlbumTracks]);
+                });
+            }
+
+            // Shuffle (Album view)
+            const albumShuffleBtn = document.getElementById('album-shuffle-btn');
+            if (albumShuffleBtn) {
+                albumShuffleBtn.addEventListener('click', () => {
+                    if (!currentAlbumTracks || currentAlbumTracks.length === 0) {
+                        showNotification('No tracks to shuffle', 'info');
+                        return;
+                    }
+                    const shuffled = [...currentAlbumTracks];
+                    for (let i = shuffled.length - 1; i > 0; i--) {
+                        const j = Math.floor(Math.random() * (i + 1));
+                        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+                    }
+                    playAllTracks(shuffled);
+                });
+            }
+
             const myMusicPlayAllBtn = document.getElementById('my-music-play-all-btn');
             if (myMusicPlayAllBtn) {
                 myMusicPlayAllBtn.addEventListener('click', () => {
@@ -16453,6 +16566,28 @@ Your browser does not support the video tag.
                     return true;
                 }
                 return false;
+            }
+
+            // Bulk add helper: add multiple tracks, avoid duplicates, single write
+            function addTracksToPlaylist(playlistId, tracks) {
+                if (!Array.isArray(tracks) || tracks.length === 0) return { added: 0, total: 0 };
+                const pls = getPlaylists();
+                const pl = pls.find(p => p.id === playlistId);
+                if (!pl) return { added: 0, total: tracks.length };
+                if (!Array.isArray(pl.tracks)) pl.tracks = [];
+                const existing = new Set(pl.tracks.map(t => String(t.id)));
+                let added = 0;
+                tracks.forEach(t => {
+                    if (!t || t.id == null) return;
+                    const idStr = String(t.id);
+                    if (!existing.has(idStr)) {
+                        pl.tracks.push(t);
+                        existing.add(idStr);
+                        added++;
+                    }
+                });
+                if (added > 0) setPlaylists(pls);
+                return { added, total: tracks.length };
             }
 
             // Downloaded Music storage helpers
@@ -16900,6 +17035,25 @@ Your browser does not support the video tag.
                         }
                         playAllTracks(tracks);
                     });
+                    // Add Shuffle button next to Play All
+                    const shuffleBtn = document.createElement('button');
+                    shuffleBtn.id = 'playlist-shuffle-btn';
+                    shuffleBtn.className = 'action-btn';
+                    shuffleBtn.title = 'Shuffle and play this playlist';
+                    shuffleBtn.innerHTML = '<i class="fas fa-random"></i><span>Shuffle</span>';
+                    header.appendChild(shuffleBtn);
+                    shuffleBtn.addEventListener('click', () => {
+                        const tracks = (pl.tracks || []).slice();
+                        if (tracks.length === 0) {
+                            showNotification('No tracks in this playlist', 'info');
+                            return;
+                        }
+                        for (let i = tracks.length - 1; i > 0; i--) {
+                            const j = Math.floor(Math.random() * (i + 1));
+                            [tracks[i], tracks[j]] = [tracks[j], tracks[i]];
+                        }
+                        playAllTracks(tracks);
+                    });
                     
                     const closeBtn = document.createElement('button');
                     closeBtn.id = 'playlist-close-btn';
@@ -16911,8 +17065,10 @@ Your browser does not support the video tag.
                         // Clear playlist-open mode and header buttons
                         if (musicPage) musicPage.classList.remove('playlist-open');
                         const pBtn = document.getElementById('playlist-play-all-btn');
+                        const sBtn = document.getElementById('playlist-shuffle-btn');
                         const cBtn = document.getElementById('playlist-close-btn');
                         if (pBtn) pBtn.remove();
+                        if (sBtn) sBtn.remove();
                         if (cBtn) cBtn.remove();
                         // Go back to Playlists view explicitly
                         resSec.style.display = 'none';
@@ -16977,7 +17133,7 @@ Your browser does not support the video tag.
             }
 
             function showPlaylistChooser(track) {
-                // Open the modal chooser and list playlists to add into
+                // Open the modal chooser and list playlists to add into (supports single track or array)
                 playlistChooserTrack = track;
                 const pls = getPlaylists();
                 if (!playlistChooser || !playlistChooserList || !playlistChooserEmpty) return;
@@ -17002,9 +17158,18 @@ Your browser does not support the video tag.
                     playlistChooserList.querySelectorAll('.playlist-choose-btn').forEach(btn => {
                         btn.addEventListener('click', () => {
                             const pid = btn.getAttribute('data-id');
-                            const ok = addTrackToPlaylist(pid, playlistChooserTrack);
                             const name = (getPlaylists().find(p => p.id===pid)?.name) || 'playlist';
-                            showNotification(ok ? `Added to ${name}` : 'Already in playlist', ok ? 'success' : 'info');
+                            if (Array.isArray(playlistChooserTrack)) {
+                                const { added, total } = addTracksToPlaylist(pid, playlistChooserTrack);
+                                if (added > 0) {
+                                    showNotification(`Added ${added} of ${total} to ${name}`,'success');
+                                } else {
+                                    showNotification('All tracks already in playlist','info');
+                                }
+                            } else {
+                                const ok = addTrackToPlaylist(pid, playlistChooserTrack);
+                                showNotification(ok ? `Added to ${name}` : 'Already in playlist', ok ? 'success' : 'info');
+                            }
                             closePlaylistChooser();
                         });
                     });
@@ -20080,6 +20245,28 @@ Your browser does not support the video tag.
 
             // Set up Trakt watchlist button
             setupTraktWatchlistButton();
+
+            // Set up Done Watching button in modal
+            try {
+                await loadDoneWatching();
+            } catch (_) {}
+            const modalDoneBtn = document.getElementById('modalDoneWatchingBtn');
+            if (modalDoneBtn) {
+                const mediaType = currentMediaType;
+                const titleSafe = (movie.title || movie.name || '').replace(/'/g, "\\'");
+                const poster = movie.poster_path || '';
+                const year = (movie.release_date || movie.first_air_date || '').substring(0, 4);
+                const rating = movie.vote_average || 0;
+                // Wire click via inline so global updater functions can detect id/mediaType
+                modalDoneBtn.setAttribute('onclick', `toggleDoneWatching(event, ${movie.id}, '${mediaType}', '${titleSafe}', '${poster}', '${year}', ${rating})`);
+                // Initialize icon state
+                const isDone = (Array.isArray(doneWatchingCache) ? doneWatchingCache : []).some(item =>
+                    item.id === movie.id && item.media_type === mediaType && (!item.season && !item.episode)
+                );
+                modalDoneBtn.classList.toggle('is-done', !!isDone);
+                modalDoneBtn.innerHTML = `<i class="fas ${isDone ? 'fa-check-circle' : 'fa-check'}"></i>`;
+                modalDoneBtn.title = isDone ? 'Remove from Done Watching' : 'Mark as Done Watching';
+            }
 
             // Fetch additional details
             const detailsUrl = `https://api.themoviedb.org/3/${currentMediaType}/${movie.id}?api_key=${TMDB_API_KEY}&append_to_response=credits,similar`;
@@ -26240,6 +26427,8 @@ Your browser does not support the video tag.
             }
 
             await saveDoneWatching();
+            // Update any other Done Watching buttons in the DOM for this item
+            try { updateAllDoneButtons(id, mediaType); } catch (_) {}
             
             // Refresh Done Watching page if it's currently open
             if (document.getElementById('doneWatchingPage').style.display !== 'none') {
