@@ -2402,6 +2402,47 @@ if (!gotLock) {
         }
     });
 
+    // Playlist import/export dialog handlers
+    ipcMain.handle('show-save-dialog', async (event, options) => {
+        try {
+            const result = await dialog.showSaveDialog(mainWindow, options);
+            return result;
+        } catch (e) {
+            console.error('Save dialog error:', e);
+            return { canceled: true };
+        }
+    });
+
+    ipcMain.handle('show-open-dialog', async (event, options) => {
+        try {
+            const result = await dialog.showOpenDialog(mainWindow, options);
+            return result;
+        } catch (e) {
+            console.error('Open dialog error:', e);
+            return { canceled: true, filePaths: [] };
+        }
+    });
+
+    ipcMain.handle('write-file', async (event, filePath, data) => {
+        try {
+            fs.writeFileSync(filePath, data, 'utf8');
+            return { success: true };
+        } catch (e) {
+            console.error('Write file error:', e);
+            return { success: false, error: e.message };
+        }
+    });
+
+    ipcMain.handle('read-file', async (event, filePath) => {
+        try {
+            const data = fs.readFileSync(filePath, 'utf8');
+            return { success: true, data };
+        } catch (e) {
+            console.error('Read file error:', e);
+            return { success: false, error: e.message };
+        }
+    });
+
         // Initialize the auto-updater based on user preference (default ON)
         try {
             if (readAutoUpdateEnabled()) {
