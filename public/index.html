@@ -1302,6 +1302,19 @@
             border-bottom: none;
         }
 
+        /* Highlight selected episode in the modal */
+        .episode-item.selected {
+            background: rgba(255, 105, 0, 0.10);
+            border-left: 3px solid var(--vlc-orange);
+        }
+
+        /* Stronger highlight inside episode modal to ensure visibility on gradients */
+        .episode-modal .episode-item.selected {
+            background: rgba(255, 105, 0, 0.14);
+            border-left: 4px solid var(--vlc-orange);
+            box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06), 0 4px 14px rgba(255,105,0,0.25);
+        }
+
         .episode-number {
             flex-shrink: 0;
             width: 70px;
@@ -6438,6 +6451,14 @@
             background: rgba(168, 85, 247, 0.15);
             border-color: var(--vlc-orange);
             box-shadow: 0 6px 20px rgba(168, 85, 247, 0.3);
+            transform: translateY(-3px);
+        }
+        
+        /* Ensure selected episode is clearly highlighted in the new UI */
+        body.ui-new .episode-card.selected {
+            border-color: var(--vlc-orange) !important;
+            background: rgba(255, 105, 0, 0.14) !important;
+            box-shadow: 0 8px 24px rgba(255, 105, 0, 0.35);
             transform: translateY(-3px);
         }
         
@@ -20287,6 +20308,22 @@ Your browser does not support the video tag.
             modal.addEventListener('click', (e) => {
                 if (e.target === modal) modal.remove();
             });
+
+            // Add click highlighting within the episode list
+            try {
+                const list = modal.querySelector('.episode-list');
+                const rows = Array.from(list.querySelectorAll('.episode-item'));
+                // Default-select the first row for visual focus
+                if (rows[0]) rows[0].classList.add('selected');
+                rows.forEach(row => {
+                    row.addEventListener('click', (ev) => {
+                        // Ignore clicks on remove buttons
+                        if (ev.target.closest('.episode-remove-btn')) return;
+                        rows.forEach(r => r.classList.remove('selected'));
+                        row.classList.add('selected');
+                    });
+                });
+            } catch(_) {}
         }
         
         // Remove individual episode from done watching
@@ -21123,10 +21160,10 @@ Your browser does not support the video tag.
                             updateDiscordForStreaming(title, '111477', seasonNum);
                             
                             const result = await window.electronAPI.openMPVDirect(file.url);
-                            if (result.success) {
+                            if (result && result.success) {
                                 showNotification('Opening stream in MPV... Please Wait', 'success', 5000);
                             } else {
-                                showNotification('Failed to open in MPV: ' + (result.error || 'Unknown error'));
+                                showNotification('Failed to open in MPV: ' + (result?.error || 'Unknown error'));
                             }
                         } catch (error) {
                             console.error('[111477] MPV error:', error);
