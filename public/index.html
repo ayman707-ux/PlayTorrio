@@ -2496,16 +2496,23 @@
 
         /* Playlists list view buttons */
         .playlist-open-btn {
-            display: inline-flex; align-items: center; gap: 0.4rem;
-            padding: 0.45rem 0.7rem; border-radius: 10px; border: none;
+            display: inline-flex; align-items: center; gap: 0.35rem;
+            padding: 0.35rem 0.6rem; border-radius: 8px; border: none;
             background: linear-gradient(135deg, #a855f7, #ec4899); color: #fff; cursor: pointer;
-            font-weight: 700; font-size: 0.9rem;
+            font-weight: 600; font-size: 0.8rem;
+        }
+        .playlist-export-btn {
+            display: inline-flex; align-items: center; gap: 0.35rem;
+            padding: 0.35rem 0.6rem; border-radius: 8px; border: 1px solid rgba(56,189,248,0.35);
+            background: rgba(56,189,248,0.12); color: #38bdf8; cursor: pointer;
+            font-weight: 600; font-size: 0.8rem;
         }
         .playlist-delete-btn {
-            width: 38px; height: 38px; display: inline-flex; align-items: center; justify-content: center;
-            border-radius: 10px; border: 1px solid rgba(239,68,68,0.45); background: rgba(239,68,68,0.12); color: #ef4444; cursor: pointer;
+            width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center;
+            border-radius: 8px; border: 1px solid rgba(239,68,68,0.45); background: rgba(239,68,68,0.12); color: #ef4444; cursor: pointer;
+            font-size: 0.85rem;
         }
-        .playlist-open-btn:hover, .playlist-delete-btn:hover { filter: brightness(1.08); }
+        .playlist-open-btn:hover, .playlist-export-btn:hover, .playlist-delete-btn:hover { filter: brightness(1.08); }
 
         /* Close playlist header button */
         .playlist-close-btn {
@@ -8381,6 +8388,7 @@
                     <h3><i class="fas fa-list" style="color:#38bdf8"></i> Playlists</h3>
                     <div style="flex:1"></div>
                     <input id="playlist-name-input" placeholder="New playlist name" style="padding:0.5rem 0.75rem; border-radius:8px; background:var(--surface); border:1px solid var(--border); color:var(--light); width:220px;" />
+                    <button class="action-btn" id="playlist-import-btn" title="Import playlist from JSON file"><i class="fas fa-file-import"></i><span>Import</span></button>
                     <button class="action-btn" id="playlist-create-btn"><i class="fas fa-plus"></i><span>Create</span></button>
                 </div>
                 <div id="playlists-list" class="books-results-grid"></div>
@@ -8396,7 +8404,13 @@
                 <div class="books-results-header" style="align-items:center; gap:1rem;">
                     <h3><i class="fas fa-download" style="color:#10b981"></i> Downloaded Music</h3>
                     <div id="music-downloaded-count" class="books-results-count"></div>
-
+                    <div style="flex:1"></div>
+                    <button class="action-btn" id="downloaded-play-all-btn" style="background: linear-gradient(135deg, #ec4899, #a855f7); display:none;">
+                        <i class="fas fa-play"></i><span>Play All</span>
+                    </button>
+                    <button class="action-btn" id="downloaded-shuffle-btn" title="Shuffle and play all downloaded tracks" style="display:none;">
+                        <i class="fas fa-random"></i><span>Shuffle</span>
+                    </button>
                 </div>
                 <div id="music-downloaded-grid" class="books-results-grid"></div>
                 <div id="music-downloaded-empty" class="books-empty" style="display:none;">
@@ -9308,7 +9322,7 @@
         </div>
 
         <div class="trakt-container">
-            <!-- Category Selector -->
+            <!-- Category Selector and Search -->
             <div class="trakt-card">
                 <div class="trakt-card-body">
                     <div class="livetv-category-section">
@@ -9318,6 +9332,19 @@
                         <select id="livetv-category-select" class="livetv-category-dropdown">
                             <option value="football">⚽ Football</option>
                         </select>
+                    </div>
+                    <div style="margin-top: 1rem;">
+                        <div style="position: relative;">
+                            <i class="fas fa-search" style="position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); color: rgba(16,185,129,0.6); font-size: 0.9rem;"></i>
+                            <input 
+                                type="text" 
+                                id="livetv-search-input" 
+                                placeholder="Search matches (e.g., Barcelona, Real Madrid, Champions League)..." 
+                                style="width: 100%; padding: 0.75rem 1rem 0.75rem 2.75rem; border: 2px solid rgba(16,185,129,0.3); border-radius: 8px; background: rgba(16,185,129,0.05); color: var(--light); font-size: 0.95rem; transition: all 0.3s ease;"
+                                onfocus="this.style.borderColor='rgba(16,185,129,0.6)'; this.style.background='rgba(16,185,129,0.1)';"
+                                onblur="this.style.borderColor='rgba(16,185,129,0.3)'; this.style.background='rgba(16,185,129,0.05)';"
+                            >
+                        </div>
                     </div>
                 </div>
             </div>
@@ -13617,16 +13644,32 @@ Your browser does not support the video tag.
         function loadLiveTvMatches(category) {
             const grid = document.getElementById('livetv-grid');
             const empty = document.getElementById('livetv-empty');
+            const searchInput = document.getElementById('livetv-search-input');
             
             if (!grid || !empty) return;
             
+            // Get search query
+            const searchQuery = searchInput ? searchInput.value.trim().toLowerCase() : '';
+            
             // Filter matches by category
-            const filtered = liveTvMatches.filter(m => m.category && m.category.toLowerCase() === category.toLowerCase());
+            let filtered = liveTvMatches.filter(m => m.category && m.category.toLowerCase() === category.toLowerCase());
+            
+            // Apply search filter if query exists
+            if (searchQuery) {
+                filtered = filtered.filter(m => {
+                    const title = (m.title || '').toLowerCase();
+                    return title.includes(searchQuery);
+                });
+            }
             
             if (filtered.length === 0) {
                 grid.innerHTML = '';
                 empty.style.display = '';
-                empty.innerHTML = `<i class="fas fa-tv" style="font-size: 3em; opacity: 0.3;"></i><p>No matches available for ${category}</p>`;
+                if (searchQuery) {
+                    empty.innerHTML = `<i class="fas fa-search" style="font-size: 3em; opacity: 0.3;"></i><p>No matches found for "${searchQuery}"</p>`;
+                } else {
+                    empty.innerHTML = `<i class="fas fa-tv" style="font-size: 3em; opacity: 0.3;"></i><p>No matches available for ${category}</p>`;
+                }
                 return;
             }
             
@@ -16979,6 +17022,7 @@ Your browser does not support the video tag.
                             <div class="music-artist">${(pl.tracks?.length||0)} track${(pl.tracks?.length||0)!==1?'s':''}</div>
                             <div class="music-actions">
                                 <button class="playlist-open-btn" data-id="${pl.id}"><i class="fas fa-folder-open"></i> Open</button>
+                                <button class="playlist-export-btn" data-id="${pl.id}" title="Export playlist"><i class="fas fa-file-export"></i> Export</button>
                                 <button class="playlist-delete-btn" data-id="${pl.id}"><i class="fas fa-trash"></i></button>
                             </div>
                         </div>`;
@@ -16989,6 +17033,13 @@ Your browser does not support the video tag.
                     btn.addEventListener('click', (e) => {
                         const id = e.currentTarget.getAttribute('data-id');
                         openPlaylist(id);
+                    });
+                });
+                // export
+                list.querySelectorAll('.playlist-export-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const id = e.currentTarget.getAttribute('data-id');
+                        exportPlaylist(id);
                     });
                 });
                 // delete
@@ -17183,21 +17234,161 @@ Your browser does not support the video tag.
                 if (playlistChooserNewName) playlistChooserNewName.value = '';
             }
 
+            // Export playlist to JSON file
+            async function exportPlaylist(playlistId) {
+                try {
+                    const playlists = getPlaylists();
+                    const playlist = playlists.find(p => p.id === playlistId);
+                    
+                    if (!playlist) {
+                        showNotification('Playlist not found', 'error');
+                        return;
+                    }
+
+                    // Prepare playlist data for export
+                    const exportData = {
+                        name: playlist.name,
+                        tracks: playlist.tracks || [],
+                        exportedAt: new Date().toISOString(),
+                        version: '1.0'
+                    };
+
+                    const jsonData = JSON.stringify(exportData, null, 2);
+
+                    // Show save dialog
+                    if (!window.electronAPI?.showSaveDialog) {
+                        // Fallback: download as file in browser
+                        const blob = new Blob([jsonData], { type: 'application/json' });
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = `${playlist.name.replace(/[^a-z0-9]/gi, '_')}_playlist.json`;
+                        a.click();
+                        URL.revokeObjectURL(url);
+                        showNotification('Playlist exported', 'success');
+                        return;
+                    }
+
+                    const result = await window.electronAPI.showSaveDialog({
+                        title: 'Export Playlist',
+                        defaultPath: `${playlist.name.replace(/[^a-z0-9]/gi, '_')}_playlist.json`,
+                        filters: [
+                            { name: 'JSON Files', extensions: ['json'] },
+                            { name: 'All Files', extensions: ['*'] }
+                        ]
+                    });
+
+                    if (result.canceled || !result.filePath) {
+                        return;
+                    }
+
+                    // Write file
+                    const writeResult = await window.electronAPI.writeFile(result.filePath, jsonData);
+                    
+                    if (writeResult.success) {
+                        showNotification('Playlist exported successfully', 'success');
+                    } else {
+                        showNotification('Failed to export playlist: ' + (writeResult.error || 'Unknown error'), 'error');
+                    }
+                } catch (error) {
+                    console.error('Export error:', error);
+                    showNotification('Failed to export playlist', 'error');
+                }
+            }
+
+            // Import playlist from JSON file
+            async function importPlaylist() {
+                try {
+                    if (!window.electronAPI?.showOpenDialog) {
+                        showNotification('Import not supported in this environment', 'error');
+                        return;
+                    }
+
+                    const result = await window.electronAPI.showOpenDialog({
+                        title: 'Import Playlist',
+                        filters: [
+                            { name: 'JSON Files', extensions: ['json'] },
+                            { name: 'All Files', extensions: ['*'] }
+                        ],
+                        properties: ['openFile']
+                    });
+
+                    if (result.canceled || !result.filePaths || result.filePaths.length === 0) {
+                        return;
+                    }
+
+                    // Read file
+                    const readResult = await window.electronAPI.readFile(result.filePaths[0]);
+                    
+                    if (!readResult.success) {
+                        showNotification('Failed to read file: ' + (readResult.error || 'Unknown error'), 'error');
+                        return;
+                    }
+
+                    // Parse JSON
+                    let importData;
+                    try {
+                        importData = JSON.parse(readResult.data);
+                    } catch (e) {
+                        showNotification('Invalid playlist file format', 'error');
+                        return;
+                    }
+
+                    // Validate data
+                    if (!importData.name || !Array.isArray(importData.tracks)) {
+                        showNotification('Invalid playlist data', 'error');
+                        return;
+                    }
+
+                    // Check if playlist with same name exists
+                    const playlists = getPlaylists();
+                    let playlistName = importData.name;
+                    let counter = 1;
+                    
+                    while (playlists.find(p => p.name.toLowerCase() === playlistName.toLowerCase())) {
+                        playlistName = `${importData.name} (${counter})`;
+                        counter++;
+                    }
+
+                    // Create new playlist
+                    const newPlaylist = {
+                        id: 'pl_' + Math.random().toString(36).slice(2, 10),
+                        name: playlistName,
+                        tracks: importData.tracks
+                    };
+
+                    playlists.push(newPlaylist);
+                    setPlaylists(playlists);
+                    renderPlaylists();
+
+                    showNotification(`Playlist "${playlistName}" imported with ${importData.tracks.length} track${importData.tracks.length !== 1 ? 's' : ''}`, 'success');
+                } catch (error) {
+                    console.error('Import error:', error);
+                    showNotification('Failed to import playlist', 'error');
+                }
+            }
+
             function renderDownloadedMusic() {
                 const wrap = document.getElementById('music-downloaded');
                 if (!wrap) return;
                 const grid = document.getElementById('music-downloaded-grid');
                 const empty = document.getElementById('music-downloaded-empty');
                 const countEl = document.getElementById('music-downloaded-count');
+                const playAllBtn = document.getElementById('downloaded-play-all-btn');
+                const shuffleBtn = document.getElementById('downloaded-shuffle-btn');
                 const downloaded = getDownloadedMusic();
                 grid.innerHTML = '';
                 if (!downloaded.length) {
                     if (countEl) countEl.textContent = '0 items';
                     empty.style.display = '';
+                    if (playAllBtn) playAllBtn.style.display = 'none';
+                    if (shuffleBtn) shuffleBtn.style.display = 'none';
                     return;
                 }
                 empty.style.display = 'none';
                 if (countEl) countEl.textContent = `${downloaded.length} item${downloaded.length !== 1 ? 's' : ''}`;
+                if (playAllBtn) playAllBtn.style.display = '';
+                if (shuffleBtn) shuffleBtn.style.display = '';
                 downloaded.forEach(track => {
                     const card = document.createElement('div');
                     card.className = 'music-card';
@@ -17494,6 +17685,49 @@ Your browser does not support the video tag.
                 });
             }
 
+            // Downloaded Music Play All button
+            const downloadedPlayAllBtn = document.getElementById('downloaded-play-all-btn');
+            if (downloadedPlayAllBtn) {
+                downloadedPlayAllBtn.addEventListener('click', () => {
+                    const downloaded = getDownloadedMusic();
+                    if (downloaded.length === 0) {
+                        showNotification('No tracks to play', 'info');
+                        return;
+                    }
+                    const tracks = downloaded.map(t => ({
+                        id: String(t.id),
+                        title: t.title,
+                        artist: t.artist,
+                        cover: t.cover
+                    }));
+                    playAllTracks(tracks);
+                });
+            }
+
+            // Downloaded Music Shuffle button
+            const downloadedShuffleBtn = document.getElementById('downloaded-shuffle-btn');
+            if (downloadedShuffleBtn) {
+                downloadedShuffleBtn.addEventListener('click', () => {
+                    const downloaded = getDownloadedMusic();
+                    if (downloaded.length === 0) {
+                        showNotification('No tracks to play', 'info');
+                        return;
+                    }
+                    const tracks = downloaded.map(t => ({
+                        id: String(t.id),
+                        title: t.title,
+                        artist: t.artist,
+                        cover: t.cover
+                    }));
+                    // Shuffle the tracks array using Fisher-Yates algorithm
+                    for (let i = tracks.length - 1; i > 0; i--) {
+                        const j = Math.floor(Math.random() * (i + 1));
+                        [tracks[i], tracks[j]] = [tracks[j], tracks[i]];
+                    }
+                    playAllTracks(tracks);
+                });
+            }
+
             const createPlBtn = document.getElementById('playlist-create-btn');
             const plNameInput = document.getElementById('playlist-name-input');
             if (createPlBtn) {
@@ -17508,6 +17742,14 @@ Your browser does not support the video tag.
                     plNameInput.value = '';
                     renderPlaylists();
                     showNotification('Playlist created', 'success');
+                });
+            }
+
+            // Import playlist button
+            const importPlBtn = document.getElementById('playlist-import-btn');
+            if (importPlBtn) {
+                importPlBtn.addEventListener('click', () => {
+                    importPlaylist();
                 });
             }
 
@@ -19385,6 +19627,18 @@ Your browser does not support the video tag.
             if (liveTvCategorySelect) {
                 liveTvCategorySelect.addEventListener('change', () => {
                     loadLiveTvMatches(liveTvCategorySelect.value);
+                });
+            }
+            
+            const liveTvSearchInput = document.getElementById('livetv-search-input');
+            if (liveTvSearchInput) {
+                // Debounce search to avoid too many updates
+                let searchTimeout;
+                liveTvSearchInput.addEventListener('input', () => {
+                    clearTimeout(searchTimeout);
+                    searchTimeout = setTimeout(() => {
+                        loadLiveTvMatches(liveTvCategorySelect ? liveTvCategorySelect.value : 'football');
+                    }, 300);
                 });
             }
             
