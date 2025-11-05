@@ -1559,6 +1559,8 @@ if (!gotLock) {
             // Performance-friendly defaults and UA header for direct HTTP playback (111477, etc.)
             const userAgent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36';
             const args = [
+                // Ensure MPV window opens immediately and waits while the connection/buffer starts
+                '--force-window=immediate',
                 '--cache=yes',
                 '--cache-secs=30',
                 '--demuxer-readahead-secs=20',
