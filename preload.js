@@ -77,6 +77,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
   musicDownloadTrack: (track) => ipcRenderer.invoke('music-download-track', track),
   musicGetOfflineLibrary: () => ipcRenderer.invoke('music-offline-library'),
   musicDeleteOfflineTrack: (entryId) => ipcRenderer.invoke('music-offline-delete', entryId),
+  // Playlist import/export dialogs
+  showSaveDialog: (options) => ipcRenderer.invoke('show-save-dialog', options),
+  showOpenDialog: (options) => ipcRenderer.invoke('show-open-dialog', options),
+  writeFile: (filePath, data) => ipcRenderer.invoke('write-file', filePath, data),
+  readFile: (filePath) => ipcRenderer.invoke('read-file', filePath),
   // WebChimera exposure (optional, may be null if not installed)
   wcjs: {
     available: Boolean(wcRendererMod),
