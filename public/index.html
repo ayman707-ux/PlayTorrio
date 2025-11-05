@@ -44,6 +44,84 @@
             overflow-x: hidden;
         }
 
+        /* Custom Title Bar */
+        .custom-title-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 32px;
+            background: linear-gradient(135deg, rgba(42, 24, 71, 0.95) 0%, rgba(18, 10, 31, 0.95) 100%);
+            border-bottom: 1px solid rgba(168, 85, 247, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 12px;
+            z-index: 999999;
+            -webkit-app-region: drag;
+            user-select: none;
+        }
+
+        /* Keep full-screen overlays below the title bar in the new UI */
+        body.ui-new .wcjs-player-container { top: 32px !important; height: calc(100vh - 32px) !important; }
+        
+        .title-bar-left {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--light);
+        }
+        
+        .title-bar-title {
+            opacity: 0.9;
+        }
+        
+        .title-bar-controls {
+            display: flex;
+            gap: 4px;
+            -webkit-app-region: no-drag;
+        }
+        
+        .title-bar-btn {
+            width: 46px;
+            height: 32px;
+            border: none;
+            background: transparent;
+            color: rgba(255, 255, 255, 0.8);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            font-size: 10px;
+            position: relative;
+        }
+        
+        .title-bar-btn svg {
+            width: 10px;
+            height: 10px;
+        }
+        
+        .title-bar-btn:hover {
+            background: rgba(168, 85, 247, 0.2);
+        }
+        
+        .title-bar-btn.title-bar-close:hover {
+            background: #dc3545;
+            color: white;
+        }
+        
+        /* Adjust body padding for title bar */
+        body.ui-new {
+            padding-top: 32px;
+        }
+        
+        body.ui-new header {
+            top: 32px;
+        }
+
         /* Global performance profile (safe visual downgrades only) */
         body.perf-mode * { transition: none !important; animation: none !important; }
         body.perf-mode #updateOverlay { backdrop-filter: none !important; }
@@ -5799,6 +5877,278 @@
             transform: translateY(-2px);
         }
         
+        /* ==== HERO SECTION ==== */
+        body.ui-new .hero-section {
+            position: relative;
+            height: 80vh;
+            min-height: 600px;
+            margin: -2rem -1rem 3rem -1rem;
+            overflow: hidden;
+            border-radius: 0 0 20px 20px;
+        }
+        
+        body.ui-new .hero-backdrop {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            filter: brightness(0.4);
+        }
+        
+        body.ui-new .hero-gradient {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 60%;
+            background: linear-gradient(to top, var(--dark) 0%, transparent 100%);
+        }
+        
+        body.ui-new .hero-content {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 4rem 3rem;
+            z-index: 2;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        body.ui-new .hero-title {
+            font-size: 4rem;
+            font-weight: 900;
+            margin-bottom: 1.5rem;
+            text-shadow: 2px 2px 20px rgba(0, 0, 0, 0.8);
+            line-height: 1.1;
+            max-width: 800px;
+        }
+        
+        body.ui-new .hero-meta {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+            margin-bottom: 1.5rem;
+            font-size: 1.2rem;
+        }
+        
+        body.ui-new .hero-rating {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: rgba(168, 85, 247, 0.9);
+            padding: 0.5rem 1rem;
+            border-radius: 30px;
+            font-weight: 700;
+            color: white;
+        }
+        
+        body.ui-new .hero-year, body.ui-new .hero-runtime {
+            color: var(--tertiary);
+            font-weight: 600;
+        }
+        
+        body.ui-new .hero-overview {
+            font-size: 1.2rem;
+            line-height: 1.8;
+            max-width: 700px;
+            margin-bottom: 2rem;
+            text-shadow: 1px 1px 10px rgba(0, 0, 0, 0.8);
+            color: rgba(255, 255, 255, 0.95);
+        }
+        
+        body.ui-new .hero-buttons {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+        
+        body.ui-new .hero-btn {
+            padding: 1rem 2.5rem;
+            border-radius: 8px;
+            border: none;
+            font-size: 1.2rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        
+        body.ui-new .hero-btn-primary {
+            background: linear-gradient(135deg, var(--vlc-orange) 0%, #9333ea 100%);
+            color: white;
+            box-shadow: 0 6px 20px rgba(168, 85, 247, 0.5);
+        }
+        
+        body.ui-new .hero-btn-primary:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 30px rgba(168, 85, 247, 0.7);
+        }
+        
+        body.ui-new .hero-btn-secondary {
+            background: rgba(255, 255, 255, 0.15);
+            color: white;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            backdrop-filter: blur(10px);
+        }
+        
+        body.ui-new .hero-btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.25);
+            border-color: rgba(255, 255, 255, 0.5);
+            transform: translateY(-3px);
+        }
+        
+        /* ==== HORIZONTAL SLIDERS ==== */
+        body.ui-new .slider-section {
+            margin-bottom: 3rem;
+        }
+        
+        body.ui-new .slider-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1.5rem;
+            padding: 0 1rem;
+        }
+        
+        body.ui-new .slider-title {
+            font-size: 1.8rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        
+        body.ui-new .slider-title i {
+            color: var(--vlc-orange);
+        }
+        
+        body.ui-new .slider-nav {
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        body.ui-new .slider-arrow {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: rgba(168, 85, 247, 0.2);
+            border: 1px solid rgba(168, 85, 247, 0.3);
+            color: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+        
+        body.ui-new .slider-arrow:hover {
+            background: var(--vlc-orange);
+            border-color: var(--vlc-orange);
+            transform: scale(1.1);
+        }
+        
+        body.ui-new .slider-arrow.disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+        
+        body.ui-new .slider-container {
+            position: relative;
+            overflow-x: auto;
+            overflow-y: hidden;
+            padding: 0 1rem;
+            scrollbar-width: none; /* Firefox */
+            -ms-overflow-style: none; /* IE/Edge */
+        }
+        
+        body.ui-new .slider-container::-webkit-scrollbar {
+            display: none; /* Chrome/Safari */
+        }
+        
+        body.ui-new .slider-track {
+            display: flex;
+            gap: 1rem;
+            padding-bottom: 1rem;
+        }
+        
+        body.ui-new .slider-item {
+            flex: 0 0 260px;
+            width: 260px;
+            background: var(--card-bg);
+            border: 1px solid rgba(168, 85, 247, 0.2);
+            border-radius: 12px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+        }
+        
+        body.ui-new .slider-item:hover {
+            transform: scale(1.05);
+            z-index: 10;
+            box-shadow: 0 12px 40px rgba(168, 85, 247, 0.4);
+            border-color: var(--vlc-orange);
+        }
+        
+        body.ui-new .slider-poster {
+            width: 100%;
+            height: 375px;
+            object-fit: cover;
+            display: block;
+        }
+        
+        body.ui-new .slider-info {
+            padding: 1rem;
+            background: linear-gradient(to top, rgba(0, 0, 0, 0.9), transparent);
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.3s ease;
+        }
+        
+        body.ui-new .slider-item:hover .slider-info {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        
+        body.ui-new .slider-item-title {
+            font-weight: 700;
+            font-size: 1rem;
+            margin-bottom: 0.5rem;
+            color: white;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        
+        body.ui-new .slider-item-meta {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 0.9rem;
+        }
+        
+        body.ui-new .slider-rating {
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+            color: var(--vlc-orange);
+            font-weight: 700;
+        }
+        
+        body.ui-new .slider-year {
+            color: var(--tertiary);
+        }
+        
         /* Settings Modal */
         body.ui-new .settings-content {
             background: linear-gradient(135deg, rgba(42, 24, 71, 0.95) 0%, rgba(18, 10, 31, 0.95) 100%);
@@ -5833,6 +6183,834 @@
         
         body.ui-new ::-webkit-scrollbar-thumb:hover {
             background: linear-gradient(180deg, #9333ea 0%, var(--vlc-orange) 100%);
+        }
+        
+        /* ==== ENHANCED MODAL STYLES (NEW UI) ==== */
+        body.ui-new .modal-header {
+            height: 500px;
+            position: relative;
+        }
+        
+        body.ui-new .modal-backdrop {
+            filter: brightness(0.3);
+        }
+        
+        body.ui-new .modal-header::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 50%;
+            background: linear-gradient(to top, var(--card-bg) 0%, transparent 100%);
+        }
+        
+        body.ui-new .modal-header-content {
+            z-index: 2;
+            padding: 3rem;
+        }
+        
+        body.ui-new .modal-poster {
+            width: 220px;
+            height: 330px;
+            border-radius: 12px;
+            border: 3px solid rgba(168, 85, 247, 0.3);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.6);
+        }
+        
+        body.ui-new .modal-title {
+            font-size: 3rem;
+            font-weight: 900;
+            text-shadow: 2px 2px 15px rgba(0, 0, 0, 0.8);
+            margin-bottom: 1rem;
+        }
+        
+        body.ui-new .modal-rating {
+            background: linear-gradient(135deg, var(--vlc-orange) 0%, #9333ea 100%);
+            padding: 0.5rem 1rem;
+            border-radius: 30px;
+            font-size: 1.1rem;
+            box-shadow: 0 4px 15px rgba(168, 85, 247, 0.4);
+        }
+        
+        body.ui-new .modal-tagline {
+            font-size: 1.2rem;
+            color: var(--tertiary);
+            font-style: italic;
+        }
+        
+        body.ui-new .modal-body {
+            background: var(--card-bg);
+            padding: 3rem;
+        }
+        
+        body.ui-new .modal-section-title {
+            font-size: 1.8rem;
+            margin-bottom: 1.5rem;
+            margin-top: 2rem;
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 2px solid rgba(168, 85, 247, 0.3);
+        }
+        
+        body.ui-new .modal-section-title:first-of-type {
+            margin-top: 0;
+        }
+        
+        body.ui-new .modal-section-title i {
+            color: var(--vlc-orange);
+        }
+        
+        body.ui-new .modal-overview {
+            font-size: 1.1rem;
+            line-height: 1.8;
+            color: rgba(255, 255, 255, 0.9);
+        }
+        
+        /* Enhanced Modal Action Buttons */
+        body.ui-new .modal-actions-container {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+        
+        body.ui-new .primary-actions {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+        
+        body.ui-new .btn-enhanced {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem 1.5rem;
+            border-radius: 12px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+            min-width: 200px;
+        }
+        
+        body.ui-new .btn-enhanced::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), transparent);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        
+        body.ui-new .btn-enhanced:hover::before {
+            opacity: 1;
+        }
+        
+        body.ui-new .btn-enhanced-primary {
+            background: linear-gradient(135deg, var(--vlc-orange) 0%, #9333ea 100%);
+            box-shadow: 0 8px 25px rgba(168, 85, 247, 0.4);
+            color: white;
+        }
+        
+        body.ui-new .btn-enhanced-primary:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 35px rgba(168, 85, 247, 0.6);
+        }
+        
+        body.ui-new .btn-enhanced-secondary {
+            background: rgba(168, 85, 247, 0.15);
+            border: 2px solid rgba(168, 85, 247, 0.3);
+            color: white;
+        }
+        
+        body.ui-new .btn-enhanced-secondary:hover {
+            background: rgba(168, 85, 247, 0.25);
+            border-color: var(--vlc-orange);
+            transform: translateY(-3px);
+        }
+        
+        body.ui-new .btn-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+        }
+        
+        body.ui-new .btn-content {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 0.25rem;
+        }
+        
+        body.ui-new .btn-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            line-height: 1;
+        }
+        
+        body.ui-new .btn-subtitle {
+            font-size: 0.85rem;
+            opacity: 0.8;
+            line-height: 1;
+        }
+        
+        body.ui-new .secondary-actions {
+            display: flex;
+            gap: 0.75rem;
+        }
+        
+        body.ui-new .btn-icon-only {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            border: 2px solid rgba(168, 85, 247, 0.3);
+            background: rgba(168, 85, 247, 0.1);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 1.1rem;
+        }
+        
+        body.ui-new .btn-icon-only:hover {
+            background: var(--vlc-orange);
+            border-color: var(--vlc-orange);
+            transform: scale(1.1);
+        }
+        
+        body.ui-new .action-note {
+            padding: 0.75rem 1rem;
+            background: rgba(168, 85, 247, 0.1);
+            border-left: 3px solid var(--vlc-orange);
+            border-radius: 8px;
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 0.95rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        body.ui-new .action-note i {
+            color: var(--vlc-orange);
+        }
+        
+        body.ui-new .cast-card {
+            background: rgba(168, 85, 247, 0.1);
+            border: 1px solid rgba(168, 85, 247, 0.2);
+            border-radius: 12px;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+        
+        body.ui-new .cast-card:hover {
+            border-color: var(--vlc-orange);
+            box-shadow: 0 8px 25px rgba(168, 85, 247, 0.3);
+            transform: translateY(-5px);
+        }
+        
+        body.ui-new .cast-img {
+            border-radius: 12px 12px 0 0;
+        }
+        
+        body.ui-new .episode-card {
+            background: rgba(168, 85, 247, 0.08);
+            border: 1px solid rgba(168, 85, 247, 0.2);
+            border-radius: 12px;
+            transition: all 0.3s ease;
+        }
+        
+        body.ui-new .episode-card:hover {
+            background: rgba(168, 85, 247, 0.15);
+            border-color: var(--vlc-orange);
+            box-shadow: 0 6px 20px rgba(168, 85, 247, 0.3);
+            transform: translateY(-3px);
+        }
+        
+        body.ui-new .season-btn {
+            background: rgba(168, 85, 247, 0.15);
+            border: 1px solid rgba(168, 85, 247, 0.3);
+            transition: all 0.3s ease;
+        }
+        
+        body.ui-new .season-btn:hover {
+            background: rgba(168, 85, 247, 0.25);
+            border-color: var(--vlc-orange);
+            transform: translateY(-2px);
+        }
+        
+        body.ui-new .season-btn.active {
+            background: linear-gradient(135deg, var(--vlc-orange) 0%, #9333ea 100%);
+            border-color: transparent;
+            box-shadow: 0 4px 15px rgba(168, 85, 247, 0.5);
+        }
+        
+        body.ui-new .torrent-item {
+            background: rgba(168, 85, 247, 0.08);
+            border: 1px solid rgba(168, 85, 247, 0.2);
+            border-radius: 12px;
+            transition: all 0.3s ease;
+        }
+        
+        body.ui-new .torrent-item:hover {
+            background: rgba(168, 85, 247, 0.15);
+            border-color: var(--vlc-orange);
+            box-shadow: 0 6px 20px rgba(168, 85, 247, 0.25);
+        }
+        
+        /* Enhanced Torrents Section */
+        body.ui-new .torrents-container {
+            margin-top: 3rem;
+            padding-top: 2rem;
+            border-top: 2px solid rgba(168, 85, 247, 0.2);
+        }
+        
+        body.ui-new .torrents-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+        
+        body.ui-new .provider-buttons {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
+            overflow-x: auto;
+            overflow-y: hidden;
+            padding-bottom: 0.5rem;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(168, 85, 247, 0.5) rgba(168, 85, 247, 0.1);
+        }
+        
+        body.ui-new .provider-buttons::-webkit-scrollbar {
+            height: 6px;
+        }
+        
+        body.ui-new .provider-buttons::-webkit-scrollbar-track {
+            background: rgba(168, 85, 247, 0.1);
+            border-radius: 3px;
+        }
+        
+        body.ui-new .provider-buttons::-webkit-scrollbar-thumb {
+            background: rgba(168, 85, 247, 0.5);
+            border-radius: 3px;
+        }
+        
+        body.ui-new .provider-buttons::-webkit-scrollbar-thumb:hover {
+            background: rgba(168, 85, 247, 0.7);
+        }
+        
+        body.ui-new .provider-btn {
+            padding: 0.75rem 1.25rem;
+            border-radius: 10px;
+            border: 2px solid rgba(168, 85, 247, 0.3);
+            background: rgba(168, 85, 247, 0.1);
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+        
+        body.ui-new .provider-btn:hover {
+            background: rgba(168, 85, 247, 0.2);
+            border-color: var(--vlc-orange);
+            transform: translateY(-2px);
+        }
+        
+        body.ui-new .provider-btn.active {
+            background: linear-gradient(135deg, var(--vlc-orange) 0%, #9333ea 100%);
+            border-color: transparent;
+            box-shadow: 0 4px 15px rgba(168, 85, 247, 0.5);
+        }
+        
+        body.ui-new .torrents-list {
+            display: grid;
+            gap: 1rem;
+        }
+        
+        body.ui-new .torrent-item {
+            background: rgba(168, 85, 247, 0.08);
+            border: 1px solid rgba(168, 85, 247, 0.2);
+            border-radius: 8px;
+            padding: 0.75rem 1rem;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+        }
+        
+        body.ui-new .torrent-item:hover {
+            background: rgba(168, 85, 247, 0.15);
+            border-color: var(--vlc-orange);
+            box-shadow: 0 3px 12px rgba(168, 85, 247, 0.2);
+            transform: translateX(3px);
+        }
+        
+        body.ui-new .torrent-title {
+            font-weight: 600;
+            font-size: 0.95rem;
+            color: white;
+            flex: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        
+        body.ui-new .torrent-meta {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            font-size: 0.85rem;
+        }
+        
+        body.ui-new .torrent-badge {
+            padding: 0.25rem 0.6rem;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 0.8rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            white-space: nowrap;
+        }
+        
+        body.ui-new .torrent-badge.seeders {
+            background: rgba(34, 197, 94, 0.2);
+            border: 1px solid rgba(34, 197, 94, 0.4);
+            color: #22c55e;
+        }
+        
+        body.ui-new .torrent-badge.leechers {
+            background: rgba(239, 68, 68, 0.2);
+            border: 1px solid rgba(239, 68, 68, 0.4);
+            color: #ef4444;
+        }
+        
+        body.ui-new .torrent-badge.size {
+            background: rgba(59, 130, 246, 0.2);
+            border: 1px solid rgba(59, 130, 246, 0.4);
+            color: #3b82f6;
+        }
+        
+        body.ui-new .torrent-actions {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+        
+        body.ui-new .torrent-actions button {
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            border: none;
+            font-weight: 600;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            white-space: nowrap;
+        }
+        
+        body.ui-new .torrent-actions .btn-play {
+            background: linear-gradient(135deg, var(--vlc-orange) 0%, #9333ea 100%);
+            color: white;
+        }
+        
+        body.ui-new .torrent-actions .btn-play:hover {
+            transform: scale(1.03);
+            box-shadow: 0 3px 12px rgba(168, 85, 247, 0.4);
+        }
+        
+        body.ui-new .torrents-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        
+        /* Enhanced Filter Controls */
+        body.ui-new .filter-controls {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            margin-bottom: 1.5rem;
+            align-items: center;
+        }
+        
+        body.ui-new .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        
+        body.ui-new .filter-group label {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.8);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        body.ui-new .filter-group select,
+        body.ui-new .filter-group input {
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            border: 2px solid rgba(168, 85, 247, 0.3);
+            background: rgba(168, 85, 247, 0.1);
+            color: white;
+            font-size: 0.95rem;
+            transition: all 0.3s ease;
+            min-width: 150px;
+        }
+        
+        body.ui-new .filter-group select:focus,
+        body.ui-new .filter-group input:focus {
+            outline: none;
+            border-color: var(--vlc-orange);
+            background: rgba(168, 85, 247, 0.15);
+            box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.1);
+        }
+        
+        body.ui-new .filter-group select option {
+            background: #1a1a1a;
+            color: white;
+        }
+        
+        body.ui-new .search-torrents-input {
+            flex: 1;
+            min-width: 250px;
+        }
+        
+        /* Audio Issues Notice */
+        body.ui-new .audio-issues-notice {
+            background: linear-gradient(135deg, rgba(168, 85, 247, 0.15) 0%, rgba(147, 51, 234, 0.15) 100%);
+            border: 2px solid rgba(168, 85, 247, 0.3);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin: 1.5rem 0;
+            border-left: 4px solid var(--vlc-orange);
+        }
+        
+        body.ui-new .audio-issues-notice h4 {
+            color: var(--vlc-orange);
+            margin-bottom: 0.5rem;
+            font-size: 1.1rem;
+        }
+        
+        body.ui-new .audio-issues-notice p {
+            color: rgba(255, 255, 255, 0.9);
+            line-height: 1.6;
+        }
+        
+        /* Enhanced Music Section */
+        body.ui-new #music-page .page-header-enhanced {
+            background: linear-gradient(135deg, rgba(236, 72, 153, 0.15) 0%, rgba(168, 85, 247, 0.15) 100%);
+            border: 2px solid rgba(236, 72, 153, 0.3);
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        
+        body.ui-new #music-page .page-title-section {
+            margin-bottom: 1rem;
+        }
+        
+        body.ui-new #music-page .section-title i {
+            font-size: 1.5rem;
+        }
+        
+        body.ui-new #music-page .page-actions {
+            display: flex;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+        }
+        
+        body.ui-new #music-page .action-btn {
+            background: rgba(236, 72, 153, 0.1);
+            border: 2px solid rgba(236, 72, 153, 0.3);
+            border-radius: 10px;
+            padding: 0.65rem 1.25rem;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+        
+        body.ui-new #music-page .action-btn i {
+            font-size: 1rem;
+        }
+        
+        body.ui-new #music-page .action-btn:hover {
+            background: linear-gradient(135deg, #ec4899 0%, #a855f7 100%);
+            border-color: transparent;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(236, 72, 153, 0.35);
+        }
+        
+        body.ui-new #music-page .books-search-section {
+            margin-bottom: 2.5rem;
+        }
+        
+        body.ui-new #music-page .books-search-bar {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            background: rgba(236, 72, 153, 0.1);
+            border: 2px solid rgba(236, 72, 153, 0.3);
+            border-radius: 12px;
+            padding: 1rem 1.5rem;
+        }
+        
+        body.ui-new #music-page #music-search-input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: white;
+            font-size: 1.05rem;
+            outline: none;
+        }
+        
+        body.ui-new #music-page .books-search-button {
+            padding: 0.75rem 1.5rem;
+            border-radius: 10px;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        body.ui-new #music-page #music-search-btn {
+            background: linear-gradient(135deg, #ec4899 0%, #a855f7 100%);
+            color: white;
+        }
+        
+        body.ui-new #music-page #music-album-search-btn {
+            background: linear-gradient(135deg, #38bdf8 0%, #0ea5e9 100%);
+            color: white;
+        }
+        
+        body.ui-new #music-page .books-search-button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 15px rgba(236, 72, 153, 0.5);
+        }
+        
+        body.ui-new #music-page .books-results-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 1.5rem;
+        }
+        
+        body.ui-new #music-page .music-card,
+        body.ui-new #music-page .album-card {
+            background: rgba(236, 72, 153, 0.08);
+            border: 1px solid rgba(236, 72, 153, 0.2);
+            border-radius: 12px;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        body.ui-new #music-page .music-card:hover,
+        body.ui-new #music-page .album-card:hover {
+            background: rgba(236, 72, 153, 0.15);
+            border-color: #ec4899;
+            transform: translateY(-5px);
+            box-shadow: 0 12px 30px rgba(236, 72, 153, 0.3);
+        }
+        
+        body.ui-new #music-page .album-tracks-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            margin-top: 1.5rem;
+        }
+        
+        body.ui-new #music-page .track-item {
+            background: rgba(236, 72, 153, 0.08);
+            border: 1px solid rgba(236, 72, 153, 0.2);
+            border-radius: 10px;
+            padding: 1rem 1.25rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            transition: all 0.3s ease;
+        }
+        
+        body.ui-new #music-page .track-item:hover {
+            background: rgba(236, 72, 153, 0.15);
+            border-color: #ec4899;
+            transform: translateX(5px);
+        }
+        
+        body.ui-new #music-page .books-empty {
+            text-align: center;
+            padding: 4rem 2rem;
+            background: rgba(236, 72, 153, 0.05);
+            border: 2px dashed rgba(236, 72, 153, 0.3);
+            border-radius: 16px;
+        }
+        
+        body.ui-new #music-page .books-empty-icon {
+            font-size: 4rem;
+            color: #ec4899;
+            margin-bottom: 1.5rem;
+        }
+        
+        body.ui-new #music-page .books-loading {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 4rem 2rem;
+            gap: 1rem;
+        }
+        
+        body.ui-new #music-page .books-loading-spinner {
+            font-size: 3rem;
+            color: #ec4899;
+        }
+        
+        body.ui-new #music-page .playlist-close-btn {
+            background: rgba(239, 68, 68, 0.15);
+            border: 2px solid rgba(239, 68, 68, 0.3);
+            border-radius: 10px;
+            padding: 0.75rem 1.25rem;
+            color: #ef4444;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-weight: 600;
+        }
+        
+        body.ui-new #music-page .playlist-close-btn:hover {
+            background: rgba(239, 68, 68, 0.25);
+            transform: scale(1.05);
+        }
+        
+        /* Enhanced Books Section */
+        body.ui-new #books-page .page-header-enhanced {
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(168, 85, 247, 0.15) 100%);
+            border: 2px solid rgba(59, 130, 246, 0.3);
+            border-radius: 16px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+        
+        body.ui-new #books-page .books-search-bar {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            background: rgba(59, 130, 246, 0.1);
+            border: 2px solid rgba(59, 130, 246, 0.3);
+            border-radius: 12px;
+            padding: 1rem 1.5rem;
+        }
+        
+        body.ui-new #books-page #books-search-input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: white;
+            font-size: 1.05rem;
+            outline: none;
+        }
+        
+        body.ui-new #books-page .books-search-button {
+            padding: 0.75rem 1.5rem;
+            border-radius: 10px;
+            border: none;
+            background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        body.ui-new #books-page .books-search-button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.5);
+        }
+        
+        body.ui-new #books-page .books-results-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 1.5rem;
+        }
+        
+        body.ui-new #books-page .book-card {
+            background: rgba(59, 130, 246, 0.08);
+            border: 1px solid rgba(59, 130, 246, 0.2);
+            border-radius: 12px;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        body.ui-new #books-page .book-card:hover {
+            background: rgba(59, 130, 246, 0.15);
+            border-color: #3b82f6;
+            transform: translateY(-5px);
+            box-shadow: 0 12px 30px rgba(59, 130, 246, 0.3);
+        }
+        
+        body.ui-new #books-page .books-empty {
+            text-align: center;
+            padding: 4rem 2rem;
+            background: rgba(59, 130, 246, 0.05);
+            border: 2px dashed rgba(59, 130, 246, 0.3);
+            border-radius: 16px;
+        }
+        
+        body.ui-new #books-page .books-empty-icon {
+            font-size: 4rem;
+            color: #3b82f6;
+            margin-bottom: 1.5rem;
+        }
+        
+        body.ui-new #books-page .books-loading {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 4rem 2rem;
+            gap: 1rem;
+        }
+        
+        body.ui-new #books-page .books-loading-spinner {
+            font-size: 3rem;
+            color: #3b82f6;
         }
         
         /* Settings Page Styles */
@@ -6063,7 +7241,25 @@
     <!-- Google Cast SDK -->
     <script src="https://www.gstatic.com/cv/js/sender/v1/cast_sender.js?loadCastFramework=1"></script>
 </head>
-<body>
+<body class="ui-new">
+<!-- Custom Title Bar -->
+<div class="custom-title-bar" id="customTitleBar">
+    <div class="title-bar-left">
+        <i class="fas fa-play-circle" style="color: var(--vlc-orange);"></i>
+        <span class="title-bar-title">PlayTorrio</span>
+    </div>
+    <div class="title-bar-controls">
+        <button class="title-bar-btn" id="minimizeBtn" title="Minimize">
+            <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 12 12" fill="currentColor"><rect x="1" y="5.5" width="10" height="1"/></svg>
+        </button>
+        <button class="title-bar-btn" id="maximizeBtn" title="Maximize">
+            <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1"><rect x="2" y="2" width="8" height="8"/></svg>
+        </button>
+        <button class="title-bar-btn title-bar-close" id="closeBtn" title="Close">
+            <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1"><path d="M2 2 L10 10 M10 2 L2 10"/></svg>
+        </button>
+    </div>
+</div>
 <!-- API Setup Modal -->
 <div class="api-setup-modal" id="apiSetupModal">
     <div class="api-setup-content">
@@ -6862,24 +8058,40 @@
 <main>
     <!-- Home Page -->
     <div id="homePage">
-        <!-- Enhanced Title Bar with Stats -->
-        <div class="page-header-enhanced">
-            <div class="page-title-section">
-                <h2 class="section-title" id="homePageTitle">
-                    <i class="fas fa-fire" id="homePageIcon"></i> <span id="homePageText">Trending Now</span>
-                </h2>
-                <p class="page-subtitle">Discover the most popular content this week</p>
+        <!-- Hero Section (New UI Only) -->
+        <div class="hero-section" id="heroSection" style="display: none;">
+            <img class="hero-backdrop" id="heroBackdrop" src="" alt="">
+            <div class="hero-gradient"></div>
+            <div class="hero-content">
+                <h1 class="hero-title" id="heroTitle"></h1>
+                <div class="hero-meta">
+                    <div class="hero-rating" id="heroRating" style="display: none;">
+                        <i class="fas fa-star"></i>
+                        <span id="heroRatingValue"></span>
+                    </div>
+                    <span class="hero-year" id="heroYear"></span>
+                    <span class="hero-runtime" id="heroRuntime" style="display: none;"></span>
+                </div>
+                <p class="hero-overview" id="heroOverview"></p>
+                <div class="hero-buttons">
+                    <button class="hero-btn hero-btn-primary" id="heroPlayBtn">
+                        <i class="fas fa-play"></i>
+                        Watch Now
+                    </button>
+                    <button class="hero-btn hero-btn-secondary" id="heroInfoBtn">
+                        <i class="fas fa-info-circle"></i>
+                        More Info
+                    </button>
+                </div>
             </div>
-            <div class="page-actions">
-                <button class="action-btn" id="sortBtn">
-                    <i class="fas fa-sort-amount-down"></i>
-                    <span>Sort</span>
-                </button>
-                <button class="action-btn" id="filterBtn">
-                    <i class="fas fa-filter"></i>
-                    <span>Filter</span>
-                </button>
-            </div>
+        </div>
+        
+        <!-- Back to Home Button (for search results) -->
+        <div id="backToHomeBtn" style="display: none; margin-bottom: 2rem;">
+            <button style="display: flex; align-items: center; gap: 0.75rem; padding: 1rem 2rem; background: linear-gradient(135deg, var(--vlc-orange) 0%, #ff8c42 100%); border: none; border-radius: 12px; color: white; font-size: 1.1rem; font-weight: 600; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(255, 111, 0, 0.3);" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 20px rgba(255, 111, 0, 0.5)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 15px rgba(255, 111, 0, 0.3)'">
+                <i class="fas fa-arrow-left" style="font-size: 1.2rem;"></i>
+                <span>Back to Home</span>
+            </button>
         </div>
         
         <div class="categories">
@@ -6893,6 +8105,94 @@
                 <i class="fas fa-tv"></i> TV Shows
             </div>
         </div>
+        
+        <!-- Content Sliders (New UI Only) -->
+        <div id="slidersContainer" style="display: none;">
+            <!-- Trending Slider -->
+            <div class="slider-section">
+                <div class="slider-header">
+                    <h2 class="slider-title">
+                        <i class="fas fa-fire"></i>
+                        Trending Now
+                    </h2>
+                    <div class="slider-nav">
+                        <button class="slider-arrow slider-arrow-left" data-slider="trending">
+                            <i class="fas fa-chevron-left"></i>
+                        </button>
+                        <button class="slider-arrow slider-arrow-right" data-slider="trending">
+                            <i class="fas fa-chevron-right"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="slider-container">
+                    <div class="slider-track" id="trendingSlider"></div>
+                </div>
+            </div>
+            
+            <!-- Popular Movies Slider -->
+            <div class="slider-section">
+                <div class="slider-header">
+                    <h2 class="slider-title">
+                        <i class="fas fa-film"></i>
+                        Popular Movies
+                    </h2>
+                    <div class="slider-nav">
+                        <button class="slider-arrow slider-arrow-left" data-slider="popular">
+                            <i class="fas fa-chevron-left"></i>
+                        </button>
+                        <button class="slider-arrow slider-arrow-right" data-slider="popular">
+                            <i class="fas fa-chevron-right"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="slider-container">
+                    <div class="slider-track" id="popularSlider"></div>
+                </div>
+            </div>
+            
+            <!-- Top Rated Slider -->
+            <div class="slider-section">
+                <div class="slider-header">
+                    <h2 class="slider-title">
+                        <i class="fas fa-star"></i>
+                        Top Rated
+                    </h2>
+                    <div class="slider-nav">
+                        <button class="slider-arrow slider-arrow-left" data-slider="toprated">
+                            <i class="fas fa-chevron-left"></i>
+                        </button>
+                        <button class="slider-arrow slider-arrow-right" data-slider="toprated">
+                            <i class="fas fa-chevron-right"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="slider-container">
+                    <div class="slider-track" id="topratedSlider"></div>
+                </div>
+            </div>
+            
+            <!-- TV Shows Slider -->
+            <div class="slider-section">
+                <div class="slider-header">
+                    <h2 class="slider-title">
+                        <i class="fas fa-tv"></i>
+                        Popular TV Shows
+                    </h2>
+                    <div class="slider-nav">
+                        <button class="slider-arrow slider-arrow-left" data-slider="tvshows">
+                            <i class="fas fa-chevron-left"></i>
+                        </button>
+                        <button class="slider-arrow slider-arrow-right" data-slider="tvshows">
+                            <i class="fas fa-chevron-right"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="slider-container">
+                    <div class="slider-track" id="tvshowsSlider"></div>
+                </div>
+            </div>
+        </div>
+        
         <div class="movies-grid" id="moviesGrid" style="content-visibility:auto; contain-intrinsic-size: 1000px 1000px;">
             <!-- Movie cards will be loaded here -->
         </div>
@@ -8661,22 +9961,42 @@ Can't find what you're looking for? Try a custom search
 <div class="modal-runtime" id="modalRuntime">120 min</div>
 </div>
 <p class="modal-tagline" id="modalTagline">Tagline goes here</p>
-<div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
-    <div style="display:flex; flex-direction:column; gap:0.5rem; align-items:flex-start;">
-        <button class="btn btn-primary btn-pill btn-accent" id="watchNowBtn">
-            <i class="fas fa-play"></i> Find Media
+<div class="modal-actions-container">
+    <div class="primary-actions">
+        <button class="btn-enhanced btn-enhanced-primary" id="watchNowBtn">
+            <div class="btn-icon">
+                <i class="fas fa-play-circle"></i>
+            </div>
+            <div class="btn-content">
+                <span class="btn-title">Find Media</span>
+                <span class="btn-subtitle">Search torrents & streams</span>
+            </div>
         </button>
-        <button class="btn btn-ghost btn-pill" id="useStreamsBtn">
-            <i class="fas fa-broadcast-tower"></i> Use Streams instead
+        <button class="btn-enhanced btn-enhanced-secondary" id="useStreamsBtn">
+            <div class="btn-icon">
+                <i class="fas fa-broadcast-tower"></i>
+            </div>
+            <div class="btn-content">
+                <span class="btn-title">Direct Streams</span>
+                <span class="btn-subtitle">No downloads needed</span>
+            </div>
         </button>
-        <div id="watchNowNote" style="display:none; color: var(--light); opacity: 0.85; font-size: 0.9rem; padding-left: 0.1rem;">
-            <i class="fas fa-info-circle" style="color:#a78bfa;"></i>
-            Please select an episode
-        </div>
     </div>
-    <button class="btn btn-ghost btn-pill" id="traktWatchlistBtn" style="display: none;">
-        <i class="fas fa-plus"></i> Add to Watchlist
-    </button>
+    <div class="secondary-actions">
+        <button class="btn-icon-only" id="traktWatchlistBtn" style="display: none;" title="Add to Watchlist">
+            <i class="fas fa-plus"></i>
+        </button>
+        <button class="btn-icon-only" title="Share">
+            <i class="fas fa-share-alt"></i>
+        </button>
+        <button class="btn-icon-only" title="More Info">
+            <i class="fas fa-info-circle"></i>
+        </button>
+    </div>
+    <div id="watchNowNote" class="action-note" style="display:none;">
+        <i class="fas fa-info-circle"></i>
+        Please select an episode first
+    </div>
 </div>
 </div>
 </div>
@@ -9471,7 +10791,9 @@ Your browser does not support the video tag.
         let currentTorrentData = null;
         let currentStreamUrl = null;
     let currentSelectedVideoName = null; // track selected torrent file name
-        let currentDebridTorrentId = null; // track active debrid torrent ID for cleanup
+    let currentDebridTorrentId = null; // track active debrid torrent ID for cleanup
+    // Guard to cancel debrid polling when user exits or starts a new debrid flow
+    let debridFlowSession = 0;
         let currentSubtitleUrl = null;
         let currentSubtitles = [];
     let subtitleTrack = null;
@@ -9503,6 +10825,11 @@ Your browser does not support the video tag.
         let torrentSortMode = 'seeders'; // 'seeders' | 'size-asc' | 'size-desc'
         let torrentSizeFilter = 'all'; // 'all' | 'gte-1g' | 'gte-2g' | '2-4g' | '4-8g' | 'gte-8g'
         let allNuvioStreams = []; // Cache for Nuvio streams to enable sorting
+        
+        // Search state tracking
+        let isSearchMode = false;
+        let lastSearchResults = [];
+        let lastSearchQuery = '';
 
         // Discord Rich Presence tracking
         let discordStreamingActive = false;
@@ -9681,6 +11008,11 @@ Your browser does not support the video tag.
             checkUpdateAnnouncement(); // Show update modal on first launch
             checkDiscordPrompt(); // Show Discord modal if user hasn't joined
             initializeCast(); // Initialize Google Cast SDK
+            
+            // Initialize new UI components if enabled
+            if (document.body.classList.contains('ui-new')) {
+                await initializeNewUI();
+            }
         }
         
         // Set Windows username from temp directory path
@@ -12418,6 +13750,29 @@ Your browser does not support the video tag.
 
         
     function setupEventListeners() {
+            // Custom Title Bar Controls
+            const minimizeBtn = document.getElementById('minimizeBtn');
+            const maximizeBtn = document.getElementById('maximizeBtn');
+            const closeBtn = document.getElementById('closeBtn');
+            
+            if (minimizeBtn && window.electronAPI) {
+                minimizeBtn.addEventListener('click', () => {
+                    window.electronAPI.minimizeWindow();
+                });
+            }
+            
+            if (maximizeBtn && window.electronAPI) {
+                maximizeBtn.addEventListener('click', () => {
+                    window.electronAPI.maximizeWindow();
+                });
+            }
+            
+            if (closeBtn && window.electronAPI) {
+                closeBtn.addEventListener('click', () => {
+                    window.electronAPI.closeWindow();
+                });
+            }
+            
             // Initialize Video.js player
             if (typeof videojs !== 'undefined') {
                 try {
@@ -13438,6 +14793,29 @@ Your browser does not support the video tag.
                     await searchMovies(query);
                 }
             });
+            
+            // Back to Home button
+            const backToHomeBtn = document.getElementById('backToHomeBtn');
+            if (backToHomeBtn) {
+                backToHomeBtn.querySelector('button').addEventListener('click', () => {
+                    // Clear search input and search mode
+                    searchInput.value = '';
+                    isSearchMode = false;
+                    lastSearchResults = [];
+                    lastSearchQuery = '';
+                    
+                    // Reload home page with hero and sliders
+                    backToHomeBtn.style.display = 'none';
+                    if (document.body.classList.contains('ui-new')) {
+                        const slidersContainer = document.getElementById('slidersContainer');
+                        const heroSection = document.getElementById('heroSection');
+                        if (slidersContainer) slidersContainer.style.display = 'block';
+                        if (heroSection) heroSection.style.display = 'block';
+                        moviesGrid.style.display = 'none';
+                        moviesGrid.innerHTML = '';
+                    }
+                });
+            }
 
             // Genres navigation
             genresBtn.addEventListener('click', () => {
@@ -13984,9 +15362,49 @@ Your browser does not support the video tag.
                     document.querySelectorAll('.category').forEach(c => c.classList.remove('active'));
                     category.classList.add('active');
                     currentCategory = category.dataset.category;
-                    moviesGrid.innerHTML = '';
-                    currentPage = 1;
-                    loadMovies(currentCategory);
+                    
+                    // For new UI, check if in search mode
+                    if (document.body.classList.contains('ui-new')) {
+                        const slidersContainer = document.getElementById('slidersContainer');
+                        const heroSection = document.getElementById('heroSection');
+                        const backBtn = document.getElementById('backToHomeBtn');
+                        
+                        if (isSearchMode) {
+                            // Filter search results by category
+                            moviesGrid.innerHTML = '';
+                            let filteredResults = lastSearchResults;
+                            
+                            if (currentCategory === 'movie') {
+                                filteredResults = lastSearchResults.filter(item => item.media_type === 'movie');
+                            } else if (currentCategory === 'tv') {
+                                filteredResults = lastSearchResults.filter(item => item.media_type === 'tv');
+                            }
+                            // 'all' shows everything
+                            
+                            displayMovies(filteredResults);
+                        } else if (currentCategory === 'all') {
+                            // Show sliders for "All"
+                            if (slidersContainer) slidersContainer.style.display = 'block';
+                            if (heroSection) heroSection.style.display = 'block';
+                            if (backBtn) backBtn.style.display = 'none';
+                            moviesGrid.style.display = 'none';
+                            moviesGrid.innerHTML = '';
+                        } else {
+                            // Show grid for Movies/TV
+                            if (slidersContainer) slidersContainer.style.display = 'none';
+                            if (heroSection) heroSection.style.display = 'none';
+                            if (backBtn) backBtn.style.display = 'none';
+                            moviesGrid.style.display = 'grid';
+                            moviesGrid.innerHTML = '';
+                            currentPage = 1;
+                            loadMovies(currentCategory);
+                        }
+                    } else {
+                        // Old UI behavior
+                        moviesGrid.innerHTML = '';
+                        currentPage = 1;
+                        loadMovies(currentCategory);
+                    }
                 });
             });
 
@@ -15914,6 +17332,10 @@ Your browser does not support the video tag.
                     showNotification('Missing track ID', 'error');
                     return;
                 }
+                
+                // Flag to track if this playback request is still valid
+                let isPlaybackCancelled = false;
+                
                 try {
                     // Check if this track is already downloaded
                     const downloaded = getDownloadedMusic();
@@ -15952,14 +17374,33 @@ Your browser does not support the video tag.
                         source.type = 'audio/flac';
                         musicAudio.appendChild(source);
 
-                        // Load then play
+                        // Load then check if player is still open before playing
                         musicAudio.load();
+                        
+                        // Check if player is still visible before playing
+                        if (musicModal.style.display === 'none' && miniPlayer.style.display === 'none') {
+                            console.log('[MUSIC] Player was closed, aborting playback');
+                            return;
+                        }
+                        
                         try {
                             await musicAudio.play();
                         } catch (err) {
+                            // Check again after retry delay
                             await new Promise(r => setTimeout(r, 150));
+                            if (musicModal.style.display === 'none' && miniPlayer.style.display === 'none') {
+                                console.log('[MUSIC] Player was closed during retry, aborting playback');
+                                return;
+                            }
                             await musicAudio.play();
                         }
+                        
+                        // Final check before updating UI
+                        if (musicModal.style.display === 'none' && miniPlayer.style.display === 'none') {
+                            musicAudio.pause();
+                            return;
+                        }
+                        
                         musicPlayPauseBtn.innerHTML = '<i class="fas fa-pause"></i>';
                         if (miniPlayPauseBtn) miniPlayPauseBtn.innerHTML = '<i class="fas fa-pause"></i>';
                         updateTimeDisplays();
@@ -15991,6 +17432,13 @@ Your browser does not support the video tag.
                     if (miniPlayPauseBtn) miniPlayPauseBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
 
                     const data = await musicFetchJson(`/track/?id=${encodeURIComponent(trackId)}&quality=LOSSLESS`);
+                    
+                    // Check if player was closed during fetch
+                    if (musicModal.style.display === 'none' && miniPlayer.style.display === 'none') {
+                        console.log('[MUSIC] Player was closed during fetch, aborting playback');
+                        return;
+                    }
+                    
                     let url = null;
                     if (Array.isArray(data) && data.length >= 3) {
                         // HiFi API returns [trackInfo, manifest, {OriginalTrackUrl: "..."}]
@@ -16020,14 +17468,33 @@ Your browser does not support the video tag.
                     else if (lowerUrl.includes('.ogg') || lowerUrl.includes('.ogx')) source.type = 'audio/ogg';
                     musicAudio.appendChild(source);
 
-                    // Load then play
+                    // Load then check if player is still open before playing
                     musicAudio.load();
+                    
+                    // Check if player is still visible before playing
+                    if (musicModal.style.display === 'none' && miniPlayer.style.display === 'none') {
+                        console.log('[MUSIC] Player was closed before playback, aborting');
+                        return;
+                    }
+                    
                     try {
                         await musicAudio.play();
                     } catch (err) {
+                        // Check again after retry delay
                         await new Promise(r => setTimeout(r, 150));
+                        if (musicModal.style.display === 'none' && miniPlayer.style.display === 'none') {
+                            console.log('[MUSIC] Player was closed during retry, aborting playback');
+                            return;
+                        }
                         await musicAudio.play();
                     }
+                    
+                    // Final check before updating UI
+                    if (musicModal.style.display === 'none' && miniPlayer.style.display === 'none') {
+                        musicAudio.pause();
+                        return;
+                    }
+                    
                     musicPlayPauseBtn.innerHTML = '<i class="fas fa-pause"></i>';
                     if (miniPlayPauseBtn) miniPlayPauseBtn.innerHTML = '<i class="fas fa-pause"></i>';
                     updateTimeDisplays();
@@ -16037,7 +17504,11 @@ Your browser does not support the video tag.
                 } catch (e) {
                     console.error('[MUSIC] Play error', e);
                     showNotification('Failed to play track', 'error');
-                    musicModal.style.display = 'none';
+                    // Only close if player is still visible
+                    if (musicModal.style.display !== 'none' || miniPlayer.style.display !== 'none') {
+                        musicModal.style.display = 'none';
+                        miniPlayer.style.display = 'none';
+                    }
                 }
             }
 
@@ -18198,14 +19669,6 @@ Your browser does not support the video tag.
                 allMoviesCache = [];
             }
             
-            // Reset page title to Trending Now
-            const homePageIcon = document.getElementById('homePageIcon');
-            const homePageText = document.getElementById('homePageText');
-            if (homePageIcon && homePageText) {
-                homePageIcon.className = 'fas fa-fire';
-                homePageText.textContent = 'Trending Now';
-            }
-
             try {
                 let url;
                 if (category === 'all') {
@@ -18229,20 +19692,30 @@ Your browser does not support the video tag.
         async function searchMovies(query) {
             if (isLoading) return;
             isLoading = true;
+            
+            // Hide sliders and show grid for search results (new UI)
+            if (document.body.classList.contains('ui-new')) {
+                const slidersContainer = document.getElementById('slidersContainer');
+                const heroSection = document.getElementById('heroSection');
+                const backBtn = document.getElementById('backToHomeBtn');
+                if (slidersContainer) slidersContainer.style.display = 'none';
+                if (heroSection) heroSection.style.display = 'none';
+                if (backBtn) backBtn.style.display = 'block';
+                moviesGrid.style.display = 'grid';
+            }
+            
             moviesGrid.innerHTML = '';
             loadingIndicator.style.display = 'block';
-            
-            // Update page title for search
-            const homePageIcon = document.getElementById('homePageIcon');
-            const homePageText = document.getElementById('homePageText');
-            if (homePageIcon && homePageText) {
-                homePageIcon.className = 'fas fa-search';
-                homePageText.textContent = `Search Results for "${query}"`;
-            }
 
             try {
                 const response = await fetch(`https://api.themoviedb.org/3/search/multi?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(query)}&page=1`);
                 const data = await response.json();
+                
+                // Store search results and set search mode
+                lastSearchResults = data.results || [];
+                lastSearchQuery = query;
+                isSearchMode = true;
+                
                 displayMovies(data.results);
             } catch (error) {
                 console.error('Error searching movies:', error);
@@ -18341,10 +19814,197 @@ Your browser does not support the video tag.
             moviesGrid.innerHTML = '';
             displayMovies(allMoviesCache, false);
         }
+        
+        // ==== NEW UI: HERO SECTION AND SLIDERS ====
+        async function initializeNewUI() {
+            if (!document.body.classList.contains('ui-new')) return;
+            
+            // Show hero and sliders, hide grid
+            const heroSection = document.getElementById('heroSection');
+            const slidersContainer = document.getElementById('slidersContainer');
+            const moviesGrid = document.getElementById('moviesGrid');
+            
+            if (heroSection) heroSection.style.display = 'block';
+            if (slidersContainer) slidersContainer.style.display = 'block';
+            if (moviesGrid) moviesGrid.style.display = 'none';
+            
+            // Load data for hero and sliders
+            await Promise.all([
+                loadHeroContent(),
+                loadSliders()
+            ]);
+            
+            // Setup slider navigation
+            setupSliderNavigation();
+        }
+        
+        async function loadHeroContent() {
+            try {
+                const response = await fetch(`https://api.themoviedb.org/3/trending/all/day?api_key=${TMDB_API_KEY}`);
+                const data = await response.json();
+                
+                if (data.results && data.results.length > 0) {
+                    // Pick a random item from top 5 for variety
+                    const heroItem = data.results[Math.floor(Math.random() * Math.min(5, data.results.length))];
+                    displayHero(heroItem);
+                }
+            } catch (error) {
+                console.error('Error loading hero content:', error);
+            }
+        }
+        
+        function displayHero(item) {
+            const heroBackdrop = document.getElementById('heroBackdrop');
+            const heroTitle = document.getElementById('heroTitle');
+            const heroOverview = document.getElementById('heroOverview');
+            const heroYear = document.getElementById('heroYear');
+            const heroRating = document.getElementById('heroRating');
+            const heroRatingValue = document.getElementById('heroRatingValue');
+            const heroRuntime = document.getElementById('heroRuntime');
+            const heroPlayBtn = document.getElementById('heroPlayBtn');
+            const heroInfoBtn = document.getElementById('heroInfoBtn');
+            
+            if (item.backdrop_path) {
+                heroBackdrop.src = `https://image.tmdb.org/t/p/original${item.backdrop_path}`;
+            }
+            
+            heroTitle.textContent = item.title || item.name;
+            heroOverview.textContent = item.overview || 'No description available.';
+            
+            const year = (item.release_date || item.first_air_date || '').substring(0, 4);
+            heroYear.textContent = year;
+            
+            if (item.vote_average) {
+                heroRating.style.display = 'flex';
+                heroRatingValue.textContent = Number(item.vote_average).toFixed(1);
+            }
+            
+            // Store media type for click handlers
+            const mediaType = item.media_type || 'movie';
+            
+            heroPlayBtn.onclick = () => openDetailsModal(item, mediaType);
+            heroInfoBtn.onclick = () => openDetailsModal(item, mediaType);
+        }
+        
+        async function loadSliders() {
+            try {
+                const [trending, popular, topRated, tvShows] = await Promise.all([
+                    fetch(`https://api.themoviedb.org/3/trending/all/week?api_key=${TMDB_API_KEY}`).then(r => r.json()),
+                    fetch(`https://api.themoviedb.org/3/movie/popular?api_key=${TMDB_API_KEY}`).then(r => r.json()),
+                    fetch(`https://api.themoviedb.org/3/movie/top_rated?api_key=${TMDB_API_KEY}`).then(r => r.json()),
+                    fetch(`https://api.themoviedb.org/3/tv/popular?api_key=${TMDB_API_KEY}`).then(r => r.json())
+                ]);
+                
+                populateSlider('trendingSlider', trending.results.slice(0, 20));
+                populateSlider('popularSlider', popular.results.slice(0, 20));
+                populateSlider('topratedSlider', topRated.results.slice(0, 20));
+                populateSlider('tvshowsSlider', tvShows.results.slice(0, 20));
+            } catch (error) {
+                console.error('Error loading sliders:', error);
+            }
+        }
+        
+        function populateSlider(sliderId, items) {
+            const slider = document.getElementById(sliderId);
+            if (!slider) return;
+            
+            slider.innerHTML = '';
+            
+            items.forEach(item => {
+                if (!item.poster_path) return;
+                
+                const sliderItem = document.createElement('div');
+                sliderItem.className = 'slider-item';
+                
+                const year = (item.release_date || item.first_air_date || '').substring(0, 4);
+                const mediaType = item.media_type || (sliderId.includes('tv') ? 'tv' : 'movie');
+                
+                sliderItem.innerHTML = `
+                    <img src="https://image.tmdb.org/t/p/w342${item.poster_path}" alt="${item.title || item.name}" class="slider-poster">
+                    <div class="slider-info">
+                        <div class="slider-item-title">${item.title || item.name}</div>
+                        <div class="slider-item-meta">
+                            <span class="slider-rating">
+                                <i class="fas fa-star"></i>
+                                ${Number(item.vote_average || 0).toFixed(1)}
+                            </span>
+                            <span class="slider-year">${year}</span>
+                        </div>
+                    </div>
+                `;
+                
+                sliderItem.onclick = () => openDetailsModal(item, mediaType);
+                slider.appendChild(sliderItem);
+            });
+        }
+        
+        function setupSliderNavigation() {
+            const arrows = document.querySelectorAll('.slider-arrow');
+            
+            arrows.forEach(arrow => {
+                arrow.addEventListener('click', () => {
+                    const sliderName = arrow.dataset.slider;
+                    const isLeft = arrow.classList.contains('slider-arrow-left');
+                    const sliderContainer = document.querySelector(`#${sliderName}Slider`).parentElement;
+                    
+                    if (!sliderContainer) return;
+                    
+                    const scrollAmount = 810; // 3 items (270 each including gap)
+                    const currentScroll = sliderContainer.scrollLeft;
+                    const newScroll = isLeft ? currentScroll - scrollAmount : currentScroll + scrollAmount;
+                    
+                    sliderContainer.scrollTo({
+                        left: newScroll,
+                        behavior: 'smooth'
+                    });
+                });
+            });
+            
+            // Update arrow states based on scroll position
+            const sliderContainers = document.querySelectorAll('.slider-container');
+            sliderContainers.forEach(container => {
+                container.addEventListener('scroll', () => {
+                    updateArrowStates(container);
+                });
+                updateArrowStates(container);
+            });
+        }
+        
+        function updateArrowStates(container) {
+            const slider = container.querySelector('.slider-track');
+            if (!slider) return;
+            
+            const section = container.closest('.slider-section');
+            if (!section) return;
+            
+            const leftArrow = section.querySelector('.slider-arrow-left');
+            const rightArrow = section.querySelector('.slider-arrow-right');
+            
+            const scrollLeft = container.scrollLeft;
+            const scrollWidth = container.scrollWidth;
+            const clientWidth = container.clientWidth;
+            
+            if (leftArrow) {
+                leftArrow.classList.toggle('disabled', scrollLeft <= 0);
+            }
+            
+            if (rightArrow) {
+                rightArrow.classList.toggle('disabled', scrollLeft + clientWidth >= scrollWidth - 10);
+            }
+        }
 
         // Handle infinite scroll - route aware
         function handleScroll(e) {
             let shouldLoad = false;
+            
+            // Disable infinite scroll for new UI when on "All" category (uses sliders instead)
+            // Enable it for Movies or TV Shows
+            if (document.body.classList.contains('ui-new')) {
+                if (currentCategory === 'all') {
+                    return; // No infinite scroll for "All"
+                }
+                // Allow infinite scroll for movie/tv categories
+            }
             
             // Check if we're in NEW UI mode (scrolling inside main element)
             if (document.body.classList.contains('ui-new')) {
@@ -20199,44 +21859,7 @@ Your browser does not support the video tag.
                 item.querySelector('.btn-copy').addEventListener('click', () => copyMagnet(torrent.magnet));
                 torrentsList.appendChild(item);
 
-                // Debrid availability badge (RD only)
-                // Skip if availability endpoint is disabled for account
-                if (useDebrid && debridAuth && debridProvider === 'realdebrid' && torrent.magnet && rdAvailChecked < rdAvailBudget && !rdAvailabilityDisabled) {
-                    const btih = extractInfoHashFromMagnet(torrent.magnet);
-                    if (btih) {
-                        (async () => {
-                            try {
-                                const r = await fetch(`${API_BASE_URL}/debrid/availability?btih=${btih}`);
-                                if (r.ok) {
-                                    const j = await r.json();
-                                    if (j && j.disabled) {
-                                        // Endpoint is disabled - set flag to stop all future checks
-                                        rdAvailabilityDisabled = true;
-                                        console.warn('[UI][Debrid] Instant availability disabled for this account - stopping all checks');
-                                        return;
-                                    }
-                                    if (j && j.available) {
-                                        const b = item.querySelector('.cached-badge');
-                                        if (b) b.style.display = 'inline-block';
-                                    }
-                                } else {
-                                    // If RD rate limits or endpoint disabled, stop further checks on this page render
-                                    try {
-                                        const txt = await r.text();
-                                        if (/RD_RATE_LIMIT|too_many_requests/i.test(txt)) {
-                                            console.warn('[UI][Debrid] availability paused due to rate limit');
-                                        }
-                                        if (/RD_FEATURE_UNAVAILABLE|disabled_endpoint/i.test(txt)) {
-                                            rdAvailabilityDisabled = true;
-                                            console.warn('[UI][Debrid] Instant availability disabled for this account - stopping all checks');
-                                        }
-                                    } catch {}
-                                }
-                            } catch(_) {}
-                        })();
-                        rdAvailChecked++;
-                    }
-                }
+                // Removed instant availability checks and badges
             });
 
             renderTorrentPagination();
@@ -20317,6 +21940,14 @@ Your browser does not support the video tag.
             if (useDebrid && debridAuth && magnet && magnet.startsWith('magnet:')) {
                 console.log('[UI][Stream] Using Debrid path');
                 try {
+                    // Start a new Debrid session (used to cancel polling if user exits)
+                    const myDebridSession = ++debridFlowSession;
+                    const isSessionActive = (expectedId) => {
+                        const playerOpen = mpvPlayerContainer.classList.contains('active');
+                        const sessionOk = (myDebridSession === debridFlowSession);
+                        const idOk = (!expectedId) || (currentDebridTorrentId === expectedId);
+                        return playerOpen && sessionOk && idOk;
+                    };
                     // Open our player UI first
                     showPlayer();
                     mpvLoading.style.display = 'flex';
@@ -20358,17 +21989,12 @@ Your browser does not support the video tag.
                     const prepj = await prep.json();
                     const rdId = prepj.id;
                     currentDebridTorrentId = rdId; // Track globally for cleanup
-                    const fromCache = prepj.fromCache || false;
                     let info = prepj.info || null;
-                    
-                    // Show notification if torrent is already cached
-                    if (fromCache && useDebrid && debridProvider === 'realdebrid') {
-                        console.log('[UI][Debrid] ✅ Torrent is already cached on Real-Debrid!');
-                        showNotification('✅ This torrent is already cached on Real-Debrid! Instant streaming available.');
-                    }
+                    if (!isSessionActive(rdId)) return; // user closed / session invalidated
                     
                     if (!info || !Array.isArray(info.files) || !info.files.length) {
                         await new Promise(r => setTimeout(r, 900));
+                        if (!isSessionActive(rdId)) return; // cancelled
                         const fres = await fetch(`${API_BASE_URL}/debrid/files?id=${encodeURIComponent(rdId)}`);
                         if (fres.ok) info = await fres.json();
                     }
@@ -20378,6 +22004,7 @@ Your browser does not support the video tag.
                     if (!files.length) {
                         for (let i = 0; i < 8; i++) {
                             await new Promise(r => setTimeout(r, 1000));
+                            if (!isSessionActive(rdId)) return; // cancelled
                             try {
                                 const rf = await fetch(`${API_BASE_URL}/debrid/files?id=${encodeURIComponent(rdId)}`);
                                 if (rf.ok) {
@@ -20411,6 +22038,7 @@ Your browser does not support the video tag.
                         const start = Date.now();
                         console.log('[UI][Debrid] Starting polling for file links...');
                         while (Date.now() - start < timeoutMs) {
+                            if (!isSessionActive(id)) return null; // cancelled/closed
                             try {
                                 const fres = await fetch(`${API_BASE_URL}/debrid/files?id=${encodeURIComponent(id)}`);
                                 if (!fres.ok) {
@@ -20453,6 +22081,7 @@ Your browser does not support the video tag.
                     async function waitForRdLinks(id, fileId, { timeoutMs = 30000, intervalMs = 1500 } = {}) {
                         const start = Date.now();
                         while (Date.now() - start < timeoutMs) {
+                            if (!isSessionActive(id)) return null; // cancelled/closed
                             try {
                                 const fres = await fetch(`${API_BASE_URL}/debrid/files?id=${encodeURIComponent(id)}`);
                                 if (!fres.ok) {
@@ -20488,6 +22117,7 @@ Your browser does not support the video tag.
                         (async () => {
                             const updatedFiles = await pollForAllLinks(rdId);
                             if (updatedFiles) {
+                                if (!isSessionActive(rdId)) return; // cancelled
                                 // Re-render files with updated links
                                 const updatedVideos = updatedFiles.filter(f => /\.(mp4|mkv|avi|mov)$/i.test(f.path || f.filename || ''));
                                 const updatedSubs = updatedFiles.filter(f => /\.(srt|vtt)$/i.test(f.path || f.filename || ''));
@@ -20504,7 +22134,7 @@ Your browser does not support the video tag.
                                     const item = document.createElement('div');
                                     item.className = 'file-item';
                                     item.innerHTML = `<p class="file-name">${displayName(f)} ${statusBadgeHtml(f)}</p><p class="file-size">(${displaySize(f)})</p>`;
-                                    item.addEventListener('click', createFileClickHandler(f, rdId, fromCache, rdSubs));
+                                    item.addEventListener('click', createFileClickHandler(f, rdId, rdSubs));
                                     fileList.appendChild(item);
                                 });
                                 
@@ -20517,10 +22147,11 @@ Your browser does not support the video tag.
                     }
                     
                     // Extract click handler into a function so we can reuse it
-                    function createFileClickHandler(f, rdId, fromCache, rdSubs) {
+                    function createFileClickHandler(f, rdId, rdSubs) {
                         return async (event) => {
                             try {
                                 const clickedItem = event?.currentTarget;
+                                if (!isSessionActive(rdId)) return; // cancelled
                                 
                                 // Disconnect from current debrid torrent before switching files
                                 if (currentDebridTorrentId && currentDebridTorrentId !== rdId) {
@@ -20543,11 +22174,8 @@ Your browser does not support the video tag.
                                     resumeInfo = await fetchResume(resumeKey);
                                 } catch(_) {}
                                 
-                                // Only call select-files if NOT from cache (fromCache means torrent was already cached)
-                                // Cached torrents can skip directly to unrestrict
-                                if (!fromCache) {
-                                    // Ensure only this file is selected for RD to process
-                                    try {
+                                // Always select just this file for RD to process
+                                try {
                                         console.log('[UI][Debrid] select-files', { id: rdId, file: String(f.id || f.file) });
                                         const selectRes = await fetch(`${API_BASE_URL}/debrid/select-files`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: rdId, files: String(f.id || f.file) }) });
                                         if (!selectRes.ok) {
@@ -20570,6 +22198,7 @@ Your browser does not support the video tag.
                                                     console.log('[UI][Debrid] Torrent re-added for file switch. Old ID:', rdId, '→ New ID:', selectData.id);
                                                     rdId = selectData.id; // Update to new torrent ID
                                                     currentDebridTorrentId = selectData.id; // Update global tracker
+                                                    if (!isSessionActive(rdId)) return; // cancelled
                                                     showNotification('Switched to episode ' + (f.id || f.file) + ' - Reloading file list...');
                                                     
                                                     // Fully reload the file selector with new torrent info
@@ -20591,7 +22220,7 @@ Your browser does not support the video tag.
                                                             const item = document.createElement('div');
                                                             item.className = 'file-item';
                                                             item.innerHTML = `<p class="file-name">${displayName(newFile)} ${statusBadgeHtml(newFile)}</p><p class="file-size">(${displaySize(newFile)})</p>`;
-                                                            item.addEventListener('click', createFileClickHandler(newFile, rdId, fromCache, newSubs));
+                                                            item.addEventListener('click', createFileClickHandler(newFile, rdId, newSubs));
                                                             fileList.appendChild(item);
                                                         });
                                                         
@@ -20605,10 +22234,7 @@ Your browser does not support the video tag.
                                                 console.warn('[UI][Debrid] Could not parse select-files response:', e?.message);
                                             }
                                         }
-                                    } catch(e) { console.warn('[UI][Debrid] select-files exception', e?.message); }
-                                } else {
-                                    console.log('[UI][Debrid] Skipping select-files for cached torrent (fromCache=true)');
-                                }
+                                } catch(e) { console.warn('[UI][Debrid] select-files exception', e?.message); }
                                 
                                 // Find current link if already cached, else wait for caching
                                 let link = Array.isArray(f.links) && f.links.length ? f.links[0] : null;
@@ -20617,6 +22243,7 @@ Your browser does not support the video tag.
                                     // Show loading indicator while waiting
                                     mpvLoading.style.display = 'flex';
                                     const waited = await waitForRdLinks(rdId, (f.id || f.file));
+                                    if (!isSessionActive(rdId)) return; // cancelled
                                     link = waited;
                                     // Update badge to Cached if now available
                                     if (link && clickedItem) {
@@ -20688,7 +22315,7 @@ Your browser does not support the video tag.
                         const item = document.createElement('div');
                         item.className = 'file-item';
                         item.innerHTML = `<p class="file-name">${displayName(f)} ${statusBadgeHtml(f)}</p><p class="file-size">(${displaySize(f)})</p>`;
-                        item.addEventListener('click', createFileClickHandler(f, rdId, fromCache, rdSubs));
+                        item.addEventListener('click', createFileClickHandler(f, rdId, rdSubs));
                         fileList.appendChild(item);
                     });
 
@@ -20914,6 +22541,8 @@ Your browser does not support the video tag.
         // Close the MPV player
         async function closePlayer(showNotif = true) {
             mpvPlayerContainer.classList.remove('active');
+            // Invalidate any ongoing Debrid polling loops
+            debridFlowSession++;
             
             // Cleanup debrid torrent if one is active
             if (currentDebridTorrentId) {
