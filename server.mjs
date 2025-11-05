@@ -1242,8 +1242,8 @@ export function startServer(userDataPath) {
         }
     };
 
-    // Track if instant availability endpoint is disabled for this account
-    let rdInstantAvailabilityDisabled = false;
+    // Instant availability is intentionally disabled in this app flow
+    let rdInstantAvailabilityDisabled = true;
 
     async function rdFetch(endpoint, opts = {}) {
         const started = Date.now();
@@ -1377,12 +1377,6 @@ export function startServer(userDataPath) {
                     err.status = 403;
                     throw err;
                 } else if (/disabled_endpoint/i.test(msg)) {
-                    // Check if this is the instant availability endpoint being disabled
-                    if (endpoint.includes('/torrents/instantAvailability/')) {
-                        rdInstantAvailabilityDisabled = true;
-                        console.warn('[RD][availability] Instant availability endpoint is DISABLED for this account (error_code 37)');
-                        console.warn('[RD][availability] Availability checks will be skipped for all future requests');
-                    }
                     const err = new Error('This Real-Debrid feature is disabled for your account.');
                     err.code = 'RD_FEATURE_UNAVAILABLE';
                     err.status = 403;
@@ -1455,54 +1449,10 @@ export function startServer(userDataPath) {
         return hash.toUpperCase();
     }
 
-    // Helper: mark RD cached files using Instant Availability
-    async function rdMarkCachedFiles(info) {
-        try {
-            // Skip if instant availability is disabled for this account
-            if (rdInstantAvailabilityDisabled) {
-                return info;
-            }
-            
-            if (!info || !Array.isArray(info.files) || info.files.length === 0) return info;
-            const hash = (info.hash || info.btih || '').toString();
-            if (!hash || hash.length < 32) return info;
-            const btihUpper = hash.toUpperCase();
-            let avail;
-            try {
-                avail = await rdFetch(`/torrents/instantAvailability/${btihUpper}`);
-            } catch (e) {
-                console.warn('[RD][avail] failed to fetch instantAvailability:', e?.message || e);
-                return info;
-            }
-            const node = avail?.[btihUpper] || avail?.[btihUpper.toLowerCase()] || null;
-            if (!node || typeof node !== 'object') return info;
-            // RD returns arrays per host; entries include an id that maps to RD file id
-            const cachedIds = new Set();
-            try {
-                for (const key of Object.keys(node)) {
-                    const arr = node[key];
-                    if (Array.isArray(arr)) {
-                        for (const it of arr) {
-                            if (it && (it.id !== undefined && it.id !== null)) {
-                                cachedIds.add(Number(it.id));
-                            }
-                        }
-                    }
-                }
-            } catch {}
-            if (cachedIds.size === 0) return info;
-            for (const f of info.files) {
-                const fid = Number(f.id != null ? f.id : f.file != null ? f.file : -1);
-                if (cachedIds.has(fid)) {
-                    // Set explicit cached flag so UI can render proper badge immediately
-                    f.cached = true;
-                }
-            }
-            return info;
-        } catch (_) { return info; }
-    }
+    // Helper: no-op; we no longer call RD instantAvailability
+    async function rdMarkCachedFiles(info) { return info; }
 
-    // Debrid availability by info hash (RD instant availability; TorBox cached availability)
+    // Debrid availability endpoint is disabled for RD to avoid extra API calls
     app.get('/api/debrid/availability', async (req, res) => {
         try {
             const s = readSettings();
@@ -1511,46 +1461,7 @@ export function startServer(userDataPath) {
             if (!btih || btih.length < 32) return res.status(400).json({ error: 'Invalid btih' });
             const provider = (s.debridProvider || 'realdebrid').toLowerCase();
             if (provider === 'realdebrid') {
-                // Skip if instant availability is disabled for this account
-                if (rdInstantAvailabilityDisabled) {
-                    console.log('[RD][availability] Skipped - instant availability disabled for account');
-                    return res.json({ provider: 'realdebrid', available: false, disabled: true, message: 'Instant availability is disabled for your Real-Debrid account' });
-                }
-                
-                console.log('[RD][availability]', { btih });
-                const data = await rdFetch(`/torrents/instantAvailability/${btih}`);
-                
-                // Handle RD API response format:
-                // - Cached torrents: { "HASH": { "rd": [{id: 1, filename: "...", filesize: 123}] } }
-                // - Uncached torrents (NEW FORMAT): {} (empty object, not {hash: []})
-                // - Not found: {} or undefined
-                
-                const node = data && (data[btih] || data[btih.toLowerCase()]);
-                let available = false;
-                let fileCount = 0;
-                
-                // Check if node exists and has actual data
-                if (node && typeof node === 'object') {
-                    // Iterate through host keys (e.g., "rd", "gp")
-                    for (const key of Object.keys(node)) {
-                        const arr = node[key];
-                        if (Array.isArray(arr) && arr.length > 0) { 
-                            available = true;
-                            fileCount = arr.length;
-                            break;
-                        }
-                    }
-                }
-                
-                // If data is empty object {} or node doesn't exist, torrent is NOT cached
-                // This handles the new RD API behavior where uncached torrents return {}
-                if (!node || Object.keys(node).length === 0) {
-                    console.log('[RD][availability] Torrent NOT cached (empty response)');
-                    available = false;
-                }
-                
-                console.log('[RD][availability]', { btih, available, fileCount });
-                return res.json({ provider: 'realdebrid', available, fileCount, raw: data });
+                return res.json({ provider: 'realdebrid', available: false, disabled: true, message: 'Instant availability is disabled in this app' });
             }
             if (provider === 'torbox') {
                 console.log('[TB][availability]', { btih });
@@ -1613,63 +1524,6 @@ export function startServer(userDataPath) {
                 // Extract info hash from magnet
                 const btih = extractInfoHash(magnet);
                 
-                // Step 1: Check instant availability FIRST to avoid re-caching already cached torrents
-                // Skip if instant availability is disabled for this account
-                if (btih && !rdInstantAvailabilityDisabled) {
-                    console.log('[RD][prepare] Checking instant availability for', btih);
-                    try {
-                        const availData = await rdFetch(`/torrents/instantAvailability/${btih}`);
-                        const node = availData?.[btih] || availData?.[btih.toLowerCase()] || null;
-                        
-                        // Check if torrent is cached (has files available)
-                        let cachedFiles = [];
-                        if (node && typeof node === 'object') {
-                            // RD returns arrays per host; entries include file info
-                            for (const key of Object.keys(node)) {
-                                const arr = node[key];
-                                if (Array.isArray(arr) && arr.length > 0) {
-                                    // First array with files = the cached version
-                                    cachedFiles = arr;
-                                    break;
-                                }
-                            }
-                        }
-                        
-                        // If cached, return virtual torrent info without calling addMagnet
-                        if (cachedFiles.length > 0) {
-                            console.log('[RD][prepare] ✅ Torrent is CACHED! Skipping addMagnet, found', cachedFiles.length, 'files');
-                            
-                            // Build a virtual torrent info response that matches RD's torrent/info format
-                            const virtualInfo = {
-                                id: `cached_${btih}`, // Special ID to indicate this is from cache
-                                hash: btih,
-                                filename: `Cached Torrent ${btih.substring(0, 8)}`,
-                                status: 'downloaded', // Mark as already downloaded
-                                cached: true,
-                                files: cachedFiles.map((f, idx) => ({
-                                    id: f.id || (idx + 1),
-                                    path: f.filename || `file_${idx + 1}`,
-                                    bytes: f.filesize || 0,
-                                    selected: 0,
-                                    cached: true // Mark all files as cached
-                                }))
-                            };
-                            
-                            return res.json({ 
-                                id: virtualInfo.id, 
-                                info: virtualInfo,
-                                fromCache: true, // Flag to indicate this came from instant availability
-                                message: 'Torrent is already cached! No need to add to Real-Debrid.'
-                            });
-                        } else {
-                            console.log('[RD][prepare] Torrent not cached, proceeding with addMagnet');
-                        }
-                    } catch (e) {
-                        // If instant availability check fails, fall back to normal flow
-                        console.warn('[RD][prepare] Instant availability check failed, falling back to addMagnet:', e?.message);
-                    }
-                }
-                
                 // Step 2: Check existing torrents to avoid duplicates
                 if (btih) {
                     try {
@@ -1701,7 +1555,6 @@ export function startServer(userDataPath) {
                                     }
                                 }
                                 
-                                info = await rdMarkCachedFiles(info);
                                 return res.json({ id: match.id, info, reused: true });
                             }
                         }
@@ -1728,9 +1581,6 @@ export function startServer(userDataPath) {
                 
                 // Fetch latest info (may already contain links for cached items)
                 let info = await rdFetch(`/torrents/info/${id}`);
-                
-                // Augment with cached flags via instant availability
-                info = await rdMarkCachedFiles(info);
                 
                 return res.json({ id, info });
             } else if (provider === 'alldebrid') {
@@ -2250,8 +2100,7 @@ export function startServer(userDataPath) {
                     } : null
                 });
                 
-                // Augment with cached flags to avoid false 'Not cached' UI
-                info = await rdMarkCachedFiles(info);
+                // No instant availability augmentation
                 
                 // CRITICAL: RD API doesn't always populate 'links' in /torrents/info response
                 // For downloaded torrents with selected files, we need to construct the download link manually
