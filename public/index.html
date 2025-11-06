@@ -7268,6 +7268,71 @@
                 flex: 1;
             }
         }
+        
+        /* Custom Scrollbar for IPTV Category Select Dropdown */
+        #xtream-category-select {
+            /* Enhanced dropdown styling */
+            cursor: pointer;
+            transition: all 0.2s ease;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        #xtream-category-select:hover {
+            border-color: rgba(59, 130, 246, 0.5) !important;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+        
+        #xtream-category-select:focus {
+            outline: none;
+            border-color: rgba(59, 130, 246, 0.7) !important;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+        }
+        
+        /* Custom scrollbar for the dropdown options */
+        #xtream-category-select::-webkit-scrollbar {
+            width: 12px;
+        }
+        
+        #xtream-category-select::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            border: 2px solid rgba(255, 255, 255, 0.05);
+        }
+        
+        #xtream-category-select::-webkit-scrollbar-thumb {
+            background: #6b7280;
+            border-radius: 10px;
+            border: 2px solid rgba(0, 0, 0, 0.3);
+            transition: all 0.2s ease;
+        }
+        
+        #xtream-category-select::-webkit-scrollbar-thumb:hover {
+            background: #9ca3af;
+            border-color: rgba(0, 0, 0, 0.5);
+        }
+        
+        #xtream-category-select::-webkit-scrollbar-thumb:active {
+            background: #4b5563;
+        }
+        
+        /* Dropdown options styling */
+        #xtream-category-select option {
+            background: #1b1b1b;
+            color: #fff;
+            padding: 0.5rem;
+            transition: background 0.2s ease;
+        }
+        
+        #xtream-category-select option:hover {
+            background: rgba(59, 130, 246, 0.2);
+        }
+        
+        #xtream-category-select option:checked {
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+            color: #fff;
+            font-weight: 600;
+        }
     </style>
     <!-- Google Cast SDK -->
     <script src="https://www.gstatic.com/cv/js/sender/v1/cast_sender.js?loadCastFramework=1"></script>
@@ -9421,7 +9486,7 @@
                         <button class="xtream-tab-btn" data-tab="series" style="background:transparent;color:#ddd;border:1px solid rgba(255,255,255,.15);padding:.45rem .8rem;border-radius:8px;cursor:pointer;">Series</button>
                     </div>
                     <div style="display:flex; gap:.6rem; align-items:center;">
-                        <select id="xtream-category-select" style="background:#1b1b1b;color:#fff;border:1px solid rgba(255,255,255,.15);padding:.45rem .8rem;border-radius:8px;">
+                        <select id="xtream-category-select" size="1" style="background:#1b1b1b;color:#fff;border:1px solid rgba(255,255,255,.15);padding:.45rem .8rem;border-radius:8px;">
                             <option value="">All Categories</option>
                         </select>
                         <input id="xtream-search" placeholder="Search..." style="background:#1b1b1b;color:#fff;border:1px solid rgba(255,255,255,.15);padding:.5rem .8rem;border-radius:8px;min-width:220px;">
@@ -13589,6 +13654,8 @@ Your browser does not support the video tag.
             seriesCategories: [],
             lastStreams: [],
             m3u: { items: [], categories: [] },
+            displayedIndex: 0,
+            pageSize: 50,
         };
 
         // Persistent IPTV settings helpers
@@ -14089,20 +14156,37 @@ Your browser does not support the video tag.
             }
             const current = select.value;
             select.innerHTML = '<option value="">All Categories</option>';
+            
+            // Limit initial display to first 100 categories for performance
+            const maxInitial = 100;
+            const catsToShow = cats.slice(0, maxInitial);
+            
             if (xtreamState.mode === 'm3u') {
-                cats.forEach(name => {
+                catsToShow.forEach(name => {
                     const opt = document.createElement('option');
                     opt.value = name;
                     opt.textContent = name;
                     select.appendChild(opt);
                 });
+                if (cats.length > maxInitial) {
+                    const opt = document.createElement('option');
+                    opt.disabled = true;
+                    opt.textContent = `... and ${cats.length - maxInitial} more (use search)`;
+                    select.appendChild(opt);
+                }
             } else {
-                cats.forEach(c => {
+                catsToShow.forEach(c => {
                     const opt = document.createElement('option');
                     opt.value = c.category_id;
                     opt.textContent = c.category_name || ('Category ' + c.category_id);
                     select.appendChild(opt);
                 });
+                if (cats.length > maxInitial) {
+                    const opt = document.createElement('option');
+                    opt.disabled = true;
+                    opt.textContent = `... and ${cats.length - maxInitial} more (scroll for all)`;
+                    select.appendChild(opt);
+                }
             }
             // try keep selection if exists
             if ([...select.options].some(o => o.value === current)) select.value = current;
@@ -14144,13 +14228,16 @@ Your browser does not support the video tag.
                     list = await xtreamFetch(p);
                 }
                 xtreamState.lastStreams = Array.isArray(list) ? list : [];
+                // Initialize pagination
+                xtreamState.displayedIndex = 0;
+                xtreamState.pageSize = 50; // Load 50 items at a time
             } catch (e) {
                 console.error('[XTREAM] Load streams error:', e);
                 xtreamState.lastStreams = [];
             }
         }
 
-        function xtreamRenderGrid() {
+        function xtreamRenderGrid(append = false) {
             const grid = document.getElementById('xtream-grid');
             const empty = document.getElementById('xtream-empty');
             const search = (document.getElementById('xtream-search')?.value || '').toLowerCase().trim();
@@ -14160,7 +14247,16 @@ Your browser does not support the video tag.
             if (search) {
                 items = items.filter(it => ((it.name || it.title || '').toLowerCase().includes(search)));
             }
-            grid.innerHTML = '';
+
+            // Pagination logic
+            const start = append ? xtreamState.displayedIndex : 0;
+            const end = start + xtreamState.pageSize;
+            const itemsToRender = items.slice(start, end);
+            
+            if (!append) {
+                grid.innerHTML = '';
+            }
+            
             if (!items.length) {
                 empty.style.display = '';
                 return;
@@ -14168,7 +14264,7 @@ Your browser does not support the video tag.
             empty.style.display = 'none';
 
             const tab = xtreamState.tab;
-            items.forEach(it => {
+            itemsToRender.forEach(it => {
                 const card = document.createElement('div');
                 card.className = 'music-card';
                 card.style.cursor = 'default';
@@ -14202,88 +14298,148 @@ Your browser does not support the video tag.
                 grid.appendChild(card);
             });
 
-            // wire buttons
-            grid.querySelectorAll('[data-action="play"]').forEach(b => b.addEventListener('click', (e) => {
-                const url = e.currentTarget.getAttribute('data-url');
-                const name = e.currentTarget.getAttribute('data-name');
-                if (!url) { showNotification('No stream URL found', 'error'); return; }
-                showXtreamPlayer(name, url);
-            }));
-            grid.querySelectorAll('[data-action="open"]').forEach(b => b.addEventListener('click', (e) => {
-                const url = e.currentTarget.getAttribute('data-url');
-                if (!url) { showNotification('No stream URL found', 'error'); return; }
-                if (window.electronAPI?.openExternal) window.electronAPI.openExternal(url); else window.open(url, '_blank');
-            }));
-            grid.querySelectorAll('[data-action="copy"]').forEach(b => b.addEventListener('click', async (e) => {
-                const url = e.currentTarget.getAttribute('data-url');
-                try { await navigator.clipboard.writeText(url); showNotification('Stream URL copied', 'success'); } catch { showNotification('Copy failed', 'error'); }
-            }));
-            grid.querySelectorAll('[data-action="series"]').forEach(b => b.addEventListener('click', (e) => {
-                const seriesId = e.currentTarget.getAttribute('data-id');
-                xtreamShowSeriesEpisodes(seriesId);
-            }));
+            // Update displayed index
+            xtreamState.displayedIndex = end;
+
+            // wire buttons (only for newly added items)
+            const newCards = Array.from(grid.children).slice(-itemsToRender.length);
+            newCards.forEach(card => {
+                card.querySelectorAll('[data-action="play"]').forEach(b => b.addEventListener('click', (e) => {
+                    const url = e.currentTarget.getAttribute('data-url');
+                    const name = e.currentTarget.getAttribute('data-name');
+                    if (!url) { showNotification('No stream URL found', 'error'); return; }
+                    showXtreamPlayer(name, url);
+                }));
+                card.querySelectorAll('[data-action="open"]').forEach(b => b.addEventListener('click', (e) => {
+                    const url = e.currentTarget.getAttribute('data-url');
+                    if (!url) { showNotification('No stream URL found', 'error'); return; }
+                    if (window.electronAPI?.openExternal) window.electronAPI.openExternal(url); else window.open(url, '_blank');
+                }));
+                card.querySelectorAll('[data-action="copy"]').forEach(b => b.addEventListener('click', async (e) => {
+                    const url = e.currentTarget.getAttribute('data-url');
+                    try { await navigator.clipboard.writeText(url); showNotification('Stream URL copied', 'success'); } catch { showNotification('Copy failed', 'error'); }
+                }));
+                card.querySelectorAll('[data-action="series"]').forEach(b => b.addEventListener('click', (e) => {
+                    const seriesId = e.currentTarget.getAttribute('data-id');
+                    xtreamShowSeriesEpisodes(seriesId);
+                }));
+            });
         }
 
         async function xtreamShowSeriesEpisodes(seriesId) {
             try {
                 const info = await xtreamFetch(`action=get_series_info&series_id=${encodeURIComponent(seriesId)}`);
-                const episodes = (info?.episodes) ? Object.values(info.episodes).flat() : [];
-                if (!episodes.length) { showNotification('No episodes found', 'info'); return; }
-                // Render a simple chooser overlay in the browser modal
+                const episodesData = (info?.episodes) ? Object.values(info.episodes).flat() : [];
+                if (!episodesData.length) { showNotification('No episodes found', 'info'); return; }
+                
+                // Group episodes by season
+                const seasonMap = {};
+                episodesData.forEach(ep => {
+                    const season = ep.season || '1';
+                    if (!seasonMap[season]) seasonMap[season] = [];
+                    seasonMap[season].push(ep);
+                });
+                
+                // Render season cards with collapsible episodes
                 const grid = document.getElementById('xtream-grid');
                 if (!grid) return;
                 grid.innerHTML = '';
-                episodes.forEach(ep => {
-                    const name = `S${ep.season}E${ep.episode_num} - ${ep.title || 'Episode'}`;
-                    const url = `${xtreamState.base}/series/${encodeURIComponent(xtreamState.username)}/${encodeURIComponent(xtreamState.password)}/${ep.id}.${(ep.container_extension || 'mp4').replace(/^\./,'')}`;
-                    const card = document.createElement('div');
-                    card.className = 'music-card';
-                    card.style.cursor = 'default';
-                    card.innerHTML = `
-                        <div class="music-cover"><div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.05)"><i class='fas fa-film'></i></div></div>
-                        <div class="music-info">
-                            <div class="music-title">${name}</div>
-                            <div class="music-actions" style="flex-wrap:wrap; gap:.4rem; margin-top:.4rem;">
-                                <button class="btn" style="padding:.4rem .7rem; border:none; border-radius:6px; background:linear-gradient(135deg,#10b981,#059669); color:#fff; cursor:pointer;" data-action="play" data-url="${url}" data-name="${name.replace(/"/g,'&quot;')}">
-                                    <i class="fas fa-play"></i> Play
-                                </button>
-                                <button class="btn" style="padding:.4rem .7rem; border:none; border-radius:6px; background:linear-gradient(135deg,#3b82f6,#2563eb); color:#fff; cursor:pointer;" data-action="open" data-url="${url}">
-                                    <i class="fas fa-external-link-alt"></i>
-                                </button>
-                                <button class="btn" style="padding:.4rem .7rem; border:none; border-radius:6px; background:rgba(255,255,255,.1); color:#fff; cursor:pointer;" data-action="copy" data-url="${url}">
-                                    <i class="fas fa-copy"></i>
+                
+                const seasons = Object.keys(seasonMap).sort((a, b) => parseInt(a) - parseInt(b));
+                
+                seasons.forEach(seasonNum => {
+                    const episodes = seasonMap[seasonNum];
+                    const seasonCard = document.createElement('div');
+                    seasonCard.className = 'music-card';
+                    seasonCard.style.gridColumn = '1 / -1'; // Full width
+                    seasonCard.style.cursor = 'pointer';
+                    seasonCard.style.background = 'linear-gradient(135deg, rgba(59,130,246,0.1), rgba(37,99,235,0.05))';
+                    seasonCard.style.border = '1px solid rgba(59,130,246,0.3)';
+                    
+                    const seasonId = `season-${seriesId}-${seasonNum}`;
+                    seasonCard.innerHTML = `
+                        <div style="padding:1rem;">
+                            <div style="display:flex; justify-content:space-between; align-items:center;">
+                                <h3 style="color:#fff; margin:0; font-size:1.1rem;">
+                                    <i class="fas fa-tv" style="color:#3b82f6;"></i> Season ${seasonNum}
+                                    <span style="color:#9ca3af; font-size:0.9rem; margin-left:0.5rem;">(${episodes.length} episodes)</span>
+                                </h3>
+                                <button class="season-toggle" data-season-id="${seasonId}" style="background:rgba(59,130,246,0.2); border:1px solid rgba(59,130,246,0.4); color:#3b82f6; padding:0.4rem 0.8rem; border-radius:6px; cursor:pointer;">
+                                    <i class="fas fa-chevron-down"></i> Show Episodes
                                 </button>
                             </div>
-                        </div>`;
-                    grid.appendChild(card);
+                            <div id="${seasonId}" style="display:none; margin-top:1rem;">
+                                <div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:0.75rem;"></div>
+                            </div>
+                        </div>
+                    `;
+                    grid.appendChild(seasonCard);
+                    
+                    // Add toggle functionality
+                    const toggleBtn = seasonCard.querySelector('.season-toggle');
+                    const episodesContainer = seasonCard.querySelector(`#${seasonId}`);
+                    const episodesGrid = episodesContainer.querySelector('div');
+                    
+                    toggleBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        const isHidden = episodesContainer.style.display === 'none';
+                        
+                        if (isHidden) {
+                            // Render episodes if not already rendered
+                            if (episodesGrid.children.length === 0) {
+                                episodes.forEach(ep => {
+                                    const name = `E${ep.episode_num} - ${ep.title || 'Episode'}`;
+                                    const url = `${xtreamState.base}/series/${encodeURIComponent(xtreamState.username)}/${encodeURIComponent(xtreamState.password)}/${ep.id}.${(ep.container_extension || 'mp4').replace(/^\./,'')}`;
+                                    
+                                    const epCard = document.createElement('div');
+                                    epCard.style.cssText = 'background:rgba(0,0,0,0.3); border:1px solid rgba(255,255,255,0.1); border-radius:8px; padding:0.75rem; display:flex; flex-direction:column; gap:0.5rem;';
+                                    epCard.innerHTML = `
+                                        <div style="color:#fff; font-weight:600; font-size:0.9rem;">${name}</div>
+                                        <div style="display:flex; gap:0.4rem; flex-wrap:wrap;">
+                                            <button class="btn" style="padding:.3rem .6rem; border:none; border-radius:6px; background:linear-gradient(135deg,#10b981,#059669); color:#fff; cursor:pointer; font-size:0.85rem;" data-action="play" data-url="${url}" data-name="${name.replace(/"/g,'&quot;')}">
+                                                <i class="fas fa-play"></i> Play
+                                            </button>
+                                            <button class="btn" style="padding:.3rem .6rem; border:none; border-radius:6px; background:linear-gradient(135deg,#3b82f6,#2563eb); color:#fff; cursor:pointer; font-size:0.85rem;" data-action="open" data-url="${url}">
+                                                <i class="fas fa-external-link-alt"></i>
+                                            </button>
+                                            <button class="btn" style="padding:.3rem .6rem; border:none; border-radius:6px; background:rgba(255,255,255,.1); color:#fff; cursor:pointer; font-size:0.85rem;" data-action="copy" data-url="${url}">
+                                                <i class="fas fa-copy"></i>
+                                            </button>
+                                        </div>
+                                    `;
+                                    episodesGrid.appendChild(epCard);
+                                });
+                                
+                                // Wire episode buttons
+                                episodesGrid.querySelectorAll('[data-action="play"]').forEach(b => b.addEventListener('click', (e) => {
+                                    const url = e.currentTarget.getAttribute('data-url');
+                                    const name = e.currentTarget.getAttribute('data-name');
+                                    if (!url) { showNotification('No stream URL found', 'error'); return; }
+                                    showXtreamPlayer(name, url);
+                                }));
+                                episodesGrid.querySelectorAll('[data-action="open"]').forEach(b => b.addEventListener('click', (e) => {
+                                    const url = e.currentTarget.getAttribute('data-url');
+                                    if (!url) { showNotification('No stream URL found', 'error'); return; }
+                                    if (window.electronAPI?.openExternal) window.electronAPI.openExternal(url); else window.open(url, '_blank');
+                                }));
+                                episodesGrid.querySelectorAll('[data-action="copy"]').forEach(b => b.addEventListener('click', async (e) => {
+                                    const url = e.currentTarget.getAttribute('data-url');
+                                    try { await navigator.clipboard.writeText(url); showNotification('Stream URL copied', 'success'); } catch { showNotification('Copy failed', 'error'); }
+                                }));
+                            }
+                            episodesContainer.style.display = '';
+                            toggleBtn.innerHTML = '<i class="fas fa-chevron-up"></i> Hide Episodes';
+                        } else {
+                            episodesContainer.style.display = 'none';
+                            toggleBtn.innerHTML = '<i class="fas fa-chevron-down"></i> Show Episodes';
+                        }
+                    });
                 });
-                // re-bind actions on this list
-                xtreamRenderGrid(); // call to wire generic handlers based on data-action
+                
             } catch (e) {
                 console.error('[XTREAM] Series info error:', e);
                 showNotification('Failed to load episodes: ' + (e?.message || 'Unknown'), 'error');
             }
-            // bind actions for this episodes view only
-            try {
-                const grid = document.getElementById('xtream-grid');
-                if (grid) {
-                    grid.querySelectorAll('[data-action="play"]').forEach(b => b.addEventListener('click', (e) => {
-                        const url = e.currentTarget.getAttribute('data-url');
-                        const name = e.currentTarget.getAttribute('data-name');
-                        if (!url) { showNotification('No stream URL found', 'error'); return; }
-                        showXtreamPlayer(name, url);
-                    }));
-                    grid.querySelectorAll('[data-action="open"]').forEach(b => b.addEventListener('click', (e) => {
-                        const url = e.currentTarget.getAttribute('data-url');
-                        if (!url) { showNotification('No stream URL found', 'error'); return; }
-                        if (window.electronAPI?.openExternal) window.electronAPI.openExternal(url); else window.open(url, '_blank');
-                    }));
-                    grid.querySelectorAll('[data-action="copy"]').forEach(b => b.addEventListener('click', async (e) => {
-                        const url = e.currentTarget.getAttribute('data-url');
-                        try { await navigator.clipboard.writeText(url); showNotification('Stream URL copied', 'success'); } catch { showNotification('Copy failed', 'error'); }
-                    }));
-                }
-            } catch(_) {}
         }
 
         async function xtreamRenderCurrentTab() {
@@ -14307,13 +14463,37 @@ Your browser does not support the video tag.
             if (cancelLogin) cancelLogin.addEventListener('click', hideXtreamLoginModal);
             if (submitLogin) submitLogin.addEventListener('click', xtreamLogin);
 
+            // Setup infinite scroll for content
+            const contentContainer = document.getElementById('xtream-inline-content');
+            if (contentContainer) {
+                contentContainer.addEventListener('scroll', () => {
+                    const { scrollTop, scrollHeight, clientHeight } = contentContainer;
+                    // Load more when user scrolls to bottom (with 200px threshold)
+                    if (scrollTop + clientHeight >= scrollHeight - 200) {
+                        const search = (document.getElementById('xtream-search')?.value || '').toLowerCase().trim();
+                        let items = xtreamState.lastStreams || [];
+                        if (search) {
+                            items = items.filter(it => ((it.name || it.title || '').toLowerCase().includes(search)));
+                        }
+                        // Only load more if there are more items to show
+                        if (xtreamState.displayedIndex < items.length) {
+                            xtreamRenderGrid(true); // append mode
+                        }
+                    }
+                });
+            }
+
             // No inline close button; switching is handled by the header action button
 
             const catSel = document.getElementById('xtream-category-select');
             if (catSel) catSel.addEventListener('change', () => xtreamRenderCurrentTab());
 
             const search = document.getElementById('xtream-search');
-            if (search) search.addEventListener('input', () => xtreamRenderGrid());
+            if (search) search.addEventListener('input', () => {
+                // Reset pagination on search
+                xtreamState.displayedIndex = 0;
+                xtreamRenderGrid(false);
+            });
 
             // Tab buttons
             document.querySelectorAll('.xtream-tab-btn').forEach(btn => {
