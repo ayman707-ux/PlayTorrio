@@ -1,6 +1,6 @@
 {
   "name": "playtorrio",
-  "version": "1.7.5",
+  "version": "1.7.7",
   "description": "Ayman's PlayTorrio an all in one media center",
   "author": {
     "name": "ayman",
@@ -93,6 +93,8 @@
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
+      "deleteAppDataOnUninstall": true,
+      "include": "build/installer.nsh",
       "shortcutName": "PlayTorrio",
       "runAfterFinish": true
     },
