@@ -2561,16 +2561,19 @@
         .track-title { color:#e5e7eb; font-weight:700; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
         .track-duration { color:#94a3b8; text-align:right; font-variant-numeric: tabular-nums; }
         .track-actions { display:flex; justify-content:flex-end; gap:0.4rem; flex-wrap:wrap; }
-        .track-play-btn, .track-plus-btn, .track-heart-btn {
+        .track-play-btn, .track-plus-btn, .track-heart-btn, .track-download-btn {
             display:inline-flex; align-items:center; gap:0.35rem; border-radius: 10px; cursor:pointer;
             padding: 0.4rem 0.65rem; font-size: 0.8rem; font-weight: 800; border: 1px solid rgba(148,163,184,0.25);
             background: linear-gradient(135deg, rgba(51,65,85,0.8), rgba(15,23,42,0.6)); color:#e5e7eb;
             transition: transform 0.12s ease, box-shadow 0.2s ease, border-color 0.2s ease;
         }
-        .track-play-btn:hover, .track-plus-btn:hover, .track-heart-btn:hover { transform: translateY(-1px); box-shadow: 0 10px 22px rgba(2,6,23,0.35); border-color: rgba(148,163,184,0.4); }
+        .track-play-btn:hover, .track-plus-btn:hover, .track-heart-btn:hover, .track-download-btn:hover { transform: translateY(-1px); box-shadow: 0 10px 22px rgba(2,6,23,0.35); border-color: rgba(148,163,184,0.4); }
         .track-play-btn { background: linear-gradient(135deg, #34d399, #10b981); color:#052e2b; border:none; }
         .track-plus-btn { background: linear-gradient(135deg, #c4b5fd, #a78bfa); color:#1e1b4b; border:none; }
         .track-heart-btn { background: linear-gradient(135deg, #fda4af, #fb7185); color:#4c0519; border:none; }
+        .track-download-btn { background: linear-gradient(135deg, #38bdf8, #0ea5e9); color:#082f49; border:none; }
+        .track-download-btn.downloaded { background: linear-gradient(135deg, #10b981, #059669); color:#052e2b; cursor: default; opacity: 0.7; }
+        .track-download-btn.downloaded:hover { transform: none; box-shadow: none; }
         .album-empty { color:#94a3b8; text-align:center; padding:1rem 0; }
 
         /* My Albums heart button */
@@ -7949,6 +7952,10 @@
                 <i class="fas fa-layer-group"></i>
                 <span>Genres</span>
             </div>
+            <div class="nav-item" id="customMagnetBtn" onclick="showCustomMagnetModal(); event.stopPropagation(); event.preventDefault(); return false;">
+                <i class="fas fa-magnet"></i>
+                <span>Play Magnet</span>
+            </div>
             <div class="nav-item" data-page="my-list">
                 <i class="fas fa-heart"></i>
                 <span>My List</span>
@@ -8730,6 +8737,9 @@
                             <button class="trakt-btn trakt-btn-info" id="traktPageRefresh">
                                 <i class="fas fa-sync-alt"></i> Refresh Status
                             </button>
+                            <button class="trakt-btn trakt-btn-info" id="traktPageStats">
+                                <i class="fas fa-chart-bar"></i> View Statistics
+                            </button>
                         </div>
                     </div>
 
@@ -8742,14 +8752,14 @@
                             <div class="trakt-code-display">
                                 <label>Device Code:</label>
                                 <div class="trakt-code-value">
-                                    <span id="traktUserCode">----</span>
+                                    <span id="traktPageUserCode">----</span>
                                     <button id="traktCopyCodeBtn" class="trakt-copy-btn">
                                         <i class="fas fa-copy"></i>
                                     </button>
                                 </div>
                                 <label>Visit URL:</label>
                                 <div class="trakt-code-value">
-                                    <span id="traktVerificationUrl">https://trakt.tv/activate</span>
+                                    <span id="traktPageVerificationUrl">https://trakt.tv/activate</span>
                                 </div>
                             </div>
                             <div class="trakt-verify-section">
@@ -9384,6 +9394,11 @@
                 </h2>
                 <p class="page-subtitle">Watch live TV channels from around the world</p>
             </div>
+            <div class="page-actions" style="display:flex; gap:.5rem; align-items:center;">
+                <button id="iptv-custom-btn" class="btn" style="background:linear-gradient(135deg,#3b82f6,#2563eb);color:#fff;border:none;padding:.6rem 1rem;border-radius:8px;font-weight:600;cursor:pointer;">
+                    <i class="fas fa-user-lock"></i> Custom IPTV (Xtream Codes)
+                </button>
+            </div>
         </div>
 
         <div class="page-content" style="padding: 0; height: calc(100vh - 140px);">
@@ -9393,6 +9408,102 @@
                 style="width: 100%; height: 100%; border: none; border-radius: 8px;"
                 allowfullscreen>
             </iframe>
+            <!-- Custom IPTV Inline Browser (replaces iframe when active) -->
+            <div id="xtream-inline" style="display:none; width:100%; height:100%;">
+                <div style="display:flex; justify-content:space-between; align-items:center; padding:.75rem 1rem; border-bottom:1px solid rgba(255,255,255,.08); background:rgba(0,0,0,.3);">
+                    <div style="display:flex; gap:.5rem; align-items:center;">
+                        <button class="xtream-tab-btn" data-tab="live" style="background:#1b1b1b;color:#fff;border:1px solid rgba(255,255,255,.15);padding:.45rem .8rem;border-radius:8px;cursor:pointer;">Live</button>
+                        <button class="xtream-tab-btn" data-tab="vod" style="background:transparent;color:#ddd;border:1px solid rgba(255,255,255,.15);padding:.45rem .8rem;border-radius:8px;cursor:pointer;">Movies</button>
+                        <button class="xtream-tab-btn" data-tab="series" style="background:transparent;color:#ddd;border:1px solid rgba(255,255,255,.15);padding:.45rem .8rem;border-radius:8px;cursor:pointer;">Series</button>
+                    </div>
+                    <div style="display:flex; gap:.6rem; align-items:center;">
+                        <select id="xtream-category-select" style="background:#1b1b1b;color:#fff;border:1px solid rgba(255,255,255,.15);padding:.45rem .8rem;border-radius:8px;">
+                            <option value="">All Categories</option>
+                        </select>
+                        <input id="xtream-search" placeholder="Search..." style="background:#1b1b1b;color:#fff;border:1px solid rgba(255,255,255,.15);padding:.5rem .8rem;border-radius:8px;min-width:220px;">
+                    </div>
+                </div>
+                <div id="xtream-inline-content" style="width:100%; height:calc(100% - 58px); overflow:auto; padding:1rem;">
+                    <div id="xtream-empty" style="display:flex; align-items:center; justify-content:center; height:100%; color:#9ca3af;">No data</div>
+                    <div id="xtream-grid" style="display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:1rem;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Xtream Codes Login Modal -->
+    <div id="xtream-login-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.65); z-index:12000; align-items:center; justify-content:center;">
+        <div style="width: min(560px, 92vw); background: #121212; color: #fff; border-radius: 16px; border:1px solid rgba(255,255,255,.12); box-shadow:0 20px 50px rgba(0,0,0,.5); overflow:hidden;">
+            <div style="display:flex; justify-content:space-between; align-items:center; padding:1rem 1.25rem; border-bottom:1px solid rgba(255,255,255,.08);">
+                <h3 style="margin:0; font-size:1.1rem; display:flex; gap:.5rem; align-items:center;"><i class="fas fa-key"></i> Xtream Codes Login</h3>
+                <button id="xtream-login-close" style="background:transparent;color:#fff;border:none;font-size:1.25rem;cursor:pointer;">×</button>
+            </div>
+            <div style="padding:1rem 1.25rem; display:flex; flex-direction:column; gap:.75rem;">
+                <label style="font-size:.9rem; color:#ddd;">Server Base URL (e.g. http://example.com:8080)</label>
+                <input id="xtream-base-url" placeholder="http://host:port" style="padding:.7rem 1rem; border-radius:10px; border:1px solid rgba(255,255,255,.15); background:#1b1b1b; color:#fff; outline:none;">
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:.75rem;">
+                    <div>
+                        <label style="font-size:.9rem; color:#ddd;">Username</label>
+                        <input id="xtream-username" placeholder="username" style="width:100%; padding:.7rem 1rem; border-radius:10px; border:1px solid rgba(255,255,255,.15); background:#1b1b1b; color:#fff; outline:none;">
+                    </div>
+                    <div>
+                        <label style="font-size:.9rem; color:#ddd;">Password</label>
+                        <input id="xtream-password" placeholder="password" type="password" style="width:100%; padding:.7rem 1rem; border-radius:10px; border:1px solid rgba(255,255,255,.15); background:#1b1b1b; color:#fff; outline:none;">
+                    </div>
+                </div>
+                <div style="display:flex; align-items:center; gap:.5rem; margin-top:.25rem;">
+                    <input id="xtream-remember" type="checkbox">
+                    <label for="xtream-remember" style="color:#bbb;">Remember on this device</label>
+                </div>
+                <div style="display:flex; justify-content:flex-end; gap:.5rem; margin-top:.75rem;">
+                    <button id="xtream-login-cancel" style="background:rgba(255,255,255,.1); color:#fff; border:1px solid rgba(255,255,255,.2); padding:.6rem 1rem; border-radius:8px; cursor:pointer;">Cancel</button>
+                    <button id="xtream-login-submit" style="background:linear-gradient(135deg,#10b981,#059669); color:#fff; border:none; padding:.6rem 1rem; border-radius:8px; font-weight:600; cursor:pointer;">
+                        <i class="fas fa-sign-in-alt"></i> Login
+                    </button>
+                </div>
+                <div style="display:flex; align-items:center; gap:.5rem; opacity:.8; padding-top:.4rem; border-top:1px dashed rgba(255,255,255,.15); margin-top:.4rem;">
+                    <span style="font-size:.85rem; color:#9ca3af;">OR</span>
+                </div>
+                <label style="font-size:.9rem; color:#ddd;">M3U/M3U8 Playlist URL</label>
+                <input id="xtream-m3u-url" placeholder="http://example.com/playlist.m3u or .m3u8" style="padding:.7rem 1rem; border-radius:10px; border:1px solid rgba(255,255,255,.15); background:#1b1b1b; color:#fff; outline:none;">
+                <div style="display:flex; justify-content:flex-end; gap:.5rem;">
+                    <button id="xtream-m3u-submit" style="background:linear-gradient(135deg,#f59e0b,#b45309); color:#fff; border:none; padding:.6rem 1rem; border-radius:8px; font-weight:600; cursor:pointer;">
+                        <i class="fas fa-list"></i> Load Playlist
+                    </button>
+                </div>
+                <!-- Recommended M3U Playlists -->
+                <div id="xtream-m3u-recommended" style="margin-top:.5rem;">
+                    <div style="font-size:.85rem; color:#9ca3af; margin-bottom:.35rem;">Recommended playlists</div>
+                    <div style="display:flex; flex-direction:column; gap:.35rem;">
+                        <button class="m3u-preset" data-url="https://iptv-org.github.io/iptv/languages/eng.m3u" style="text-align:left; background:rgba(255,255,255,.06); color:#e5e7eb; border:1px solid rgba(255,255,255,.12); padding:.45rem .6rem; border-radius:6px; cursor:pointer;">
+                            <i class="fas fa-bolt" style="color:#f59e0b;"></i> Load English (iptv-org)
+                        </button>
+                        <button class="m3u-preset" data-url="https://iptv-org.github.io/iptv/index.m3u" style="text-align:left; background:rgba(255,255,255,.06); color:#e5e7eb; border:1px solid rgba(255,255,255,.12); padding:.45rem .6rem; border-radius:6px; cursor:pointer;">
+                            <i class="fas fa-bolt" style="color:#f59e0b;"></i> Load Global index (iptv-org)
+                        </button>
+                    </div>
+                </div>
+                <div id="xtream-login-status" style="font-size:.9rem; color:#9ca3af; min-height:1.2rem;"></div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Xtream Player Modal (basic) -->
+    <div id="xtream-player-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.8); z-index:16000; align-items:center; justify-content:center;">
+        <div style="width:min(1000px,94vw); background:#000; border-radius:10px; overflow:hidden; border:1px solid rgba(255,255,255,.15);">
+            <div style="display:flex; justify-content:space-between; align-items:center; padding:.5rem .75rem; background:#0f0f0f;">
+                <div id="xtream-player-title" style="color:#fff; font-weight:600;">Playing</div>
+                <div style="display:flex; gap:.5rem;">
+                    <button id="xtream-open-external" style="background:linear-gradient(135deg,#3b82f6,#2563eb); color:#fff; border:none; padding:.4rem .7rem; border-radius:6px; cursor:pointer;">
+                        <i class="fas fa-external-link-alt"></i> Open in Browser
+                    </button>
+                    <button id="xtream-player-close" style="background:transparent;color:#fff;border:none;font-size:1.25rem;cursor:pointer;">×</button>
+                </div>
+            </div>
+            <div style="background:#000;">
+                <video id="xtream-video" style="width:100%; height:65vh; background:#000;" controls playsinline></video>
+            </div>
         </div>
     </div>
 
@@ -9613,6 +9724,39 @@
                         <p>Discovering devices...</p>
                     </div>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom Magnet Link Modal -->
+    <div id="custom-magnet-modal" class="modal" style="display: none; z-index: 6000;">
+        <div class="modal-content" style="width: 420px; max-width: 92vw; background: #0f172a; border-radius: 10px; box-shadow: 0 20px 40px rgba(0,0,0,0.5); border: 1px solid rgba(139,92,246,0.25); padding: 12px 12px 10px; position: relative;">
+            <button id="close-custom-magnet-modal" style="position: absolute; top: 8px; right: 8px; background: rgba(255,255,255,0.12); color: #fff; border: none; width: 28px; height: 28px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center;">
+                <i class="fas fa-times"></i>
+            </button>
+            <h3 style="margin: 0 36px 8px 0; display: flex; align-items: center; gap: 6px; color: #e2e8f0; font-size: 0.95rem; font-weight: 700;">
+                <i class="fas fa-magnet" style="color: #a78bfa;"></i> Play Custom Magnet
+            </h3>
+            <div style="margin: 6px 0 8px;">
+                <label for="custom-magnet-input" style="display: block; margin-bottom: 6px; color: #cbd5e1; font-weight: 600; font-size: 0.8rem;">
+                    <i class="fas fa-link" style="color: #8b5cf6;"></i> Magnet Link
+                </label>
+                <input 
+                    id="custom-magnet-input"
+                    type="text"
+                    placeholder="magnet:?xt=urn:btih:..."
+                    style="width: 100%; height: 38px; padding: 8px 10px; border: 1.5px solid rgba(139,92,246,0.5); border-radius: 8px; background: #0b1220; color: #e2e8f0; font-size: 0.85rem; font-family: 'Consolas', 'Courier New', monospace; outline: none;"
+                    onfocus="this.style.borderColor='#8b5cf6'; this.style.boxShadow='0 0 0 3px rgba(139,92,246,0.15)';"
+                    onblur="this.style.borderColor='rgba(139,92,246,0.5)'; this.style.boxShadow='none';"
+                />
+            </div>
+            <div style="display: flex; gap: 8px; justify-content: flex-end; margin-top: 8px;">
+                <button id="cancel-custom-magnet-btn" style="padding: 8px 14px; border-radius: 8px; font-weight: 600; background: rgba(71,85,105,0.3); border: 1.5px solid rgba(71,85,105,0.5); color: #cbd5e1; cursor: pointer; font-size: 0.85rem;">
+                    Cancel
+                </button>
+                <button id="play-custom-magnet-btn" style="background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%); border: none; padding: 8px 14px; border-radius: 8px; font-weight: 700; display: flex; align-items: center; gap: 6px; color: #fff; cursor: pointer; font-size: 0.85rem;">
+                    <i class="fas fa-play-circle"></i> Play
+                </button>
             </div>
         </div>
     </div>
@@ -11567,7 +11711,7 @@ Your browser does not support the video tag.
         // Check Trakt authentication status
         async function checkTraktStatus() {
             try {
-                const response = await fetch('/api/trakt/status');
+                const response = await fetch(`/api/trakt/status?ts=${Date.now()}`, { cache: 'no-store' });
                 const data = await response.json();
                 
                 if (data.authenticated && data.user) {
@@ -11611,7 +11755,7 @@ Your browser does not support the video tag.
             });
         }
 
-        // Start Trakt authentication flow
+        // Start Trakt authentication flow (unified to new device/code + verify endpoints)
         async function startTraktLogin() {
             try {
                 // Update ALL login buttons
@@ -11622,7 +11766,7 @@ Your browser does not support the video tag.
                 });
 
                 // Get device code
-                const response = await fetch('/api/trakt/device-code');
+                const response = await fetch('/api/trakt/device/code', { method: 'POST' });
                 const data = await response.json();
 
                 if (!data.success) {
@@ -11640,7 +11784,7 @@ Your browser does not support the video tag.
                 traktVerifyUrlEls.forEach(el => el.href = data.verification_url);
                 traktLoginStatusEls.forEach(el => el.textContent = 'Waiting for authorization…');
 
-                // Start polling for token
+                // Start polling verification (server reads stored device_code)
                 startTraktPolling(data.device_code, data.interval || 5);
 
             } catch (error) {
@@ -11657,39 +11801,23 @@ Your browser does not support the video tag.
 
             traktPollingInterval = setInterval(async () => {
                 try {
-                    const response = await fetch('/api/trakt/device-token', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ device_code: deviceCode })
-                    });
-
+                    const response = await fetch('/api/trakt/device/verify', { method: 'POST' });
                     const data = await response.json();
 
                     if (data.success) {
                         // Authentication successful
                         clearInterval(traktPollingInterval);
                         traktPollingInterval = null;
-                        traktCodePanel.style.display = 'none';
+                        if (traktCodePanel) traktCodePanel.style.display = 'none';
                         showNotification('Successfully connected to Trakt!', 'success');
                         await checkTraktStatus();
                         resetTraktLogin();
-                    } else if (response.status === 400) {
+                    } else if (data.error === 'pending') {
                         // Still waiting for user authorization
-                        traktLoginStatusEl.textContent = 'Waiting for authorization…';
-                    } else if (response.status === 410) {
-                        // Code expired
-                        clearInterval(traktPollingInterval);
-                        traktPollingInterval = null;
-                        showNotification('Authorization code expired. Please try again.', 'error');
-                        resetTraktLogin();
-                    } else if (response.status === 418) {
-                        // User denied
-                        clearInterval(traktPollingInterval);
-                        traktPollingInterval = null;
-                        showNotification('Authorization denied by user.', 'error');
-                        resetTraktLogin();
+                        if (traktLoginStatusEl) traktLoginStatusEl.textContent = 'Waiting for authorization…';
                     } else {
-                        throw new Error(data.error || 'Unknown error');
+                        // Other verification error
+                        throw new Error(data.error || 'Verification failed');
                     }
                 } catch (error) {
                     console.error('[TRAKT] Polling error:', error);
@@ -11728,7 +11856,13 @@ Your browser does not support the video tag.
                 const data = await response.json();
 
                 if (data.success) {
+                    // Hide any device code panels in Settings
+                    document.querySelectorAll('#traktCodePanel').forEach(p => p.style.display = 'none');
                     showTraktDisconnected();
+                    // Re-check status to sync all UI instances
+                    try { await checkTraktStatus(); } catch(_) {}
+                    // If Trakt page is loaded, refresh its status too
+                    try { if (typeof updateTraktPageStatus === 'function') await updateTraktPageStatus(); } catch(_) {}
                     showNotification('Disconnected from Trakt', 'success');
                 } else {
                     throw new Error(data.error || 'Failed to logout');
@@ -11956,44 +12090,47 @@ Your browser does not support the video tag.
         }
 
         function setupTraktPageEventListeners() {
-            // Authenticate button
-            const authBtn = document.getElementById('traktAuthenticateBtn');
-            if (authBtn) {
-                authBtn.addEventListener('click', startTraktPageAuth);
+            // Helper to avoid duplicate listeners when DOM is re-rendered
+            function bindById(id, handler) {
+                const el = document.getElementById(id);
+                if (!el) return;
+                const fresh = el.cloneNode(true);
+                el.parentNode.replaceChild(fresh, el);
+                fresh.addEventListener('click', handler);
             }
 
-            // Disconnect button
-            const disconnectBtn = document.getElementById('traktDisconnectBtn');
-            if (disconnectBtn) {
-                disconnectBtn.addEventListener('click', disconnectTraktFromPage);
-            }
+            // Authenticate button
+            bindById('traktAuthenticateBtn', startTraktPageAuth);
+
+            // Disconnect buttons (both variants)
+            bindById('traktPageDisconnect', disconnectTraktFromPage);
+            bindById('traktDisconnectBtn', disconnectTraktFromPage);
+
+            // Refresh status button
+            bindById('traktPageRefresh', () => { updateTraktPageStatus(); });
+
+            // View statistics button
+            bindById('traktPageStats', () => { try { showDetailedTraktStatistics(); } catch(_) {} });
 
             // Verify Device Code button
-            const verifyBtn = document.getElementById('traktVerifyDeviceBtn');
-            if (verifyBtn) {
-                verifyBtn.addEventListener('click', verifyTraktDeviceCode);
-            }
+            bindById('traktVerifyDeviceBtn', verifyTraktDeviceCode);
 
             // Open Trakt URL button
-            const openUrlBtn = document.getElementById('traktOpenUrlBtn');
-            if (openUrlBtn) {
-                openUrlBtn.addEventListener('click', () => {
-                    const url = document.getElementById('traktVerificationUrl')?.textContent;
-                    if (url) {
-                        window.electronAPI?.openExternal(url);
-                    }
-                });
-            }
+            bindById('traktOpenUrlBtn', () => {
+                const url = document.getElementById('traktPageVerificationUrl')?.textContent;
+                if (url) {
+                    window.electronAPI?.openExternal(url);
+                }
+            });
 
             // Copy device code button
-            const copyCodeBtn = document.getElementById('traktCopyCodeBtn');
-            if (copyCodeBtn) {
-                copyCodeBtn.addEventListener('click', copyTraktDeviceCode);
-            }
+            bindById('traktCopyCodeBtn', copyTraktDeviceCode);
 
-            // Action cards
+            // Action cards (rebinding safely)
             document.querySelectorAll('.trakt-action-card').forEach(card => {
-                card.addEventListener('click', handleTraktActionClick);
+                const fresh = card.cloneNode(true);
+                card.parentNode.replaceChild(fresh, card);
+                fresh.addEventListener('click', handleTraktActionClick);
             });
 
             // Settings toggles
@@ -12019,8 +12156,8 @@ Your browser does not support the video tag.
 
             if (watchlistToggle) {
                 watchlistToggle.addEventListener('change', () => {
-                    if (traktWatchlistSyncToggle) {
-                        traktWatchlistSyncToggle.checked = watchlistToggle.checked;
+                    if (traktSyncWatchlistToggle) {
+                        traktSyncWatchlistToggle.checked = watchlistToggle.checked;
                     }
                 });
             }
@@ -12028,56 +12165,43 @@ Your browser does not support the video tag.
 
         async function updateTraktPageStatus() {
             try {
-                const response = await fetch('/api/trakt/status');
+                const response = await fetch(`/api/trakt/status?ts=${Date.now()}`, { cache: 'no-store' });
                 const data = await response.json();
 
                 const statusIndicator = document.getElementById('traktStatusIndicator');
                 const statusDescription = document.getElementById('traktStatusDescription');
                 const statusActions = document.getElementById('traktStatusActions');
                 const deviceCodePanel = document.getElementById('traktDeviceCodePanel');
+                const traktPageNotConnected = document.getElementById('traktPageNotConnected');
+                const traktPageConnected = document.getElementById('traktPageConnected');
+                const traktPageUsername = document.getElementById('traktPageUsername');
 
                 if (data.authenticated) {
-                    // Connected state
-                    if (statusIndicator) {
-                        statusIndicator.className = 'trakt-status-indicator connected';
-                        statusIndicator.innerHTML = '<i class="fas fa-check-circle"></i>Connected to Trakt';
-                    }
-
-                    if (statusDescription) {
-                        statusDescription.textContent = 'Your account is connected and ready for automatic scrobbling, watchlist sync, and more!';
-                    }
-
-                    if (statusActions) {
-                        statusActions.innerHTML = `
-                            <button id="traktDisconnectBtn" class="trakt-btn trakt-btn-secondary">
-                                <i class="fas fa-unlink"></i>Disconnect Account
-                            </button>
-                            <button onclick="showDetailedTraktStatistics()" class="trakt-btn trakt-btn-info">
-                                <i class="fas fa-chart-bar"></i>View Statistics
-                            </button>
-                        `;
-                    }
+                    // Connected state: show connected card, set username
+                    if (traktPageNotConnected) traktPageNotConnected.style.display = 'none';
+                    if (traktPageConnected) traktPageConnected.style.display = '';
+                    if (traktPageUsername) traktPageUsername.textContent = (data.user?.username || data.user?.name || 'User');
 
                     if (deviceCodePanel) {
                         deviceCodePanel.style.display = 'none';
+                        delete deviceCodePanel.dataset.manual;
                     }
-
                     // Update action grid with stats
                     await loadTraktStats();
                     // One-time import from Trakt into local caches
                     importTraktDataOnceIfNeeded();
                     
                 } else {
-                    // Disconnected state
+                    // Disconnected state: show not-connected card with connect action
+                    if (traktPageConnected) traktPageConnected.style.display = 'none';
+                    if (traktPageNotConnected) traktPageNotConnected.style.display = '';
                     if (statusIndicator) {
                         statusIndicator.className = 'trakt-status-indicator disconnected';
-                        statusIndicator.innerHTML = '<i class="fas fa-times-circle"></i>Not Connected';
+                        statusIndicator.innerHTML = '<i class="fas fa-times-circle"></i><span>Not Connected</span>';
                     }
-
                     if (statusDescription) {
                         statusDescription.textContent = 'Connect your Trakt account to automatically track what you watch, sync your watchlist, and get personalized recommendations.';
                     }
-
                     if (statusActions) {
                         statusActions.innerHTML = `
                             <button id="traktAuthenticateBtn" class="trakt-btn trakt-btn-primary">
@@ -12086,7 +12210,8 @@ Your browser does not support the video tag.
                         `;
                     }
 
-                    if (deviceCodePanel) {
+                    // Only hide code panel if not manually shown during an active auth flow
+                    if (deviceCodePanel && deviceCodePanel.dataset.manual !== 'true') {
                         deviceCodePanel.style.display = 'none';
                     }
 
@@ -12102,10 +12227,9 @@ Your browser does not support the video tag.
 
             } catch (error) {
                 console.error('[TRAKT PAGE] Status update error:', error);
-                // Only show error if we can't get basic status, not for stats loading
-                if (error.message && !error.message.includes('stats')) {
-                    showNotification('Trakt loading', 'warning');
-                }
+                // Surface the actual error for clarity
+                const msg = (error && error.message) ? error.message : 'Unknown error';
+                showNotification('Trakt status error: ' + msg, 'error');
             }
         }
 
@@ -12133,11 +12257,14 @@ Your browser does not support the video tag.
 
         function showTraktDeviceCode(deviceCode, userCode, verificationUrl, expiresIn) {
             const deviceCodePanel = document.getElementById('traktDeviceCodePanel');
-            const userCodeSpan = document.getElementById('traktUserCode');
-            const verificationUrlSpan = document.getElementById('traktVerificationUrl');
+            const userCodeSpan = document.getElementById('traktPageUserCode');
+            const verificationUrlSpan = document.getElementById('traktPageVerificationUrl');
             const statusMessage = document.getElementById('traktDeviceCodeStatus');
 
-            if (deviceCodePanel) deviceCodePanel.style.display = 'block';
+            if (deviceCodePanel) {
+                deviceCodePanel.style.display = 'block';
+                deviceCodePanel.dataset.manual = 'true';
+            }
             if (userCodeSpan) userCodeSpan.textContent = userCode;
             if (verificationUrlSpan) verificationUrlSpan.textContent = verificationUrl;
             if (statusMessage) {
@@ -12149,7 +12276,10 @@ Your browser does not support the video tag.
                 if (traktDeviceCodeInterval) {
                     clearInterval(traktDeviceCodeInterval);
                     traktDeviceCodeInterval = null;
-                    if (deviceCodePanel) deviceCodePanel.style.display = 'none';
+                    if (deviceCodePanel) {
+                        deviceCodePanel.style.display = 'none';
+                        delete deviceCodePanel.dataset.manual;
+                    }
                     showNotification('Device code expired. Please try again.', 'error');
                 }
             }, expiresIn * 1000);
@@ -12196,8 +12326,13 @@ Your browser does not support the video tag.
                 const data = await response.json();
 
                 if (data.success) {
+                    // Hide device code panel if visible
+                    const deviceCodePanel = document.getElementById('traktDeviceCodePanel');
+                    if (deviceCodePanel) deviceCodePanel.style.display = 'none';
+                    // Refresh both Trakt page and Settings page status
+                    try { await updateTraktPageStatus(); } catch(_) {}
+                    try { await checkTraktStatus(); } catch(_) {}
                     showNotification('Successfully disconnected from Trakt', 'success');
-                    await updateTraktPageStatus();
                 } else {
                     throw new Error(data.error || 'Failed to disconnect');
                 }
@@ -12208,7 +12343,10 @@ Your browser does not support the video tag.
         }
 
         function copyTraktDeviceCode() {
-            const userCode = document.getElementById('traktUserCode')?.textContent;
+            // Prefer Trakt page code span, fallback to Settings panel span
+            const userCode = (document.getElementById('traktPageUserCode')?.textContent)
+                || (document.querySelector('#traktCodePanel #traktUserCode')?.textContent)
+                || (document.getElementById('traktUserCode')?.textContent);
             if (userCode && navigator.clipboard) {
                 navigator.clipboard.writeText(userCode).then(() => {
                     showNotification('Device code copied to clipboard!', 'success');
@@ -12676,8 +12814,8 @@ Your browser does not support the video tag.
                 progressToggle.checked = traktScrobbleProgressToggle.checked;
             }
 
-            if (watchlistToggle && traktWatchlistSyncToggle) {
-                watchlistToggle.checked = traktWatchlistSyncToggle.checked;
+            if (watchlistToggle && traktSyncWatchlistToggle) {
+                watchlistToggle.checked = traktSyncWatchlistToggle.checked;
             }
         }
 
@@ -13285,6 +13423,21 @@ Your browser does not support the video tag.
             window.location.hash = '#/genres';
         }
         
+        function showCustomMagnetModal() {
+            const modal = document.getElementById('custom-magnet-modal');
+            const input = document.getElementById('custom-magnet-input');
+            if (modal) {
+                modal.style.display = 'flex';
+                modal.classList.add('active');
+                modal.style.opacity = '1';
+                modal.style.pointerEvents = 'auto';
+                if (input) {
+                    input.value = '';
+                    setTimeout(() => input.focus(), 100);
+                }
+            }
+        }
+        
         function showMyListPage() {
             window.location.hash = '#/my-list';
         }
@@ -13303,6 +13456,7 @@ Your browser does not support the video tag.
         
         function showIptvPage() {
             window.location.hash = '#/iptv';
+            try { updateIptvActionButton(); } catch(_) {}
         }
         
         function reloadIptvPage() {
@@ -13393,6 +13547,840 @@ Your browser does not support the video tag.
                 iptvIframe.src = 'about:blank';
                 console.log('[IPTV] Page cleared - stopping all streams');
             }
+        }
+
+        // ===== Custom IPTV (Xtream Codes) =====
+        function disableIptvIframe() {
+            try {
+                const iptvIframe = document.getElementById('iptv-iframe');
+                if (iptvIframe) {
+                    iptvIframe.src = 'about:blank';
+                    iptvIframe.style.display = 'none';
+                    console.log('[IPTV] Default iframe disabled (custom Xtream active)');
+                }
+            } catch(_) {}
+        }
+
+        function enableIptvIframe() {
+            try {
+                const iptvIframe = document.getElementById('iptv-iframe');
+                if (iptvIframe) {
+                    iptvIframe.style.display = '';
+                    if (!iptvIframe.src || iptvIframe.src === 'about:blank') {
+                        iptvIframe.src = 'https://taupe-florentine-9c4193.netlify.app/routes/countries.html';
+                    }
+                    console.log('[IPTV] Default iframe enabled');
+                }
+            } catch(_) {}
+        }
+        const xtreamState = {
+            base: '',
+            username: '',
+            password: '',
+            tab: 'live', // 'live' | 'vod' | 'series'
+            active: false,
+            mode: 'none', // 'none' | 'xtream' | 'm3u'
+            liveCategories: [],
+            vodCategories: [],
+            seriesCategories: [],
+            lastStreams: [],
+            m3u: { items: [], categories: [] },
+        };
+
+        // Persistent IPTV settings helpers
+        async function iptvLoadSettings() {
+            try {
+                const resp = await fetch('/api/iptv/settings', { cache: 'no-store' });
+                const data = await resp.json();
+                return data?.iptv || { lastMode: 'iframe', rememberCreds: false, xtream: { base: '', username: '', password: '' }, m3u: { url: '' } };
+            } catch {
+                // Fallback to localStorage for backward compatibility
+                try {
+                    const saved = JSON.parse(localStorage.getItem('xtreamCodesCreds') || '{}');
+                    return { lastMode: 'iframe', rememberCreds: !!(saved.base || saved.username || saved.password), xtream: { base: saved.base||'', username: saved.username||'', password: saved.password||'' }, m3u: { url: '' } };
+                } catch { return { lastMode: 'iframe', rememberCreds: false, xtream: { base: '', username: '', password: '' }, m3u: { url: '' } }; }
+            }
+        }
+
+        async function iptvSaveSettings(patch = {}) {
+            try {
+                await fetch('/api/iptv/settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(patch) });
+            } catch (e) {
+                console.warn('[IPTV] Failed to save settings', e);
+            }
+        }
+
+        // Auto-restore IPTV state from saved settings on app load
+        async function xtreamAutoLogin(base, username, password) {
+            try {
+                let apiBase = xtreamNormalizeBase(base);
+                const loginParams = `username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}`;
+                async function attemptLogin(baseUrl) {
+                    const url = `/api/proxy/xtream?base=${encodeURIComponent(baseUrl)}&params=${encodeURIComponent(loginParams)}`;
+                    const resp = await fetch(url, { cache: 'no-store' });
+                    if (!resp.ok) throw new Error('Server returned ' + resp.status);
+                    const data = await resp.json();
+                    return { data, baseUrl };
+                }
+                let { data, baseUrl } = await attemptLogin(apiBase);
+                if (!data || data.nonJson || (!data.user_info && !data.server_info)) {
+                    try {
+                        const flipped = apiBase.startsWith('https://') ? apiBase.replace(/^https:\/\//i, 'http://') : apiBase.replace(/^http:\/\//i, 'https://');
+                        const retry = await attemptLogin(flipped);
+                        if (retry?.data && !retry.data.nonJson && (retry.data.user_info || retry.data.server_info)) {
+                            data = retry.data; baseUrl = retry.baseUrl; apiBase = flipped;
+                        }
+                    } catch {}
+                }
+                if (!data || data.nonJson) throw new Error('Non-JSON response');
+                if (data.user_info && String(data.user_info.status).toLowerCase() !== 'active') throw new Error('Account is not active');
+                xtreamState.base = apiBase; xtreamState.username = username; xtreamState.password = password; xtreamState.tab = 'live';
+                xtreamState.active = true; xtreamState.mode = 'xtream';
+                await xtreamLoadAllCategories();
+                try { clearIptvPage(); disableIptvIframe(); } catch(_) {}
+                hideXtreamLoginModal();
+                showXtreamBrowser();
+                await xtreamRenderCurrentTab();
+                updateIptvActionButton();
+                showNotification('Xtream Codes connected (restored)', 'success');
+            } catch (e) {
+                console.warn('[XTREAM] auto-login failed:', e?.message || e);
+                // Fall back to iframe to keep UI usable
+                try { enableIptvIframe(); } catch(_) {}
+                updateIptvActionButton();
+            }
+        }
+
+        async function iptvAutoRestore() {
+            try {
+                const saved = await iptvLoadSettings();
+                const mode = saved?.lastMode || 'iframe';
+                if (mode === 'iframe') {
+                    try { enableIptvIframe(); hideXtreamBrowser(); } catch(_) {}
+                    updateIptvActionButton();
+                    return;
+                }
+                if (mode === 'm3u' && saved?.m3u?.url) {
+                    await loadM3UFromUrl(saved.m3u.url);
+                    return;
+                }
+                if (mode === 'xtream' && saved?.rememberCreds && saved?.xtream?.base && saved?.xtream?.username && saved?.xtream?.password) {
+                    await xtreamAutoLogin(saved.xtream.base, saved.xtream.username, saved.xtream.password);
+                    return;
+                }
+                // Default fallback
+                try { enableIptvIframe(); hideXtreamBrowser(); } catch(_) {}
+                updateIptvActionButton();
+            } catch (e) {
+                console.warn('[IPTV] auto-restore failed:', e?.message || e);
+                try { enableIptvIframe(); hideXtreamBrowser(); } catch(_) {}
+                updateIptvActionButton();
+            }
+        }
+
+        function xtreamNormalizeBase(url) {
+            if (!url) return '';
+            let u = (url + '').trim();
+            // Add scheme if missing
+            if (!/^https?:\/\//i.test(u)) u = 'http://' + u;
+            // Remove query/fragment for base
+            try { const tmp = new URL(u); u = tmp.origin + tmp.pathname; } catch {}
+            // Strip common portal/file suffixes
+            u = u.replace(/\/+$/, '');
+            u = u.replace(/\/(player_api\.php|xmltv\.php|get\.php)$/i, '');
+            u = u.replace(/\/(c|panel_api|client_area)\/?$/i, '');
+            // Final trim of trailing slashes
+            u = u.replace(/\/+$/, '');
+            return u;
+        }
+
+        async function showXtreamLoginModal(prefill = true) {
+            const modal = document.getElementById('xtream-login-modal');
+            if (!modal) return;
+            // prefill from storage
+            if (prefill) {
+                try {
+                    const saved = await iptvLoadSettings();
+                    const baseEl = document.getElementById('xtream-base-url');
+                    const userEl = document.getElementById('xtream-username');
+                    const passEl = document.getElementById('xtream-password');
+                    const remEl = document.getElementById('xtream-remember');
+                    const m3uEl = document.getElementById('xtream-m3u-url');
+                    if (saved?.xtream) {
+                        if (saved.rememberCreds) {
+                            if (baseEl) baseEl.value = saved.xtream.base || '';
+                            if (userEl) userEl.value = saved.xtream.username || '';
+                            if (passEl) passEl.value = saved.xtream.password || '';
+                        }
+                        if (remEl) remEl.checked = !!saved.rememberCreds;
+                    }
+                    if (m3uEl && saved?.m3u?.url) m3uEl.value = saved.m3u.url;
+                } catch(_) {}
+            }
+            modal.style.display = 'flex';
+        }
+
+        function hideXtreamLoginModal() {
+            const modal = document.getElementById('xtream-login-modal');
+            if (modal) modal.style.display = 'none';
+        }
+
+        function showXtreamBrowser() {
+            const inline = document.getElementById('xtream-inline');
+            const grid = document.getElementById('xtream-grid');
+            const empty = document.getElementById('xtream-empty');
+            const search = document.getElementById('xtream-search');
+            const cat = document.getElementById('xtream-category-select');
+            if (inline) inline.style.display = 'block';
+            if (grid) grid.innerHTML = '';
+            if (empty) empty.style.display = '';
+            if (search) search.value = '';
+            if (cat) cat.innerHTML = '<option value="">All Categories</option>';
+        }
+
+        function hideXtreamBrowser() {
+            const inline = document.getElementById('xtream-inline');
+            if (inline) inline.style.display = 'none';
+        }
+
+        let xtreamHls = null;
+
+        function ensureHlsScriptLoaded() {
+            return new Promise((resolve, reject) => {
+                if (window.Hls) return resolve();
+                const existing = document.getElementById('hlsjs-script');
+                if (existing) {
+                    existing.addEventListener('load', () => resolve());
+                    existing.addEventListener('error', () => reject(new Error('Failed to load hls.js')));
+                    return;
+                }
+                const s = document.createElement('script');
+                s.id = 'hlsjs-script';
+                s.src = 'https://cdn.jsdelivr.net/npm/hls.js@latest';
+                s.async = true;
+                s.onload = () => resolve();
+                s.onerror = () => reject(new Error('Failed to load hls.js'));
+                document.head.appendChild(s);
+            });
+        }
+
+        async function showXtreamPlayer(title, url) {
+            const modal = document.getElementById('xtream-player-modal');
+            const video = document.getElementById('xtream-video');
+            const label = document.getElementById('xtream-player-title');
+            const openBtn = document.getElementById('xtream-open-external');
+            if (!modal || !video) return;
+            // reset any previous playback and hls instance
+            try { video.pause(); } catch(_) {}
+            try { if (xtreamHls) { xtreamHls.destroy(); xtreamHls = null; } } catch(_) {}
+            video.removeAttribute('src');
+            video.load();
+            video.crossOrigin = 'anonymous';
+            if (label) label.textContent = title || 'Playing';
+            if (openBtn) {
+                openBtn.onclick = () => {
+                    if (window.electronAPI?.openExternal) window.electronAPI.openExternal(url);
+                    else window.open(url, '_blank');
+                };
+            }
+            modal.style.display = 'flex';
+            // Choose playback method
+            const isHls = /\.m3u8(\?|$)/i.test(url);
+            if (isHls) {
+                try {
+                    await ensureHlsScriptLoaded();
+                    if (window.Hls && window.Hls.isSupported()) {
+                        xtreamHls = new window.Hls({ enableWorker: true });
+                        xtreamHls.loadSource(url);
+                        xtreamHls.attachMedia(video);
+                        xtreamHls.on(window.Hls.Events.MANIFEST_PARSED, () => {
+                            try { video.play().catch(()=>{}); } catch(_) {}
+                        });
+                        xtreamHls.on(window.Hls.Events.ERROR, (e, data) => {
+                            if (data && data.fatal) {
+                                try { xtreamHls.destroy(); } catch(_) {}
+                                xtreamHls = null;
+                                // If this is an Xtream live stream, try TS fallback before opening browser
+                                if ((xtreamState.mode === 'xtream') && /\.m3u8(\?|$)/i.test(url)) {
+                                    const tsUrl = url.replace(/\.m3u8(\?.*)?$/i, '.ts$1');
+                                    try {
+                                        video.src = tsUrl;
+                                        video.load();
+                                        video.play().catch(() => {
+                                            showNotification('HLS failed. TS fallback also failed. Use "Open in Browser" if desired.', 'error');
+                                        });
+                                    } catch (_) {
+                                        showNotification('HLS failed. Use "Open in Browser" if desired.', 'error');
+                                    }
+                                } else {
+                                    showNotification('HLS playback error. Use "Open in Browser" if desired.', 'error');
+                                }
+                            }
+                        });
+                    } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+                        video.src = url;
+                        setTimeout(() => { try { video.play().catch(()=>{}); } catch(_) {} }, 50);
+                    } else {
+                        // No HLS support
+                        showNotification('HLS not supported by this device. Use "Open in Browser" or external players.', 'warning');
+                    }
+                } catch (e) {
+                    console.error('[HLS] load error:', e);
+                    showNotification('Failed to initialize HLS. Use "Open in Browser" if desired.', 'error');
+                }
+            } else {
+                // Regular file/stream
+                try {
+                    video.src = url;
+                    video.currentTime = 0;
+                    video.load();
+                    setTimeout(() => { try { video.play().catch(()=>{}); } catch(_) {} }, 50);
+                } catch {
+                    showNotification('Playback failed. Use "Open in Browser" if desired.', 'error');
+                }
+            }
+            // add basic error fallback
+            const onError = () => {
+                showNotification('Playback error. Use "Open in Browser" if desired.', 'error');
+            };
+            video.onerror = onError;
+        }
+
+        function hideXtreamPlayer() {
+            const modal = document.getElementById('xtream-player-modal');
+            const video = document.getElementById('xtream-video');
+            if (video) { try { video.pause(); } catch(_) {} video.removeAttribute('src'); video.load(); }
+            try { if (xtreamHls) { xtreamHls.destroy(); xtreamHls = null; } } catch(_) {}
+            if (modal) modal.style.display = 'none';
+        }
+
+        function updateIptvActionButton() {
+            const btn = document.getElementById('iptv-custom-btn');
+            if (!btn) return;
+            if (xtreamState.active) {
+                btn.innerHTML = '<i class="fas fa-exchange-alt"></i> Use PlayTorrio IPTV';
+                btn.title = 'Switch back to the default IPTV page';
+            } else {
+                btn.innerHTML = '<i class="fas fa-user-lock"></i> Custom IPTV (Xtream Codes)';
+                btn.title = 'Login with your Xtream Codes provider';
+            }
+        }
+
+        function iptvActionButtonClick() {
+            if (xtreamState.active) {
+                // Switch back to default IPTV
+                try { hideXtreamBrowser(); } catch(_) {}
+                try { hideXtreamPlayer(); } catch(_) {}
+                try { enableIptvIframe(); } catch(_) {}
+                xtreamState.active = false;
+                // persist last mode
+                iptvSaveSettings({ lastMode: 'iframe' });
+                updateIptvActionButton();
+                showNotification('Switched to PlayTorrio IPTV', 'success');
+            } else {
+                // Open login for custom Xtream
+                showXtreamLoginModal(true);
+            }
+        }
+
+        async function xtreamLogin() {
+            const baseEl = document.getElementById('xtream-base-url');
+            const userEl = document.getElementById('xtream-username');
+            const passEl = document.getElementById('xtream-password');
+            const remember = document.getElementById('xtream-remember')?.checked;
+            const status = document.getElementById('xtream-login-status');
+            const btn = document.getElementById('xtream-login-submit');
+
+            const base = xtreamNormalizeBase(baseEl.value);
+            const username = (userEl.value || '').trim();
+            const password = (passEl.value || '').trim();
+            if (!base || !username || !password) {
+                if (status) status.textContent = 'Please fill all fields.';
+                return;
+            }
+
+            if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Logging in...'; }
+            if (status) status.textContent = 'Contacting server...';
+            try {
+                let apiBase = xtreamNormalizeBase(base);
+                const loginParams = `username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}`;
+
+                async function attemptLogin(baseUrl) {
+                    const url = `/api/proxy/xtream?base=${encodeURIComponent(baseUrl)}&params=${encodeURIComponent(loginParams)}`;
+                    const resp = await fetch(url, { cache: 'no-store' });
+                    if (!resp.ok) throw new Error('Server returned ' + resp.status);
+                    const data = await resp.json();
+                    return { data, baseUrl };
+                }
+
+                let { data, baseUrl } = await attemptLogin(apiBase);
+                // If non-JSON or invalid, retry once with scheme flipped (http<->https)
+                if (!data || data.nonJson || (!data.user_info && !data.server_info)) {
+                    try {
+                        const flipped = apiBase.startsWith('https://')
+                            ? apiBase.replace(/^https:\/\//i, 'http://')
+                            : apiBase.replace(/^http:\/\//i, 'https://');
+                        const retry = await attemptLogin(flipped);
+                        if (retry?.data && !retry.data.nonJson && (retry.data.user_info || retry.data.server_info)) {
+                            data = retry.data; baseUrl = retry.baseUrl; apiBase = flipped;
+                        }
+                    } catch {}
+                }
+
+                if (!data || data.nonJson) {
+                    const detail = data?.contentType ? ` (${data.contentType}${data.status ? ', ' + data.status : ''})` : '';
+                    throw new Error('Server returned non-JSON response' + detail);
+                }
+                if (!data.user_info && !data.server_info) throw new Error('Invalid response');
+                if (data.user_info && String(data.user_info.status).toLowerCase() !== 'active') {
+                    throw new Error('Account is not active');
+                }
+                xtreamState.base = apiBase; xtreamState.username = username; xtreamState.password = password; xtreamState.tab = 'live';
+                xtreamState.active = true; xtreamState.mode = 'xtream';
+                // persist settings (respect remember toggle for credentials)
+                if (remember) {
+                    await iptvSaveSettings({ lastMode: 'xtream', rememberCreds: true, xtream: { base, username, password } });
+                } else {
+                    await iptvSaveSettings({ lastMode: 'xtream', rememberCreds: false, xtream: { base: '', username: '', password: '' } });
+                }
+                if (status) status.textContent = 'Login successful. Loading categories...';
+                await xtreamLoadAllCategories();
+                // Disable the default IPTV iframe when using custom Xtream
+                try { clearIptvPage(); disableIptvIframe(); } catch(_) {}
+                hideXtreamLoginModal();
+                showXtreamBrowser();
+                await xtreamRenderCurrentTab();
+                showNotification('Xtream Codes connected', 'success');
+                updateIptvActionButton();
+            } catch (e) {
+                console.error('[XTREAM] Login error:', e);
+                if (status) status.textContent = 'Login failed: ' + (e?.message || 'Unknown error');
+                showNotification('Xtream login failed: ' + (e?.message || 'Unknown error'), 'error');
+            } finally {
+                if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Login'; }
+            }
+        }
+
+        // ---- M3U/M3U8 Support ----
+        function parseM3U(text) {
+            const lines = (text || '').split(/\r?\n/);
+            const items = [];
+            let current = null;
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i].trim();
+                if (!line) continue;
+                if (line.startsWith('#EXTINF:')) {
+                    // Parse attributes from EXTINF
+                    const attrPart = line.substring(line.indexOf(',') > -1 ? 0 : line.length);
+                    const name = line.substring(line.indexOf(',') + 1).trim();
+                    const attrs = {};
+                    const attrRegex = /(\w[\w-]*)=\"([^\"]*)\"/g;
+                    let m;
+                    while ((m = attrRegex.exec(line)) !== null) {
+                        attrs[m[1]] = m[2];
+                    }
+                    current = {
+                        name: name || attrs['tvg-name'] || attrs['channel-name'] || 'Channel',
+                        logo: attrs['tvg-logo'] || '',
+                        group: attrs['group-title'] || 'Other',
+                        url: ''
+                    };
+                } else if (!line.startsWith('#') && current) {
+                    current.url = line;
+                    items.push(current);
+                    current = null;
+                }
+            }
+            // Build categories
+            const cats = Array.from(new Set(items.map(it => it.group || 'Other'))).sort();
+            return { items, categories: cats };
+        }
+
+        async function loadM3UFromUrl(url) {
+            const status = document.getElementById('xtream-login-status');
+            try {
+                if (status) status.textContent = 'Loading playlist...';
+                const proxyUrl = `/api/proxy/fetch-text?url=${encodeURIComponent(url)}`;
+                const resp = await fetch(proxyUrl, { cache: 'no-store' });
+                if (!resp.ok) throw new Error('Playlist request failed: ' + resp.status);
+                const text = await resp.text();
+                const parsed = parseM3U(text);
+                if (!parsed.items.length) throw new Error('No channels found in playlist');
+                xtreamState.m3u = parsed;
+                xtreamState.tab = 'live';
+                xtreamState.active = true; xtreamState.mode = 'm3u';
+                // persist last mode and playlist URL
+                await iptvSaveSettings({ lastMode: 'm3u', m3u: { url } });
+                // Disable default IPTV iframe
+                try { clearIptvPage(); disableIptvIframe(); } catch(_) {}
+                hideXtreamLoginModal();
+                showXtreamBrowser();
+                await xtreamRenderCurrentTab();
+                updateIptvActionButton();
+                showNotification(`Loaded ${parsed.items.length} playlist items`, 'success');
+            } catch (e) {
+                console.error('[M3U] Load error:', e);
+                if (status) status.textContent = 'Failed to load playlist: ' + (e?.message || 'Unknown error');
+                showNotification('Failed to load playlist: ' + (e?.message || 'Unknown error'), 'error');
+            }
+        }
+
+        function isDirectMediaUrl(u) {
+            try {
+                const url = (u || '').toLowerCase();
+                return /\.(m3u8|mp4|mp3|aac|m4a|ts|webm|mkv|mov|avi)(\?|$)/.test(url);
+            } catch { return false; }
+        }
+
+        async function xtreamFetch(pathParams) {
+            const { base, username, password } = xtreamState;
+            const qs = `username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}${pathParams ? '&' + pathParams : ''}`;
+            async function attempt(baseUrl) {
+                const url = `/api/proxy/xtream?base=${encodeURIComponent(baseUrl)}&params=${encodeURIComponent(qs)}`;
+                const resp = await fetch(url, { cache: 'no-store' });
+                if (!resp.ok) throw new Error('Request failed: ' + resp.status);
+                const data = await resp.json();
+                return { data, baseUrl };
+            }
+            let { data, baseUrl } = await attempt(base);
+            if (!data || data.nonJson) {
+                try {
+                    const flipped = base.startsWith('https://') ? base.replace(/^https:\/\//i, 'http://') : base.replace(/^http:\/\//i, 'https://');
+                    const retry = await attempt(flipped);
+                    if (retry?.data && !retry.data.nonJson) { data = retry.data; baseUrl = retry.baseUrl; }
+                } catch {}
+            }
+            if (!data || data.nonJson) {
+                const detail = data?.contentType ? ` (${data.contentType}${data.status ? ', ' + data.status : ''})` : '';
+                throw new Error('Xtream API returned non-JSON' + detail);
+            }
+            return data;
+        }
+
+        async function xtreamLoadAllCategories() {
+            try {
+                const [live, vod, series] = await Promise.all([
+                    xtreamFetch('action=get_live_categories').catch(()=>[]),
+                    xtreamFetch('action=get_vod_categories').catch(()=>[]),
+                    xtreamFetch('action=get_series_categories').catch(()=>[])
+                ]);
+                xtreamState.liveCategories = Array.isArray(live) ? live : [];
+                xtreamState.vodCategories = Array.isArray(vod) ? vod : [];
+                xtreamState.seriesCategories = Array.isArray(series) ? series : [];
+            } catch (e) {
+                console.warn('[XTREAM] Failed to load some categories:', e);
+            }
+        }
+
+        function xtreamPopulateCategories() {
+            const select = document.getElementById('xtream-category-select');
+            if (!select) return;
+            const tab = xtreamState.tab;
+            let cats = [];
+            if (xtreamState.mode === 'm3u') {
+                // Only one logical tab: live
+                cats = (xtreamState.m3u?.categories) || [];
+            } else {
+                if (tab === 'live') cats = xtreamState.liveCategories; else if (tab === 'vod') cats = xtreamState.vodCategories; else cats = xtreamState.seriesCategories;
+            }
+            const current = select.value;
+            select.innerHTML = '<option value="">All Categories</option>';
+            if (xtreamState.mode === 'm3u') {
+                cats.forEach(name => {
+                    const opt = document.createElement('option');
+                    opt.value = name;
+                    opt.textContent = name;
+                    select.appendChild(opt);
+                });
+            } else {
+                cats.forEach(c => {
+                    const opt = document.createElement('option');
+                    opt.value = c.category_id;
+                    opt.textContent = c.category_name || ('Category ' + c.category_id);
+                    select.appendChild(opt);
+                });
+            }
+            // try keep selection if exists
+            if ([...select.options].some(o => o.value === current)) select.value = current;
+        }
+
+        function xtreamBuildStreamUrl(kind, stream) {
+            const { base, username, password } = xtreamState;
+            if (!stream) return '';
+            if (xtreamState.mode === 'm3u') {
+                return stream.url || '';
+            }
+            const id = stream.stream_id || stream.series_id || stream.id;
+            if (kind === 'live') {
+                const ext = (stream?.container_extension) ? stream.container_extension.replace(/^\./,'') : 'm3u8';
+                return `${base}/live/${encodeURIComponent(username)}/${encodeURIComponent(password)}/${id}.${ext}`;
+            } else if (kind === 'vod') {
+                const ext = (stream?.container_extension) ? stream.container_extension.replace(/^\./,'') : 'mp4';
+                return `${base}/movie/${encodeURIComponent(username)}/${encodeURIComponent(password)}/${id}.${ext}`;
+            }
+            return '';
+        }
+
+        async function xtreamLoadStreamsForCurrentTab(categoryId = '') {
+            const tab = xtreamState.tab;
+            try {
+                let list = [];
+                if (xtreamState.mode === 'm3u') {
+                    const all = (xtreamState.m3u?.items) || [];
+                    if (!categoryId) list = all;
+                    else list = all.filter(it => (it.group || '') === categoryId);
+                } else if (tab === 'live') {
+                    const p = categoryId ? `action=get_live_streams&category_id=${encodeURIComponent(categoryId)}` : 'action=get_live_streams';
+                    list = await xtreamFetch(p);
+                } else if (tab === 'vod') {
+                    const p = categoryId ? `action=get_vod_streams&category_id=${encodeURIComponent(categoryId)}` : 'action=get_vod_streams';
+                    list = await xtreamFetch(p);
+                } else {
+                    const p = categoryId ? `action=get_series&category_id=${encodeURIComponent(categoryId)}` : 'action=get_series';
+                    list = await xtreamFetch(p);
+                }
+                xtreamState.lastStreams = Array.isArray(list) ? list : [];
+            } catch (e) {
+                console.error('[XTREAM] Load streams error:', e);
+                xtreamState.lastStreams = [];
+            }
+        }
+
+        function xtreamRenderGrid() {
+            const grid = document.getElementById('xtream-grid');
+            const empty = document.getElementById('xtream-empty');
+            const search = (document.getElementById('xtream-search')?.value || '').toLowerCase().trim();
+            if (!grid || !empty) return;
+
+            let items = xtreamState.lastStreams || [];
+            if (search) {
+                items = items.filter(it => ((it.name || it.title || '').toLowerCase().includes(search)));
+            }
+            grid.innerHTML = '';
+            if (!items.length) {
+                empty.style.display = '';
+                return;
+            }
+            empty.style.display = 'none';
+
+            const tab = xtreamState.tab;
+            items.forEach(it => {
+                const card = document.createElement('div');
+                card.className = 'music-card';
+                card.style.cursor = 'default';
+                const name = xtreamState.mode === 'm3u' ? (it.name || 'Channel') : (it.name || it.title || `ID ${it.stream_id || it.series_id || ''}`);
+                const poster = xtreamState.mode === 'm3u' ? (it.logo || '') : (it.stream_icon || it.cover || it.movie_image || '');
+                const playUrl = (tab === 'series' && xtreamState.mode !== 'm3u') ? '' : xtreamBuildStreamUrl(tab, it);
+                const btns = (tab === 'series' && xtreamState.mode !== 'm3u') ? `
+                    <button class="btn" style="padding:.4rem .7rem; border:none; border-radius:6px; background:linear-gradient(135deg,#f59e0b,#b45309); color:#fff; cursor:pointer;" data-action="series" data-id="${it.series_id}">
+                        <i class="fas fa-list"></i> Episodes
+                    </button>
+                ` : `
+                    <button class="btn" style="padding:.4rem .7rem; border:none; border-radius:6px; background:linear-gradient(135deg,#10b981,#059669); color:#fff; cursor:pointer;" data-action="play" data-url="${playUrl}" data-name="${name.replace(/"/g,'&quot;')}">
+                        <i class="fas fa-play"></i> Play
+                    </button>
+                    <button class="btn" style="padding:.4rem .7rem; border:none; border-radius:6px; background:linear-gradient(135deg,#3b82f6,#2563eb); color:#fff; cursor:pointer;" data-action="open" data-url="${playUrl}">
+                        <i class="fas fa-external-link-alt"></i>
+                    </button>
+                    <button class="btn" style="padding:.4rem .7rem; border:none; border-radius:6px; background:rgba(255,255,255,.1); color:#fff; cursor:pointer;" data-action="copy" data-url="${playUrl}">
+                        <i class="fas fa-copy"></i>
+                    </button>
+                `;
+                card.innerHTML = `
+                    <div class="music-cover">
+                        ${poster ? `<img loading="lazy" src="${poster}" alt="${name}" onerror="this.style.display='none'">` : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.05)"><i class='fas fa-tv'></i></div>`}
+                    </div>
+                    <div class="music-info">
+                        <div class="music-title">${name}</div>
+                        <div class="music-actions" style="flex-wrap:wrap; gap:.4rem; margin-top:.4rem;">${btns}</div>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+
+            // wire buttons
+            grid.querySelectorAll('[data-action="play"]').forEach(b => b.addEventListener('click', (e) => {
+                const url = e.currentTarget.getAttribute('data-url');
+                const name = e.currentTarget.getAttribute('data-name');
+                if (!url) { showNotification('No stream URL found', 'error'); return; }
+                showXtreamPlayer(name, url);
+            }));
+            grid.querySelectorAll('[data-action="open"]').forEach(b => b.addEventListener('click', (e) => {
+                const url = e.currentTarget.getAttribute('data-url');
+                if (!url) { showNotification('No stream URL found', 'error'); return; }
+                if (window.electronAPI?.openExternal) window.electronAPI.openExternal(url); else window.open(url, '_blank');
+            }));
+            grid.querySelectorAll('[data-action="copy"]').forEach(b => b.addEventListener('click', async (e) => {
+                const url = e.currentTarget.getAttribute('data-url');
+                try { await navigator.clipboard.writeText(url); showNotification('Stream URL copied', 'success'); } catch { showNotification('Copy failed', 'error'); }
+            }));
+            grid.querySelectorAll('[data-action="series"]').forEach(b => b.addEventListener('click', (e) => {
+                const seriesId = e.currentTarget.getAttribute('data-id');
+                xtreamShowSeriesEpisodes(seriesId);
+            }));
+        }
+
+        async function xtreamShowSeriesEpisodes(seriesId) {
+            try {
+                const info = await xtreamFetch(`action=get_series_info&series_id=${encodeURIComponent(seriesId)}`);
+                const episodes = (info?.episodes) ? Object.values(info.episodes).flat() : [];
+                if (!episodes.length) { showNotification('No episodes found', 'info'); return; }
+                // Render a simple chooser overlay in the browser modal
+                const grid = document.getElementById('xtream-grid');
+                if (!grid) return;
+                grid.innerHTML = '';
+                episodes.forEach(ep => {
+                    const name = `S${ep.season}E${ep.episode_num} - ${ep.title || 'Episode'}`;
+                    const url = `${xtreamState.base}/series/${encodeURIComponent(xtreamState.username)}/${encodeURIComponent(xtreamState.password)}/${ep.id}.${(ep.container_extension || 'mp4').replace(/^\./,'')}`;
+                    const card = document.createElement('div');
+                    card.className = 'music-card';
+                    card.style.cursor = 'default';
+                    card.innerHTML = `
+                        <div class="music-cover"><div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.05)"><i class='fas fa-film'></i></div></div>
+                        <div class="music-info">
+                            <div class="music-title">${name}</div>
+                            <div class="music-actions" style="flex-wrap:wrap; gap:.4rem; margin-top:.4rem;">
+                                <button class="btn" style="padding:.4rem .7rem; border:none; border-radius:6px; background:linear-gradient(135deg,#10b981,#059669); color:#fff; cursor:pointer;" data-action="play" data-url="${url}" data-name="${name.replace(/"/g,'&quot;')}">
+                                    <i class="fas fa-play"></i> Play
+                                </button>
+                                <button class="btn" style="padding:.4rem .7rem; border:none; border-radius:6px; background:linear-gradient(135deg,#3b82f6,#2563eb); color:#fff; cursor:pointer;" data-action="open" data-url="${url}">
+                                    <i class="fas fa-external-link-alt"></i>
+                                </button>
+                                <button class="btn" style="padding:.4rem .7rem; border:none; border-radius:6px; background:rgba(255,255,255,.1); color:#fff; cursor:pointer;" data-action="copy" data-url="${url}">
+                                    <i class="fas fa-copy"></i>
+                                </button>
+                            </div>
+                        </div>`;
+                    grid.appendChild(card);
+                });
+                // re-bind actions on this list
+                xtreamRenderGrid(); // call to wire generic handlers based on data-action
+            } catch (e) {
+                console.error('[XTREAM] Series info error:', e);
+                showNotification('Failed to load episodes: ' + (e?.message || 'Unknown'), 'error');
+            }
+            // bind actions for this episodes view only
+            try {
+                const grid = document.getElementById('xtream-grid');
+                if (grid) {
+                    grid.querySelectorAll('[data-action="play"]').forEach(b => b.addEventListener('click', (e) => {
+                        const url = e.currentTarget.getAttribute('data-url');
+                        const name = e.currentTarget.getAttribute('data-name');
+                        if (!url) { showNotification('No stream URL found', 'error'); return; }
+                        showXtreamPlayer(name, url);
+                    }));
+                    grid.querySelectorAll('[data-action="open"]').forEach(b => b.addEventListener('click', (e) => {
+                        const url = e.currentTarget.getAttribute('data-url');
+                        if (!url) { showNotification('No stream URL found', 'error'); return; }
+                        if (window.electronAPI?.openExternal) window.electronAPI.openExternal(url); else window.open(url, '_blank');
+                    }));
+                    grid.querySelectorAll('[data-action="copy"]').forEach(b => b.addEventListener('click', async (e) => {
+                        const url = e.currentTarget.getAttribute('data-url');
+                        try { await navigator.clipboard.writeText(url); showNotification('Stream URL copied', 'success'); } catch { showNotification('Copy failed', 'error'); }
+                    }));
+                }
+            } catch(_) {}
+        }
+
+        async function xtreamRenderCurrentTab() {
+            xtreamPopulateCategories();
+            const select = document.getElementById('xtream-category-select');
+            const catId = select ? select.value : '';
+            const empty = document.getElementById('xtream-empty');
+            if (empty) { empty.style.display = ''; empty.textContent = 'Loading...'; }
+            await xtreamLoadStreamsForCurrentTab(catId);
+            xtreamRenderGrid();
+        }
+
+        function bindXtreamUi() {
+            const openBtn = document.getElementById('iptv-custom-btn');
+            if (openBtn) openBtn.addEventListener('click', iptvActionButtonClick);
+
+            const closeLogin = document.getElementById('xtream-login-close');
+            const cancelLogin = document.getElementById('xtream-login-cancel');
+            const submitLogin = document.getElementById('xtream-login-submit');
+            if (closeLogin) closeLogin.addEventListener('click', hideXtreamLoginModal);
+            if (cancelLogin) cancelLogin.addEventListener('click', hideXtreamLoginModal);
+            if (submitLogin) submitLogin.addEventListener('click', xtreamLogin);
+
+            // No inline close button; switching is handled by the header action button
+
+            const catSel = document.getElementById('xtream-category-select');
+            if (catSel) catSel.addEventListener('change', () => xtreamRenderCurrentTab());
+
+            const search = document.getElementById('xtream-search');
+            if (search) search.addEventListener('input', () => xtreamRenderGrid());
+
+            // Tab buttons
+            document.querySelectorAll('.xtream-tab-btn').forEach(btn => {
+                btn.addEventListener('click', async (e) => {
+                    document.querySelectorAll('.xtream-tab-btn').forEach(b => { b.style.background = 'transparent'; b.style.color = '#ddd'; });
+                    const b = e.currentTarget; b.style.background = '#1b1b1b'; b.style.color = '#fff';
+                    const nextTab = b.getAttribute('data-tab');
+                    if (xtreamState.mode === 'm3u' && nextTab !== 'live') {
+                        showNotification('This playlist only supports Live channels', 'info');
+                        // re-highlight Live
+                        const liveBtn = document.querySelector('.xtream-tab-btn[data-tab="live"]');
+                        if (liveBtn) { liveBtn.style.background = '#1b1b1b'; liveBtn.style.color = '#fff'; }
+                        xtreamState.tab = 'live';
+                        return;
+                    }
+                    xtreamState.tab = nextTab;
+                    await xtreamRenderCurrentTab();
+                });
+            });
+
+            // Player controls
+            const closePlayer = document.getElementById('xtream-player-close');
+            if (closePlayer) closePlayer.addEventListener('click', hideXtreamPlayer);
+            const modalOuter = document.getElementById('xtream-player-modal');
+            if (modalOuter) modalOuter.addEventListener('click', (e) => { if (e.target === modalOuter) hideXtreamPlayer(); });
+
+            // M3U submit
+            const m3uBtn = document.getElementById('xtream-m3u-submit');
+            const m3uInput = document.getElementById('xtream-m3u-url');
+            if (m3uBtn) m3uBtn.addEventListener('click', async () => {
+                const url = (m3uInput?.value || '').trim();
+                if (!url) { showNotification('Please enter a playlist URL', 'warning'); return; }
+                const status = document.getElementById('xtream-login-status');
+                if (status) status.textContent = '';
+                if (isDirectMediaUrl(url)) {
+                    // Treat as single stream
+                    try { clearIptvPage(); disableIptvIframe(); } catch(_) {}
+                    hideXtreamLoginModal();
+                    xtreamState.active = true; xtreamState.mode = 'direct';
+                    updateIptvActionButton();
+                    showXtreamPlayer('Custom Stream', url);
+                } else {
+                    await loadM3UFromUrl(url);
+                }
+            });
+            if (m3uInput) m3uInput.addEventListener('keypress', async (e) => {
+                if (e.key === 'Enter') {
+                    const url = (m3uInput?.value || '').trim();
+                    if (!url) { showNotification('Please enter a playlist URL', 'warning'); return; }
+                    if (isDirectMediaUrl(url)) {
+                        try { clearIptvPage(); disableIptvIframe(); } catch(_) {}
+                        hideXtreamLoginModal();
+                        xtreamState.active = true; xtreamState.mode = 'direct';
+                        updateIptvActionButton();
+                        showXtreamPlayer('Custom Stream', url);
+                    } else {
+                        await loadM3UFromUrl(url);
+                    }
+                }
+            });
+
+            // Recommended M3U presets
+            const presetButtons = document.querySelectorAll('#xtream-m3u-recommended .m3u-preset');
+            presetButtons.forEach(btn => btn.addEventListener('click', async () => {
+                const url = btn.getAttribute('data-url');
+                const input = document.getElementById('xtream-m3u-url');
+                if (input) input.value = url;
+                if (url) {
+                    await loadM3UFromUrl(url);
+                }
+            }));
         }
 
         // Games Downloader page functions
@@ -13489,7 +14477,7 @@ Your browser does not support the video tag.
             }
         }
 
-        // Initialize Games Downloader search
+        // Initialize Games Downloader search + bind Xtream UI
         document.addEventListener('DOMContentLoaded', () => {
             try {
                 // Enable performance mode by default (can be toggled later if needed)
@@ -13511,6 +14499,10 @@ Your browser does not support the video tag.
                     }
                 });
             }
+
+            // Bind Xtream UI after DOM ready and set initial button label, then auto-restore last used mode
+            try { bindXtreamUi(); updateIptvActionButton(); } catch (e) { console.warn('[XTREAM] bind failed', e); }
+            iptvAutoRestore();
         });
 
         
@@ -14892,6 +15884,70 @@ Your browser does not support the video tag.
                 window.location.hash = '#/genres';
             });
 
+            // Custom Magnet Modal - Close handlers only (open handled after nav setup)
+            const customMagnetModal = document.getElementById('custom-magnet-modal');
+            const closeCustomMagnetModal = document.getElementById('close-custom-magnet-modal');
+            const cancelCustomMagnetBtn = document.getElementById('cancel-custom-magnet-btn');
+            const playCustomMagnetBtn = document.getElementById('play-custom-magnet-btn');
+            const customMagnetInput = document.getElementById('custom-magnet-input');
+
+            if (closeCustomMagnetModal && customMagnetModal) {
+                closeCustomMagnetModal.addEventListener('click', () => {
+                    customMagnetModal.style.display = 'none';
+                    customMagnetModal.classList.remove('active');
+                    customMagnetModal.style.opacity = '0';
+                    customMagnetModal.style.pointerEvents = 'none';
+                });
+            }
+
+            if (cancelCustomMagnetBtn && customMagnetModal) {
+                cancelCustomMagnetBtn.addEventListener('click', () => {
+                    customMagnetModal.style.display = 'none';
+                    customMagnetModal.classList.remove('active');
+                    customMagnetModal.style.opacity = '0';
+                    customMagnetModal.style.pointerEvents = 'none';
+                });
+            }
+
+            if (playCustomMagnetBtn && customMagnetModal && customMagnetInput) {
+                playCustomMagnetBtn.addEventListener('click', async () => {
+                    const magnetLink = customMagnetInput.value.trim();
+                    
+                    if (!magnetLink) {
+                        showNotification('Please enter a magnet link', 'warning');
+                        return;
+                    }
+                    
+                    if (!magnetLink.startsWith('magnet:')) {
+                        showNotification('Invalid magnet link format', 'error');
+                        return;
+                    }
+                    
+                    // Close modal
+                    customMagnetModal.style.display = 'none';
+                    
+                    // Use the existing startStream function which handles both debrid and non-debrid
+                    try {
+                        await startStream(magnetLink);
+                    } catch (error) {
+                        console.error('Error playing custom magnet:', error);
+                        showNotification('Failed to play magnet link', 'error');
+                    }
+                });
+            }
+
+            // Close modal when clicking outside
+            if (customMagnetModal) {
+                customMagnetModal.addEventListener('click', (e) => {
+                    if (e.target === customMagnetModal) {
+                        customMagnetModal.style.display = 'none';
+                        customMagnetModal.classList.remove('active');
+                        customMagnetModal.style.opacity = '0';
+                        customMagnetModal.style.pointerEvents = 'none';
+                    }
+                });
+            }
+
             // My List navigation
             const myListBtn = document.getElementById('myListBtn');
             if (myListBtn) {
@@ -15591,6 +16647,23 @@ Your browser does not support the video tag.
                     }
                 });
             });
+            
+            // Custom Magnet button (separate from data-page navigation)
+            const customMagnetNavBtn = document.getElementById('customMagnetBtn');
+            const customMagnetModalElem = document.getElementById('custom-magnet-modal');
+            const customMagnetInputElem = document.getElementById('custom-magnet-input');
+            if (customMagnetNavBtn && customMagnetModalElem) {
+                customMagnetNavBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('Custom Magnet nav button clicked!');
+                    customMagnetModalElem.style.display = 'flex';
+                    if (customMagnetInputElem) {
+                        customMagnetInputElem.value = '';
+                        setTimeout(() => customMagnetInputElem.focus(), 100);
+                    }
+                });
+            }
             
             // Sidebar clear cache
             const sidebarClearCache = document.getElementById('sidebarClearCache');
@@ -16359,6 +17432,11 @@ Your browser does not support the video tag.
                     const trackTitle = t.title || t.name || `Track ${idx+1}`;
                     const artistName = (t.artists && t.artists[0]?.name) ? t.artists[0].name : ((album.artists && album.artists[0]?.name) ? album.artists[0].name : 'Unknown Artist');
                     const durationSec = (typeof t.duration === 'number') ? t.duration : (t.durationMs ? Math.round(t.durationMs/1000) : 0);
+                    
+                    const isDownloaded = isTrackDownloaded(trackId);
+                    const downloadBtnClass = isDownloaded ? 'track-download-btn downloaded' : 'track-download-btn';
+                    const downloadBtnIcon = isDownloaded ? 'fas fa-check-circle' : 'fas fa-download';
+                    const downloadBtnTitle = isDownloaded ? 'Downloaded' : 'Download';
 
                     const row = document.createElement('div');
                     row.className = 'track-row';
@@ -16368,6 +17446,7 @@ Your browser does not support the video tag.
                         <div class="track-duration">${fmtTime(durationSec)}</div>
                         <div class="track-actions">
                             <button class="track-play-btn"><i class="fas fa-play"></i> Play</button>
+                            <button class="${downloadBtnClass}" title="${downloadBtnTitle}" data-id="${trackId}" data-title="${trackTitle.replace(/\"/g,'&quot;')}" data-artist="${artistName.replace(/\"/g,'&quot;')}" data-cover="${coverSrc}"><i class="${downloadBtnIcon}"></i> Download</button>
                             <button class="track-plus-btn"><i class="fas fa-plus"></i> Playlist</button>
                             <button class="track-heart-btn"><i class="fas fa-heart"></i> Save</button>
                         </div>`;
@@ -16381,6 +17460,16 @@ Your browser does not support the video tag.
                         } else {
                             playMusicTrack({ trackId: t.id, title: trackTitle, artistName, coverSrc });
                         }
+                    });
+                    row.querySelector('.track-download-btn').addEventListener('click', async () => {
+                        if (!t.id) { showNotification('Unable to download: missing track id', 'error'); return; }
+                        if (isTrackDownloaded(trackId)) {
+                            showNotification('Track already downloaded', 'info');
+                            return;
+                        }
+                        await downloadMusicTrack(trackId, trackTitle, artistName, coverSrc);
+                        // Re-render to update button state
+                        renderAlbumTracks(tracks, album);
                     });
                     row.querySelector('.track-plus-btn').addEventListener('click', () => {
                         if (!t.id) { showNotification('Unable to add: missing track id', 'error'); return; }
@@ -17137,6 +18226,10 @@ Your browser does not support the video tag.
                 tracks.forEach(t => {
                     const card = document.createElement('div');
                     card.className = 'music-card';
+                    const isDownloaded = isTrackDownloaded(t.id);
+                    const downloadBtnHTML = isDownloaded 
+                        ? `<button class="music-download-btn downloaded" title="Downloaded" data-id="${t.id}" data-title="${t.title.replace(/\"/g,'&quot;')}" data-artist="${t.artist.replace(/\"/g,'&quot;')}" data-cover="${t.cover}"><i class="fas fa-check-circle"></i></button>`
+                        : `<button class="music-download-btn" title="Download" data-id="${t.id}" data-title="${t.title.replace(/\"/g,'&quot;')}" data-artist="${t.artist.replace(/\"/g,'&quot;')}" data-cover="${t.cover}"><i class="fas fa-download"></i></button>`;
                     card.innerHTML = `
                         <div class="music-cover"><img loading="lazy" src="${t.cover}" alt="${t.title}"></div>
                         <div class="music-info">
@@ -17144,6 +18237,7 @@ Your browser does not support the video tag.
                             <div class="music-artist">${t.artist}</div>
                             <div class="music-actions">
                                 <button class="music-play-btn" data-id="${t.id}" data-title="${t.title}" data-artist="${t.artist}" data-cover="${t.cover}"><i class="fas fa-play"></i> Play</button>
+                                ${downloadBtnHTML}
                                 <button class="playlist-delete-btn playlist-remove-btn" data-id="${t.id}" data-pl="${id}" title="Remove from Playlist"><i class="fas fa-trash"></i></button>
                             </div>
                         </div>`;
@@ -17165,6 +18259,26 @@ Your browser does not support the video tag.
                                 coverSrc: el.getAttribute('data-cover')
                             });
                         }
+                    });
+                });
+                // wire download buttons
+                musicResultsGrid.querySelectorAll('.music-download-btn').forEach(btn => {
+                    btn.addEventListener('click', async (e) => {
+                        e.stopPropagation();
+                        const btn = e.currentTarget;
+                        const trackId = btn.getAttribute('data-id');
+                        const title = btn.getAttribute('data-title');
+                        const artist = btn.getAttribute('data-artist');
+                        const cover = btn.getAttribute('data-cover');
+                        
+                        if (isTrackDownloaded(trackId)) {
+                            showNotification('Track already downloaded', 'info');
+                            return;
+                        }
+                        
+                        await downloadMusicTrack(trackId, title, artist, cover);
+                        // Re-render to update button state
+                        openPlaylist(id);
                     });
                 });
                 musicResultsGrid.querySelectorAll('.playlist-remove-btn').forEach(btn => {
@@ -17533,6 +18647,10 @@ Your browser does not support the video tag.
                 list.forEach(item => {
                     const card = document.createElement('div');
                     card.className = 'music-card';
+                    const isDownloaded = isTrackDownloaded(item.id);
+                    const downloadBtnHTML = isDownloaded 
+                        ? `<button class="music-download-btn downloaded" title="Downloaded" data-id="${item.id}" data-title="${item.title.replace(/\"/g,'&quot;')}" data-artist="${item.artist.replace(/\"/g,'&quot;')}" data-cover="${item.cover}"><i class="fas fa-check-circle"></i></button>`
+                        : `<button class="music-download-btn" title="Download" data-id="${item.id}" data-title="${item.title.replace(/\"/g,'&quot;')}" data-artist="${item.artist.replace(/\"/g,'&quot;')}" data-cover="${item.cover}"><i class="fas fa-download"></i></button>`;
                     card.innerHTML = `
                         <div class="music-cover"><img loading="lazy" src="${item.cover}" alt="${item.title}"></div>
                         <div class="music-info">
@@ -17540,6 +18658,7 @@ Your browser does not support the video tag.
                             <div class="music-artist">${item.artist}</div>
                             <div class="music-actions">
                                 <button class="music-play-btn" data-id="${item.id}"><i class="fas fa-play"></i> Play</button>
+                                ${downloadBtnHTML}
                                 <button class="music-add-btn" title="Remove from My Music" data-remove="true" data-id="${item.id}"><i class="fas fa-trash"></i></button>
                             </div>
                         </div>`;
@@ -17560,6 +18679,26 @@ Your browser does not support the video tag.
                             const coverSrc = card.querySelector('img')?.src || '';
                             await playMusicTrack({ trackId: id, title, artistName, coverSrc });
                         }
+                    });
+                });
+                // wire download buttons
+                grid.querySelectorAll('.music-download-btn').forEach(btn => {
+                    btn.addEventListener('click', async (e) => {
+                        e.stopPropagation();
+                        const btn = e.currentTarget;
+                        const trackId = btn.getAttribute('data-id');
+                        const title = btn.getAttribute('data-title');
+                        const artist = btn.getAttribute('data-artist');
+                        const cover = btn.getAttribute('data-cover');
+                        
+                        if (isTrackDownloaded(trackId)) {
+                            showNotification('Track already downloaded', 'info');
+                            return;
+                        }
+                        
+                        await downloadMusicTrack(trackId, title, artist, cover);
+                        // Re-render to update button state
+                        renderMyMusic();
                     });
                 });
                 grid.querySelectorAll('.music-add-btn[data-remove="true"]').forEach(btn => {
@@ -19851,10 +20990,15 @@ Your browser does not support the video tag.
             if (targetId) {
                 const el = document.getElementById(targetId);
                 if (el) el.style.display = '';
-                // One-off init for Trakt page when shown
-                if (section === 'trakt' && el && !el.dataset.initialized) {
-                    initializeTraktPage();
-                    el.dataset.initialized = 'true';
+                // Init Trakt page once, but always refresh status on navigation
+                if (section === 'trakt' && el) {
+                    if (!el.dataset.initialized) {
+                        initializeTraktPage();
+                        el.dataset.initialized = 'true';
+                    } else {
+                        // Ensure status is fresh after actions elsewhere (e.g., Settings disconnect)
+                        try { updateTraktPageStatus(); } catch(_) {}
+                    }
                 }
                 
                 // Update Discord presence for MiniGames
@@ -25898,13 +27042,11 @@ Your browser does not support the video tag.
                 console.log('[EPUB] Reading file...');
                 const res = await window.electronAPI.readEpubFile(localPath);
                 console.log('[EPUB] Read result:', res.success, res.base64 ? `${res.base64.length} bytes` : 'no data');
-                if (!res.success) {
-                    alert('Failed to open book: ' + res.message);
+                if (!res.success || !res.base64) {
+                    alert('Failed to open book: ' + (res.message || 'Unable to read file'));
                     overlay.style.display = 'none';
                     return;
                 }
-
-                // Convert base64 to ArrayBuffer for better compatibility
                 console.log('[EPUB] Converting to ArrayBuffer...');
                 const binaryString = atob(res.base64);
                 const bytes = new Uint8Array(binaryString.length);
