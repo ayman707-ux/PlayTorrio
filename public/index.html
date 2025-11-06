@@ -9050,6 +9050,9 @@
                                 <input type="text" id="jackettUrl" placeholder="http://127.0.0.1:9117/api/v2.0/indexers/all/results/torznab" />
                                 <small style="color:var(--secondary); font-size:0.85rem; margin-top:0.25rem; display:block;">Default: http://127.0.0.1:9117/api/v2.0/indexers/all/results/torznab</small>
                             </div>
+                            <button id="jackettTutorialBtn" class="api-btn" style="background: white; color: #1a1a1a; padding: 0.5rem 1rem; font-size: 0.9rem; margin-top: 1rem; font-weight: 600;">
+                                Video Tutorial
+                            </button>
                         </div>
                     </div>
                     
@@ -16033,6 +16036,25 @@ Your browser does not support the video tag.
             if (openJackettLinkBtn) {
                 openJackettLinkBtn.addEventListener('click', async () => {
                     const url = 'https://github.com/Jackett/Jackett/releases/latest/download/Jackett.Installer.Windows.exe';
+                    if (window.electronAPI?.openExternal) {
+                        const res = await window.electronAPI.openExternal(url);
+                        if (!res?.success) {
+                            showNotification('Failed to open browser. Copying link to clipboard.');
+                            try { await navigator.clipboard.writeText(url); } catch {}
+                        }
+                    } else {
+                        // Fallback: copy link if preload is unavailable
+                        showNotification('Copying link to clipboard. Open it in your browser.');
+                        try { await navigator.clipboard.writeText(url); } catch {}
+                    }
+                });
+            }
+
+            // Open Jackett video tutorial in default browser
+            const jackettTutorialBtn = document.getElementById('jackettTutorialBtn');
+            if (jackettTutorialBtn) {
+                jackettTutorialBtn.addEventListener('click', async () => {
+                    const url = 'https://www.youtube.com/watch?v=3igLReZFFzg&t';
                     if (window.electronAPI?.openExternal) {
                         const res = await window.electronAPI.openExternal(url);
                         if (!res?.success) {
