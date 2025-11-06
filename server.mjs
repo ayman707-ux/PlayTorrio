@@ -390,6 +390,46 @@ export function startServer(userDataPath) {
         try { fs.mkdirSync(path.dirname(SETTINGS_PATH), { recursive: true }); fs.writeFileSync(SETTINGS_PATH, JSON.stringify(obj, null, 2)); return true; } catch { return false; }
     }
 
+    // ===== IPTV settings endpoints =====
+    function defaultIptvSettings() {
+        return {
+            lastMode: 'iframe', // 'iframe' | 'xtream' | 'm3u' | 'direct' | 'none'
+            rememberCreds: false,
+            xtream: { base: '', username: '', password: '' },
+            m3u: { url: '' }
+        };
+    }
+
+    app.get('/api/iptv/settings', (req, res) => {
+        try {
+            const s = readSettings();
+            const iptv = { ...defaultIptvSettings(), ...(s.iptv || {}) };
+            res.json({ success: true, iptv });
+        } catch (e) {
+            res.status(500).json({ success: false, error: e?.message || 'failed to load settings' });
+        }
+    });
+
+    app.post('/api/iptv/settings', (req, res) => {
+        try {
+            const patch = req.body || {};
+            const s = readSettings();
+            const current = { ...defaultIptvSettings(), ...(s.iptv || {}) };
+            const nextIptv = {
+                ...current,
+                ...patch,
+                xtream: { ...(current.xtream || {}), ...(patch.xtream || {}) },
+                m3u: { ...(current.m3u || {}), ...(patch.m3u || {}) }
+            };
+            const nextAll = { ...s, iptv: nextIptv };
+            const ok = writeSettings(nextAll);
+            if (!ok) return res.status(500).json({ success: false, error: 'failed to save settings' });
+            res.json({ success: true, iptv: nextIptv });
+        } catch (e) {
+            res.status(500).json({ success: false, error: e?.message || 'failed to save settings' });
+        }
+    });
+
     // Diagnostics helpers for logging
     function mask(value, visible = 4) {
         if (!value) return null;
@@ -2621,12 +2661,25 @@ export function startServer(userDataPath) {
                 res.json({ success: false, error: 'pending' });
             }
         } catch (error) {
-            if (error.message.includes('pending')) {
-                res.json({ success: false, error: 'pending' });
-            } else {
-                console.error('[TRAKT] Device verify error:', error);
-                res.status(500).json({ success: false, error: error.message });
+            const msg = String(error?.message || '');
+            // Map common device flow errors explicitly for the renderer
+            if (msg.includes('authorization_pending') || msg.includes(' 400 ')) {
+                return res.json({ success: false, error: 'pending' });
             }
+            if (msg.includes('slow_down') || msg.includes(' 429 ')) {
+                return res.status(429).json({ success: false, error: 'slow_down' });
+            }
+            if (msg.includes('expired_token') || msg.includes(' 410 ')) {
+                return res.status(410).json({ success: false, error: 'expired' });
+            }
+            if (msg.includes('access_denied') || msg.includes(' 418 ')) {
+                return res.status(418).json({ success: false, error: 'denied' });
+            }
+            if (msg.includes('invalid_grant') || msg.includes(' 409 ') || msg.includes(' 404 ')) {
+                return res.status(409).json({ success: false, error: 'invalid' });
+            }
+            console.error('[TRAKT] Device verify error:', error);
+            res.status(500).json({ success: false, error: 'verify_failed' });
         }
     });
 
@@ -3149,6 +3202,83 @@ export function startServer(userDataPath) {
     });
 
     // ===== END TRAKT API ENDPOINTS =====
+
+    // ===== GENERIC PROXY ENDPOINTS (to avoid CORS) =====
+    // Proxy Xtream player_api.php JSON
+    app.get('/api/proxy/xtream', async (req, res) => {
+        try {
+            let base = (req.query.base || '').toString();
+            const params = (req.query.params || '').toString();
+            if (!base.startsWith('http')) return res.status(400).json({ success: false, error: 'Invalid base' });
+            // Basic sanitization: strip known portal suffixes
+            try {
+                const u = new URL(base);
+                base = u.origin + u.pathname.replace(/\/+$/, '');
+            } catch {}
+            base = base.replace(/\/(player_api\.php|xmltv\.php|get\.php)$/i, '')
+                       .replace(/\/(c|panel_api|client_area)\/?$/i, '')
+                       .replace(/\/+$/, '');
+            const headers = {
+                'Accept': 'application/json,text/plain,*/*',
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118 Safari/537.36',
+                'Referer': base
+            };
+            async function tryJsonResponse(up) {
+                const ct = up.headers.get('content-type') || '';
+                const text = await up.text();
+                if (/application\/json|\+json/i.test(ct) || (text.trim().startsWith('{') || text.trim().startsWith('['))) {
+                    try { return { ok: true, json: JSON.parse(text) }; } catch {}
+                }
+                return { ok: false, status: up.status, contentType: ct, bodySnippet: text.slice(0, 1000) };
+            }
+
+            // Attempt 1: GET player_api.php
+            let url = `${base}/player_api.php?${params}`;
+            let up = await fetch(url, { headers });
+            let parsed = await tryJsonResponse(up);
+
+            // If 414 (Request-URI Too Large) or not JSON, try POST to player_api.php
+            if (!parsed.ok && (up.status === 414 || true)) {
+                let upPost = await fetch(`${base}/player_api.php`, { method: 'POST', headers: { ...headers, 'Content-Type': 'application/x-www-form-urlencoded' }, body: params });
+                let parsedPost = await tryJsonResponse(upPost);
+                if (parsedPost.ok) return res.json(parsedPost.json);
+                parsed = parsedPost; up = upPost;
+            }
+
+            // If still not JSON and this looks like a login (no action=), try panel_api.php GET then POST
+            if (!parsed.ok && !/(^|&)action=/.test(params)) {
+                let upPanel = await fetch(`${base}/panel_api.php?${params}`, { headers });
+                let parsedPanel = await tryJsonResponse(upPanel);
+                if (!parsedPanel.ok) {
+                    upPanel = await fetch(`${base}/panel_api.php`, { method: 'POST', headers: { ...headers, 'Content-Type': 'application/x-www-form-urlencoded' }, body: params });
+                    parsedPanel = await tryJsonResponse(upPanel);
+                }
+                if (parsedPanel.ok) return res.json(parsedPanel.json);
+                parsed = parsedPanel; up = upPanel;
+            }
+
+            if (parsed.ok) return res.json(parsed.json);
+            return res.json({ success: false, nonJson: true, status: up.status, contentType: parsed.contentType, bodySnippet: parsed.bodySnippet });
+        } catch (e) {
+            console.error('[PROXY] xtream error:', e.message);
+            res.status(502).json({ success: false, error: 'xtream proxy failed' });
+        }
+    });
+
+    // Proxy fetch text (e.g., M3U/M3U8 playlists)
+    app.get('/api/proxy/fetch-text', async (req, res) => {
+        try {
+            let url = (req.query.url || '').toString();
+            if (!url.startsWith('http')) return res.status(400).end('Invalid URL');
+            const upstream = await fetch(url, { headers: { 'Accept': '*/*', 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118 Safari/537.36' } });
+            const body = await upstream.text();
+            res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+            res.send(body);
+        } catch (e) {
+            console.error('[PROXY] fetch-text error:', e.message);
+            res.status(502).end('proxy error');
+        }
+    });
 
     // Range-capable proxy for debrid direct URLs with HLS support
     app.get('/stream/debrid', async (req, res) => {
