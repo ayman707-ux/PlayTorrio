@@ -6416,6 +6416,62 @@
             transform: scale(1.1);
         }
         
+        /* Trakt Watchlist Button - Override circular icon styling */
+        body.ui-new #traktWatchlistBtn {
+            width: auto;
+            height: auto;
+            min-width: 160px;
+            border-radius: 12px;
+            padding: 0.75rem 1.25rem;
+            font-size: 0.95rem;
+            font-weight: 600;
+            gap: 0.5rem;
+            border: 2px solid rgba(168, 85, 247, 0.4);
+            background: linear-gradient(135deg, rgba(168, 85, 247, 0.15), rgba(139, 92, 246, 0.1));
+            transition: all 0.3s ease;
+        }
+        
+        body.ui-new #traktWatchlistBtn:hover {
+            background: linear-gradient(135deg, rgba(168, 85, 247, 0.3), rgba(139, 92, 246, 0.2));
+            border-color: rgba(168, 85, 247, 0.6);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(168, 85, 247, 0.3);
+        }
+        
+        body.ui-new #traktWatchlistBtn.btn-success {
+            border-color: rgba(16, 185, 129, 0.4);
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(5, 150, 105, 0.1));
+            color: #10b981;
+        }
+        
+        body.ui-new #traktWatchlistBtn.btn-success:hover {
+            border-color: rgba(16, 185, 129, 0.6);
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.3), rgba(5, 150, 105, 0.2));
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+        }
+        
+        body.ui-new #traktWatchlistBtn.btn-secondary {
+            border-color: rgba(168, 85, 247, 0.4);
+            background: linear-gradient(135deg, rgba(168, 85, 247, 0.15), rgba(139, 92, 246, 0.1));
+            color: #a855f7;
+        }
+        
+        body.ui-new #traktWatchlistBtn.btn-secondary:hover {
+            border-color: rgba(168, 85, 247, 0.6);
+            background: linear-gradient(135deg, rgba(168, 85, 247, 0.3), rgba(139, 92, 246, 0.2));
+            box-shadow: 0 4px 12px rgba(168, 85, 247, 0.3);
+        }
+        
+        body.ui-new #traktWatchlistBtn i {
+            font-size: 1rem;
+        }
+        
+        body.ui-new #traktWatchlistBtn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
         body.ui-new .action-note {
             padding: 0.75rem 1rem;
             background: rgba(168, 85, 247, 0.1);
