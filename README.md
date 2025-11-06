@@ -105,3 +105,5 @@ PlayTorrio and Jackett are intended for educational and legal use only. You are 
 If you enjoy PlayTorrio, please give it a ⭐ on GitHub to show support!
 
 License: The repository’s license covers the torrent scraper and all code within this repo.
+
+Unauthorized forks or clones that remove the PlayTorrio name or credits are in violation of this license and subject to DMCA removal.
