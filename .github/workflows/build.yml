@@ -28,13 +28,31 @@ jobs:
         # Extract MPV from ZIP file in repo
         if (Test-Path "mpv.zip") {
           Write-Host "Extracting mpv.zip..."
-          Expand-Archive -Path "mpv.zip" -DestinationPath "mpv" -Force
+          Expand-Archive -Path "mpv.zip" -DestinationPath "mpv-temp" -Force
+          
+          # Check if files are in root or nested folder
+          if (Test-Path "mpv-temp/mpv.exe") {
+            # Files are in root
+            Move-Item -Path "mpv-temp" -Destination "mpv" -Force
+            Write-Host "✓ MPV extracted (root level)"
+          } elseif (Test-Path "mpv-temp/mpv/mpv.exe") {
+            # Files are in nested folder
+            Move-Item -Path "mpv-temp/mpv" -Destination "mpv" -Force
+            Remove-Item "mpv-temp" -Recurse -Force
+            Write-Host "✓ MPV extracted (nested folder)"
+          } else {
+            # List what's inside to debug
+            Write-Host "Contents of mpv-temp:"
+            Get-ChildItem "mpv-temp" -Recurse | Select-Object -First 20
+            Write-Host "✗ MPV extraction failed - mpv.exe not found!"
+            exit 1
+          }
           
           if (Test-Path "mpv/mpv.exe") {
-            Write-Host "✓ MPV extracted successfully"
+            Write-Host "✓ MPV ready at mpv/mpv.exe"
             Get-ChildItem mpv | Select-Object -First 5
           } else {
-            Write-Host "✗ MPV extraction failed!"
+            Write-Host "✗ MPV setup failed!"
             exit 1
           }
         } elseif (Test-Path "mpv.rar") {
