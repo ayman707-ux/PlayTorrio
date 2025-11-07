@@ -452,12 +452,25 @@ function resolveMpvExe() {
             candidates.push('/Applications/IINA.app/Contents/MacOS/IINA');
         } else if (process.platform === 'win32') {
             // Windows: Look for mpv.exe
-            if (process.resourcesPath) {
-                candidates.push(path.join(process.resourcesPath, 'app.asar.unpacked', 'mpv', 'mpv.exe'));
-                candidates.push(path.join(process.resourcesPath, 'mpv', 'mpv.exe'));
+            const execDir = path.dirname(process.execPath);
+            const resourcesPath = process.resourcesPath;
+            
+            // PACKAGED MODE
+            if (resourcesPath) {
+                candidates.push(path.join(resourcesPath, 'app.asar.unpacked', 'mpv', 'mpv.exe'));
+                candidates.push(path.join(resourcesPath, 'mpv', 'mpv.exe'));
             }
+            
+            // extraResources to root
+            candidates.push(path.join(execDir, 'mpv', 'mpv.exe'));
+            candidates.push(path.join(execDir, 'resources', 'mpv', 'mpv.exe'));
+            candidates.push(path.join(execDir, 'resources', 'app.asar.unpacked', 'mpv', 'mpv.exe'));
+            
+            // DEV MODE
             candidates.push(path.join(__dirname, 'mpv', 'mpv.exe'));
-            candidates.push(path.join(path.dirname(process.execPath), 'mpv', 'mpv.exe'));
+            
+            // Additional fallbacks
+            candidates.push(path.join(execDir, '..', 'mpv', 'mpv.exe'));
         } else {
             // Linux: Look for mpv binary
             if (process.resourcesPath) {
@@ -471,15 +484,19 @@ function resolveMpvExe() {
             candidates.push('/usr/local/bin/mpv');
         }
 
+        console.log('[MPV] Searching for MPV in', candidates.length, 'locations...');
         for (const p of candidates) {
             try { 
                 if (fs.existsSync(p)) {
-                    console.log('[MPV] Found executable at:', p);
+                    console.log('[MPV] ✓ Found executable at:', p);
                     return p;
                 }
             } catch {}
         }
-    } catch {}
+        console.log('[MPV] ✗ Not found. Checked:', candidates.slice(0, 8).join(', '), '+ more...');
+    } catch (err) {
+        console.error('[MPV] Resolver error:', err);
+    }
     return null;
 }
 
@@ -502,22 +519,29 @@ function resolveVlcExe() {
             candidates.push('/Applications/VLC.app/Contents/MacOS/VLC');
         } else if (process.platform === 'win32') {
             // Windows: VLC Portable structure is VLC/App/vlc/vlc.exe
-            if (process.resourcesPath) {
-                // PortableApps layout: VLC/App/vlc/vlc.exe (CORRECT PATH)
-                candidates.push(path.join(process.resourcesPath, 'app.asar.unpacked', 'VLC', 'App', 'vlc', 'vlc.exe'));
-                candidates.push(path.join(process.resourcesPath, 'VLC', 'App', 'vlc', 'vlc.exe'));
-                // Flat layout fallback: vlc/vlc.exe
-                candidates.push(path.join(process.resourcesPath, 'app.asar.unpacked', 'vlc', 'vlc.exe'));
-                candidates.push(path.join(process.resourcesPath, 'vlc', 'vlc.exe'));
+            const execDir = path.dirname(process.execPath);
+            const resourcesPath = process.resourcesPath;
+            
+            // PACKAGED MODE - all possible resource locations
+            if (resourcesPath) {
+                candidates.push(path.join(resourcesPath, 'app.asar.unpacked', 'VLC', 'App', 'vlc', 'vlc.exe'));
+                candidates.push(path.join(resourcesPath, 'VLC', 'App', 'vlc', 'vlc.exe'));
+                candidates.push(path.join(resourcesPath, 'app.asar.unpacked', 'vlc', 'vlc.exe'));
+                candidates.push(path.join(resourcesPath, 'vlc', 'vlc.exe'));
             }
-            // Next to current file when running unpackaged (DEV MODE)
+            
+            // extraResources copies to root of app
+            candidates.push(path.join(execDir, 'VLC', 'App', 'vlc', 'vlc.exe'));
+            candidates.push(path.join(execDir, 'resources', 'VLC', 'App', 'vlc', 'vlc.exe'));
+            candidates.push(path.join(execDir, 'resources', 'app.asar.unpacked', 'VLC', 'App', 'vlc', 'vlc.exe'));
+            
+            // DEV MODE - next to main.js
             candidates.push(path.join(__dirname, 'VLC', 'App', 'vlc', 'vlc.exe'));
             candidates.push(path.join(__dirname, 'vlc', 'vlc.exe'));
-            // Next to executable (PACKAGED MODE)
-            candidates.push(path.join(path.dirname(process.execPath), 'resources', 'app.asar.unpacked', 'VLC', 'App', 'vlc', 'vlc.exe'));
-            candidates.push(path.join(path.dirname(process.execPath), 'resources', 'VLC', 'App', 'vlc', 'vlc.exe'));
-            candidates.push(path.join(path.dirname(process.execPath), 'VLC', 'App', 'vlc', 'vlc.exe'));
-            candidates.push(path.join(path.dirname(process.execPath), 'vlc', 'vlc.exe'));
+            
+            // Additional fallbacks
+            candidates.push(path.join(execDir, '..', 'VLC', 'App', 'vlc', 'vlc.exe'));
+            candidates.push(path.join(execDir, 'vlc', 'vlc.exe'));
         } else {
             // Linux: Look for vlc binary
             if (process.resourcesPath) {
@@ -531,16 +555,19 @@ function resolveVlcExe() {
             candidates.push('/usr/local/bin/vlc');
         }
 
+        console.log('[VLC] Searching for VLC in', candidates.length, 'locations...');
         for (const p of candidates) {
             try { 
                 if (fs.existsSync(p)) {
-                    console.log('[VLC] Found executable at:', p);
+                    console.log('[VLC] ✓ Found executable at:', p);
                     return p;
                 }
             } catch {}
         }
-        console.log('[VLC] Not found. Checked paths:', candidates.slice(0, 5).join(', '), '...');
-    } catch {}
+        console.log('[VLC] ✗ Not found. Checked:', candidates.slice(0, 8).join(', '), '+ more...');
+    } catch (err) {
+        console.error('[VLC] Resolver error:', err);
+    }
     return null;
 }
 
