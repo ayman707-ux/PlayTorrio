@@ -225,12 +225,25 @@ jobs:
       
     - name: Download MPV for macOS
       run: |
-        # Download MPV portable
-        curl -L https://laboratory.stolendata.net/~djinn/mpv_osx/mpv-latest.tar.gz -o mpv.tar.gz
+        # Download MPV portable (with fallback and error handling)
+        if ! curl -fL https://laboratory.stolendata.net/~djinn/mpv_osx/mpv-latest.tar.gz -o mpv.tar.gz; then
+          echo "⚠ MPV download failed from primary source"
+          # Try alternative: SourceForge
+          if ! curl -fL https://sourceforge.net/projects/mpv-player-windows/files/64bit/mpv-x86_64-latest.tar.gz -o mpv.tar.gz; then
+            echo "✗ All MPV download sources failed. Users will need system MPV (/Applications/mpv.app)"
+            exit 0  # Don't fail the build, just skip MPV bundling
+          fi
+        fi
+        
+        echo "✓ MPV downloaded, extracting..."
         mkdir -p mpv
-        tar -xzf mpv.tar.gz -C mpv
-        # Verify MPV was extracted
-        ls -la mpv/
+        if tar -xzf mpv.tar.gz -C mpv; then
+          echo "✓ MPV extracted successfully"
+          ls -la mpv/
+        else
+          echo "⚠ MPV extraction failed, continuing without bundled MPV"
+          rm -rf mpv mpv.tar.gz
+        fi
         
     - name: Verify Icon
       run: |
