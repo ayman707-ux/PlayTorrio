@@ -32,43 +32,17 @@ jobs:
         # Verify MPV was extracted
         ls -la mpv/
         
-    - name: Convert ICO to ICNS for macOS
+    - name: Verify Icon
       run: |
-        # Install ImageMagick for icon conversion
-        brew install imagemagick
-        
-        # Create build directory
-        mkdir -p build
-        
-        # Convert icon.ico to icon.icns
-        if [ -f "icon.ico" ]; then
-          # Extract largest size from ICO and convert to PNG
-          magick convert "icon.ico[0]" -resize 1024x1024 icon.png
-          
-          # Create iconset directory
-          mkdir -p icon.iconset
-          
-          # Generate all required icon sizes
-          sips -z 16 16     icon.png --out icon.iconset/icon_16x16.png
-          sips -z 32 32     icon.png --out icon.iconset/icon_16x16@2x.png
-          sips -z 32 32     icon.png --out icon.iconset/icon_32x32.png
-          sips -z 64 64     icon.png --out icon.iconset/icon_32x32@2x.png
-          sips -z 128 128   icon.png --out icon.iconset/icon_128x128.png
-          sips -z 256 256   icon.png --out icon.iconset/icon_128x128@2x.png
-          sips -z 256 256   icon.png --out icon.iconset/icon_256x256.png
-          sips -z 512 512   icon.png --out icon.iconset/icon_256x256@2x.png
-          sips -z 512 512   icon.png --out icon.iconset/icon_512x512.png
-          sips -z 1024 1024 icon.png --out icon.iconset/icon_512x512@2x.png
-          
-          # Create ICNS file
-          iconutil -c icns icon.iconset -o build/icon.icns
-          
-          # Cleanup
-          rm -rf icon.iconset icon.png
-          
-          echo "✓ Icon converted successfully"
+        # Check if icon.icns exists
+        if [ -f "icon.icns" ]; then
+          mkdir -p build
+          cp icon.icns build/icon.icns
+          echo "✓ Using existing icon.icns"
+        elif [ -f "build/icon.icns" ]; then
+          echo "✓ Icon already in build directory"
         else
-          echo "Warning: icon.ico not found, using default Electron icon"
+          echo "Warning: icon.icns not found, using default Electron icon"
         fi
         
     - name: Build macOS DMG

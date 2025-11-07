@@ -44,13 +44,6 @@
     "appId": "com.ayman.PlayTorrio",
     "productName": "PlayTorrio",
     "artifactName": "${productName}-Setup-${version}.${ext}",
-    "publish": [
-      {
-        "provider": "github",
-        "owner": "ayman707-ux",
-        "repo": "PlayTorrio"
-      }
-    ],
     "files": [
       "main.js",
       "preload.js",
