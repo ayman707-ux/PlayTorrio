@@ -23,19 +23,24 @@ jobs:
     - name: Install dependencies
       run: npm install
       
-    - name: Verify Windows Players
+    - name: Download and Setup Windows Players
       run: |
-        # MPV and VLC are already in the repo for Windows
+        # Download MPV portable for Windows
+        Write-Host "Downloading MPV for Windows..."
+        Invoke-WebRequest -Uri "https://sourceforge.net/projects/mpv-player-windows/files/64bit-v3/mpv-x86_64-20241027-git-3c1e1cf.7z/download" -OutFile "mpv.7z" -UserAgent "Mozilla/5.0"
+        7z x mpv.7z -ompv -y
         if (Test-Path "mpv/mpv.exe") {
-          Write-Host "✓ MPV found in repo at mpv/mpv.exe"
+          Write-Host "✓ MPV downloaded and extracted"
         } else {
-          Write-Host "✗ MPV not found!"
+          Write-Host "✗ MPV download failed!"
           exit 1
         }
+        
+        # VLC should be in repo (or skip if not needed for Windows)
         if (Test-Path "VLC/App/vlc/vlc.exe") {
-          Write-Host "✓ VLC found in repo at VLC/App/vlc/vlc.exe"
+          Write-Host "✓ VLC found in repo"
         } else {
-          Write-Host "⚠ VLC not found, build will continue without it"
+          Write-Host "⚠ VLC not in repo - continuing without it"
         }
       shell: pwsh
         
@@ -81,21 +86,11 @@ jobs:
     - name: Install dependencies
       run: npm install
       
-    - name: Download MPV for Linux
+    - name: Setup MPV for Linux
       run: |
-        # Download latest MPV AppImage
-        mkdir -p mpv
-        wget https://github.com/mpv-player/mpv/releases/download/v0.38.0/mpv-x86_64-v0.38.0.tar.gz -O mpv.tar.gz
-        tar -xzf mpv.tar.gz -C mpv --strip-components=1 || tar -xzf mpv.tar.gz -C mpv
-        chmod +x mpv/mpv 2>/dev/null || true
-        ls -la mpv/
-        
-    - name: Download VLC for Linux (optional)
-      run: |
-        # Try to get VLC portable or use system package
-        mkdir -p vlc
-        # For now, skip VLC bundling on Linux (users can install system-wide)
-        echo "VLC bundling skipped for Linux - users can install via apt/snap"
+        # For Linux, skip MPV bundling - users install system-wide
+        # The app will detect system MPV at /usr/bin/mpv automatically
+        echo "✓ Linux build configured (users install mpv via: sudo apt install mpv)"
         
     - name: Verify Icons
       run: |
