@@ -501,24 +501,21 @@ function resolveVlcExe() {
             // System-wide fallback
             candidates.push('/Applications/VLC.app/Contents/MacOS/VLC');
         } else if (process.platform === 'win32') {
-            // Windows: Look for VLCPortable.exe or vlc.exe
+            // Windows: VLC Portable structure is VLC/App/vlc/vlc.exe
             if (process.resourcesPath) {
-                // VLCPortable layout: VLC/VLCPortable.exe
-                candidates.push(path.join(process.resourcesPath, 'app.asar.unpacked', 'VLC', 'VLCPortable.exe'));
-                candidates.push(path.join(process.resourcesPath, 'VLC', 'VLCPortable.exe'));
-                // PortableApps layout: VLC/App/vlc/vlc.exe
+                // PortableApps layout: VLC/App/vlc/vlc.exe (CORRECT PATH)
                 candidates.push(path.join(process.resourcesPath, 'app.asar.unpacked', 'VLC', 'App', 'vlc', 'vlc.exe'));
                 candidates.push(path.join(process.resourcesPath, 'VLC', 'App', 'vlc', 'vlc.exe'));
                 // Flat layout fallback: vlc/vlc.exe
                 candidates.push(path.join(process.resourcesPath, 'app.asar.unpacked', 'vlc', 'vlc.exe'));
                 candidates.push(path.join(process.resourcesPath, 'vlc', 'vlc.exe'));
             }
-            // Next to current file when running unpackaged
-            candidates.push(path.join(__dirname, 'VLC', 'VLCPortable.exe'));
+            // Next to current file when running unpackaged (DEV MODE)
             candidates.push(path.join(__dirname, 'VLC', 'App', 'vlc', 'vlc.exe'));
             candidates.push(path.join(__dirname, 'vlc', 'vlc.exe'));
-            // Next to executable
-            candidates.push(path.join(path.dirname(process.execPath), 'VLC', 'VLCPortable.exe'));
+            // Next to executable (PACKAGED MODE)
+            candidates.push(path.join(path.dirname(process.execPath), 'resources', 'app.asar.unpacked', 'VLC', 'App', 'vlc', 'vlc.exe'));
+            candidates.push(path.join(path.dirname(process.execPath), 'resources', 'VLC', 'App', 'vlc', 'vlc.exe'));
             candidates.push(path.join(path.dirname(process.execPath), 'VLC', 'App', 'vlc', 'vlc.exe'));
             candidates.push(path.join(path.dirname(process.execPath), 'vlc', 'vlc.exe'));
         } else {
@@ -542,6 +539,7 @@ function resolveVlcExe() {
                 }
             } catch {}
         }
+        console.log('[VLC] Not found. Checked paths:', candidates.slice(0, 5).join(', '), '...');
     } catch {}
     return null;
 }
