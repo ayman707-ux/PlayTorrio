@@ -28,7 +28,6 @@ const require = createRequire(import.meta.url);
 let httpServer;
 let webtorrentClient;
 let mainWindow;
-let torrentScraperServer;
 // Updater runtime state/timers so we can disable cleanly at runtime
 let updaterActive = false;
 let updaterTimers = { initial: null, retry: null };
@@ -1622,15 +1621,6 @@ if (!gotLock) {
         try { dialog.showErrorBox('PlayTorrio', 'Failed to start internal server. Some features may not work.'); } catch(_) {}
     }
 
-    // Start TorrentDownload scraper server (port 3001)
-    try {
-        const { startTorrentScraperServer } = require('./torrentscrapernew-server.cjs');
-        torrentScraperServer = startTorrentScraperServer();
-        console.log('✅ TorrentDownload scraper server started on port 3001');
-    } catch (err) {
-        console.error('[TorrentScraper] Failed to start:', err?.message || err);
-    }
-
     // ============================================================================
     // NOTE: All microservices below are now integrated into server.mjs via api.cjs
     // No need to start individual servers - all routes available on localhost:3000
@@ -2761,16 +2751,6 @@ app.on('will-quit', () => {
     }
     
     // Shut down TorrentDownload scraper server
-    if (torrentScraperServer) {
-        try {
-            const { stopTorrentScraperServer } = require('./torrentscrapernew-server.cjs');
-            stopTorrentScraperServer();
-            console.log('TorrentDownload scraper server closed.');
-        } catch (err) {
-            console.error('[TorrentScraper] Error stopping server:', err?.message);
-        }
-    }
-    
     // ============================================================================
     // NOTE: Microservice processes no longer used - all handled by server.mjs
     // ============================================================================

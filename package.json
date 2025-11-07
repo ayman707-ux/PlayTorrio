@@ -54,7 +54,6 @@
       "preload.js",
       "server.mjs",
       "api.cjs",
-      "torrentscrapernew-server.cjs",
       "chromecast.mjs",
       "jackett_api_key.json",
       "public/**/*",
