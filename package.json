@@ -142,7 +142,19 @@
         "AppImage",
         "deb"
       ],
-      "category": "AudioVideo"
+      "category": "AudioVideo",
+      "executableName": "playtorrio",
+      "desktop": {
+        "Name": "PlayTorrio",
+        "Comment": "Stream Movies, TV Shows, Anime, Books, Music & Games",
+        "Categories": "AudioVideo;Video;Player;",
+        "StartupWMClass": "PlayTorrio",
+        "Terminal": false
+      }
+    },
+    "appImage": {
+      "license": "LICENSE",
+      "artifactName": "${productName}-${version}.${ext}"
     }
   }
 }

@@ -151,6 +151,16 @@ jobs:
       run: npm run build -- --linux --publish always
       env:
         GH_TOKEN: ${{ secrets.GH_TOKEN }}
+    
+    - name: Fix AppImage permissions
+      run: |
+        if ls dist/*.AppImage 1> /dev/null 2>&1; then
+          chmod +x dist/*.AppImage
+          echo "✓ Made AppImage executable"
+          ls -lh dist/*.AppImage
+        else
+          echo "⚠ No AppImage found"
+        fi
         
     - name: Upload Linux artifacts
       uses: actions/upload-artifact@v4
