@@ -34,6 +34,18 @@ let torrentScraperServer;
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+// ----------------------
+// Global crash guards (log instead of silent exit)
+// ----------------------
+try {
+    process.on('uncaughtException', (err) => {
+        try { console.error('[Global] uncaughtException:', err?.stack || err); } catch(_) {}
+    });
+    process.on('unhandledRejection', (reason) => {
+        try { console.error('[Global] unhandledRejection:', reason); } catch(_) {}
+    });
+} catch(_) {}
+
 
 // Ensure a stable AppUserModelID to prevent Windows taskbar/shortcut icon issues after updates
 try { app.setAppUserModelId('com.ayman.PlayTorrio'); } catch(_) {}
@@ -741,13 +753,15 @@ function openInVLC(win, streamUrl, infoHash, startSeconds) {
 }
 
 function createWindow() {
+    const isMac = process.platform === 'darwin';
     const win = new BrowserWindow({
         width: 1440,
         height: 900,
         minWidth: 1200,
         minHeight: 800,
-        frame: false,
-        titleBarStyle: 'hidden',
+        // Use native title bar on macOS; keep frameless custom bar on Windows/Linux
+        frame: isMac ? true : false,
+        titleBarStyle: isMac ? 'default' : 'hidden',
         webPreferences: {
             preload: path.join(__dirname, 'preload.js'),
             nodeIntegration: false,
