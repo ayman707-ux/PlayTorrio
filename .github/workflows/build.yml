@@ -75,6 +75,7 @@ jobs:
       run: npm run build
       env:
         CSC_IDENTITY_AUTO_DISCOVERY: false  # Skip code signing
+        ELECTRON_BUILDER_PUBLISH: never  # Don't auto-publish
         
     - name: Upload DMG artifacts
       uses: actions/upload-artifact@v4
