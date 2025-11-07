@@ -2631,16 +2631,30 @@ if (!gotLock) {
         }
     });
 
-        // Initialize the auto-updater based on user preference (default ON)
+        // Initialize the auto-updater with extra safety on macOS unsigned builds
+        const shouldEnableUpdater = () => {
+            if (!readAutoUpdateEnabled()) return false;
+            if (!app.isPackaged) return false; // never in dev
+            // On macOS require either notarization hint or explicit override to reduce launch crashes
+            if (process.platform === 'darwin') {
+                // Heuristic: if hardened runtime is enabled but we lack Apple API key env vars, skip
+                const hasAppleNotarizationEnv = !!(process.env.APPLE_API_KEY && process.env.APPLE_API_KEY_ID && process.env.APPLE_API_ISSUER);
+                const forceOverride = process.env.FORCE_ENABLE_UPDATER === '1';
+                if (!hasAppleNotarizationEnv && !forceOverride) {
+                    console.warn('[Updater] Skipping on macOS (no notarization credentials). Set FORCE_ENABLE_UPDATER=1 to override.');
+                    return false;
+                }
+            }
+            return true;
+        };
         try {
-            if (readAutoUpdateEnabled()) {
+            if (shouldEnableUpdater()) {
                 setupAutoUpdater();
             } else {
-                console.log('[Updater] Disabled by settings (autoUpdate=false)');
+                console.log('[Updater] Not initialized (conditions not met)');
             }
-        } catch (_) {
-            // Fallback: still try to setup to avoid being stuck on old versions silently
-            try { setupAutoUpdater(); } catch (_) {}
+        } catch (e) {
+            console.error('[Updater] setup threw error (will not retry):', e?.message || e);
         }
     });
 }
