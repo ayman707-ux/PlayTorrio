@@ -25,35 +25,30 @@ jobs:
       
     - name: Setup Windows Players
       run: |
-        # Check if MPV files exist in repo
-        if (Test-Path "mpv") {
-          Write-Host "✓ MPV folder found in repo"
-          Get-ChildItem mpv -Recurse | Select-Object -First 10
+        # Extract MPV from RAR file in repo
+        if (Test-Path "mpv.rar") {
+          Write-Host "Extracting mpv.rar..."
+          
+          # Install 7-Zip if not available (GitHub runners have it)
+          7z x mpv.rar -ompv -y
+          
+          if (Test-Path "mpv/mpv.exe") {
+            Write-Host "✓ MPV extracted successfully"
+            Get-ChildItem mpv | Select-Object -First 5
+          } else {
+            Write-Host "✗ MPV extraction failed!"
+            exit 1
+          }
         } else {
-          Write-Host "⚠ MPV folder not found, creating empty folder"
-          mkdir mpv
-        }
-        
-        # Note: mpv.exe (118MB) cannot be in Git due to size limits
-        # Download it if missing
-        if (!(Test-Path "mpv/mpv.exe")) {
-          Write-Host "Downloading mpv.exe (not in repo due to size)..."
-          Invoke-WebRequest -Uri "https://github.com/shinchiro/mpv-winbuild-cmake/releases/download/20241027/mpv-x86_64-20241027-git-3c1e1cf.7z" -OutFile "mpv-temp.7z"
-          7z e mpv-temp.7z -ompv mpv.exe -y
-          Remove-Item "mpv-temp.7z" -Force
-        }
-        
-        if (Test-Path "mpv/mpv.exe") {
-          Write-Host "✓ MPV ready"
-        } else {
-          Write-Host "⚠ MPV executable missing, build will continue"
+          Write-Host "✗ mpv.rar not found in repo!"
+          exit 1
         }
         
         # VLC check
         if (Test-Path "VLC/App/vlc/vlc.exe") {
           Write-Host "✓ VLC found in repo"
         } else {
-          Write-Host "⚠ VLC not in repo"
+          Write-Host "⚠ VLC not in repo - continuing without it"
         }
       shell: pwsh
         
