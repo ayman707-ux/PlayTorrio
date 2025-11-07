@@ -1,0 +1,86 @@
+name: Build macOS DMG
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:  # Allows manual trigger from GitHub UI
+
+jobs:
+  build-macos:
+    runs-on: macos-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        
+    - name: Install dependencies
+      run: npm install
+      
+    - name: Download MPV
+      run: |
+        # Download MPV portable
+        curl -L https://laboratory.stolendata.net/~djinn/mpv_osx/mpv-latest.tar.gz -o mpv.tar.gz
+        mkdir -p mpv
+        tar -xzf mpv.tar.gz -C mpv
+        # Verify MPV was extracted
+        ls -la mpv/
+        
+    - name: Convert ICO to ICNS for macOS
+      run: |
+        # Install ImageMagick for icon conversion
+        brew install imagemagick
+        
+        # Create build directory
+        mkdir -p build
+        
+        # Convert icon.ico to icon.icns
+        if [ -f "icon.ico" ]; then
+          # Extract largest size from ICO and convert to PNG
+          magick convert "icon.ico[0]" -resize 1024x1024 icon.png
+          
+          # Create iconset directory
+          mkdir -p icon.iconset
+          
+          # Generate all required icon sizes
+          sips -z 16 16     icon.png --out icon.iconset/icon_16x16.png
+          sips -z 32 32     icon.png --out icon.iconset/icon_16x16@2x.png
+          sips -z 32 32     icon.png --out icon.iconset/icon_32x32.png
+          sips -z 64 64     icon.png --out icon.iconset/icon_32x32@2x.png
+          sips -z 128 128   icon.png --out icon.iconset/icon_128x128.png
+          sips -z 256 256   icon.png --out icon.iconset/icon_128x128@2x.png
+          sips -z 256 256   icon.png --out icon.iconset/icon_256x256.png
+          sips -z 512 512   icon.png --out icon.iconset/icon_256x256@2x.png
+          sips -z 512 512   icon.png --out icon.iconset/icon_512x512.png
+          sips -z 1024 1024 icon.png --out icon.iconset/icon_512x512@2x.png
+          
+          # Create ICNS file
+          iconutil -c icns icon.iconset -o build/icon.icns
+          
+          # Cleanup
+          rm -rf icon.iconset icon.png
+          
+          echo "✓ Icon converted successfully"
+        else
+          echo "Warning: icon.ico not found, using default Electron icon"
+        fi
+        
+    - name: Build macOS DMG
+      run: npm run build
+      env:
+        CSC_IDENTITY_AUTO_DISCOVERY: false  # Skip code signing
+        
+    - name: Upload DMG artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: macos-dmg
+        path: |
+          dist/*.dmg
+          dist/*.dmg.blockmap
+        retention-days: 30

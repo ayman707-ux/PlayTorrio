@@ -1,0 +1,23 @@
+# Ignore build outputs
+node_modules/
+dist/
+*.dmg
+*.exe
+*.AppImage
+*.deb
+
+# Ignore large media player folders
+mpv/
+VLC/
+
+# Ignore OS files
+.DS_Store
+Thumbs.db
+
+# Ignore logs
+*.log
+npm-debug.log*
+
+# Ignore IDE files
+.vscode/
+.idea/
