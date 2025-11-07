@@ -1,4 +1,4 @@
-name: Build macOS DMG
+name: Build Multi-Platform
 
 on:
   push:
@@ -8,6 +8,121 @@ on:
   workflow_dispatch:  # Allows manual trigger from GitHub UI
 
 jobs:
+  build-windows:
+    runs-on: windows-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        
+    - name: Install dependencies
+      run: npm install
+      
+    - name: Verify Windows Players
+      run: |
+        # MPV and VLC are already in the repo for Windows
+        if (Test-Path "mpv/mpv.exe") {
+          Write-Host "✓ MPV found in repo at mpv/mpv.exe"
+        } else {
+          Write-Host "✗ MPV not found!"
+          exit 1
+        }
+        if (Test-Path "VLC/App/vlc/vlc.exe") {
+          Write-Host "✓ VLC found in repo at VLC/App/vlc/vlc.exe"
+        } else {
+          Write-Host "⚠ VLC not found, build will continue without it"
+        }
+      shell: pwsh
+        
+    - name: Verify Icons
+      run: |
+        if (!(Test-Path "build")) { mkdir build }
+        if (Test-Path "icon.ico") {
+          Copy-Item "icon.ico" "build/icon.ico" -Force
+          Write-Host "✓ Using icon.ico"
+        }
+        if (Test-Path "icon.png") {
+          Copy-Item "icon.png" "build/icon.png" -Force
+          Write-Host "✓ Copied icon.png for Linux"
+        }
+      shell: pwsh
+        
+    - name: Build Windows Installer
+      run: npm run build -- --win
+      env:
+        GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        
+    - name: Upload Windows artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: windows-installer
+        path: |
+          dist/*.exe
+          dist/*.exe.blockmap
+        retention-days: 30
+
+  build-linux:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        
+    - name: Install dependencies
+      run: npm install
+      
+    - name: Download MPV for Linux
+      run: |
+        # Download latest MPV AppImage
+        mkdir -p mpv
+        wget https://github.com/mpv-player/mpv/releases/download/v0.38.0/mpv-x86_64-v0.38.0.tar.gz -O mpv.tar.gz
+        tar -xzf mpv.tar.gz -C mpv --strip-components=1 || tar -xzf mpv.tar.gz -C mpv
+        chmod +x mpv/mpv 2>/dev/null || true
+        ls -la mpv/
+        
+    - name: Download VLC for Linux (optional)
+      run: |
+        # Try to get VLC portable or use system package
+        mkdir -p vlc
+        # For now, skip VLC bundling on Linux (users can install system-wide)
+        echo "VLC bundling skipped for Linux - users can install via apt/snap"
+        
+    - name: Verify Icons
+      run: |
+        mkdir -p build
+        if [ -f "icon.png" ]; then
+          cp icon.png build/icon.png
+          echo "✓ Using icon.png"
+        fi
+        if [ -f "icon.ico" ]; then
+          cp icon.ico build/icon.ico
+          echo "✓ Copied icon.ico"
+        fi
+        
+    - name: Build Linux Packages
+      run: npm run build -- --linux
+      env:
+        GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        
+    - name: Upload Linux artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: linux-packages
+        path: |
+          dist/*.AppImage
+          dist/*.deb
+        retention-days: 30
+
   build-macos:
     runs-on: macos-latest
     
@@ -23,7 +138,7 @@ jobs:
     - name: Install dependencies
       run: npm install
       
-    - name: Download MPV
+    - name: Download MPV for macOS
       run: |
         # Download MPV portable
         curl -L https://laboratory.stolendata.net/~djinn/mpv_osx/mpv-latest.tar.gz -o mpv.tar.gz
@@ -34,9 +149,8 @@ jobs:
         
     - name: Verify Icon
       run: |
-        # Check if icon.icns exists
+        mkdir -p build
         if [ -f "icon.icns" ]; then
-          mkdir -p build
           cp icon.icns build/icon.icns
           echo "✓ Using existing icon.icns"
         elif [ -f "build/icon.icns" ]; then
@@ -46,10 +160,10 @@ jobs:
         fi
         
     - name: Build macOS DMG
-      run: npm run build
+      run: npm run build -- --mac
       env:
-        CSC_IDENTITY_AUTO_DISCOVERY: false  # Skip code signing
-        GH_TOKEN: ${{ secrets.GH_TOKEN }}  # GitHub token for publishing
+        CSC_IDENTITY_AUTO_DISCOVERY: false
+        GH_TOKEN: ${{ secrets.GH_TOKEN }}
         
     - name: Upload DMG artifacts
       uses: actions/upload-artifact@v4

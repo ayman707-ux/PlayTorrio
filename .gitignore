@@ -6,9 +6,8 @@ dist/
 *.AppImage
 *.deb
 
-# Ignore large media player folders
-mpv/
-VLC/
+# NOTE: mpv/ and VLC/ folders are NOT ignored - they contain Windows portable players
+# GitHub Actions will download them for macOS/Linux builds automatically
 
 # Ignore OS files
 .DS_Store
