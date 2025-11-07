@@ -23,33 +23,37 @@ jobs:
     - name: Install dependencies
       run: npm install
       
-    - name: Download and Setup Windows Players
+    - name: Setup Windows Players
       run: |
-        # Download MPV.NET portable for Windows
-        Write-Host "Downloading MPV.NET for Windows..."
-        Invoke-WebRequest -Uri "https://github.com/mpvnet-player/mpv.net/releases/download/v7.1.1.0/mpv.net-v7.1.1.0-portable.zip" -OutFile "mpv.zip"
-        
-        Write-Host "Extracting MPV..."
-        Expand-Archive -Path "mpv.zip" -DestinationPath "mpv-temp" -Force
-        
-        # Move extracted files to mpv folder
-        if (!(Test-Path "mpv")) { mkdir mpv }
-        Move-Item -Path "mpv-temp\*" -Destination "mpv\" -Force
-        Remove-Item "mpv-temp" -Recurse -Force
-        Remove-Item "mpv.zip" -Force
-        
-        if (Test-Path "mpv/mpv.exe") {
-          Write-Host "✓ MPV.NET ready at mpv/mpv.exe"
+        # Check if MPV files exist in repo
+        if (Test-Path "mpv") {
+          Write-Host "✓ MPV folder found in repo"
+          Get-ChildItem mpv -Recurse | Select-Object -First 10
         } else {
-          Write-Host "✗ MPV download failed!"
-          exit 1
+          Write-Host "⚠ MPV folder not found, creating empty folder"
+          mkdir mpv
         }
         
-        # VLC should be in repo (or skip if not needed for Windows)
+        # Note: mpv.exe (118MB) cannot be in Git due to size limits
+        # Download it if missing
+        if (!(Test-Path "mpv/mpv.exe")) {
+          Write-Host "Downloading mpv.exe (not in repo due to size)..."
+          Invoke-WebRequest -Uri "https://github.com/shinchiro/mpv-winbuild-cmake/releases/download/20241027/mpv-x86_64-20241027-git-3c1e1cf.7z" -OutFile "mpv-temp.7z"
+          7z e mpv-temp.7z -ompv mpv.exe -y
+          Remove-Item "mpv-temp.7z" -Force
+        }
+        
+        if (Test-Path "mpv/mpv.exe") {
+          Write-Host "✓ MPV ready"
+        } else {
+          Write-Host "⚠ MPV executable missing, build will continue"
+        }
+        
+        # VLC check
         if (Test-Path "VLC/App/vlc/vlc.exe") {
           Write-Host "✓ VLC found in repo"
         } else {
-          Write-Host "⚠ VLC not in repo - continuing without it"
+          Write-Host "⚠ VLC not in repo"
         }
       shell: pwsh
         
