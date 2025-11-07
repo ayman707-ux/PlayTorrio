@@ -25,25 +25,21 @@ jobs:
       
     - name: Download and Setup Windows Players
       run: |
-        # Download MPV portable for Windows
-        Write-Host "Downloading MPV for Windows..."
-        Invoke-WebRequest -Uri "https://github.com/shinchiro/mpv-winbuild-cmake/releases/download/20241027/mpv-x86_64-20241027-git-3c1e1cf.7z" -OutFile "mpv.7z" -UserAgent "Mozilla/5.0"
+        # Download MPV.NET portable for Windows
+        Write-Host "Downloading MPV.NET for Windows..."
+        Invoke-WebRequest -Uri "https://github.com/mpvnet-player/mpv.net/releases/download/v7.1.1.0/mpv.net-v7.1.1.0-portable.zip" -OutFile "mpv.zip"
         
         Write-Host "Extracting MPV..."
-        7z x mpv.7z -y
+        Expand-Archive -Path "mpv.zip" -DestinationPath "mpv-temp" -Force
         
         # Move extracted files to mpv folder
-        if (Test-Path "mpv.com") {
-          if (!(Test-Path "mpv")) { mkdir mpv }
-          Move-Item -Path "*.exe" -Destination "mpv/" -Force
-          Move-Item -Path "*.dll" -Destination "mpv/" -Force -ErrorAction SilentlyContinue
-          Move-Item -Path "*.com" -Destination "mpv/" -Force -ErrorAction SilentlyContinue
-          Move-Item -Path "doc" -Destination "mpv/" -Force -ErrorAction SilentlyContinue
-          Write-Host "✓ MPV extracted and organized"
-        }
+        if (!(Test-Path "mpv")) { mkdir mpv }
+        Move-Item -Path "mpv-temp\*" -Destination "mpv\" -Force
+        Remove-Item "mpv-temp" -Recurse -Force
+        Remove-Item "mpv.zip" -Force
         
         if (Test-Path "mpv/mpv.exe") {
-          Write-Host "✓ MPV ready at mpv/mpv.exe"
+          Write-Host "✓ MPV.NET ready at mpv/mpv.exe"
         } else {
           Write-Host "✗ MPV download failed!"
           exit 1
