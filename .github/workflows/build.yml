@@ -27,10 +27,23 @@ jobs:
       run: |
         # Download MPV portable for Windows
         Write-Host "Downloading MPV for Windows..."
-        Invoke-WebRequest -Uri "https://sourceforge.net/projects/mpv-player-windows/files/64bit-v3/mpv-x86_64-20241027-git-3c1e1cf.7z/download" -OutFile "mpv.7z" -UserAgent "Mozilla/5.0"
-        7z x mpv.7z -ompv -y
+        Invoke-WebRequest -Uri "https://github.com/shinchiro/mpv-winbuild-cmake/releases/download/20241027/mpv-x86_64-20241027-git-3c1e1cf.7z" -OutFile "mpv.7z" -UserAgent "Mozilla/5.0"
+        
+        Write-Host "Extracting MPV..."
+        7z x mpv.7z -y
+        
+        # Move extracted files to mpv folder
+        if (Test-Path "mpv.com") {
+          if (!(Test-Path "mpv")) { mkdir mpv }
+          Move-Item -Path "*.exe" -Destination "mpv/" -Force
+          Move-Item -Path "*.dll" -Destination "mpv/" -Force -ErrorAction SilentlyContinue
+          Move-Item -Path "*.com" -Destination "mpv/" -Force -ErrorAction SilentlyContinue
+          Move-Item -Path "doc" -Destination "mpv/" -Force -ErrorAction SilentlyContinue
+          Write-Host "✓ MPV extracted and organized"
+        }
+        
         if (Test-Path "mpv/mpv.exe") {
-          Write-Host "✓ MPV downloaded and extracted"
+          Write-Host "✓ MPV ready at mpv/mpv.exe"
         } else {
           Write-Host "✗ MPV download failed!"
           exit 1
@@ -159,6 +172,14 @@ jobs:
       env:
         CSC_IDENTITY_AUTO_DISCOVERY: false
         GH_TOKEN: ${{ secrets.GH_TOKEN }}
+    
+    - name: Fix macOS Gatekeeper Issues
+      run: |
+        # Remove quarantine attributes from built app
+        echo "Removing quarantine attributes to prevent 'damaged app' errors..."
+        xattr -cr dist/mac*/PlayTorrio.app 2>/dev/null || true
+        xattr -cr dist/mac-arm64*/PlayTorrio.app 2>/dev/null || true
+        echo "✓ Quarantine attributes removed"
         
     - name: Upload DMG artifacts
       uses: actions/upload-artifact@v4
@@ -167,4 +188,5 @@ jobs:
         path: |
           dist/*.dmg
           dist/*.dmg.blockmap
+          MACOS_INSTALLATION.md
         retention-days: 30
