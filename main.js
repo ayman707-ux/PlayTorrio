@@ -29,6 +29,9 @@ let httpServer;
 let webtorrentClient;
 let mainWindow;
 let torrentScraperServer;
+// Updater runtime state/timers so we can disable cleanly at runtime
+let updaterActive = false;
+let updaterTimers = { initial: null, retry: null };
 
 
 const __filename = fileURLToPath(import.meta.url);
@@ -229,7 +232,8 @@ function setupAutoUpdater() {
             } catch (e) {
                 console.error(`[Updater] checkForUpdates failed (attempt ${checkAttempts}):`, e?.message || e);
                 if (checkAttempts < maxRetries) {
-                    setTimeout(checkForUpdatesWithRetry, 10000); // Retry after 10s
+                    try { if (updaterTimers.retry) clearTimeout(updaterTimers.retry); } catch(_) {}
+                    updaterTimers.retry = setTimeout(checkForUpdatesWithRetry, 10000); // Retry after 10s
                 }
             }
         };
@@ -251,12 +255,15 @@ function setupAutoUpdater() {
             const online = await isOnline(1500);
             if (!online) {
                 console.log('[Updater] Offline at startup, delaying update check...');
-                setTimeout(scheduleInitialCheck, 10000);
+                try { if (updaterTimers.initial) clearTimeout(updaterTimers.initial); } catch(_) {}
+                updaterTimers.initial = setTimeout(scheduleInitialCheck, 10000);
                 return;
             }
             checkForUpdatesWithRetry();
         };
-        setTimeout(scheduleInitialCheck, 4000);
+        try { if (updaterTimers.initial) clearTimeout(updaterTimers.initial); } catch(_) {}
+        updaterTimers.initial = setTimeout(scheduleInitialCheck, 4000);
+        updaterActive = true;
     } catch (e) {
         console.error('[Updater] setup failed:', e?.message || e);
     }
@@ -1578,6 +1585,19 @@ if (!gotLock) {
     });
 
     app.whenReady().then(async () => {
+    // ---- Main process file logging (Windows crash diagnostics)
+    try {
+        const logsDir = path.join(app.getPath('userData'), 'logs');
+        fs.mkdirSync(logsDir, { recursive: true });
+        const logFile = path.join(logsDir, `main-${new Date().toISOString().replace(/[:.]/g,'-')}.log`);
+        const logStream = fs.createWriteStream(logFile, { flags: 'a' });
+        const origLog = console.log.bind(console);
+        const origErr = console.error.bind(console);
+        console.log = (...args) => { try { logStream.write(`[LOG] ${new Date().toISOString()} ${args.join(' ')}\n`); } catch(_) {}; origLog(...args); };
+        console.error = (...args) => { try { logStream.write(`[ERR] ${new Date().toISOString()} ${args.join(' ')}\n`); } catch(_) {}; origErr(...args); };
+        process.on('exit', (code) => { try { logStream.write(`[EXIT] code=${code}\n`); logStream.end(); } catch(_) {} });
+        console.log('Main log started at', logFile);
+    } catch (_) {}
     // Initialize Discord RPC (guard on connectivity)
     try {
         const online = await (async () => {
@@ -1590,12 +1610,17 @@ if (!gotLock) {
         }
     } catch(_) {}
     // Start the unified server (port 3000) - handles all API routes including anime, books, torrents, etc.
-    const { server, client, clearCache } = startServer(app.getPath('userData'));
-    httpServer = server;
-    webtorrentClient = client;
-    
-    // Store clearCache function globally for cleanup on exit
-    global.clearApiCache = clearCache;
+    try {
+        const { server, client, clearCache } = startServer(app.getPath('userData'));
+        httpServer = server;
+        webtorrentClient = client;
+        // Store clearCache function globally for cleanup on exit
+        global.clearApiCache = clearCache;
+        console.log('✅ Main API server started on port 3000');
+    } catch (e) {
+        console.error('[Server] Failed to start API server:', e?.stack || e);
+        try { dialog.showErrorBox('PlayTorrio', 'Failed to start internal server. Some features may not work.'); } catch(_) {}
+    }
 
     // Start TorrentDownload scraper server (port 3001)
     try {
@@ -2642,6 +2667,33 @@ if (!gotLock) {
         } catch (e) {
             console.error('Read file error:', e);
             return { success: false, error: e.message };
+        }
+    });
+
+    // Updater runtime toggle via settings UI
+    ipcMain.handle('get-auto-update-enabled', async () => {
+        return { success: true, enabled: !!readAutoUpdateEnabled() };
+    });
+    ipcMain.handle('set-auto-update-enabled', async (event, enabled) => {
+        try {
+            const settings = readMainSettings();
+            settings.autoUpdate = !!enabled;
+            writeMainSettings(settings);
+            if (!enabled) {
+                // Cancel any scheduled updater checks
+                try { if (updaterTimers.initial) clearTimeout(updaterTimers.initial); } catch(_) {}
+                try { if (updaterTimers.retry) clearTimeout(updaterTimers.retry); } catch(_) {}
+                updaterActive = false;
+                console.log('[Updater] Disabled by user settings');
+            } else {
+                // If not active yet and allowed by platform policy, initialize now
+                if (!updaterActive && app.isPackaged) {
+                    try { setupAutoUpdater(); } catch (e) { console.error('[Updater] re-init failed:', e?.message || e); }
+                }
+            }
+            return { success: true, enabled: !!enabled };
+        } catch (e) {
+            return { success: false, error: e?.message || String(e) };
         }
     });
 
