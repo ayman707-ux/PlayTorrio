@@ -169,12 +169,15 @@ jobs:
         node-version: '18'
 
     - name: Prepare signing credentials (if provided)
-      if: ${{ secrets.APPLE_API_KEY != '' }}
       run: |
-        echo "Setting up Apple signing credentials..."
-        mkdir -p ~/private_keys
-        echo "${{ secrets.APPLE_API_KEY }}" > ~/private_keys/AuthKey_${{ secrets.APPLE_API_KEY_ID }}.p8
-        echo "✓ Apple API key written"
+        if [ -n "${{ secrets.APPLE_API_KEY }}" ]; then
+          echo "Setting up Apple signing credentials..."
+          mkdir -p ~/private_keys
+          echo "${{ secrets.APPLE_API_KEY }}" > ~/private_keys/AuthKey_${{ secrets.APPLE_API_KEY_ID }}.p8
+          echo "✓ Apple API key written"
+        else
+          echo "No Apple API key secret set; skipping signing credentials."
+        fi
       shell: bash
         
     - name: Install dependencies
@@ -209,8 +212,8 @@ jobs:
         APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
         APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
         CSC_IDENTITY_AUTO_DISCOVERY: true
-        # Disable auto-updater at runtime if we don't have notarization creds to avoid mac crash on launch
-        FORCE_ENABLE_UPDATER: ${{ secrets.APPLE_API_KEY != '' && '1' || '0' }}
+        # Disable auto-updater at runtime (can override later by setting FORCE_ENABLE_UPDATER=1 manually)
+        FORCE_ENABLE_UPDATER: '0'
     
     - name: Fix macOS Gatekeeper Issues
       run: |
@@ -221,14 +224,17 @@ jobs:
         echo "✓ Quarantine attributes removed"
 
     - name: Staple notarization ticket (if signed)
-      if: ${{ secrets.APPLE_API_KEY != '' }}
       run: |
-        echo "Attempting to staple notarization ticket..."
-        for dmg in dist/*.dmg; do
-          echo "Stapling $dmg"
-          xcrun stapler staple "$dmg" || echo "Stapling failed (continuing)"
-        done
-        echo "Stapling step complete"
+        if [ -n "${{ secrets.APPLE_API_KEY }}" ]; then
+          echo "Attempting to staple notarization ticket..."
+          for dmg in dist/*.dmg; do
+            echo "Stapling $dmg"
+            xcrun stapler staple "$dmg" || echo "Stapling failed (continuing)"
+          done
+          echo "Stapling step complete"
+        else
+          echo "No Apple API key secret set; skipping stapling."
+        fi
         
     - name: Upload DMG artifacts
       uses: actions/upload-artifact@v4
