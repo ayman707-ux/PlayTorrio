@@ -62,11 +62,23 @@ jobs:
           exit 1
         }
         
-        # VLC check
-        if (Test-Path "VLC/App/vlc/vlc.exe") {
-          Write-Host "✓ VLC found in repo"
+        # VLC extraction
+        if (Test-Path "vlc.rar") {
+          Write-Host "Extracting vlc.rar..."
+          7z x vlc.rar -y
+          
+          if (Test-Path "VLC/App/vlc/vlc.exe") {
+            Write-Host "✓ VLC extracted successfully"
+          } else {
+            Write-Host "Contents after VLC extraction:"
+            Get-ChildItem -Recurse | Select-Object -First 20
+            Write-Host "✗ VLC extraction failed - VLC/App/vlc/vlc.exe not found!"
+            exit 1
+          }
+        } elseif (Test-Path "VLC/App/vlc/vlc.exe") {
+          Write-Host "✓ VLC already in repo"
         } else {
-          Write-Host "⚠ VLC not in repo - continuing without it"
+          Write-Host "⚠ VLC not found - continuing without it"
         }
       shell: pwsh
         
