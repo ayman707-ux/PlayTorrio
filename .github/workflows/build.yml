@@ -182,6 +182,29 @@ jobs:
         fi
       shell: bash
 
+    - name: Export signing/notarization env (if present)
+      run: |
+        # Only export if secrets exist to avoid passing empty envs to electron-builder
+        if [ -n "${{ secrets.CSC_LINK }}" ]; then
+          echo "CSC_LINK is set"
+          echo "CSC_LINK=${{ secrets.CSC_LINK }}" >> $GITHUB_ENV
+        fi
+        if [ -n "${{ secrets.CSC_KEY_PASSWORD }}" ]; then
+          echo "CSC_KEY_PASSWORD set"
+          echo "CSC_KEY_PASSWORD=${{ secrets.CSC_KEY_PASSWORD }}" >> $GITHUB_ENV
+        fi
+        if [ -n "${{ secrets.APPLE_TEAM_ID }}" ]; then
+          echo "APPLE_TEAM_ID set"
+          echo "APPLE_TEAM_ID=${{ secrets.APPLE_TEAM_ID }}" >> $GITHUB_ENV
+        fi
+        if [ -n "${{ secrets.APPLE_API_KEY }}" ]; then
+          echo "APPLE API env set"
+          echo "APPLE_API_KEY=${{ secrets.APPLE_API_KEY }}" >> $GITHUB_ENV
+          echo "APPLE_API_KEY_ID=${{ secrets.APPLE_API_KEY_ID }}" >> $GITHUB_ENV
+          echo "APPLE_API_ISSUER=${{ secrets.APPLE_API_ISSUER }}" >> $GITHUB_ENV
+        fi
+      shell: bash
+
     - name: Determine updater toggle (mac)
       run: |
         if [ -n "${{ secrets.APPLE_API_KEY }}" ] && [ -n "${{ secrets.CSC_LINK }}" ]; then
@@ -221,12 +244,6 @@ jobs:
       run: npm run build -- --mac --publish always
       env:
         GH_TOKEN: ${{ secrets.GH_TOKEN }}
-        APPLE_API_KEY: ${{ secrets.APPLE_API_KEY }}
-        APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
-        APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
-        APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-        CSC_LINK: ${{ secrets.CSC_LINK }}
-        CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
         CSC_IDENTITY_AUTO_DISCOVERY: true
         FORCE_ENABLE_UPDATER: ${{ env.FORCE_ENABLE_UPDATER }}
     
