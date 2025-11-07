@@ -176,6 +176,11 @@ function setupAutoUpdater() {
 
         autoUpdater.on('error', (err) => {
             console.error('[Updater] Error:', err?.message || err);
+            // Handle 404 errors (no releases yet) gracefully - don't crash
+            if (err?.message?.includes('404') || err?.message?.includes('HttpError')) {
+                console.log('[Updater] No releases found (404). This is normal for new repos.');
+                return; // Don't retry, just continue running
+            }
             // Retry on network errors after delay
             if (checkAttempts < maxRetries && (
                 err?.message?.includes('net::') || 
@@ -227,9 +232,21 @@ function setupAutoUpdater() {
         const checkForUpdatesWithRetry = () => {
             try {
                 checkAttempts++;
-                autoUpdater.checkForUpdates();
+                autoUpdater.checkForUpdates().catch((err) => {
+                    console.error(`[Updater] checkForUpdates promise rejected:`, err?.message || err);
+                    // 404 means no releases yet - this is OK, don't retry
+                    if (err?.message?.includes('404')) {
+                        console.log('[Updater] No releases available yet (404). App will continue normally.');
+                        return;
+                    }
+                });
             } catch (e) {
                 console.error(`[Updater] checkForUpdates failed (attempt ${checkAttempts}):`, e?.message || e);
+                // 404 errors are expected when no releases exist - don't crash
+                if (e?.message?.includes('404')) {
+                    console.log('[Updater] Repository has no releases yet. This is normal.');
+                    return;
+                }
                 if (checkAttempts < maxRetries) {
                     try { if (updaterTimers.retry) clearTimeout(updaterTimers.retry); } catch(_) {}
                     updaterTimers.retry = setTimeout(checkForUpdatesWithRetry, 10000); // Retry after 10s
