@@ -1724,11 +1724,22 @@ if (!gotLock) {
         fs.mkdirSync(logsDir, { recursive: true });
         const logFile = path.join(logsDir, `main-${new Date().toISOString().replace(/[:.]/g,'-')}.log`);
         const logStream = fs.createWriteStream(logFile, { flags: 'a' });
+        let logClosed = false;
+        const safeWrite = (msg) => {
+            try {
+                if (!logClosed && logStream && !logStream.destroyed && !logStream.writableEnded && logStream.writable) {
+                    logStream.write(msg);
+                }
+            } catch (_) {}
+        };
         const origLog = console.log.bind(console);
         const origErr = console.error.bind(console);
-        console.log = (...args) => { try { logStream.write(`[LOG] ${new Date().toISOString()} ${args.join(' ')}\n`); } catch(_) {}; origLog(...args); };
-        console.error = (...args) => { try { logStream.write(`[ERR] ${new Date().toISOString()} ${args.join(' ')}\n`); } catch(_) {}; origErr(...args); };
-        process.on('exit', (code) => { try { logStream.write(`[EXIT] code=${code}\n`); logStream.end(); } catch(_) {} });
+        console.log = (...args) => { safeWrite(`[LOG] ${new Date().toISOString()} ${args.join(' ')}\n`); origLog(...args); };
+        console.error = (...args) => { safeWrite(`[ERR] ${new Date().toISOString()} ${args.join(' ')}\n`); origErr(...args); };
+        process.on('exit', (code) => {
+            try { logClosed = true; safeWrite(`[EXIT] code=${code}\n`); } catch(_) {}
+            try { if (logStream && !logStream.destroyed) logStream.end(); } catch(_) {}
+        });
         console.log('Main log started at', logFile);
     } catch (_) {}
     // Initialize Discord RPC (guard on connectivity)

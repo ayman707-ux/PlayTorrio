@@ -154,7 +154,7 @@
       }
     },
     
-    "afterPack": "build/afterPack.js",
+    "afterPack": "build/afterPack.cjs",
     "appImage": {
       "artifactName": "${productName}-${version}.${ext}"
     }
