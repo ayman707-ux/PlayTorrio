@@ -1,7 +1,0 @@
-﻿[core] # core program
-
-# Record directory (string)
-input-record-path=P:\Documents\Videos
-
-# Video snapshot directory (or filename) (string)
-snapshot-path=D:\Videos
