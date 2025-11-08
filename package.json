@@ -113,9 +113,6 @@
       "singleArchFiles": "node_modules/!(ffmpeg-static)/**/*",
       "entitlements": "build/entitlements.mac.plist",
       "entitlementsInherit": "build/entitlements.mac.plist",
-      "extraResources": [
-        { "from": "mpv", "to": "mpv", "filter": ["**/*"] }
-      ],
       "extendInfo": {
         "NSMicrophoneUsageDescription": "PlayTorrio does not require microphone access.",
         "NSCameraUsageDescription": "PlayTorrio does not require camera access.",

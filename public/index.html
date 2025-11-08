@@ -20689,6 +20689,7 @@ Your browser does not support the video tag.
                 const note = document.getElementById('watchNowNote');
                 const toggleBtn = document.getElementById('useStreamsBtn');
                 const streamingMode = localStorage.getItem('useStreamingServers') === 'true';
+                
                 if (watchBtn) {
                     if (streamingMode) {
                         // For TV shows in streaming mode, hide the button and show hint
@@ -20696,11 +20697,13 @@ Your browser does not support the video tag.
                             watchBtn.style.display = 'none';
                             if (note) note.style.display = '';
                         } else {
+                            // For MOVIES in streaming mode, always show Watch Now
                             watchBtn.style.display = '';
                             watchBtn.innerHTML = '<i class="fas fa-play"></i> Watch Now';
                             if (note) note.style.display = 'none';
                         }
                     } else {
+                        // Torrent mode - show Find Media for both movies and TV
                         watchBtn.style.display = '';
                         watchBtn.innerHTML = '<i class="fas fa-play"></i> Find Media';
                         if (note) note.style.display = 'none';
@@ -22036,7 +22039,7 @@ Your browser does not support the video tag.
         // Open details modal (accept optional forced type)
         async function openDetailsModal(movie, forcedType = null) {
             currentContent = movie;
-            // Determine media type
+            // Determine media type FIRST before any UI updates
             if (forcedType) {
                 currentMediaType = forcedType === 'tv' ? 'tv' : 'movie';
             } else {
@@ -22047,6 +22050,9 @@ Your browser does not support the video tag.
                     currentMediaType = movie.name && !movie.title ? 'tv' : 'movie';
                 }
             }
+            
+            console.log('[MODAL] Opening modal for:', movie.title || movie.name, 'Type:', currentMediaType);
+            
             torrentsLoaded = false;
             torrentsContainer.style.display = 'none';
             torrentsList.innerHTML = '';
