@@ -184,50 +184,11 @@ jobs:
       with:
         node-version: '18'
 
-    - name: Prepare signing credentials (if provided)
+    # Signing is disabled by request; skip all Apple signing/notarization steps
+    - name: Disable mac updater and signing
       run: |
-        if [ -n "${{ secrets.APPLE_API_KEY }}" ]; then
-          echo "Setting up Apple signing credentials..."
-          mkdir -p ~/private_keys
-          echo "${{ secrets.APPLE_API_KEY }}" > ~/private_keys/AuthKey_${{ secrets.APPLE_API_KEY_ID }}.p8
-          echo "✓ Apple API key written"
-        else
-          echo "No Apple API key secret set; skipping signing credentials."
-        fi
-      shell: bash
-
-    - name: Export signing/notarization env (if present)
-      run: |
-        # Only export if secrets exist to avoid passing empty envs to electron-builder
-        if [ -n "${{ secrets.CSC_LINK }}" ]; then
-          echo "CSC_LINK is set"
-          echo "CSC_LINK=${{ secrets.CSC_LINK }}" >> $GITHUB_ENV
-        fi
-        if [ -n "${{ secrets.CSC_KEY_PASSWORD }}" ]; then
-          echo "CSC_KEY_PASSWORD set"
-          echo "CSC_KEY_PASSWORD=${{ secrets.CSC_KEY_PASSWORD }}" >> $GITHUB_ENV
-        fi
-        if [ -n "${{ secrets.APPLE_TEAM_ID }}" ]; then
-          echo "APPLE_TEAM_ID set"
-          echo "APPLE_TEAM_ID=${{ secrets.APPLE_TEAM_ID }}" >> $GITHUB_ENV
-        fi
-        if [ -n "${{ secrets.APPLE_API_KEY }}" ]; then
-          echo "APPLE API env set"
-          echo "APPLE_API_KEY=${{ secrets.APPLE_API_KEY }}" >> $GITHUB_ENV
-          echo "APPLE_API_KEY_ID=${{ secrets.APPLE_API_KEY_ID }}" >> $GITHUB_ENV
-          echo "APPLE_API_ISSUER=${{ secrets.APPLE_API_ISSUER }}" >> $GITHUB_ENV
-        fi
-      shell: bash
-
-    - name: Determine updater toggle (mac)
-      run: |
-        if [ -n "${{ secrets.APPLE_API_KEY }}" ] && [ -n "${{ secrets.CSC_LINK }}" ]; then
-          echo "FORCE_ENABLE_UPDATER=1" >> $GITHUB_ENV
-          echo "Enabling updater on macOS (secrets present)"
-        else
-          echo "FORCE_ENABLE_UPDATER=0" >> $GITHUB_ENV
-          echo "Disabling updater on macOS (missing signing/notarization secrets)"
-        fi
+        echo "FORCE_ENABLE_UPDATER=0" >> $GITHUB_ENV
+        echo "Skipping macOS signing and notarization"
       shell: bash
         
     - name: Install dependencies
@@ -238,21 +199,41 @@ jobs:
         # Download MPV portable (with fallback and error handling)
         if ! curl -fL https://laboratory.stolendata.net/~djinn/mpv_osx/mpv-latest.tar.gz -o mpv.tar.gz; then
           echo "⚠ MPV download failed from primary source"
-          # Try alternative: SourceForge
-          if ! curl -fL https://sourceforge.net/projects/mpv-player-windows/files/64bit/mpv-x86_64-latest.tar.gz -o mpv.tar.gz; then
+          # Try alternative community mirror
+          if ! curl -fL https://nightly.link/IntersectRaven/mpv-appimage/workflows/build/master/mpv-x86_64.AppImage.zip -o mpv.zip; then
             echo "✗ All MPV download sources failed. Users will need system MPV (/Applications/mpv.app)"
             exit 0  # Don't fail the build, just skip MPV bundling
           fi
         fi
-        
-        echo "✓ MPV downloaded, extracting..."
+
         mkdir -p mpv
-        if tar -xzf mpv.tar.gz -C mpv; then
-          echo "✓ MPV extracted successfully"
-          ls -la mpv/
+        if [ -f mpv.tar.gz ]; then
+          echo "✓ Extracting mpv.tar.gz..."
+          tar -xzf mpv.tar.gz -C mpv || true
+        elif [ -f mpv.zip ]; then
+          echo "✓ Extracting mpv.zip..."
+          unzip -o mpv.zip -d mpv || true
+        fi
+
+        # Normalize layout: ensure mpv/mpv.app exists at root
+        if [ -d "mpv/mpv.app" ]; then
+          echo "✓ mpv.app present at mpv/mpv.app"
         else
-          echo "⚠ MPV extraction failed, continuing without bundled MPV"
-          rm -rf mpv mpv.tar.gz
+          found=$(find mpv -maxdepth 3 -name "mpv.app" | head -n 1)
+          if [ -n "$found" ]; then
+            echo "Moving $found to mpv/mpv.app"
+            rm -rf mpv/mpv.app
+            mv "$found" mpv/
+          else
+            echo "⚠ mpv.app not found after extraction; continuing without bundled MPV"
+          fi
+        fi
+
+        # Ensure binary is executable if present
+        if [ -f "mpv/mpv.app/Contents/MacOS/mpv" ]; then
+          chmod +x "mpv/mpv.app/Contents/MacOS/mpv"
+          echo "✓ Marked MPV binary as executable"
+          ls -la "mpv/mpv.app/Contents/MacOS/mpv"
         fi
         
     - name: Verify Icon
@@ -267,11 +248,11 @@ jobs:
           echo "Warning: icon.icns not found, using default Electron icon"
         fi
         
-    - name: Build macOS DMG
+    - name: Build macOS DMG (unsigned)
       run: npm run build -- --mac --publish always
       env:
         GH_TOKEN: ${{ secrets.GH_TOKEN }}
-        CSC_IDENTITY_AUTO_DISCOVERY: true
+        CSC_IDENTITY_AUTO_DISCOVERY: false
         FORCE_ENABLE_UPDATER: ${{ env.FORCE_ENABLE_UPDATER }}
     
     - name: Fix macOS Gatekeeper Issues
@@ -282,18 +263,7 @@ jobs:
         xattr -cr dist/mac-arm64*/PlayTorrio.app 2>/dev/null || true
         echo "✓ Quarantine attributes removed"
 
-    - name: Staple notarization ticket (if signed)
-      run: |
-        if [ -n "${{ secrets.APPLE_API_KEY }}" ]; then
-          echo "Attempting to staple notarization ticket..."
-          for dmg in dist/*.dmg; do
-            echo "Stapling $dmg"
-            xcrun stapler staple "$dmg" || echo "Stapling failed (continuing)"
-          done
-          echo "Stapling step complete"
-        else
-          echo "No Apple API key secret set; skipping stapling."
-        fi
+    # No stapling when unsigned
         
     - name: Upload DMG artifacts
       uses: actions/upload-artifact@v4

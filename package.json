@@ -107,7 +107,9 @@
         }
       ],
       "artifactName": "${productName}-${version}-${arch}.${ext}",
-      "hardenedRuntime": true,
+      "hardenedRuntime": false,
+      "identity": null,
+      "gatekeeperAssess": false,
       "entitlements": "build/entitlements.mac.plist",
       "entitlementsInherit": "build/entitlements.mac.plist",
       "extendInfo": {
@@ -152,6 +154,7 @@
         "Terminal": false
       }
     },
+    
     "appImage": {
       "license": "LICENSE",
       "artifactName": "${productName}-${version}.${ext}"

@@ -2742,17 +2742,19 @@ if (!gotLock) {
 
         // Initialize the auto-updater with extra safety on macOS unsigned builds
         const shouldEnableUpdater = () => {
+            // Respect user toggle stored in settings
             if (!readAutoUpdateEnabled()) return false;
-            if (!app.isPackaged) return false; // never in dev
-            // On macOS require either notarization hint or explicit override to reduce launch crashes
+            // Only in packaged builds
+            if (!app.isPackaged) return false;
+            // Always enable on Windows & Linux (no signing gate required)
+            if (process.platform === 'win32' || process.platform === 'linux') return true;
+            // macOS: allow even unsigned now (user opted-out of signing). Still honor FORCE_ENABLE_UPDATER if explicitly disabled.
             if (process.platform === 'darwin') {
-                // Heuristic: if hardened runtime is enabled but we lack Apple API key env vars, skip
-                const hasAppleNotarizationEnv = !!(process.env.APPLE_API_KEY && process.env.APPLE_API_KEY_ID && process.env.APPLE_API_ISSUER);
-                const forceOverride = process.env.FORCE_ENABLE_UPDATER === '1';
-                if (!hasAppleNotarizationEnv && !forceOverride) {
-                    console.warn('[Updater] Skipping on macOS (no notarization credentials). Set FORCE_ENABLE_UPDATER=1 to override.');
+                if (process.env.FORCE_ENABLE_UPDATER === '0') {
+                    console.log('[Updater] macOS explicitly disabled via FORCE_ENABLE_UPDATER=0');
                     return false;
                 }
+                return true;
             }
             return true;
         };
