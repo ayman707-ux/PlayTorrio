@@ -38,16 +38,12 @@
   },
   "devDependencies": {
     "electron": "^38.2.2",
-    "electron-builder": "^24.13.3",
-    "electron-rebuild": "^3.2.9"
+    "electron-builder": "^24.13.3"
   },
   "build": {
     "appId": "com.ayman.PlayTorrio",
     "productName": "PlayTorrio",
     "artifactName": "${productName}-Setup.${ext}",
-    "electronCompile": false,
-    "nodeGypRebuild": false,
-    "buildDependenciesFromSource": true,
     "publish": {
       "provider": "github",
       "owner": "ayman707-ux",
@@ -161,7 +157,6 @@
       }
     },
     
-    "beforeBuild": "build/beforeBuild.cjs",
     "afterPack": "build/afterPack.cjs",
     "appImage": {
       "artifactName": "${productName}.${ext}"
