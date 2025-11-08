@@ -87,6 +87,8 @@
       "createStartMenuShortcut": true,
       "deleteAppDataOnUninstall": true,
       "include": "build/installer.nsh",
+      "installerIcon": "build/icon.ico",
+      "uninstallerIcon": "build/icon.ico",
       "shortcutName": "PlayTorrio",
       "runAfterFinish": true
     },
@@ -147,10 +149,12 @@
         "Comment": "Stream Movies, TV Shows, Anime, Books, Music & Games",
         "Categories": "AudioVideo;Video;Player;",
         "StartupWMClass": "PlayTorrio",
-        "Terminal": false
+        "Terminal": false,
+        "Exec": "playtorrio --no-sandbox %U"
       }
     },
     
+    "afterPack": "build/afterPack.js",
     "appImage": {
       "artifactName": "${productName}-${version}.${ext}"
     }

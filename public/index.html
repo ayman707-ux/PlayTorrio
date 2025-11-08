@@ -153,60 +153,17 @@
             text-decoration: none;
         }
         
-        .logo span {
-            color: var(--vlc-orange);
-        }
+        /* Update & version modals removed (v1.5.3 / v1.6.3). Old modal styles cleaned up. */
         
-        .search-container {
-            flex: 1;
-            max-width: 600px;
-            margin: 0 2rem;
-            position: relative;
-        }
-        
-        .search-container input {
-            width: 100%;
-            padding: 0.8rem 1.2rem;
-            padding-left: 3rem;
-            border-radius: 30px;
-            border: none;
-            background-color: var(--input-bg);
-            color: var(--light);
-            font-size: 1rem;
-            transition: all 0.3s ease;
-        }
-        
-        .search-container input:focus {
-            outline: none;
-            background-color: var(--hover-bg);
-            box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.3);
-        }
-        
-        .search-icon {
-            position: absolute;
-            left: 1rem;
-            top: 50%;
-            transform: translateY(-50%);
-            color: var(--gray);
-        }
-        
-        .user-actions {
-            display: flex;
-            gap: 1rem;
-        }
-        
+        /* Base button style (restored) */
         .btn {
-            padding: 0.6rem 1.2rem;
-            border-radius: 30px;
-            border: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
             font-weight: 600;
             cursor: pointer;
             transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
         }
-        
         .btn-primary {
             background-color: var(--vlc-orange);
             color: white;
@@ -7475,131 +7432,12 @@
                 <i class="fab fa-discord"></i>
                 Join Discord
             </button>
-            <button class="discord-join-btn" id="discordDontShowBtn" style="background: rgba(255,255,255,0.12); flex:1;">
+            <button class="discord-join-btn" id="discordDontShowBtn" style="background: rgba(255,255,255,0.12); flex:1; color:#fff; text-shadow:0 0 4px rgba(0,0,0,0.6); font-weight:600;">
                 <i class="fas fa-eye-slash"></i>
                 Don't show again
             </button>
         </div>
     </div>
-</div>
-
-<!-- Update Announcement Modal -->
-<div class="discord-modal" id="updateModal">
-    <div class="discord-content" style="max-width: 600px;">
-        <button class="discord-close" id="updateClose">
-            <i class="fas fa-times"></i>
-        </button>
-        <h2 class="discord-title" style="display: flex; align-items: center; gap: 1rem; font-size: 1.8rem;">
-            <i class="fas fa-rocket" style="color: var(--vlc-orange);"></i>
-            New in v1.5.3
-        </h2>
-        <div class="discord-message" style="text-align: left;">
-            <p style="font-size: 1.1rem; margin-bottom: 1.2rem;">
-                This update delivers enhanced media playback, optimized streaming, and new entertainment options:
-            </p>
-            <ul style="list-style: none; padding: 0; margin-bottom: 1.2rem;">
-                <li style="margin-bottom: 0.9rem; padding-left: 2rem; position: relative;">
-                    <i class="fas fa-play-circle" style="position: absolute; left: 0; color: var(--vlc-orange); margin-top: 0.2rem;"></i>
-                    <strong>VLC Media Player Integration</strong> – Added VLC as a new external player option alongside MPV for superior format compatibility and playback control.
-                </li>
-                <li style="margin-bottom: 0.9rem; padding-left: 2rem; position: relative;">
-                    <i class="fas fa-filter" style="position: absolute; left: 0; color: var(--vlc-orange); margin-top: 0.2rem;"></i>
-                    <strong>Optimized Streaming Servers</strong> – Removed non-functional providers and refined server selection for faster, more reliable streaming.
-                </li>
-                <li style="margin-bottom: 0.9rem; padding-left: 2rem; position: relative;">
-                    <i class="fas fa-gamepad" style="position: absolute; left: 0; color: var(--vlc-orange); margin-top: 0.2rem;"></i>
-                    <strong>MiniGames Platform</strong> – Introducing PlayTorrio MiniGames – access a curated collection of browser-based games directly within the app.
-                </li>
-            </ul>
-            <p style="color: var(--secondary); font-size: 0.95rem; margin-top: 0.5rem;">
-                <i class="fas fa-info-circle"></i> Thank you for updating! Enjoy the enhanced media experience and new features.
-            </p>
-        </div>
-        <button class="discord-join-btn" id="updateGotItBtn" style="background: var(--vlc-orange); width: 100%;">
-            <i class="fas fa-check"></i>
-            Got It!
-        </button>
-    </div>
-</div>
-
-<!-- What's New v1.6.3 Modal -->
-<div class="discord-modal" id="version163Modal" style="display: none;">
-    <div class="discord-content" style="max-width: 600px;">
-        <button class="discord-close" id="version163Close">
-            <i class="fas fa-times"></i>
-        </button>
-        <h2 class="discord-title" style="display: flex; align-items: center; gap: 1rem; font-size: 1.8rem;">
-            <i class="fas fa-sparkles" style="color: var(--vlc-orange);"></i>
-            Welcome to v1.6.3
-        </h2>
-        <div class="discord-message" style="text-align: left;">
-            <p style="font-size: 1.05rem; margin-bottom: 1rem;">
-                Thanks for updating! Here's what's new in this version:
-            </p>
-            
-            <div style="background: rgba(255,255,255,0.05); padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
-                <h3 style="color: #ec4899; margin-bottom: 0.75rem; font-size: 1.1rem;">
-                    <i class="fas fa-music"></i> Music Player Enhancements
-                </h3>
-                <ul style="list-style: none; padding-left: 0; color: #e5e7eb;">
-                    <li style="margin-bottom: 0.5rem;">• <strong>Minimize Mode:</strong> Keep music playing in a compact notification-style player while browsing other sections</li>
-                    <li style="margin-bottom: 0.5rem;">• <strong>Background Playback:</strong> Navigate freely through the app without interrupting your music</li>
-                    <li style="margin-bottom: 0.5rem;">• <strong>Full Controls:</strong> Play/pause, skip, rewind, and track navigation from the mini player</li>
-                </ul>
-            </div>
-            
-            <div style="background: rgba(255,255,255,0.05); padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
-                <h3 style="color: #10b981; margin-bottom: 0.75rem; font-size: 1.1rem;">
-                    <i class="fas fa-sort-amount-down"></i> Torrent Sorting & Filtering
-                </h3>
-                <ul style="list-style: none; padding-left: 0; color: #e5e7eb;">
-                    <li style="margin-bottom: 0.5rem;">• <strong>Sort by File Size:</strong> Organize torrents by size (ascending/descending) or seeders</li>
-                    <li style="margin-bottom: 0.5rem;">• <strong>Size Filters:</strong> Filter torrents by size ranges (1GB+, 2GB+, 2-4GB, 4-8GB, 8GB+)</li>
-                    <li style="margin-bottom: 0.5rem;">• <strong>Instant Updates:</strong> Results update immediately when changing sort or filter options</li>
-                </ul>
-            </div>
-            
-            <div style="background: rgba(255,255,255,0.05); padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
-                <h3 style="color: #3b82f6; margin-bottom: 0.75rem; font-size: 1.1rem;">
-                    <i class="fas fa-cloud-download-alt"></i> Improved Debrid Support
-                </h3>
-                <ul style="list-style: none; padding-left: 0; color: #e5e7eb;">
-                    <li style="margin-bottom: 0.5rem;">• <strong>Single File Downloads:</strong> Real-Debrid now only downloads your selected file, not the entire torrent</li>
-                    <li style="margin-bottom: 0.5rem;">• <strong>Bandwidth Optimization:</strong> Saves bandwidth and storage across all debrid providers</li>
-                    <li style="margin-bottom: 0.5rem;">• <strong>Default Client ID:</strong> Automatic fallback for Real-Debrid authentication</li>
-                </ul>
-            </div>
-            
-            <div style="background: rgba(255,255,255,0.05); padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
-                <h3 style="color: #f59e0b; margin-bottom: 0.75rem; font-size: 1.1rem;">
-                    <i class="fas fa-book-reader"></i> Manga Reader Improvements
-                </h3>
-                <ul style="list-style: none; padding-left: 0; color: #e5e7eb;">
-                    <li style="margin-bottom: 0.5rem;">• <strong>Cleaner Interface:</strong> Removed top navigation bar for distraction-free reading</li>
-                    <li style="margin-bottom: 0.5rem;">• <strong>Floating Back Button:</strong> Sticky back button stays accessible while reading</li>
-                    <li style="margin-bottom: 0.5rem;">• <strong>Keyboard Hint:</strong> On-screen reminder to use arrow keys for navigation</li>
-                </ul>
-            </div>
-            
-            <p style="font-size: 0.95rem; margin-top: 1rem; color: #9ca3af;">
-                If you enjoy PlayTorrio, consider supporting development!
-            </p>
-        </div>
-        <div style="display:flex; gap:0.75rem;">
-            <button class="discord-join-btn" id="version163DonateBtn" style="background: var(--vlc-orange); flex:1;">
-                <i class="fas fa-heart"></i>
-                Donate
-            </button>
-            <button class="discord-join-btn" id="version163GotItBtn" style="background: rgba(255,255,255,0.12); flex:1;">
-                <i class="fas fa-check"></i>
-                Got it
-            </button>
-        </div>
-    </div>
-    <style>
-        /* Ensure modal uses same visibility behavior as others */
-        #version163Modal.active { display: flex !important; }
-    </style>
 </div>
 
 <!-- Settings Modal -->
@@ -9334,6 +9172,26 @@
                             <div style="margin-top:0.5rem; color:#9ca3af; font-size:0.9rem;">
                                 When enabled, the app will check for updates on launch and install them when available.
                             </div>
+                        </div>
+                    </div>
+
+                    <!-- Attribution Card -->
+                    <div class="settings-card">
+                        <div class="settings-card-header">
+                            <h3><i class="fas fa-brush" style="color: var(--vlc-orange);"></i> Icon Attribution</h3>
+                        </div>
+                        <div class="settings-card-body" style="font-size:0.9rem; line-height:1.5; color:var(--secondary);">
+                            <p style="margin:0 0 0.75rem; color:var(--light);"><strong>PlayTorrio App Icon</strong></p>
+                            <p style="margin:0 0 0.75rem;">Designed by <strong>Adnan Ahmed</strong>.</p>
+                            <p style="margin:0 0 0.5rem;">
+                                <i class="fas fa-globe" style="color:var(--vlc-orange);"></i>
+                                <a href="https://adnan-ahmed.pages.dev/" target="_blank" style="color:#0d6efd; text-decoration:underline;">Website</a>
+                            </p>
+                            <p style="margin:0 0 0.5rem;">
+                                <i class="fab fa-github" style="color:var(--vlc-orange);"></i>
+                                <a href="https://github.com/ddosintruders" target="_blank" style="color:#0d6efd; text-decoration:underline;">GitHub Profile</a>
+                            </p>
+                            <p style="margin:0; font-size:0.75rem; opacity:0.8;">Credit preserved per creator request. Thank you Adnan for the visual identity.</p>
                         </div>
                     </div>
                 </div>
@@ -11331,7 +11189,7 @@ Your browser does not support the video tag.
             initializeSettingsTabs(); // Initialize settings page tab switching
             setWindowsUsername(); // Set Windows username in sidebar
             handleRoute(); // route-aware initial load
-            checkUpdateAnnouncement(); // Show update modal on first launch
+            // Update announcement modals removed
             checkDiscordPrompt(); // Show Discord modal if user hasn't joined
             initializeCast(); // Initialize Google Cast SDK
             
@@ -15155,38 +15013,7 @@ Your browser does not support the video tag.
                 });
             }
             
-            // Update Modal
-            const updateClose = document.getElementById('updateClose');
-            const updateGotItBtn = document.getElementById('updateGotItBtn');
-            if (updateClose) {
-                updateClose.addEventListener('click', hideUpdateModal);
-            }
-            if (updateGotItBtn) {
-                updateGotItBtn.addEventListener('click', hideUpdateModal);
-            }
-            // v1.6.3 Modal
-            const version163Close = document.getElementById('version163Close');
-            const version163DonateBtn = document.getElementById('version163DonateBtn');
-            const version163GotItBtn = document.getElementById('version163GotItBtn');
-            version163Close?.addEventListener('click', hideVersion163Modal);
-            version163GotItBtn?.addEventListener('click', hideVersion163Modal);
-            if (version163DonateBtn) {
-                version163DonateBtn.addEventListener('click', async () => {
-                    const url = 'https://ko-fi.com/ayman228x';
-                    try {
-                        if (window.electronAPI?.openExternal) {
-                            await window.electronAPI.openExternal(url);
-                        } else {
-                            window.open(url, '_blank', 'noopener');
-                        }
-                        hideVersion163Modal();
-                        showNotification('Opening Ko-fi...', 'success');
-                    } catch(err) {
-                        console.error('Failed to open Ko-fi link:', err);
-                        showNotification('Failed to open Ko-fi link', 'error');
-                    }
-                });
-            }
+            // Update & What's New modals removed
             
             if (discordBtn) {
                 discordBtn.addEventListener('click', async () => {
