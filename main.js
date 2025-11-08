@@ -143,7 +143,7 @@ function setupAutoUpdater() {
         });
 
         autoUpdater.on('update-available', (info) => {
-            console.log('[Updater] Update available:', info?.version || 'unknown');
+            console.log('[Updater] Update available. New version:', info?.version || 'unknown', 'Current:', app.getVersion());
             try {
                 if (mainWindow && !mainWindow.isDestroyed() && mainWindow.webContents) {
                     // Ensure renderer is ready before sending
@@ -160,7 +160,7 @@ function setupAutoUpdater() {
         });
 
         autoUpdater.on('update-not-available', (info) => {
-            console.log('[Updater] No updates available');
+            console.log('[Updater] No updates available. Current version is up-to-date:', app.getVersion(), 'Latest release (reported):', info?.version || 'unknown');
             try {
                 if (mainWindow && !mainWindow.isDestroyed() && mainWindow.webContents) {
                     if (mainWindow.webContents.isLoading()) {
@@ -194,7 +194,7 @@ function setupAutoUpdater() {
 
         autoUpdater.on('download-progress', (progressObj) => {
             const pct = Math.round(progressObj?.percent || 0);
-            console.log(`[Updater] Download progress: ${pct}%`);
+            console.log(`[Updater] Download progress: ${pct}% (${Math.round(progressObj?.transferred || 0)}/${Math.round(progressObj?.total || 0)} bytes)`);
             try {
                 if (mainWindow && !mainWindow.isDestroyed()) {
                     mainWindow.webContents.send('update-download-progress', progressObj || {});
@@ -203,7 +203,7 @@ function setupAutoUpdater() {
         });
 
         autoUpdater.on('update-downloaded', async (info) => {
-            console.log('[Updater] Update downloaded:', info?.version || 'unknown');
+            console.log('[Updater] Update downloaded. Ready to install version:', info?.version || 'unknown', 'Current:', app.getVersion());
             try {
                 if (mainWindow && !mainWindow.isDestroyed()) {
                     mainWindow.webContents.send('update-downloaded', info || {});
@@ -2740,23 +2740,30 @@ if (!gotLock) {
         }
     });
 
-        // Initialize the auto-updater with extra safety on macOS unsigned builds
+        // Initialize the auto-updater with platform-aware gating
         const shouldEnableUpdater = () => {
-            // Respect user toggle stored in settings
-            if (!readAutoUpdateEnabled()) return false;
-            // Only in packaged builds
-            if (!app.isPackaged) return false;
-            // Always enable on Windows & Linux (no signing gate required)
-            if (process.platform === 'win32' || process.platform === 'linux') return true;
-            // macOS: allow even unsigned now (user opted-out of signing). Still honor FORCE_ENABLE_UPDATER if explicitly disabled.
-            if (process.platform === 'darwin') {
-                if (process.env.FORCE_ENABLE_UPDATER === '0') {
-                    console.log('[Updater] macOS explicitly disabled via FORCE_ENABLE_UPDATER=0');
+            if (!readAutoUpdateEnabled()) return false; // user disabled in settings
+            if (!app.isPackaged) return false; // never in dev
+            // Windows: always OK (NSIS)
+            if (process.platform === 'win32') return true;
+            // Linux: only when running from AppImage to avoid confusing system package installs (.deb)
+            if (process.platform === 'linux') {
+                const isAppImage = !!process.env.APPIMAGE;
+                if (!isAppImage) {
+                    console.log('[Updater] Skipping on Linux (not an AppImage run)');
                     return false;
                 }
                 return true;
             }
-            return true;
+            // macOS: allow unsigned; respect explicit disable via FORCE_ENABLE_UPDATER=0
+            if (process.platform === 'darwin') {
+                if (process.env.FORCE_ENABLE_UPDATER === '0') {
+                    console.log('[Updater] macOS updater disabled via FORCE_ENABLE_UPDATER=0');
+                    return false;
+                }
+                return true;
+            }
+            return false; // other platforms not supported
         };
         try {
             if (shouldEnableUpdater()) {
