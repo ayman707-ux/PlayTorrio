@@ -129,6 +129,12 @@ jobs:
     - name: Install dependencies
       run: npm install
       
+    - name: Create placeholder media dirs (Linux)
+      run: |
+        mkdir -p mpv VLC
+        echo "Created empty mpv/ and VLC/ directories to satisfy resource patterns"
+      shell: bash
+      
     - name: Setup MPV for Linux
       run: |
         # For Linux, skip MPV bundling - users install system-wide

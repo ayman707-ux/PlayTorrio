@@ -66,23 +66,16 @@
       "VLC/**",
       "node_modules/ffmpeg-static/**"
     ],
-    "extraResources": [
-      {
-        "from": "mpv",
-        "to": "mpv",
-        "filter": ["**/*"]
-      },
-      {
-        "from": "VLC",
-        "to": "VLC",
-        "filter": ["**/*"]
-      }
-    ],
+    "extraResources": [],
     "win": {
       "icon": "build/icon.ico",
       "artifactName": "PlayTorrio.installer.${ext}",
       "target": [
         "nsis"
+      ],
+      "extraResources": [
+        { "from": "mpv", "to": "mpv", "filter": ["**/*"] },
+        { "from": "VLC", "to": "VLC", "filter": ["**/*"] }
       ]
     },
     "nsis": {
@@ -112,6 +105,9 @@
       "gatekeeperAssess": false,
       "entitlements": "build/entitlements.mac.plist",
       "entitlementsInherit": "build/entitlements.mac.plist",
+      "extraResources": [
+        { "from": "mpv", "to": "mpv", "filter": ["**/*"] }
+      ],
       "extendInfo": {
         "NSMicrophoneUsageDescription": "PlayTorrio does not require microphone access.",
         "NSCameraUsageDescription": "PlayTorrio does not require camera access.",
@@ -156,7 +152,6 @@
     },
     
     "appImage": {
-      "license": "LICENSE",
       "artifactName": "${productName}-${version}.${ext}"
     }
   }
