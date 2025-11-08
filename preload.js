@@ -13,6 +13,7 @@ try {
 } catch (_) {}
 
 contextBridge.exposeInMainWorld('electronAPI', {
+  platform: process.platform, // 'darwin', 'win32', 'linux'
   openInMPV: (data) => ipcRenderer.invoke('open-in-mpv', data),
   openMPVDirect: (url) => ipcRenderer.invoke('open-mpv-direct', url),
   // Advanced MPV opener with headers and options
@@ -20,6 +21,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // VLC external player
   openInVLC: (data) => ipcRenderer.invoke('open-in-vlc', data),
   openVLCDirect: (url) => ipcRenderer.invoke('open-vlc-direct', url),
+  // IINA external player (macOS)
+  openInIINA: (data) => ipcRenderer.invoke('open-in-iina', data),
   castToChromecast: (data) => ipcRenderer.invoke('cast-to-chromecast', data),
   discoverChromecastDevices: () => ipcRenderer.invoke('discover-chromecast-devices'),
   onStreamClosed: (callback) => ipcRenderer.on('stream-closed', callback),

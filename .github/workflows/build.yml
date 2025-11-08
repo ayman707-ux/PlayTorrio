@@ -2,9 +2,8 @@ name: Build Multi-Platform
 
 on:
   push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
+    tags:
+      - 'v*'  # Triggers on version tags like v1.8.1
   workflow_dispatch:  # Allows manual trigger from GitHub UI
 
 jobs:
@@ -103,16 +102,6 @@ jobs:
       run: npm run build -- --win --publish always
       env:
         GH_TOKEN: ${{ secrets.GH_TOKEN }}
-        
-    - name: Upload Windows artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: windows-installer
-        path: |
-          dist/*.exe
-          dist/*.exe.blockmap
-          dist/*.yml
-        retention-days: 30
 
   build-linux:
     runs-on: ubuntu-latest
@@ -167,16 +156,6 @@ jobs:
         else
           echo "⚠ No AppImage found"
         fi
-        
-    - name: Upload Linux artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: linux-packages
-        path: |
-          dist/*.AppImage
-          dist/*.deb
-          dist/*.yml
-        retention-days: 30
 
   build-macos:
     runs-on: macos-latest
@@ -269,15 +248,3 @@ jobs:
         xattr -cr dist/mac-arm64*/PlayTorrio.app 2>/dev/null || true
         echo "✓ Quarantine attributes removed"
 
-    # No stapling when unsigned
-        
-    - name: Upload DMG artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: macos-dmg
-        path: |
-          dist/*.dmg
-          dist/*.dmg.blockmap
-          dist/*mac*.yml
-          MACOS_INSTALLATION.md
-        retention-days: 30

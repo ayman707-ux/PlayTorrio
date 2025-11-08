@@ -48,7 +48,7 @@
             overflow-x: hidden;
         }
 
-        /* Custom Title Bar */
+        /* Custom Title Bar - hidden on macOS to use native */
         .custom-title-bar {
             position: fixed;
             top: 0;
@@ -64,6 +64,20 @@
             z-index: 999999;
             -webkit-app-region: drag;
             user-select: none;
+        }
+        
+        /* Hide custom title bar on macOS */
+        body.platform-darwin .custom-title-bar {
+            display: none;
+        }
+        
+        /* Adjust body padding only for non-mac platforms */
+        body.ui-new:not(.platform-darwin) {
+            padding-top: 32px;
+        }
+        
+        body.ui-new:not(.platform-darwin) header {
+            top: 32px;
         }
 
         /* Keep full-screen overlays below the title bar in the new UI */
@@ -118,11 +132,11 @@
         }
         
         /* Adjust body padding for title bar */
-        body.ui-new {
+        body.ui-new:not(.platform-darwin) {
             padding-top: 32px;
         }
         
-        body.ui-new header {
+        body.ui-new:not(.platform-darwin) header {
             top: 32px;
         }
 
@@ -196,8 +210,23 @@
         
         .user-actions {
             display: flex;
-            gap: 1rem;
+            gap: 0.75rem;
             align-items: center;
+            flex-wrap: nowrap; /* Keep buttons on same line */
+        }
+        
+        /* Consistent button sizing for navbar */
+        .user-actions .btn {
+            padding: 0.6rem 1rem;
+            font-size: 0.9rem;
+            white-space: nowrap;
+            min-height: 38px;
+            border-radius: 8px;
+            flex-shrink: 1; /* Allow buttons to shrink */
+        }
+        
+        .user-actions .btn i {
+            font-size: 0.95rem;
         }
         
         /* Update & version modals removed (v1.5.3 / v1.6.3). Old modal styles cleaned up. */
@@ -5142,6 +5171,38 @@
                 width: 100%;
             }
             
+            .user-actions {
+                gap: 0.5rem;
+                flex-wrap: nowrap; /* Keep on same line */
+            }
+            
+            .user-actions .btn {
+                padding: 0.5rem 0.75rem;
+                font-size: 0.8rem;
+                min-height: 34px;
+            }
+            
+            .user-actions .btn i {
+                font-size: 0.85rem;
+            }
+            
+            /* Hide text on very small screens, show icons only */
+            @media (max-width: 600px) {
+                .user-actions {
+                    gap: 0.4rem;
+                }
+                
+                .user-actions .btn span {
+                    display: none;
+                }
+                .user-actions .btn {
+                    padding: 0.5rem;
+                    justify-content: center;
+                    min-height: 32px;
+                    font-size: 0.9rem;
+                }
+            }
+            
             .modal-header-content {
                 flex-direction: column;
                 align-items: center;
@@ -5820,6 +5881,81 @@
         
         body.ui-new .movie-card .done-watching-btn.is-done i:before {
             content: "\f058"; /* check-circle */
+        }
+        
+        /* Continue Watching specific styles */
+        .continue-watching-card .remove-continue-btn {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            background: rgba(220, 38, 38, 0.9);
+            border: 1px solid rgba(220, 38, 38, 0.5);
+            color: white;
+            padding: 0.6rem;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            opacity: 0;
+            transform: scale(0.7);
+            backdrop-filter: blur(10px);
+            z-index: 2;
+        }
+        
+        .continue-watching-card:hover .remove-continue-btn {
+            opacity: 1;
+            transform: scale(1);
+        }
+        
+        .continue-watching-card .remove-continue-btn:hover {
+            background: rgba(239, 68, 68, 1);
+            transform: scale(1.1);
+            box-shadow: 0 4px 15px rgba(220, 38, 38, 0.5);
+        }
+        
+        /* Fix width for continue watching cards in slider to match trending cards */
+        #continueWatchingSlider .continue-watching-card {
+            flex: 0 0 260px;
+            width: 260px;
+        }
+        
+        /* Progress bar for continue watching cards */
+        .continue-watching-card .movie-poster {
+            position: relative;
+        }
+        
+        .continue-watching-placeholder {
+            width: 100%;
+            padding-top: 150%; /* 2:3 aspect ratio to match posters */
+            background: linear-gradient(135deg, rgba(168, 85, 247, 0.2) 0%, rgba(255, 111, 0, 0.2) 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+        
+        .continue-watching-placeholder i {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 3rem;
+            color: rgba(255, 255, 255, 0.3);
+        }
+        
+        .continue-watching-progress {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--vlc-orange) 0%, #ff8c42 100%);
+            transition: width 0.3s ease;
+            box-shadow: 0 0 10px rgba(255, 111, 0, 0.5);
+            z-index: 2;
         }
         
         body.ui-new .movie-info {
@@ -8073,24 +8209,24 @@
             <span>Connected</span>
         </div>
         <button class="btn btn-outline" id="doneWatchingBtn">
-        <i class="fas fa-check-circle"></i> Done Watching
-                        </button>
+            <i class="fas fa-check-circle"></i> <span>Done Watching</span>
+        </button>
         <button class="btn btn-outline" id="clearCacheBtn">
-        <i class="fas fa-trash"></i> Clear Cache
-                        </button>
+            <i class="fas fa-trash"></i> <span>Clear Cache</span>
+        </button>
     <!-- Donate button removed -->
         <button class="btn btn-outline" id="discordBtn" title="Join Discord Community">
-        <i class="fab fa-discord"></i> Discord
-                        </button>
+            <i class="fab fa-discord"></i> <span>Discord</span>
+        </button>
         <button class="btn btn-outline" id="genresBtn">
-        <i class="fas fa-layer-group"></i> Genres
-                        </button>
+            <i class="fas fa-layer-group"></i> <span>Genres</span>
+        </button>
         <button class="btn btn-outline" id="myListBtn">
-        <i class="fas fa-heart"></i> My List
-                        </button>
-        <button class="btn btn-primary" id="donateBtn" title="Support development" style="margin-left: 1rem;">
-        <i class="fas fa-heart"></i> Donate
-                        </button>
+            <i class="fas fa-heart"></i> <span>My List</span>
+        </button>
+        <button class="btn btn-primary" id="donateBtn" title="Support development" style="margin-left: 0.5rem;">
+            <i class="fas fa-heart"></i> <span>Donate</span>
+        </button>
         <!-- Install MPV button removed -->
         </div>
         </div>
@@ -8150,6 +8286,27 @@
         
         <!-- Content Sliders (New UI Only) -->
         <div id="slidersContainer" style="display: none;">
+            <!-- Continue Watching Slider (dynamic - only shows if items exist) -->
+            <div class="slider-section" id="continueWatchingSection" style="display: none;">
+                <div class="slider-header">
+                    <h2 class="slider-title">
+                        <i class="fas fa-clock"></i>
+                        Continue Watching
+                    </h2>
+                    <div class="slider-nav">
+                        <button class="slider-arrow slider-arrow-left" data-slider="continue">
+                            <i class="fas fa-chevron-left"></i>
+                        </button>
+                        <button class="slider-arrow slider-arrow-right" data-slider="continue">
+                            <i class="fas fa-chevron-right"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="slider-container">
+                    <div class="slider-track" id="continueWatchingSlider"></div>
+                </div>
+            </div>
+            
             <!-- Trending Slider -->
             <div class="slider-section">
                 <div class="slider-header">
@@ -8747,6 +8904,9 @@
                             </button>
                             <button class="trakt-btn trakt-btn-info" id="traktPageRefresh">
                                 <i class="fas fa-sync-alt"></i> Refresh Status
+                            </button>
+                            <button class="trakt-btn trakt-btn-primary" id="traktPageResyncLibrary">
+                                <i class="fas fa-cloud-download-alt"></i> Re-sync Library
                             </button>
                             <button class="trakt-btn trakt-btn-info" id="traktPageStats">
                                 <i class="fas fa-chart-bar"></i> View Statistics
@@ -12143,6 +12303,9 @@ Your browser does not support the video tag.
             // Refresh status button
             bindById('traktPageRefresh', () => { updateTraktPageStatus(); });
 
+            // Re-sync Library button
+            bindById('traktPageResyncLibrary', manualResyncTraktLibrary);
+
             // View statistics button
             bindById('traktPageStats', () => { try { showDetailedTraktStatistics(); } catch(_) {} });
 
@@ -12873,61 +13036,68 @@ Your browser does not support the video tag.
             try { return (from || '').substring(0, 4) || ''; } catch { return ''; }
         }
 
-        async function importTraktWatchlistToMyList() {
+        async function importTraktWatchlistToMyList(maxPages = 50, pageSize = 100) {
             try {
-                const res = await fetch('/api/trakt/watchlist?type=mixed');
-                const data = await res.json();
-                if (!data.success || !Array.isArray(data.watchlist)) return 0;
-
                 // Ensure current list loaded
                 await loadMyList();
 
-                let added = 0;
-                for (const entry of data.watchlist) {
-                    const isMovie = !!entry.movie;
-                    const isShow = !!entry.show;
-                    const type = isMovie ? 'movie' : (isShow ? 'tv' : null);
-                    const ids = (entry.movie?.ids || entry.show?.ids || {});
-                    const tmdbId = ids.tmdb || null;
-                    if (!type || !tmdbId) continue;
+                let totalAdded = 0;
+                for (let page = 1; page <= maxPages; page++) {
+                    const res = await fetch(`/api/trakt/watchlist?type=mixed&page=${page}&limit=${pageSize}`);
+                    const data = await res.json();
+                    if (!data.success || !Array.isArray(data.watchlist) || data.watchlist.length === 0) break;
 
-                    // Skip if already present
-                    if (myListCache.some(it => it.id === tmdbId && it.media_type === type)) continue;
+                    let addedThisPage = 0;
+                    for (const entry of data.watchlist) {
+                        const isMovie = !!entry.movie;
+                        const isShow = !!entry.show;
+                        const type = isMovie ? 'movie' : (isShow ? 'tv' : null);
+                        const ids = (entry.movie?.ids || entry.show?.ids || {});
+                        const tmdbId = ids.tmdb || null;
+                        if (!type || !tmdbId) continue;
 
-                    // Fetch TMDB details to enrich poster/year/rating/title
-                    const details = await fetchTmdbDetailsById(type, tmdbId);
-                    const title = type === 'tv' ? (details?.name || entry.show?.title || '') : (details?.title || entry.movie?.title || '');
-                    const poster_path = details?.poster_path || '';
-                    const year = type === 'tv' ? normalizeYear(details?.first_air_date || entry.show?.year) : normalizeYear(details?.release_date || entry.movie?.year);
-                    const vote_average = Number(details?.vote_average || 0);
-                    const listItem = {
-                        id: tmdbId,
-                        media_type: type,
-                        title,
-                        poster_path,
-                        year,
-                        vote_average,
-                        added_date: entry.listed_at || new Date().toISOString()
-                    };
-                    myListCache.unshift(listItem);
-                    added++;
+                        // Skip if already present
+                        if (myListCache.some(it => it.id === tmdbId && it.media_type === type)) continue;
+
+                        // Fetch TMDB details to enrich poster/year/rating/title
+                        const details = await fetchTmdbDetailsById(type, tmdbId);
+                        const title = type === 'tv' ? (details?.name || entry.show?.title || '') : (details?.title || entry.movie?.title || '');
+                        const poster_path = details?.poster_path || '';
+                        const year = type === 'tv' ? normalizeYear(details?.first_air_date || entry.show?.year) : normalizeYear(details?.release_date || entry.movie?.year);
+                        const vote_average = Number(details?.vote_average || 0);
+                        const listItem = {
+                            id: tmdbId,
+                            media_type: type,
+                            title,
+                            poster_path,
+                            year,
+                            vote_average,
+                            added_date: entry.listed_at || new Date().toISOString()
+                        };
+                        myListCache.unshift(listItem);
+                        addedThisPage++;
+                    }
+                    totalAdded += addedThisPage;
+
+                    // If we got less than pageSize items, we've reached the end
+                    if (data.watchlist.length < pageSize) break;
                 }
 
-                if (added > 0) {
+                if (totalAdded > 0) {
                     await saveMyList();
                     // Refresh page if open
                     if (document.getElementById('myListPage')?.style.display !== 'none') {
                         await displayMyList();
                     }
                 }
-                return added;
+                return totalAdded;
             } catch (e) {
                 console.log('[TRAKT IMPORT] My List failed:', e?.message);
                 return 0;
             }
         }
 
-        async function importTraktHistoryToDoneWatching(maxPages = 20, pageSize = 100) {
+        async function importTraktHistoryToDoneWatching(maxPages = 50, pageSize = 100) {
             try {
                 await loadDoneWatching();
                 let totalAdded = 0;
@@ -13002,15 +13172,24 @@ Your browser does not support the video tag.
         async function importTraktDataOnceIfNeeded() {
             try {
                 if (traktImportedOnce) return;
-                if (localStorage.getItem('traktImportedOnce') === 'true') { traktImportedOnce = true; return; }
+                // Check if we've imported in the last 24 hours (not just once ever)
+                const lastImport = localStorage.getItem('traktLastImport');
+                if (lastImport) {
+                    const hoursSinceImport = (Date.now() - parseInt(lastImport)) / (1000 * 60 * 60);
+                    if (hoursSinceImport < 24) {
+                        traktImportedOnce = true;
+                        return;
+                    }
+                }
+                
                 showNotification('Importing your Trakt data (watchlist & history)...', 'info');
                 const [addedList, addedDone] = await Promise.all([
                     importTraktWatchlistToMyList(),
                     importTraktHistoryToDoneWatching(),
                 ]);
                 traktImportedOnce = true;
-                localStorage.setItem('traktImportedOnce', 'true');
-                const msg = `Imported ${addedList} in My List and ${addedDone} in Done Watching from Trakt`;
+                localStorage.setItem('traktLastImport', Date.now().toString());
+                const msg = `Imported ${addedList} to My List and ${addedDone} to Done Watching from Trakt`;
                 showNotification(msg, 'success');
                 // Optionally update visible cards' buttons state
                 try {
@@ -13030,6 +13209,66 @@ Your browser does not support the video tag.
                 } catch(_) {}
             } catch (e) {
                 console.log('[TRAKT IMPORT] unexpected error:', e?.message);
+            }
+        }
+
+        async function manualResyncTraktLibrary() {
+            try {
+                const btn = document.getElementById('traktPageResyncLibrary');
+                if (!btn) return;
+
+                // Disable button and show loading state
+                const originalHTML = btn.innerHTML;
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Syncing...';
+
+                showNotification('Starting full Trakt library sync...', 'info');
+
+                // Force re-sync by resetting the import flag
+                traktImportedOnce = false;
+                localStorage.removeItem('traktLastImport');
+
+                // Import with higher page limits (50 pages × 100 = 5000 items max)
+                const [addedList, addedDone] = await Promise.all([
+                    importTraktWatchlistToMyList(50, 100),
+                    importTraktHistoryToDoneWatching(50, 100),
+                ]);
+
+                // Update timestamp
+                traktImportedOnce = true;
+                localStorage.setItem('traktLastImport', Date.now().toString());
+
+                const msg = `Sync complete! Imported ${addedList} to My List and ${addedDone} to Done Watching from Trakt`;
+                showNotification(msg, 'success');
+
+                // Update all visible cards
+                try {
+                    document.querySelectorAll('.movie-card').forEach(card => {
+                        const addBtn = card.querySelector('.add-to-list-btn');
+                        const doneBtn = card.querySelector('.done-watching-btn');
+                        const attr = (addBtn?.getAttribute('onclick') || doneBtn?.getAttribute('onclick') || '') + '';
+                        const idMatch = attr.match(/,(\s*)(\d+)(\s*),\s*'(movie|tv)'/);
+                        if (idMatch) {
+                            const id = parseInt(idMatch[2], 10);
+                            const mediaType = idMatch[4];
+                            updateCardListStatus(card, id, mediaType);
+                            updateCardDoneStatus(card, id, mediaType);
+                        }
+                    });
+                } catch(_) {}
+
+                // Re-enable button
+                btn.disabled = false;
+                btn.innerHTML = originalHTML;
+            } catch (e) {
+                console.log('[TRAKT RESYNC] Error:', e?.message);
+                showNotification('Trakt sync failed: ' + e?.message, 'error');
+                // Re-enable button
+                const btn = document.getElementById('traktPageResyncLibrary');
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fas fa-cloud-download-alt"></i> Re-sync Library';
+                }
             }
         }
 
@@ -22495,6 +22734,7 @@ Your browser does not support the video tag.
                 const details = titleLines[1] || '';
                 
                 // Build button HTML - skip VLC on macOS
+                const isMacOS = window.electronAPI?.platform === 'darwin';
                 const vlcButtonHtml = isMacOS ? '' : `
                     <button class="torrent-btn vlc-nuvio-btn" data-url="${url}" data-name="${name}">
                         <i class="fas fa-external-link-alt"></i> Open in VLC
@@ -22947,6 +23187,42 @@ Your browser does not support the video tag.
 
                 item.appendChild(info);
                 item.appendChild(playBtn);
+                
+                // Add IINA button on macOS
+                if (window.electronAPI.platform === 'darwin') {
+                    const iinaBtn = document.createElement('button');
+                    iinaBtn.className = 'btn';
+                    iinaBtn.innerHTML = '<i class="fas fa-film"></i> Open in IINA';
+                    iinaBtn.style.marginLeft = '0.5rem';
+                    iinaBtn.onclick = async (e) => {
+                        e.stopPropagation();
+                        if (file.url) {
+                            console.log('[111477] Opening in IINA:', file.url);
+                            try {
+                                // Update Discord presence for 111477 IINA streaming
+                                const title = currentContent?.title || currentContent?.name || 'Video';
+                                const seasonNum = (currentMediaType === 'tv' && currentSeason) ? currentSeason : null;
+                                updateDiscordForStreaming(title, '111477', seasonNum);
+                                
+                                const result = await window.electronAPI.openInIINA({ url: file.url });
+                                if (result && result.success) {
+                                    showNotification('Opening stream in IINA...', 'success', 3000);
+                                } else if (result && result.error && result.error.includes('not found')) {
+                                    showNotification('IINA not installed. Please install IINA from iina.io', 'error', 5000);
+                                } else {
+                                    showNotification('Failed to open in IINA: ' + (result?.error || 'Unknown error'));
+                                }
+                            } catch (error) {
+                                console.error('[111477] IINA error:', error);
+                                showNotification('Failed to open in IINA: ' + error.message);
+                            }
+                        } else {
+                            showNotification('No stream URL available');
+                        }
+                    };
+                    item.appendChild(iinaBtn);
+                }
+                
                 torrentsList.appendChild(item);
             });
         }
@@ -27566,10 +27842,28 @@ Your browser does not support the video tag.
             if (!resumeKey || !customVideo || !isFinite(customVideo.duration) || !isFinite(customVideo.currentTime)) return;
             const pos = Math.max(0, Math.floor(customVideo.currentTime || 0));
             const dur = Math.max(0, Math.floor(customVideo.duration || 0));
-            const title = currentSelectedVideoName || (currentContent?.title || currentContent?.name || '');
+            // Use TMDB title from currentContent, not the filename
+            const title = (currentContent?.title || currentContent?.name || currentSelectedVideoName || '');
             if (dur === 0 || pos === 0) return;
             try {
-                await fetch(`${API_BASE_URL}/resume`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key: resumeKey, position: pos, duration: dur, title }) });
+                const payload = { 
+                    key: resumeKey, 
+                    position: pos, 
+                    duration: dur, 
+                    title 
+                };
+                // Add poster and metadata if available from currentContent
+                if (currentContent) {
+                    if (currentContent.poster_path) payload.poster_path = currentContent.poster_path;
+                    if (currentContent.id) payload.tmdb_id = currentContent.id;
+                    if (currentMediaType) payload.media_type = currentMediaType;
+                    // Add season/episode for TV shows
+                    if (currentMediaType === 'tv' && typeof currentSeason !== 'undefined') {
+                        payload.season = currentSeason;
+                        if (typeof currentEpisode !== 'undefined') payload.episode = currentEpisode;
+                    }
+                }
+                await fetch(`${API_BASE_URL}/resume`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
             } catch(_){ }
         }
         function saveResumeThrottled(immediate = false) {
@@ -27592,6 +27886,139 @@ Your browser does not support the video tag.
                 }
             });
         } catch(_){ }
+
+        // Continue Watching functionality
+        async function loadContinueWatching() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/resume/all`);
+                if (!response.ok) return;
+                
+                const items = await response.json();
+                if (!Array.isArray(items) || items.length === 0) {
+                    // Hide section if no items
+                    document.getElementById('continueWatchingSection').style.display = 'none';
+                    return;
+                }
+                
+                // Show section
+                document.getElementById('continueWatchingSection').style.display = 'block';
+                
+                // Render items
+                const slider = document.getElementById('continueWatchingSlider');
+                slider.innerHTML = '';
+                
+                for (const item of items) {
+                    if (!item.title || !item.key) continue;
+                    
+                    const card = document.createElement('div');
+                    card.className = 'movie-card continue-watching-card';
+                    card.dataset.resumeKey = item.key;
+                    
+                    const progress = item.duration > 0 ? ((item.position / item.duration) * 100).toFixed(1) : 0;
+                    
+                    // For TV shows, show season; for movies, show time left
+                    let subtitleText = '';
+                    if (item.media_type === 'tv' && item.season) {
+                        subtitleText = `Season ${item.season}`;
+                    } else {
+                        const timeLeft = item.duration > 0 ? formatTime(item.duration - item.position) : '';
+                        subtitleText = timeLeft ? `${timeLeft} left` : '';
+                    }
+                    
+                    // Use poster if available, otherwise show placeholder
+                    const posterHTML = item.poster_path 
+                        ? `<img loading="lazy" decoding="async" src="https://image.tmdb.org/t/p/w342${item.poster_path}" alt="${item.title.replace(/'/g, "\\'")}">` 
+                        : `<div class="continue-watching-placeholder">
+                            <i class="fas fa-play-circle"></i>
+                           </div>`;
+                    
+                    card.innerHTML = `
+                        <button class="remove-continue-btn" onclick="removeContinueWatching(event, '${item.key.replace(/'/g, "\\'")}')">
+                            <i class="fas fa-times"></i>
+                        </button>
+                        <div class="movie-poster">
+                            ${posterHTML}
+                            <div class="continue-watching-progress" style="width: ${progress}%"></div>
+                        </div>
+                        <div class="movie-info">
+                            <h3 class="movie-title">${item.title}</h3>
+                            <p class="movie-year">${subtitleText}</p>
+                        </div>
+                        <div class="movie-rating">
+                            <i class="fas fa-clock"></i> ${progress}%
+                        </div>
+                    `;
+                    
+                    // Click handler - open details modal directly like trending cards do
+                    card.addEventListener('click', (e) => {
+                        if (e.target.closest('.remove-continue-btn')) return;
+                        
+                        if (item.tmdb_id && item.media_type) {
+                            // Create a movie object compatible with openDetailsModal
+                            const movieObj = {
+                                id: item.tmdb_id,
+                                title: item.title,
+                                name: item.title,
+                                poster_path: item.poster_path,
+                                media_type: item.media_type
+                            };
+                            openDetailsModal(movieObj, item.media_type);
+                        } else {
+                            showNotification('Details not available for this item (missing metadata). Try watching it again to update.', 'info', 4000);
+                        }
+                    });
+                    
+                    slider.appendChild(card);
+                }
+                
+            } catch (error) {
+                console.error('[Continue Watching] Load error:', error);
+                document.getElementById('continueWatchingSection').style.display = 'none';
+            }
+        }
+        
+        async function removeContinueWatching(event, key) {
+            event.stopPropagation();
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/resume?key=${encodeURIComponent(key)}`, {
+                    method: 'DELETE'
+                });
+                
+                if (response.ok) {
+                    // Remove card from DOM
+                    const card = document.querySelector(`[data-resume-key="${key}"]`);
+                    if (card) {
+                        card.style.transition = 'opacity 0.3s, transform 0.3s';
+                        card.style.opacity = '0';
+                        card.style.transform = 'scale(0.8)';
+                        setTimeout(() => {
+                            card.remove();
+                            // Check if any cards left
+                            const slider = document.getElementById('continueWatchingSlider');
+                            if (slider.children.length === 0) {
+                                document.getElementById('continueWatchingSection').style.display = 'none';
+                            }
+                        }, 300);
+                    }
+                    showNotification('Removed from Continue Watching', 'success');
+                } else {
+                    showNotification('Failed to remove item', 'error');
+                }
+            } catch (error) {
+                console.error('[Continue Watching] Remove error:', error);
+                showNotification('Failed to remove item', 'error');
+            }
+        }
+        
+        function formatTime(seconds) {
+            const h = Math.floor(seconds / 3600);
+            const m = Math.floor((seconds % 3600) / 60);
+            const s = Math.floor(seconds % 60);
+            if (h > 0) return `${h}h ${m}m`;
+            if (m > 0) return `${m}m`;
+            return `${s}s`;
+        }
 
         // Hook version notice (v1.6.3) from main
         try {
@@ -28176,6 +28603,7 @@ Your browser does not support the video tag.
             try { renderDownloadedMusic(); } catch(_) {}
             await loadMyList();
             await loadDoneWatching();
+            await loadContinueWatching();
             
             // Update existing cards with both list statuses when movies are loaded
             const originalDisplayMovies = displayMovies;
@@ -28271,4 +28699,12 @@ Your browser does not support the video tag.
         </div>
     </div>
 </body>
+<script>
+// Add platform class to body for platform-specific styling
+(function() {
+    if (window.electronAPI && window.electronAPI.platform) {
+        document.body.classList.add('platform-' + window.electronAPI.platform);
+    }
+})();
+</script>
 </html>

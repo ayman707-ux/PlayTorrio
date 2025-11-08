@@ -573,7 +573,7 @@ export function startServer(userDataPath) {
     // Save/update a resume position
     app.post('/api/resume', (req, res) => {
         try {
-            const { key, position, duration, title } = req.body || {};
+            const { key, position, duration, title, poster_path, tmdb_id, media_type, season, episode } = req.body || {};
             const k = (key || '').toString();
             const pos = Number(position || 0);
             const dur = Number(duration || 0);
@@ -588,6 +588,11 @@ export function startServer(userDataPath) {
             }
             const rec = { position: pos, duration: dur, updatedAt: new Date().toISOString() };
             if (title) rec.title = String(title);
+            if (poster_path) rec.poster_path = String(poster_path);
+            if (tmdb_id) rec.tmdb_id = tmdb_id;
+            if (media_type) rec.media_type = String(media_type);
+            if (season !== undefined && season !== null) rec.season = Number(season);
+            if (episode !== undefined && episode !== null) rec.episode = Number(episode);
             map[k] = rec;
             // Cap entries to avoid unbounded growth (keep latest 500)
             const entries = Object.entries(map).sort((a, b) => new Date(b[1]?.updatedAt || 0) - new Date(a[1]?.updatedAt || 0));
@@ -613,6 +618,34 @@ export function startServer(userDataPath) {
             return res.json({ success: true });
         } catch (e) {
             return res.status(500).json({ error: e?.message || 'Failed to delete resume' });
+        }
+    });
+    
+    // Get all resume records (for Continue Watching section)
+    app.get('/api/resume/all', (req, res) => {
+        try {
+            const map = readResumeMap();
+            // Convert to array and sort by most recent
+            const items = Object.entries(map)
+                .map(([key, data]) => ({
+                    key,
+                    title: data.title || 'Unknown',
+                    position: data.position || 0,
+                    duration: data.duration || 0,
+                    poster_path: data.poster_path || null,
+                    tmdb_id: data.tmdb_id || null,
+                    media_type: data.media_type || null,
+                    season: data.season || null,
+                    episode: data.episode || null,
+                    updatedAt: data.updatedAt || new Date().toISOString()
+                }))
+                .filter(item => item.duration > 0 && item.position > 0 && item.position / item.duration < 0.95) // Only show items not fully watched
+                .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt))
+                .slice(0, 20); // Return max 20 items
+            
+            return res.json(items);
+        } catch (e) {
+            return res.status(500).json({ error: e?.message || 'Failed to read resume data' });
         }
     });
 
@@ -2903,7 +2936,9 @@ export function startServer(userDataPath) {
     app.get('/api/trakt/watchlist', async (req, res) => {
         try {
             const type = req.query.type || 'mixed'; // movies, shows, mixed
-            const response = await traktFetch(`/users/me/watchlist/${type}`);
+            const page = req.query.page || 1;
+            const limit = req.query.limit || 100;
+            const response = await traktFetch(`/users/me/watchlist/${type}?page=${page}&limit=${limit}`);
             res.json({ success: true, watchlist: response });
         } catch (error) {
             console.error('[TRAKT] Watchlist error:', error);

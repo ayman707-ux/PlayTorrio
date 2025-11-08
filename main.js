@@ -240,6 +240,14 @@ function setupAutoUpdater() {
                 } catch(_) {}
                 return;
             }
+            
+            // Prevent update loop: mark that we're installing
+            if (app.isQuitting || global.updateInstalling) {
+                console.log('[Updater] Already installing/quitting, skipping duplicate install');
+                return;
+            }
+            global.updateInstalling = true;
+            
             console.log('[Updater] Update downloaded. Ready to install version:', info?.version || 'unknown', 'Current:', app.getVersion());
             try {
                 if (mainWindow && !mainWindow.isDestroyed()) {
@@ -831,6 +839,69 @@ async function openInMPV(win, streamUrl, infoHash, startSeconds) {
         console.error('[MPV] Exception stack:', error.stack);
         console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
         return { success: false, message: 'Failed to launch MPV: ' + error.message };
+    }
+}
+
+// Launch IINA on macOS (preferred for mac users)
+function openInIINA(win, streamUrl, infoHash, startSeconds) {
+    try {
+        if (process.platform !== 'darwin') {
+            return { success: false, message: 'IINA is only available on macOS' };
+        }
+        
+        console.log('Attempting to launch IINA with URL:', streamUrl);
+        
+        // Check if IINA is installed
+        const checkIINA = spawnSync('mdfind', ['kMDItemKind==Application&&kMDItemFSName==IINA.app']);
+        if (!checkIINA.stdout || checkIINA.stdout.toString().trim() === '') {
+            console.error('IINA not found on system');
+            return { success: false, message: 'IINA not installed. Please download it from https://iina.io' };
+        }
+        
+        const args = ['-a', 'IINA'];
+        
+        // Add start time if provided
+        const start = Number(startSeconds || 0);
+        if (!isNaN(start) && start > 10) {
+            args.push('--args', `--mpv-start=+${Math.floor(start)}`);
+        }
+        
+        args.push(streamUrl);
+        
+        const iinaProcess = spawn('open', args, { stdio: 'ignore', detached: true });
+
+        iinaProcess.on('close', async (code) => {
+            console.log(`IINA player closed with code ${code}.`);
+            // Clear Discord presence when IINA closes
+            try {
+                if (discordRpc && discordRpcReady) {
+                    await discordRpc.setActivity({
+                        details: 'Browsing PlayTorrio',
+                        startTimestamp: new Date(),
+                        largeImageKey: 'icon',
+                        largeImageText: 'PlayTorrio App',
+                        buttons: [
+                            { label: 'Download App', url: 'https://github.com/ayman707-ux/PlayTorrio' }
+                        ]
+                    });
+                }
+            } catch (err) {
+                console.error('[Discord RPC] Failed to clear on IINA close:', err);
+            }
+            try { win.webContents.send('iina-closed', { infoHash, code }); } catch(_) {}
+        });
+
+        iinaProcess.on('error', (err) => {
+            console.error('Failed to start IINA process:', err);
+        });
+        
+        // Unref so it doesn't keep the parent process alive
+        iinaProcess.unref();
+
+        return { success: true, message: 'IINA launched successfully' };
+    } catch (error) {
+        console.error('Error launching IINA:', error);
+        return { success: false, message: 'Failed to launch IINA: ' + error.message };
     }
 }
 
@@ -1896,6 +1967,14 @@ if (!gotLock) {
 
             // Performance-friendly defaults and UA header for direct HTTP playback (111477, etc.)
             const userAgent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36';
+            
+            // Platform-specific hardware acceleration
+            const hwdecArgs = process.platform === 'darwin' 
+                ? ['--hwdec=videotoolbox']  // macOS hardware acceleration
+                : process.platform === 'win32'
+                ? ['--hwdec=d3d11va', '--gpu-context=d3d11']  // Windows hardware acceleration
+                : ['--hwdec=auto'];  // Linux auto-detect
+            
             const args = [
                 // Ensure MPV window opens immediately and waits while the connection/buffer starts
                 '--force-window=immediate',
@@ -1906,8 +1985,7 @@ if (!gotLock) {
                 '--force-seekable=yes',
                 `--http-header-fields=User-Agent: ${userAgent}`,
                 '--vd-lavc-threads=4',
-                '--hwdec=d3d11va',
-                '--gpu-context=d3d11',
+                ...hwdecArgs,
                 '--profile=fast',
                 '--cache-on-disk=yes',
                 url
@@ -1941,6 +2019,13 @@ if (!gotLock) {
             console.error('Error opening MPV:', error);
             return { success: false, error: error.message };
         }
+    });
+
+    // IPC handler to open IINA from renderer (macOS only)
+    ipcMain.handle('open-in-iina', (event, data) => {
+        const { streamUrl, infoHash, startSeconds } = data || {};
+        console.log(`Received IINA open request for hash: ${infoHash}`);
+        return openInIINA(mainWindow, streamUrl, infoHash, startSeconds);
     });
 
     // IPC handler to open VLC from renderer
