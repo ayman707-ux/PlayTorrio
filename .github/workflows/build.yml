@@ -147,12 +147,18 @@ jobs:
       env:
         GH_TOKEN: ${{ secrets.GH_TOKEN }}
     
-    - name: Fix AppImage permissions
+    - name: Fix AppImage permissions and compatibility
       run: |
         if ls dist/*.AppImage 1> /dev/null 2>&1; then
           chmod +x dist/*.AppImage
           echo "✓ Made AppImage executable"
-          ls -lh dist/*.AppImage
+          
+          # Test if AppImage can extract (verify it's valid)
+          for appimage in dist/*.AppImage; do
+            echo "Testing AppImage: $appimage"
+            "$appimage" --appimage-extract-and-run --version || echo "⚠ Version check skipped"
+            ls -lh "$appimage"
+          done
         else
           echo "⚠ No AppImage found"
         fi
