@@ -43,11 +43,11 @@
   "build": {
     "appId": "com.ayman.PlayTorrio",
     "productName": "PlayTorrio",
-    "artifactName": "${productName}-Setup-${version}.${ext}",
+    "artifactName": "${productName}-Setup.${ext}",
     "publish": {
       "provider": "github",
       "owner": "ayman707-ux",
-      "repo": "PlayTorrioMAC"
+      "repo": "PlayTorrio"
     },
     "files": [
       "main.js",
@@ -69,7 +69,7 @@
     "extraResources": [],
     "win": {
       "icon": "build/icon.ico",
-      "artifactName": "PlayTorrio.installer.${ext}",
+      "artifactName": "PlayTorrio-installer.${ext}",
       "target": [
         "nsis"
       ],
@@ -101,7 +101,7 @@
           "arch": ["x64", "arm64"]
         }
       ],
-      "artifactName": "${productName}-${version}-${arch}.${ext}",
+      "artifactName": "${productName}-${arch}.${ext}",
       "hardenedRuntime": false,
       "identity": null,
       "gatekeeperAssess": false,
@@ -117,7 +117,7 @@
       }
     },
     "dmg": {
-      "title": "${productName} ${version}",
+      "title": "${productName}",
       "icon": "build/icon.icns",
       "contents": [
         {
@@ -155,7 +155,7 @@
     
     "afterPack": "build/afterPack.cjs",
     "appImage": {
-      "artifactName": "${productName}-${version}.${ext}"
+      "artifactName": "${productName}.${ext}"
     }
   }
 }

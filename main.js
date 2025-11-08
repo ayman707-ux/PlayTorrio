@@ -144,7 +144,7 @@ function setupAutoUpdater() {
         });
 
         autoUpdater.on('update-available', (info) => {
-            const releasesUrl = 'https://github.com/ayman707-ux/PlayTorrioMAC/releases/latest';
+            const releasesUrl = 'https://github.com/ayman707-ux/PlayTorrio/releases/latest';
             console.log('[Updater] Update available. New version:', info?.version || 'unknown', 'Current:', app.getVersion());
             try {
                 if (mainWindow && !mainWindow.isDestroyed() && mainWindow.webContents) {
@@ -226,7 +226,7 @@ function setupAutoUpdater() {
         autoUpdater.on('update-downloaded', async (info) => {
             if (process.platform === 'darwin') {
                 // Should not happen because autoDownload=false on mac, but guard just in case
-                const releasesUrl = 'https://github.com/ayman707-ux/PlayTorrioMAC/releases/latest';
+                const releasesUrl = 'https://github.com/ayman707-ux/PlayTorrio/releases/latest';
                 console.log('[Updater] macOS: manual update required. Skipping auto-install.');
                 try {
                     if (mainWindow && !mainWindow.isDestroyed()) {
