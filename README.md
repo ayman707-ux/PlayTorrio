@@ -1,7 +1,6 @@
 # PlayTorrio - Cross-Platform Media Center
 
 ![Platform Support](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-blue)
-![License](https://github.com/ayman707-ux/PlayTorrio/tree/main?tab=License-1-ov-file)
 
 **PlayTorrio** is an all-in-one media center application that brings together streaming, torrenting, and media management in a beautiful, easy-to-use interface.
 
