@@ -1,7 +1,7 @@
 # PlayTorrio - Cross-Platform Media Center
 
 ![Platform Support](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-blue)
-![License](https://img.shields.io/badge/license-MIT-green)
+![License](Check github)
 
 **PlayTorrio** is an all-in-one media center application that brings together streaming, torrenting, and media management in a beautiful, easy-to-use interface.
 
@@ -77,56 +77,12 @@
 
 ### For Linux Users
 1. Download `PlayTorrio-{version}.AppImage` from [Releases](https://github.com/ayman707-ux/PlayTorrio/releases)
-2. Make it executable: `chmod +x PlayTorrio-*.AppImage`
-3. Run it: `./PlayTorrio-*.AppImage`
+2. Open it
 
-## 🛠️ Building from Source
 
-### Prerequisites
-- Node.js 18+ and npm
-- Git
 
-### Clone & Install
-```bash
-git clone https://github.com/ayman707-ux/PlayTorrio.git
-cd PlayTorrio
-npm install
-```
 
-### Development
-```bash
-npm start
-```
 
-### Building
-
-#### Windows Build
-```bash
-npm run build
-# Output: dist/PlayTorrio.installer.exe
-```
-
-#### macOS Build
-**Important**: See [QUICKSTART_MACOS.md](QUICKSTART_MACOS.md) for complete instructions.
-
-Quick version:
-```bash
-# 1. Place mpv.app in mpv/ folder
-# 2. Place VLC.app in VLC/ folder (optional)
-# 3. Add icon.icns to build/ folder
-npm run build
-# Output: dist/PlayTorrio-{version}-{arch}.dmg
-```
-
-#### Linux Build
-```bash
-npm run build
-# Output: dist/PlayTorrio-{version}.AppImage
-```
-
-### Platform-Specific Guides
-- **macOS**: See [QUICKSTART_MACOS.md](QUICKSTART_MACOS.md) and [MACOS_BUILD.md](MACOS_BUILD.md)
-- **Changes**: See [CHANGES.md](CHANGES.md) for technical details
 
 ## 📦 Dependencies
 
@@ -217,6 +173,10 @@ Found a bug? Have a feature request?
 If you like PlayTorrio, please give it a star on GitHub!
 
 ---
+
+Icon Made by Adnan ahmed
+https://github.com/ddosintruders
+https://adnan-ahmed.pages.dev/
 
 **Made with ❤️ by Ayman**
 
