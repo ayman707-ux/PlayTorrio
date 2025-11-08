@@ -26,12 +26,21 @@ const dnsLookup = promisify(dns.lookup);
 const require = createRequire(import.meta.url);
 
 // ----------------------
-// Linux Sandbox Handling
+// Linux: Auto-detect sandbox + Wayland/X11 for double-click launch
 // ----------------------
 if (process.platform === 'linux') {
-    // Standard flags for AppImage compatibility
-    app.commandLine.appendSwitch('--no-sandbox');
-    app.commandLine.appendSwitch('--disable-gpu-sandbox');
+    // Always use no-sandbox for AppImage compatibility (chrome-sandbox requires root suid)
+    app.commandLine.appendSwitch('no-sandbox');
+    app.commandLine.appendSwitch('disable-gpu-sandbox');
+    
+    // Wayland/X11 auto-detection for better compatibility
+    const isWayland = process.env.WAYLAND_DISPLAY || process.env.XDG_SESSION_TYPE === 'wayland';
+    if (isWayland) {
+        app.commandLine.appendSwitch('ozone-platform', 'wayland');
+        app.commandLine.appendSwitch('enable-features', 'WaylandWindowDecorations');
+    } else {
+        app.commandLine.appendSwitch('ozone-platform', 'x11');
+    }
 }
 
 // ----------------------

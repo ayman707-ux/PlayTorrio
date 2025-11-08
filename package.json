@@ -167,7 +167,7 @@
     "afterPack": "build/afterPack.cjs",
     "afterAllArtifactBuild": "build/afterAllArtifactBuild.cjs",
     "appImage": {
-      "artifactName": "${productName}.${ext}",
+      "artifactName": "PlayTorrio-${version}-x86_64.${ext}",
       "license": null,
       "synopsis": "Stream Movies, TV Shows, Anime, Books, Music & Games",
       "description": "All-in-one media center",
