@@ -171,13 +171,7 @@
       "license": null,
       "synopsis": "Stream Movies, TV Shows, Anime, Books, Music & Games",
       "description": "All-in-one media center",
-      "category": "AudioVideo",
-      "desktop": {
-        "Exec": "%f",
-        "Terminal": "false",
-        "Type": "Application",
-        "Categories": "AudioVideo;Video;Player;"
-      }
+      "category": "AudioVideo"
     }
   }
 }
