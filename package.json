@@ -98,17 +98,19 @@
       "target": [
         {
           "target": "dmg",
-          "arch": "x64"
+          "arch": "universal"
         },
         {
-          "target": "dmg",
-          "arch": "arm64"
+          "target": "zip",
+          "arch": "universal"
         }
       ],
-      "artifactName": "${productName}-${arch}.${ext}",
+      "artifactName": "${productName}-mac-${arch}.${ext}",
       "hardenedRuntime": false,
       "identity": null,
       "gatekeeperAssess": false,
+      "mergeASARs": true,
+      "singleArchFiles": "node_modules/!(ffmpeg-static)/**/*",
       "entitlements": "build/entitlements.mac.plist",
       "entitlementsInherit": "build/entitlements.mac.plist",
       "extraResources": [
@@ -143,8 +145,14 @@
     "linux": {
       "icon": "build/icon.png",
       "target": [
-        "AppImage",
-        "deb"
+        {
+          "target": "AppImage",
+          "arch": ["x64"]
+        },
+        {
+          "target": "deb",
+          "arch": ["x64"]
+        }
       ],
       "category": "AudioVideo",
       "executableName": "playtorrio",
@@ -154,12 +162,19 @@
         "Categories": "AudioVideo;Video;Player;",
         "StartupWMClass": "PlayTorrio",
         "Terminal": false
-      }
+      },
+      "synopsis": "Stream Movies, TV Shows, Anime, Books, Music & Games",
+      "description": "All-in-one media center for streaming entertainment"
     },
     
     "afterPack": "build/afterPack.cjs",
+    "afterAllArtifactBuild": "build/afterAllArtifactBuild.cjs",
     "appImage": {
-      "artifactName": "${productName}.${ext}"
+      "artifactName": "${productName}.${ext}",
+      "license": null,
+      "synopsis": "Stream Movies, TV Shows, Anime, Books, Music & Games",
+      "description": "All-in-one media center",
+      "category": "AudioVideo"
     }
   }
 }

@@ -25,6 +25,28 @@ const dnsLookup = promisify(dns.lookup);
 // Create require for CommonJS modules
 const require = createRequire(import.meta.url);
 
+// ----------------------
+// Linux Sandbox Handling
+// ----------------------
+if (process.platform === 'linux') {
+    // Disable GPU sandbox on Linux for better AppImage compatibility
+    app.commandLine.appendSwitch('--no-sandbox');
+    app.commandLine.appendSwitch('--disable-gpu-sandbox');
+}
+
+// ----------------------
+// Auto-create config directory
+// ----------------------
+const configDir = path.join(os.homedir(), '.config', 'playtorrio');
+try {
+    if (!fs.existsSync(configDir)) {
+        fs.mkdirSync(configDir, { recursive: true, mode: 0o755 });
+        console.log('[Config] Created directory:', configDir);
+    }
+} catch (err) {
+    console.warn('[Config] Failed to create config directory:', err.message);
+}
+
 let httpServer;
 let webtorrentClient;
 let mainWindow;
