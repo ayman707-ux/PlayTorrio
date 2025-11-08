@@ -153,6 +153,13 @@ jobs:
           chmod +x dist/*.AppImage
           echo "✓ Made AppImage executable"
           
+          # Copy launch scripts and README to dist
+          cp build/launch-linux.sh dist/ 2>/dev/null || true
+          cp setup-linux.sh dist/ 2>/dev/null || true
+          cp LINUX_INSTALL.md dist/ 2>/dev/null || true
+          chmod +x dist/launch-linux.sh 2>/dev/null || true
+          chmod +x dist/setup-linux.sh 2>/dev/null || true
+          
           # Test if AppImage can extract (verify it's valid)
           for appimage in dist/*.AppImage; do
             echo "Testing AppImage: $appimage"
