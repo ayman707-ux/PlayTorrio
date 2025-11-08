@@ -1,0 +1,146 @@
+# PlayTorrio Software License
+
+**Copyright © 2025 Ayman Marwan. All Rights Reserved.**
+
+---
+
+## 1. Ownership
+
+PlayTorrio, including its source code, documentation, assets, name, branding, and all associated intellectual property, is the exclusive property of Ayman Marwan ("the Author"). All rights are reserved unless explicitly granted herein.
+
+---
+
+## 2. License Grant
+
+You are granted permission to:
+
+- **Use** PlayTorrio for personal, educational, or non-commercial purposes
+- **Modify** the source code for your own use
+- **Redistribute** modified versions under the strict conditions outlined in Section 3
+
+**Commercial use, distribution, or monetization requires prior written permission from the Author.**
+
+---
+
+## 3. Redistribution & Modification Requirements
+
+If you modify, fork, or redistribute PlayTorrio, you **MUST** comply with ALL of the following:
+
+### a. Open Source Requirement
+Your modified version must remain **open source** and publicly accessible under this same license or a compatible copyleft license.
+
+### b. Attribution Requirement
+You must retain the following attribution in a prominent location (README, about page, or application credits):
+
+```
+Original Project: PlayTorrio by Ayman Marwan
+GitHub: [original repository URL]
+```
+
+### c. Naming Convention
+Your project name **MUST** begin with "PlayTorrio" followed by a distinguishing suffix.
+
+**✅ Acceptable Examples:**
+- PlayTorrio Plus
+- PlayTorrio Community Edition
+- PlayTorrio Extended
+
+**❌ Prohibited Examples:**
+- TorrioPlay
+- StreamHub
+- MyMovieApp
+
+### d. License Preservation
+You must include this complete license file in all distributions and clearly mark it as the original license.
+
+### e. Modification Disclosure
+You must clearly state that your version is a **modified fork** and not the official PlayTorrio project. Include a changelog or list of modifications.
+
+---
+
+## 4. Restrictions
+
+You **MAY NOT**:
+
+- ❌ Claim authorship or ownership of the original PlayTorrio
+- ❌ Remove, alter, or obscure the PlayTorrio name or branding in derivative works
+- ❌ Distribute modified versions under a closed-source or proprietary license
+- ❌ Misrepresent your fork as the official PlayTorrio project
+- ❌ Use PlayTorrio's name, logo, or branding for commercial purposes without written consent
+- ❌ Sublicense, sell, or rent the software or derivative works without authorization
+- ❌ Use PlayTorrio in any manner that violates applicable laws or regulations
+
+---
+
+## 5. Commercial Use
+
+All commercial use, including but not limited to:
+- Selling or licensing the software
+- Including PlayTorrio in commercial products or services
+- Using PlayTorrio for revenue-generating activities
+
+**Requires explicit written permission from Ayman Marwan.**
+
+Contact: [your-email@example.com]
+
+---
+
+## 6. Attribution Display
+
+All public uses, distributions, or promotional materials must display:
+
+> **"Built on PlayTorrio by Ayman Marwan"**
+
+This notice must appear in:
+- Project documentation (README, wiki, etc.)
+- Application "About" or "Credits" section
+- Project website footer or credits page
+- Any promotional materials or announcements
+
+---
+
+## 7. Trademark Notice
+
+The name **"PlayTorrio"** and any associated logos, branding, or design marks are trademarks of Ayman Marwan. 
+
+Unauthorized use of these trademarks outside the scope of this license is strictly prohibited and may constitute trademark infringement.
+
+---
+
+## 8. Warranty Disclaimer
+
+THIS SOFTWARE IS PROVIDED **"AS IS"**, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT.
+
+IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT, OR OTHERWISE, ARISING FROM, OUT OF, OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+**USE AT YOUR OWN RISK.**
+
+---
+
+## 9. Termination
+
+Your rights under this license terminate automatically if you fail to comply with any of its terms. Upon termination:
+
+- You must cease all use and distribution of PlayTorrio and derivatives
+- You must remove all copies from your systems
+- Continued use after termination may constitute copyright and trademark infringement
+
+---
+
+## 10. Governing Law
+
+This license shall be governed by and construed in accordance with the laws of [Your Country/State], without regard to its conflict of law provisions.
+
+---
+
+## 11. Contact
+
+For permission requests, questions, or clarifications:
+
+**Ayman Marwan**  
+Email: [aymanisthedude1@gmail.com]  
+GitHub: [@ayman707-ux](https://github.com/ayman707-ux)
+
+---
+
+**By using, modifying, or distributing PlayTorrio, you acknowledge that you have read, understood, and agree to be bound by the terms of this license.**

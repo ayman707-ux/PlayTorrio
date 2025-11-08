@@ -1,0 +1,180 @@
+{
+  "name": "playtorrio",
+  "version": "1.8.3",
+  "description": "Ayman's PlayTorrio an all in one media center",
+  "author": {
+    "name": "ayman",
+    "email": "aymanisthedude1@gmail.com"
+  },
+  "type": "module",
+  "main": "main.js",
+  "homepage": "./",
+  "scripts": {
+    "start": "electron .",
+    "serve": "node server.mjs",
+    "build": "electron-builder --publish always"
+  },
+  "dependencies": {
+    "axios": "^1.7.4",
+    "castv2-client": "^1.2.0",
+    "cheerio": "^1.0.0",
+    "cors": "^2.8.5",
+    "discord-rpc": "^4.0.1",
+    "electron-updater": "^6.6.2",
+    "epubjs": "^0.3.93",
+    "express": "^4.21.2",
+    "express-rate-limit": "^7.5.1",
+    "ffmpeg-static": "^5.2.0",
+    "got": "^14.4.7",
+    "jszip": "^3.10.1",
+    "koffi": "^2.14.1",
+    "mdns-js": "^1.0.3",
+    "mime-types": "^2.1.35",
+    "multer": "^2.0.1",
+    "node-fetch": "^3.3.2",
+    "parse-torrent": "^9.0.3",
+    "webtorrent": "^2.6.8",
+    "xml2js": "^0.6.2"
+  },
+  "devDependencies": {
+    "electron": "^38.2.2",
+    "electron-builder": "^24.13.3"
+  },
+  "build": {
+    "appId": "com.ayman.PlayTorrio",
+    "productName": "PlayTorrio",
+    "artifactName": "${productName}-Setup.${ext}",
+    "publish": {
+      "provider": "github",
+      "owner": "ayman707-ux",
+      "repo": "PlayTorrio"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "server.mjs",
+      "api.cjs",
+      "chromecast.mjs",
+      "jackett_api_key.json",
+      "public/**/*",
+      "node_modules/**/*",
+      "mpv/**",
+      "VLC/**"
+    ],
+    "asarUnpack": [
+      "mpv/**",
+      "VLC/**",
+      "node_modules/ffmpeg-static/**"
+    ],
+    "extraResources": [],
+    "win": {
+      "icon": "build/icon.ico",
+      "artifactName": "PlayTorrio-installer.${ext}",
+      "target": [
+        "nsis"
+      ],
+      "extraResources": [
+        { "from": "mpv", "to": "mpv", "filter": ["**/*"] },
+        { "from": "VLC", "to": "VLC", "filter": ["**/*"] }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowElevation": true,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "deleteAppDataOnUninstall": true,
+      "include": "build/installer.nsh",
+      "installerIcon": "build/icon.ico",
+      "uninstallerIcon": "build/icon.ico",
+      "shortcutName": "PlayTorrio",
+      "runAfterFinish": true
+    },
+    "mac": {
+      "icon": "build/icon.icns",
+      "category": "public.app-category.entertainment",
+      "target": [
+        {
+          "target": "dmg",
+          "arch": "universal"
+        },
+        {
+          "target": "zip",
+          "arch": "universal"
+        }
+      ],
+      "artifactName": "${productName}-mac-${arch}.${ext}",
+      "hardenedRuntime": false,
+      "identity": null,
+      "gatekeeperAssess": false,
+      "mergeASARs": true,
+      "singleArchFiles": "node_modules/!(ffmpeg-static)/**/*",
+      "entitlements": "build/entitlements.mac.plist",
+      "entitlementsInherit": "build/entitlements.mac.plist",
+      "extraResources": [
+        { "from": "mpv", "to": "mpv", "filter": ["**/*"] }
+      ],
+      "extendInfo": {
+        "NSMicrophoneUsageDescription": "PlayTorrio does not require microphone access.",
+        "NSCameraUsageDescription": "PlayTorrio does not require camera access.",
+        "NSAppleEventsUsageDescription": "PlayTorrio needs to control external media players."
+      }
+    },
+    "dmg": {
+      "title": "${productName}",
+      "icon": "build/icon.icns",
+      "contents": [
+        {
+          "x": 130,
+          "y": 220
+        },
+        {
+          "x": 410,
+          "y": 220,
+          "type": "link",
+          "path": "/Applications"
+        }
+      ],
+      "window": {
+        "width": 540,
+        "height": 400
+      }
+    },
+    "linux": {
+      "icon": "build/icon.png",
+      "target": [
+        {
+          "target": "AppImage",
+          "arch": ["x64"]
+        },
+        {
+          "target": "deb",
+          "arch": ["x64"]
+        }
+      ],
+      "category": "AudioVideo",
+      "executableName": "playtorrio",
+      "desktop": {
+        "Name": "PlayTorrio",
+        "Comment": "Stream Movies, TV Shows, Anime, Books, Music & Games",
+        "Categories": "AudioVideo;Video;Player;",
+        "StartupWMClass": "PlayTorrio",
+        "Terminal": false
+      },
+      "synopsis": "Stream Movies, TV Shows, Anime, Books, Music & Games",
+      "description": "All-in-one media center for streaming entertainment"
+    },
+    
+    "afterPack": "build/afterPack.cjs",
+    "afterAllArtifactBuild": "build/afterAllArtifactBuild.cjs",
+    "appImage": {
+      "artifactName": "${productName}.${ext}",
+      "license": null,
+      "synopsis": "Stream Movies, TV Shows, Anime, Books, Music & Games",
+      "description": "All-in-one media center",
+      "category": "AudioVideo"
+    }
+  }
+}

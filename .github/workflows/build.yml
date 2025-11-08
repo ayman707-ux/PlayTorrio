@@ -1,0 +1,250 @@
+name: Build Multi-Platform
+
+on:
+  push:
+    tags:
+      - 'v*'  # Triggers on version tags like v1.8.1
+  workflow_dispatch:  # Allows manual trigger from GitHub UI
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        
+    - name: Install dependencies
+      run: npm install
+      
+    - name: Setup Windows Players
+      run: |
+        # Extract MPV from RAR file in repo
+        if (Test-Path "mpv.rar") {
+          Write-Host "Extracting mpv.rar..."
+          7z x mpv.rar -y
+          
+          if (Test-Path "mpv/mpv.exe") {
+            Write-Host "✓ MPV extracted successfully"
+            Get-ChildItem mpv | Select-Object -First 5
+          } else {
+            Write-Host "Contents after extraction:"
+            Get-ChildItem -Recurse | Select-Object -First 20
+            Write-Host "✗ MPV extraction failed - mpv/mpv.exe not found!"
+            exit 1
+          }
+        } elseif (Test-Path "mpv.zip") {
+          Write-Host "Extracting mpv.zip..."
+          Expand-Archive -Path "mpv.zip" -DestinationPath "mpv-temp" -Force
+          
+          # Check if files are in root or nested folder
+          if (Test-Path "mpv-temp/mpv.exe") {
+            Move-Item -Path "mpv-temp" -Destination "mpv" -Force
+            Write-Host "✓ MPV extracted (root level)"
+          } elseif (Test-Path "mpv-temp/mpv/mpv.exe") {
+            Move-Item -Path "mpv-temp/mpv" -Destination "mpv" -Force
+            Remove-Item "mpv-temp" -Recurse -Force
+            Write-Host "✓ MPV extracted (nested folder)"
+          } else {
+            Write-Host "Contents of mpv-temp:"
+            Get-ChildItem "mpv-temp" -Recurse | Select-Object -First 20
+            Write-Host "✗ MPV extraction failed - mpv.exe not found!"
+            exit 1
+          }
+        } else {
+          Write-Host "✗ mpv.rar or mpv.zip not found in repo!"
+          exit 1
+        }
+        
+        # VLC extraction
+        if (Test-Path "vlc.rar") {
+          Write-Host "Extracting vlc.rar..."
+          7z x vlc.rar -y
+          
+          if (Test-Path "VLC/VLCPortable.exe") {
+            Write-Host "✓ VLC extracted successfully (VLCPortable.exe found)"
+          } elseif (Test-Path "VLC/App/vlc/vlc.exe") {
+            Write-Host "✓ VLC extracted successfully (vlc.exe found)"
+          } else {
+            Write-Host "Contents after VLC extraction:"
+            Get-ChildItem -Recurse | Select-Object -First 20
+            Write-Host "✗ VLC extraction failed - VLCPortable.exe or vlc.exe not found!"
+            exit 1
+          }
+        } elseif (Test-Path "VLC/VLCPortable.exe") {
+          Write-Host "✓ VLC already in repo (VLCPortable)"
+        } elseif (Test-Path "VLC/App/vlc/vlc.exe") {
+          Write-Host "✓ VLC already in repo"
+        } else {
+          Write-Host "⚠ VLC not found - continuing without it"
+        }
+      shell: pwsh
+        
+    - name: Verify Icons
+      run: |
+        if (!(Test-Path "build")) { mkdir build }
+        if (Test-Path "icon.ico") {
+          Copy-Item "icon.ico" "build/icon.ico" -Force
+          Write-Host "✓ Using icon.ico"
+        }
+        if (Test-Path "icon.png") {
+          Copy-Item "icon.png" "build/icon.png" -Force
+          Write-Host "✓ Copied icon.png for Linux"
+        }
+      shell: pwsh
+        
+    - name: Build Windows Installer
+      run: npm run build -- --win --publish always
+      env:
+        GH_TOKEN: ${{ secrets.GH_TOKEN }}
+
+  build-linux:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        
+    - name: Install dependencies
+      run: npm install
+      
+    - name: Create placeholder media dirs (Linux)
+      run: |
+        mkdir -p mpv VLC
+        echo "Created empty mpv/ and VLC/ directories to satisfy resource patterns"
+      shell: bash
+      
+    - name: Setup MPV for Linux
+      run: |
+        # For Linux, skip MPV bundling - users install system-wide
+        # The app will detect system MPV at /usr/bin/mpv automatically
+        echo "✓ Linux build configured (users install mpv via: sudo apt install mpv)"
+        
+    - name: Verify Icons
+      run: |
+        mkdir -p build
+        if [ -f "icon.png" ]; then
+          cp icon.png build/icon.png
+          echo "✓ Using icon.png"
+        fi
+        if [ -f "icon.ico" ]; then
+          cp icon.ico build/icon.ico
+          echo "✓ Copied icon.ico"
+        fi
+        
+    - name: Build Linux Packages
+      run: npm run build -- --linux --publish always
+      env:
+        GH_TOKEN: ${{ secrets.GH_TOKEN }}
+    
+    - name: Fix AppImage permissions
+      run: |
+        if ls dist/*.AppImage 1> /dev/null 2>&1; then
+          chmod +x dist/*.AppImage
+          echo "✓ Made AppImage executable"
+          ls -lh dist/*.AppImage
+        else
+          echo "⚠ No AppImage found"
+        fi
+
+  build-macos:
+    runs-on: macos-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+
+    # Signing is disabled by request; skip all Apple signing/notarization steps
+    - name: Disable mac updater and signing
+      run: |
+        echo "FORCE_ENABLE_UPDATER=0" >> $GITHUB_ENV
+        echo "Skipping macOS signing and notarization"
+      shell: bash
+        
+    - name: Install dependencies
+      run: npm install
+      
+    - name: Download MPV for macOS
+      run: |
+        # Download MPV portable (with fallback and error handling)
+        if ! curl -fL https://laboratory.stolendata.net/~djinn/mpv_osx/mpv-latest.tar.gz -o mpv.tar.gz; then
+          echo "⚠ MPV download failed from primary source"
+          # Try alternative community mirror
+          if ! curl -fL https://nightly.link/IntersectRaven/mpv-appimage/workflows/build/master/mpv-x86_64.AppImage.zip -o mpv.zip; then
+            echo "✗ All MPV download sources failed. Users will need system MPV (/Applications/mpv.app)"
+            exit 0  # Don't fail the build, just skip MPV bundling
+          fi
+        fi
+
+        mkdir -p mpv
+        if [ -f mpv.tar.gz ]; then
+          echo "✓ Extracting mpv.tar.gz..."
+          tar -xzf mpv.tar.gz -C mpv || true
+        elif [ -f mpv.zip ]; then
+          echo "✓ Extracting mpv.zip..."
+          unzip -o mpv.zip -d mpv || true
+        fi
+
+        # Normalize layout: ensure mpv/mpv.app exists at root
+        if [ -d "mpv/mpv.app" ]; then
+          echo "✓ mpv.app present at mpv/mpv.app"
+        else
+          found=$(find mpv -maxdepth 3 -name "mpv.app" | head -n 1)
+          if [ -n "$found" ]; then
+            echo "Moving $found to mpv/mpv.app"
+            rm -rf mpv/mpv.app
+            mv "$found" mpv/
+          else
+            echo "⚠ mpv.app not found after extraction; continuing without bundled MPV"
+          fi
+        fi
+
+        # Ensure binary is executable if present
+        if [ -f "mpv/mpv.app/Contents/MacOS/mpv" ]; then
+          chmod +x "mpv/mpv.app/Contents/MacOS/mpv"
+          echo "✓ Marked MPV binary as executable"
+          ls -la "mpv/mpv.app/Contents/MacOS/mpv"
+        fi
+        
+    - name: Verify Icon
+      run: |
+        mkdir -p build
+        if [ -f "icon.icns" ]; then
+          cp icon.icns build/icon.icns
+          echo "✓ Using existing icon.icns"
+        elif [ -f "build/icon.icns" ]; then
+          echo "✓ Icon already in build directory"
+        else
+          echo "Warning: icon.icns not found, using default Electron icon"
+        fi
+        
+    - name: Build macOS DMG (unsigned)
+      run: npm run build -- --mac --publish always
+      env:
+        GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        CSC_IDENTITY_AUTO_DISCOVERY: false
+        FORCE_ENABLE_UPDATER: ${{ env.FORCE_ENABLE_UPDATER }}
+    
+    - name: Fix macOS Gatekeeper Issues
+      run: |
+        # Remove quarantine attributes from built app
+        echo "Removing quarantine attributes to prevent 'damaged app' errors..."
+        xattr -cr dist/mac*/PlayTorrio.app 2>/dev/null || true
+        xattr -cr dist/mac-arm64*/PlayTorrio.app 2>/dev/null || true
+        echo "✓ Quarantine attributes removed"
+

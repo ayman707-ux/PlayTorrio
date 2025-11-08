@@ -1,0 +1,22 @@
+# Ignore build outputs
+node_modules/
+dist/
+*.dmg
+*.exe
+*.AppImage
+*.deb
+
+# NOTE: mpv/ and VLC/ folders are NOT ignored - they contain Windows portable players
+# GitHub Actions will download them for macOS/Linux builds automatically
+
+# Ignore OS files
+.DS_Store
+Thumbs.db
+
+# Ignore logs
+*.log
+npm-debug.log*
+
+# Ignore IDE files
+.vscode/
+.idea/
