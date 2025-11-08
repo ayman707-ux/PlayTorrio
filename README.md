@@ -158,6 +158,7 @@ This project is licensed under the CUSTOM License - see the LICENSE file for det
 Found a bug? Have a feature request?
 - Open an issue on [GitHub](https://github.com/ayman707-ux/PlayTorrio/issues)
 - Email: aymanisthedude1@gmail.com
+- Discord [LINK](https://discord.com/invite/bbkVHRHnRk)
 
 ## 🙏 Acknowledgments
 
