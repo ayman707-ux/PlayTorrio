@@ -1,6 +1,6 @@
 {
   "name": "playtorrio",
-  "version": "1.8.2",
+  "version": "1.8.3",
   "description": "Ayman's PlayTorrio an all in one media center",
   "author": {
     "name": "ayman",
@@ -171,7 +171,13 @@
       "license": null,
       "synopsis": "Stream Movies, TV Shows, Anime, Books, Music & Games",
       "description": "All-in-one media center",
-      "category": "AudioVideo"
+      "category": "AudioVideo",
+      "desktop": {
+        "Exec": "%f",
+        "Terminal": "false",
+        "Type": "Application",
+        "Categories": "AudioVideo;Video;Player;"
+      }
     }
   }
 }

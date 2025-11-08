@@ -26,20 +26,12 @@ const dnsLookup = promisify(dns.lookup);
 const require = createRequire(import.meta.url);
 
 // ----------------------
-// Linux Sandbox Handling + AppImage Support
+// Linux Sandbox Handling
 // ----------------------
 if (process.platform === 'linux') {
-    // Disable GPU sandbox on Linux for better AppImage compatibility
+    // Standard flags for AppImage compatibility
     app.commandLine.appendSwitch('--no-sandbox');
     app.commandLine.appendSwitch('--disable-gpu-sandbox');
-    app.commandLine.appendSwitch('--disable-setuid-sandbox');
-    app.commandLine.appendSwitch('--disable-dev-shm-usage');
-    
-    // Fix for AppImage not finding resources
-    if (process.env.APPIMAGE) {
-        app.commandLine.appendSwitch('--no-zygote');
-        app.commandLine.appendSwitch('--single-process');
-    }
 }
 
 // ----------------------
