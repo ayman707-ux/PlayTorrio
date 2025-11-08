@@ -122,7 +122,8 @@ function setupAutoUpdater() {
             return;
         }
 
-    autoUpdater.autoDownload = true;
+    // On macOS we do NOT auto-download; we only notify users to manually grab the DMG
+    autoUpdater.autoDownload = process.platform !== 'darwin';
     // We want to show the NSIS installer UI (non-silent) and exit immediately once ready
     // So do NOT auto-install on app quit; we will explicitly quitAndInstall when downloaded
     autoUpdater.autoInstallOnAppQuit = false;
@@ -143,20 +144,40 @@ function setupAutoUpdater() {
         });
 
         autoUpdater.on('update-available', (info) => {
+            const releasesUrl = 'https://github.com/ayman707-ux/PlayTorrioMAC/releases/latest';
             console.log('[Updater] Update available. New version:', info?.version || 'unknown', 'Current:', app.getVersion());
             try {
                 if (mainWindow && !mainWindow.isDestroyed() && mainWindow.webContents) {
                     // Ensure renderer is ready before sending
                     if (mainWindow.webContents.isLoading()) {
                         mainWindow.webContents.once('did-finish-load', () => {
-                            mainWindow.webContents.send('update-available', info || {});
+                            if (process.platform === 'darwin') {
+                                // macOS: notify only; no auto-download/install
+                                mainWindow.webContents.send('update-available', {
+                                    ...(info || {}),
+                                    manual: true,
+                                    platform: 'darwin',
+                                    downloadUrl: releasesUrl,
+                                });
+                            } else {
+                                mainWindow.webContents.send('update-available', info || {});
+                            }
                         });
                     } else {
-                        mainWindow.webContents.send('update-available', info || {});
+                        if (process.platform === 'darwin') {
+                            mainWindow.webContents.send('update-available', {
+                                ...(info || {}),
+                                manual: true,
+                                platform: 'darwin',
+                                downloadUrl: releasesUrl,
+                            });
+                        } else {
+                            mainWindow.webContents.send('update-available', info || {});
+                        }
                     }
                 }
             } catch(_) {}
-            // Auto-download will start automatically, so the download-progress event will follow
+            // On Windows/Linux, auto-download will start; on macOS, we stop here and rely on manual download
         });
 
         autoUpdater.on('update-not-available', (info) => {
@@ -203,6 +224,22 @@ function setupAutoUpdater() {
         });
 
         autoUpdater.on('update-downloaded', async (info) => {
+            if (process.platform === 'darwin') {
+                // Should not happen because autoDownload=false on mac, but guard just in case
+                const releasesUrl = 'https://github.com/ayman707-ux/PlayTorrioMAC/releases/latest';
+                console.log('[Updater] macOS: manual update required. Skipping auto-install.');
+                try {
+                    if (mainWindow && !mainWindow.isDestroyed()) {
+                        mainWindow.webContents.send('update-available', {
+                            ...(info || {}),
+                            manual: true,
+                            platform: 'darwin',
+                            downloadUrl: releasesUrl,
+                        });
+                    }
+                } catch(_) {}
+                return;
+            }
             console.log('[Updater] Update downloaded. Ready to install version:', info?.version || 'unknown', 'Current:', app.getVersion());
             try {
                 if (mainWindow && !mainWindow.isDestroyed()) {
@@ -504,6 +541,13 @@ function resolveMpvExe() {
 function resolveVlcExe() {
     try {
         const candidates = [];
+        const tried = new Set();
+        const pushUnique = (p) => { if (p && !tried.has(p)) { candidates.push(p); tried.add(p); } };
+        const envVlc = process.env.VLC_PATH;
+        if (envVlc) {
+            // User override via environment variable
+            pushUnique(envVlc);
+        }
         
         if (process.platform === 'darwin') {
             // macOS: Look for VLC.app bundle
@@ -518,53 +562,90 @@ function resolveVlcExe() {
             // System-wide fallback
             candidates.push('/Applications/VLC.app/Contents/MacOS/VLC');
         } else if (process.platform === 'win32') {
-            // Windows: VLC Portable structure is VLC/App/vlc/vlc.exe
+            // Windows: Consider portable, extraResources, system installs, PortableApps and user overrides
             const execDir = path.dirname(process.execPath);
             const resourcesPath = process.resourcesPath;
-            
-            // PACKAGED MODE - all possible resource locations
+            const programFiles = process.env['ProgramFiles'] || 'C:/Program Files';
+            const programFilesX86 = process.env['ProgramFiles(x86)'] || 'C:/Program Files (x86)';
+            const localAppData = process.env['LOCALAPPDATA'] || path.join(process.env['USERPROFILE'] || 'C:/Users/Default', 'AppData', 'Local');
+            const portableAppsRoot = process.env['PORTABLEAPPS'] || path.join(process.env['USERPROFILE'] || 'C:/Users/Default', 'PortableApps');
+
+            // PACKAGED MODE - resource paths
             if (resourcesPath) {
-                candidates.push(path.join(resourcesPath, 'app.asar.unpacked', 'VLC', 'App', 'vlc', 'vlc.exe'));
-                candidates.push(path.join(resourcesPath, 'VLC', 'App', 'vlc', 'vlc.exe'));
-                candidates.push(path.join(resourcesPath, 'app.asar.unpacked', 'vlc', 'vlc.exe'));
-                candidates.push(path.join(resourcesPath, 'vlc', 'vlc.exe'));
+                pushUnique(path.join(resourcesPath, 'app.asar.unpacked', 'VLC', 'App', 'vlc', 'vlc.exe'));
+                pushUnique(path.join(resourcesPath, 'VLC', 'App', 'vlc', 'vlc.exe'));
+                pushUnique(path.join(resourcesPath, 'app.asar.unpacked', 'vlc', 'vlc.exe'));
+                pushUnique(path.join(resourcesPath, 'vlc', 'vlc.exe'));
             }
-            
-            // extraResources copies to root of app
-            candidates.push(path.join(execDir, 'VLC', 'App', 'vlc', 'vlc.exe'));
-            candidates.push(path.join(execDir, 'resources', 'VLC', 'App', 'vlc', 'vlc.exe'));
-            candidates.push(path.join(execDir, 'resources', 'app.asar.unpacked', 'VLC', 'App', 'vlc', 'vlc.exe'));
-            
-            // DEV MODE - next to main.js
-            candidates.push(path.join(__dirname, 'VLC', 'App', 'vlc', 'vlc.exe'));
-            candidates.push(path.join(__dirname, 'vlc', 'vlc.exe'));
-            
-            // Additional fallbacks
-            candidates.push(path.join(execDir, '..', 'VLC', 'App', 'vlc', 'vlc.exe'));
-            candidates.push(path.join(execDir, 'vlc', 'vlc.exe'));
+            // extraResources near executable
+            pushUnique(path.join(execDir, 'VLC', 'App', 'vlc', 'vlc.exe'));
+            pushUnique(path.join(execDir, 'resources', 'VLC', 'App', 'vlc', 'vlc.exe'));
+            pushUnique(path.join(execDir, 'resources', 'app.asar.unpacked', 'VLC', 'App', 'vlc', 'vlc.exe'));
+            // Dev mode
+            pushUnique(path.join(__dirname, 'VLC', 'App', 'vlc', 'vlc.exe'));
+            pushUnique(path.join(__dirname, 'vlc', 'vlc.exe'));
+            // Additional relative fallbacks
+            pushUnique(path.join(execDir, '..', 'VLC', 'App', 'vlc', 'vlc.exe'));
+            pushUnique(path.join(execDir, 'vlc', 'vlc.exe'));
+
+            // Standard installer locations (VLC official)
+            pushUnique(path.join(programFiles, 'VideoLAN', 'VLC', 'vlc.exe'));
+            pushUnique(path.join(programFilesX86, 'VideoLAN', 'VLC', 'vlc.exe'));
+
+            // Windows Store / sandboxed style (rare, but attempt)
+            pushUnique(path.join(localAppData, 'Programs', 'VLC', 'vlc.exe'));
+            pushUnique(path.join(localAppData, 'VideoLAN', 'VLC', 'vlc.exe'));
+
+            // PortableApps structures
+            pushUnique(path.join(portableAppsRoot, 'VLCPortable', 'App', 'vlc', 'vlc.exe'));
+            pushUnique(path.join(portableAppsRoot, 'VLCPortable', 'VLCPortable.exe')); // Portable launcher (we prefer direct VLC but fallback)
+
+            // Common user-downloaded unzip patterns
+            pushUnique(path.join(execDir, 'VideoLAN', 'VLC', 'vlc.exe'));
+            pushUnique(path.join(execDir, 'App', 'vlc', 'vlc.exe'));
+            pushUnique(path.join(execDir, 'bin', 'vlc.exe'));
+            pushUnique(path.join(execDir, 'vlc.exe'));
+
+            // Environment variable override already added (envVlc)
+            if (envVlc && envVlc.toLowerCase().endsWith('vlcportable.exe')) {
+                // If user pointed to VLCPortable.exe, try deriving real vlc.exe path
+                pushUnique(path.join(path.dirname(envVlc), 'App', 'vlc', 'vlc.exe'));
+            }
         } else {
             // Linux: Look for vlc binary
             if (process.resourcesPath) {
-                candidates.push(path.join(process.resourcesPath, 'app.asar.unpacked', 'vlc', 'vlc'));
-                candidates.push(path.join(process.resourcesPath, 'vlc', 'vlc'));
+                pushUnique(path.join(process.resourcesPath, 'app.asar.unpacked', 'vlc', 'vlc'));
+                pushUnique(path.join(process.resourcesPath, 'vlc', 'vlc'));
             }
-            candidates.push(path.join(__dirname, 'vlc', 'vlc'));
-            candidates.push(path.join(path.dirname(process.execPath), 'vlc', 'vlc'));
+            pushUnique(path.join(__dirname, 'vlc', 'vlc'));
+            pushUnique(path.join(path.dirname(process.execPath), 'vlc', 'vlc'));
             // System-wide fallback for Linux
-            candidates.push('/usr/bin/vlc');
-            candidates.push('/usr/local/bin/vlc');
+            pushUnique('/usr/bin/vlc');
+            pushUnique('/usr/local/bin/vlc');
+            pushUnique('/snap/bin/vlc');
+            pushUnique('/flatpak/exports/bin/org.videolan.VLC');
         }
 
-        console.log('[VLC] Searching for VLC in', candidates.length, 'locations...');
+        console.log('[VLC] Searching for VLC in', candidates.length, 'unique locations...');
         for (const p of candidates) {
             try { 
                 if (fs.existsSync(p)) {
+                    if (p.toLowerCase().endsWith('vlcportable.exe')) {
+                        // Prefer the real VLC binary bundled within PortableApps layout
+                        const real = path.join(path.dirname(p), 'App', 'vlc', 'vlc.exe');
+                        if (fs.existsSync(real)) {
+                            console.log('[VLC] ✓ Found VLCPortable launcher; using embedded binary instead:', real);
+                            return real;
+                        }
+                        console.warn('[VLC] Found VLCPortable.exe; using it as last resort. Consider bundling VLC/App/vlc/vlc.exe');
+                        return p;
+                    }
                     console.log('[VLC] ✓ Found executable at:', p);
                     return p;
                 }
             } catch {}
         }
-        console.log('[VLC] ✗ Not found. Checked:', candidates.slice(0, 8).join(', '), '+ more...');
+        console.log('[VLC] ✗ Not found. First checked paths:', candidates.slice(0, 8).join(', '), '... total tried:', candidates.length);
     } catch (err) {
         console.error('[VLC] Resolver error:', err);
     }
