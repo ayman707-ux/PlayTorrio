@@ -149,8 +149,7 @@
         "Comment": "Stream Movies, TV Shows, Anime, Books, Music & Games",
         "Categories": "AudioVideo;Video;Player;",
         "StartupWMClass": "PlayTorrio",
-        "Terminal": false,
-        "Exec": "playtorrio --no-sandbox %U"
+        "Terminal": false
       }
     },
     
