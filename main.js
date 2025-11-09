@@ -146,6 +146,14 @@ function setupAutoUpdater() {
             return;
         }
 
+    // Configure updater to only check current platform
+    autoUpdater.setFeedURL({
+        provider: 'github',
+        owner: 'ayman707-ux',
+        repo: 'PlayTorrio',
+        releaseType: 'release'
+    });
+
     // On macOS we do NOT auto-download; we only notify users to manually grab the DMG
     autoUpdater.autoDownload = process.platform !== 'darwin';
     // We want to show the NSIS installer UI (non-silent) and exit immediately once ready
@@ -1069,21 +1077,68 @@ function createWindow() {
             }
         });
     });
+    
+    // Log loading events for debugging
+    win.webContents.on('did-start-loading', () => {
+        console.log('[Window] Started loading...');
+    });
+    
+    win.webContents.on('did-finish-load', () => {
+        console.log('[Window] Finished loading successfully');
+    });
+    
+    win.webContents.on('did-fail-load', (event, errorCode, errorDescription, validatedURL) => {
+        console.error('[Window] Failed to load:', errorCode, errorDescription, validatedURL);
+        // Retry on failure
+        if (errorCode !== -3) { // -3 is ERR_ABORTED (user navigated away)
+            setTimeout(() => {
+                if (win && !win.isDestroyed()) {
+                    console.log('[Window] Retrying load after failure...');
+                    win.loadURL('http://localhost:3000').catch(e => {
+                        console.error('[Window] Retry failed:', e);
+                    });
+                }
+            }, 2000);
+        }
+    });
 
     // Wait for server to be ready before loading
     const loadWhenReady = async () => {
-        const maxAttempts = 20;
+        const maxAttempts = 30;
         const delay = 500;
+        
+        console.log('[Window] Waiting for server to be ready...');
         
         for (let i = 0; i < maxAttempts; i++) {
             try {
-                const response = await got('http://localhost:3000', { timeout: { request: 1000 }, retry: { limit: 0 } });
+                const response = await got('http://localhost:3000', { 
+                    timeout: { request: 2000 }, 
+                    retry: { limit: 0 },
+                    throwHttpErrors: false 
+                });
                 if (response.statusCode === 200) {
                     console.log('[Window] Server ready, loading UI...');
-                    win.loadURL('http://localhost:3000');
-                    return;
+                    
+                    // Ensure window is ready to load
+                    if (win && !win.isDestroyed()) {
+                        try {
+                            await win.loadURL('http://localhost:3000');
+                            console.log('[Window] UI loaded successfully');
+                            return;
+                        } catch (loadErr) {
+                            console.error('[Window] Failed to load URL:', loadErr);
+                            // Retry once
+                            await new Promise(resolve => setTimeout(resolve, 1000));
+                            await win.loadURL('http://localhost:3000');
+                            return;
+                        }
+                    } else {
+                        console.error('[Window] Window destroyed before loading');
+                        return;
+                    }
                 }
             } catch (err) {
+                console.log(`[Window] Server check attempt ${i + 1}/${maxAttempts}: ${err.message}`);
                 if (i < maxAttempts - 1) {
                     await new Promise(resolve => setTimeout(resolve, delay));
                 }
@@ -1091,12 +1146,28 @@ function createWindow() {
         }
         
         // Fallback: load anyway after timeout
-        console.warn('[Window] Server not responding, loading anyway...');
-        win.loadURL('http://localhost:3000');
+        console.warn('[Window] Server did not respond after 15s, attempting to load anyway...');
+        if (win && !win.isDestroyed()) {
+            try {
+                await win.loadURL('http://localhost:3000');
+            } catch (err) {
+                console.error('[Window] Failed to load URL in fallback:', err);
+            }
+        }
     };
     
-    loadWhenReady().catch(() => {
-        setTimeout(() => win.loadURL('http://localhost:3000'), 2000);
+    // Start loading with error handling
+    loadWhenReady().catch((err) => {
+        console.error('[Window] loadWhenReady failed:', err);
+        // Last resort: try to load after delay
+        setTimeout(() => {
+            if (win && !win.isDestroyed()) {
+                console.log('[Window] Final attempt to load URL...');
+                win.loadURL('http://localhost:3000').catch(e => {
+                    console.error('[Window] Final load attempt failed:', e);
+                });
+            }
+        }, 2000);
     });
     
     return win;
