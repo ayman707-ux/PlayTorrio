@@ -37,17 +37,35 @@ if (process.platform === 'linux') {
 }
 
 // ----------------------
-// Auto-create config directory
+// Set persistent userData path to prevent data loss on updates
+// CRITICAL: Must be done BEFORE app.ready to preserve localStorage/IndexedDB
 // ----------------------
-const configDir = path.join(os.homedir(), '.config', 'playtorrio');
-try {
-    if (!fs.existsSync(configDir)) {
-        fs.mkdirSync(configDir, { recursive: true, mode: 0o755 });
-        console.log('[Config] Created directory:', configDir);
-    }
-} catch (err) {
-    console.warn('[Config] Failed to create config directory:', err.message);
+let persistentUserDataPath;
+if (process.platform === 'win32') {
+    // Windows: Use APPDATA/PlayTorrio (survives updates)
+    persistentUserDataPath = path.join(process.env.APPDATA || path.join(os.homedir(), 'AppData', 'Roaming'), 'PlayTorrio');
+} else if (process.platform === 'darwin') {
+    // macOS: Use ~/Library/Application Support/PlayTorrio
+    persistentUserDataPath = path.join(os.homedir(), 'Library', 'Application Support', 'PlayTorrio');
+} else {
+    // Linux: Use ~/.config/playtorrio
+    persistentUserDataPath = path.join(os.homedir(), '.config', 'playtorrio');
 }
+
+try {
+    if (!fs.existsSync(persistentUserDataPath)) {
+        fs.mkdirSync(persistentUserDataPath, { recursive: true, mode: 0o755 });
+        console.log('[UserData] Created persistent directory:', persistentUserDataPath);
+    }
+    // Override Electron's default userData path to prevent deletion on updates
+    app.setPath('userData', persistentUserDataPath);
+    console.log('[UserData] Set to:', app.getPath('userData'));
+} catch (err) {
+    console.error('[UserData] Failed to set persistent path:', err.message);
+}
+
+// Keep configDir for backward compatibility
+const configDir = persistentUserDataPath;
 
 let httpServer;
 let webtorrentClient;
@@ -1012,7 +1030,9 @@ function createWindow() {
             allowRunningInsecureContent: true, // Allow mixed content
             experimentalFeatures: true, // Enable experimental features for better iframe support
             spellcheck: false,
-            backgroundThrottling: true
+            backgroundThrottling: true,
+            // Use persistent partition to preserve localStorage/IndexedDB across updates
+            partition: 'persist:playtorrio'
         },
         backgroundColor: '#120a1f',
     });
