@@ -170,38 +170,37 @@ function setupAutoUpdater() {
         autoUpdater.on('update-available', (info) => {
             const releasesUrl = 'https://github.com/ayman707-ux/PlayTorrio/releases/latest';
             console.log('[Updater] Update available. New version:', info?.version || 'unknown', 'Current:', app.getVersion());
+            
+            if (process.platform === 'darwin') {
+                // macOS: Show native notification, don't send to renderer (no progress bar)
+                const { Notification } = require('electron');
+                if (Notification.isSupported()) {
+                    const notification = new Notification({
+                        title: 'PlayTorrio Update Available',
+                        body: `Version ${info?.version || 'newer'} is available. Click to download the new DMG.`,
+                        silent: false
+                    });
+                    notification.on('click', () => {
+                        shell.openExternal(releasesUrl);
+                    });
+                    notification.show();
+                }
+                console.log('[Updater] macOS: User notified via system notification. Manual download required.');
+                return; // Don't send to renderer, no progress UI
+            }
+            
+            // Windows/Linux: Send to renderer for progress UI
             try {
                 if (mainWindow && !mainWindow.isDestroyed() && mainWindow.webContents) {
-                    // Ensure renderer is ready before sending
                     if (mainWindow.webContents.isLoading()) {
                         mainWindow.webContents.once('did-finish-load', () => {
-                            if (process.platform === 'darwin') {
-                                // macOS: notify only; no auto-download/install
-                                mainWindow.webContents.send('update-available', {
-                                    ...(info || {}),
-                                    manual: true,
-                                    platform: 'darwin',
-                                    downloadUrl: releasesUrl,
-                                });
-                            } else {
-                                mainWindow.webContents.send('update-available', info || {});
-                            }
+                            mainWindow.webContents.send('update-available', info || {});
                         });
                     } else {
-                        if (process.platform === 'darwin') {
-                            mainWindow.webContents.send('update-available', {
-                                ...(info || {}),
-                                manual: true,
-                                platform: 'darwin',
-                                downloadUrl: releasesUrl,
-                            });
-                        } else {
-                            mainWindow.webContents.send('update-available', info || {});
-                        }
+                        mainWindow.webContents.send('update-available', info || {});
                     }
                 }
             } catch(_) {}
-            // On Windows/Linux, auto-download will start; on macOS, we stop here and rely on manual download
         });
 
         autoUpdater.on('update-not-available', (info) => {

@@ -1,6 +1,6 @@
 {
   "name": "playtorrio",
-  "version": "1.8.5",
+  "version": "1.8.6",
   "description": "Ayman's PlayTorrio an all in one media center",
   "author": {
     "name": "ayman",
@@ -98,19 +98,17 @@
       "target": [
         {
           "target": "dmg",
-          "arch": "universal"
+          "arch": ["x64", "arm64"]
         },
         {
           "target": "zip",
-          "arch": "universal"
+          "arch": ["x64", "arm64"]
         }
       ],
       "artifactName": "${productName}-mac-${arch}.${ext}",
       "hardenedRuntime": false,
       "identity": null,
       "gatekeeperAssess": false,
-      "mergeASARs": true,
-      "singleArchFiles": "node_modules/!(ffmpeg-static)/**/*",
       "entitlements": "build/entitlements.mac.plist",
       "entitlementsInherit": "build/entitlements.mac.plist",
       "extendInfo": {

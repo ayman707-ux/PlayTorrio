@@ -11095,6 +11095,15 @@ Your browser does not support the video tag.
         }
         const openMPVBtn = document.getElementById('openMPVBtn');
         const openVLCBtn = document.getElementById('openVLCBtn');
+        
+        // On macOS, change MPV button to IINA
+        if (window.electronAPI && window.electronAPI.platform === 'darwin') {
+            if (openMPVBtn) {
+                openMPVBtn.innerHTML = '<i class="fas fa-external-link-alt"></i> Open in IINA';
+                openMPVBtn.id = 'openIINABtn'; // Change ID for clarity
+            }
+        }
+        
         const copyStreamBtn = document.getElementById('copyStreamBtn');
     const playNowBtn = document.getElementById('playNowBtn');
     const streamSourceBadge = document.getElementById('streamSourceBadge');
@@ -24680,12 +24689,18 @@ Your browser does not support the video tag.
                 showNotification('No file selected to play');
                 return;
             }
-            if (!window.electronAPI || !window.electronAPI.openInMPV) {
-                showNotification('MPV integration not available in this environment');
+            
+            // On macOS, use IINA instead of MPV
+            const isMac = window.electronAPI && window.electronAPI.platform === 'darwin';
+            const playerName = isMac ? 'IINA' : 'MPV';
+            const apiMethod = isMac ? 'openInIINA' : 'openInMPV';
+            
+            if (!window.electronAPI || !window.electronAPI[apiMethod]) {
+                showNotification(`${playerName} integration not available in this environment`);
                 return;
             }
             
-            // Update Discord presence for MPV streaming
+            // Update Discord presence for external player streaming
             // Always use TMDB title, not torrent filename
             const title = currentContent?.title || currentContent?.name || 'Video';
             
@@ -24716,11 +24731,17 @@ Your browser does not support the video tag.
                 infoHash: (currentTorrentData && currentTorrentData.infoHash) ? currentTorrentData.infoHash : null,
                 startSeconds: (resumeInfo && typeof resumeInfo.position === 'number' && resumeInfo.position > 10) ? Math.floor(resumeInfo.position) : undefined
             };
-            const result = await window.electronAPI.openInMPV(data);
+            
+            const result = await window.electronAPI[apiMethod](data);
             if (result.success) {
-                showNotification('MPV launched - Please Wait! Watch out for a new window', 'success', 5000);
+                showNotification(`${playerName} launched - Please Wait! Watch out for a new window`, 'success', 5000);
             } else {
-                showNotification(`Error: ${result.message}`);
+                // Special handling for IINA not installed
+                if (isMac && result.message && result.message.includes('not installed')) {
+                    showNotification('IINA not installed. Please download it from https://iina.io', 'error', 7000);
+                } else {
+                    showNotification(`Error: ${result.message}`);
+                }
             }
         }
 
