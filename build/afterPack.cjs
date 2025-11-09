@@ -1,45 +1,29 @@
-// afterPack.cjs - CommonJS version (electron-builder requires require())
-// Fix Linux AppImage permissions and chrome-sandbox
-
+// afterPack.cjs - Set executable permissions for Linux builds
 const fs = require('fs');
 const path = require('path');
-const { spawnSync } = require('child_process');
 
 module.exports = async function afterPack(context) {
+  console.log('[afterPack] Running for platform:', context.electronPlatformName);
+  
   try {
-    // Linux: Set AppImage executable and fix chrome-sandbox
     if (context.electronPlatformName === 'linux') {
       const appOutDir = context.appOutDir;
+      const executableName = context.packager.executableName || 'playtorrio';
+      const executablePath = path.join(appOutDir, executableName);
       
-      // Fix chrome-sandbox permissions
-      const chromeSandbox = path.join(appOutDir, 'chrome-sandbox');
-      if (fs.existsSync(chromeSandbox)) {
-        try {
-          console.log('[afterPack] Found chrome-sandbox, attempting to set 4755 permissions');
-          fs.chmodSync(chromeSandbox, 0o4755);
-          const res = spawnSync('sudo', ['chown', 'root:root', chromeSandbox], { stdio: 'inherit' });
-          if (res.status !== 0) {
-            console.warn('[afterPack] Could not chown root:root (continuing).');
-          } else {
-            console.log('[afterPack] Successfully chowned chrome-sandbox to root:root');
-          }
-        } catch (e) {
-          console.warn('[afterPack] Failed to adjust chrome-sandbox permissions:', e.message);
-        }
-      }
-      
-      // Set executable permissions on the main app binary
-      const executablePath = path.join(appOutDir, context.packager.executableName);
+      // Set executable permission on main binary
       if (fs.existsSync(executablePath)) {
-        try {
-          fs.chmodSync(executablePath, 0o755);
-          console.log('[afterPack] Set executable permission on:', executablePath);
-        } catch (e) {
-          console.warn('[afterPack] Failed to chmod executable:', e.message);
-        }
+        fs.chmodSync(executablePath, 0o755);
+        console.log('[afterPack] ✓ Set executable permission on:', executablePath);
+      } else {
+        console.warn('[afterPack] ⚠ Executable not found:', executablePath);
       }
+      
+      // Don't try to fix chrome-sandbox - we're running with --no-sandbox anyway
+      console.log('[afterPack] ✓ Linux build prepared (sandboxing disabled in app)');
     }
-  } catch (e) {
-    console.warn('[afterPack] Error:', e.message);
+  } catch (error) {
+    console.error('[afterPack] Error:', error.message);
+    // Don't fail the build
   }
 };

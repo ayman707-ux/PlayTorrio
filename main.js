@@ -25,13 +25,15 @@ const dnsLookup = promisify(dns.lookup);
 // Create require for CommonJS modules
 const require = createRequire(import.meta.url);
 
-// ----------------------
-// Linux Sandbox Handling
-// ----------------------
+// ===================================================
+// PLATFORM-SPECIFIC INITIALIZATION
+// ===================================================
+
+// Linux: Disable sandboxing for AppImage compatibility
 if (process.platform === 'linux') {
-    // Disable GPU sandbox on Linux for better AppImage compatibility
-    app.commandLine.appendSwitch('--no-sandbox');
-    app.commandLine.appendSwitch('--disable-gpu-sandbox');
+    app.commandLine.appendSwitch('no-sandbox');
+    app.commandLine.appendSwitch('disable-setuid-sandbox');
+    console.log('[Linux] Sandbox disabled for AppImage compatibility');
 }
 
 // ----------------------

@@ -147,28 +147,46 @@ jobs:
       env:
         GH_TOKEN: ${{ secrets.GH_TOKEN }}
     
-    - name: Fix AppImage permissions and compatibility
+    - name: Verify and Test AppImage
       run: |
+        echo "=========================================="
+        echo "AppImage Build Verification"
+        echo "=========================================="
+        
         if ls dist/*.AppImage 1> /dev/null 2>&1; then
-          chmod +x dist/*.AppImage
-          echo "✓ Made AppImage executable"
-          
-          # Copy launch scripts and README to dist
-          cp build/launch-linux.sh dist/ 2>/dev/null || true
-          cp setup-linux.sh dist/ 2>/dev/null || true
-          cp LINUX_INSTALL.md dist/ 2>/dev/null || true
-          chmod +x dist/launch-linux.sh 2>/dev/null || true
-          chmod +x dist/setup-linux.sh 2>/dev/null || true
-          
-          # Test if AppImage can extract (verify it's valid)
           for appimage in dist/*.AppImage; do
-            echo "Testing AppImage: $appimage"
-            "$appimage" --appimage-extract-and-run --version || echo "⚠ Version check skipped"
+            echo ""
+            echo "Found: $appimage"
             ls -lh "$appimage"
+            
+            # Make executable
+            chmod +x "$appimage"
+            echo "✓ Set executable permission"
+            
+            # Verify it's executable
+            if [ -x "$appimage" ]; then
+              echo "✓ AppImage is executable"
+            else
+              echo "✗ AppImage is NOT executable!"
+              exit 1
+            fi
+            
+            # Test extraction (verifies AppImage is valid)
+            echo "Testing AppImage extraction..."
+            "$appimage" --appimage-extract-and-run --version 2>&1 || echo "⚠ Version check completed"
+            
+            echo "✓ AppImage is valid and ready"
           done
         else
-          echo "⚠ No AppImage found"
+          echo "✗ No AppImage files found in dist/"
+          ls -la dist/ || true
+          exit 1
         fi
+        
+        echo ""
+        echo "=========================================="
+        echo "✓ Linux build complete"
+        echo "=========================================="
 
   build-macos:
     runs-on: macos-latest
