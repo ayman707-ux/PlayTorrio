@@ -1071,8 +1071,35 @@ function createWindow() {
         });
     });
 
-    // Always load the local server so all API and subtitle URLs are same-origin HTTP
-    setTimeout(() => win.loadURL('http://localhost:3000'), app.isPackaged ? 500 : 2000);
+    // Wait for server to be ready before loading
+    const loadWhenReady = async () => {
+        const maxAttempts = 20;
+        const delay = 500;
+        
+        for (let i = 0; i < maxAttempts; i++) {
+            try {
+                const response = await got('http://localhost:3000', { timeout: { request: 1000 }, retry: { limit: 0 } });
+                if (response.statusCode === 200) {
+                    console.log('[Window] Server ready, loading UI...');
+                    win.loadURL('http://localhost:3000');
+                    return;
+                }
+            } catch (err) {
+                if (i < maxAttempts - 1) {
+                    await new Promise(resolve => setTimeout(resolve, delay));
+                }
+            }
+        }
+        
+        // Fallback: load anyway after timeout
+        console.warn('[Window] Server not responding, loading anyway...');
+        win.loadURL('http://localhost:3000');
+    };
+    
+    loadWhenReady().catch(() => {
+        setTimeout(() => win.loadURL('http://localhost:3000'), 2000);
+    });
+    
     return win;
 }
 
