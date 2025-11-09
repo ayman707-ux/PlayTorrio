@@ -1,6 +1,6 @@
 {
   "name": "playtorrio",
-  "version": "1.8.8",
+  "version": "1.8.9",
   "description": "Ayman's PlayTorrio an all in one media center",
   "author": {
     "name": "ayman",
@@ -12,7 +12,8 @@
   "scripts": {
     "start": "electron .",
     "serve": "node server.mjs",
-    "build": "electron-builder --publish always"
+    "build": "electron-builder --publish always",
+    "postinstall": "electron-builder install-app-deps"
   },
   "dependencies": {
     "axios": "^1.7.4",

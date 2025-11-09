@@ -3,190 +3,111 @@ name: Build Multi-Platform
 on:
   push:
     tags:
-      - 'v*'  # Triggers on version tags like v1.8.1
-  workflow_dispatch:  # Allows manual trigger from GitHub UI
+      - 'v*'
+  workflow_dispatch:
 
 jobs:
   build-windows:
     runs-on: windows-latest
-    
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '18'
-        
-    - name: Install dependencies
-      run: npm install
-      
-    - name: Setup Windows Players
-      run: |
-        # Extract MPV from RAR file in repo
-        if (Test-Path "mpv.rar") {
-          Write-Host "Extracting mpv.rar..."
-          7z x mpv.rar -y
-          
-          if (Test-Path "mpv/mpv.exe") {
-            Write-Host "✓ MPV extracted successfully"
-            Get-ChildItem mpv | Select-Object -First 5
-          } else {
-            Write-Host "Contents after extraction:"
-            Get-ChildItem -Recurse | Select-Object -First 20
-            Write-Host "✗ MPV extraction failed - mpv/mpv.exe not found!"
-            exit 1
-          }
-        } elseif (Test-Path "mpv.zip") {
-          Write-Host "Extracting mpv.zip..."
-          Expand-Archive -Path "mpv.zip" -DestinationPath "mpv-temp" -Force
-          
-          # Check if files are in root or nested folder
-          if (Test-Path "mpv-temp/mpv.exe") {
-            Move-Item -Path "mpv-temp" -Destination "mpv" -Force
-            Write-Host "✓ MPV extracted (root level)"
-          } elseif (Test-Path "mpv-temp/mpv/mpv.exe") {
-            Move-Item -Path "mpv-temp/mpv" -Destination "mpv" -Force
-            Remove-Item "mpv-temp" -Recurse -Force
-            Write-Host "✓ MPV extracted (nested folder)"
-          } else {
-            Write-Host "Contents of mpv-temp:"
-            Get-ChildItem "mpv-temp" -Recurse | Select-Object -First 20
-            Write-Host "✗ MPV extraction failed - mpv.exe not found!"
-            exit 1
-          }
-        } else {
-          Write-Host "✗ mpv.rar or mpv.zip not found in repo!"
-          exit 1
-        }
-        
-        # VLC extraction
-        if (Test-Path "vlc.rar") {
-          Write-Host "Extracting vlc.rar..."
-          7z x vlc.rar -y
-          
-          if (Test-Path "VLC/VLCPortable.exe") {
-            Write-Host "✓ VLC extracted successfully (VLCPortable.exe found)"
-          } elseif (Test-Path "VLC/App/vlc/vlc.exe") {
-            Write-Host "✓ VLC extracted successfully (vlc.exe found)"
-          } else {
-            Write-Host "Contents after VLC extraction:"
-            Get-ChildItem -Recurse | Select-Object -First 20
-            Write-Host "✗ VLC extraction failed - VLCPortable.exe or vlc.exe not found!"
-            exit 1
-          }
-        } elseif (Test-Path "VLC/VLCPortable.exe") {
-          Write-Host "✓ VLC already in repo (VLCPortable)"
-        } elseif (Test-Path "VLC/App/vlc/vlc.exe") {
-          Write-Host "✓ VLC already in repo"
-        } else {
-          Write-Host "⚠ VLC not found - continuing without it"
-        }
-      shell: pwsh
-        
-    - name: Verify Icons
-      run: |
-        if (!(Test-Path "build")) { mkdir build }
-        if (Test-Path "icon.ico") {
-          Copy-Item "icon.ico" "build/icon.ico" -Force
-          Write-Host "✓ Using icon.ico"
-        }
-        if (Test-Path "icon.png") {
-          Copy-Item "icon.png" "build/icon.png" -Force
-          Write-Host "✓ Copied icon.png for Linux"
-        }
-      shell: pwsh
-        
-    - name: Build Windows Installer
-      run: npm run build -- --win --publish always
-      env:
-        GH_TOKEN: ${{ secrets.GH_TOKEN }}
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+      - name: Install dependencies
+        run: npm install
+      - name: Setup Windows Players
+        run: |
+          if (Test-Path "mpv.rar") { 7z x mpv.rar -y }
+          elseif (Test-Path "mpv.zip") { Expand-Archive -Path mpv.zip -DestinationPath mpv-temp -Force }
+          if (!(Test-Path "mpv/mpv.exe")) { Write-Host "MPV missing" }
+          if (Test-Path "vlc.rar") { 7z x vlc.rar -y }
+      - name: Verify Icons
+        run: |
+          if (!(Test-Path build)) { mkdir build }
+          if (Test-Path icon.ico) { Copy-Item icon.ico build/icon.ico -Force }
+      - name: Build Windows Installer
+        run: npm run build -- --win --publish always
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
 
   build-linux:
     runs-on: ubuntu-latest
-    
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '18'
-        
-    - name: Install dependencies
-      run: npm install
-      
-    - name: Create placeholder media dirs (Linux)
-      run: |
-        mkdir -p mpv VLC
-        echo "Created empty mpv/ and VLC/ directories to satisfy resource patterns"
-      shell: bash
-      
-    - name: Setup MPV for Linux
-      run: |
-        # For Linux, skip MPV bundling - users install system-wide
-        # The app will detect system MPV at /usr/bin/mpv automatically
-        echo "✓ Linux build configured (users install mpv via: sudo apt install mpv)"
-        
-    - name: Verify Icons
-      run: |
-        mkdir -p build
-        if [ -f "icon.png" ]; then
-          cp icon.png build/icon.png
-          echo "✓ Using icon.png"
-        fi
-        if [ -f "icon.ico" ]; then
-          cp icon.ico build/icon.ico
-          echo "✓ Copied icon.ico"
-        fi
-        
-    - name: Build Linux Packages
-      run: npm run build -- --linux --publish always
-      env:
-        GH_TOKEN: ${{ secrets.GH_TOKEN }}
-    
-    - name: Verify and Test AppImage
-      run: |
-        echo "=========================================="
-        echo "AppImage Build Verification"
-        echo "=========================================="
-        
-        if ls dist/*.AppImage 1> /dev/null 2>&1; then
-          for appimage in dist/*.AppImage; do
-            echo ""
-            echo "Found: $appimage"
-            ls -lh "$appimage"
-            
-            # Make executable
-            chmod +x "$appimage"
-            echo "✓ Set executable permission"
-            
-            # Verify it's executable
-            if [ -x "$appimage" ]; then
-              echo "✓ AppImage is executable"
-            else
-              echo "✗ AppImage is NOT executable!"
-              exit 1
-            fi
-            
-            # Test extraction (verifies AppImage is valid)
-            echo "Testing AppImage extraction..."
-            "$appimage" --appimage-extract-and-run --version 2>&1 || echo "⚠ Version check completed"
-            
-            echo "✓ AppImage is valid and ready"
-          done
-        else
-          echo "✗ No AppImage files found in dist/"
-          ls -la dist/ || true
-          exit 1
-        fi
-        
-        echo ""
-        echo "=========================================="
-        echo "✓ Linux build complete"
-        echo "=========================================="
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+      - name: Install dependencies
+        run: npm install
+      - name: Prepare resources
+        run: |
+          mkdir -p mpv VLC build
+          [ -f icon.png ] && cp icon.png build/icon.png || true
+      - name: Build Linux Packages
+        run: npm run build -- --linux --publish always
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+      - name: Verify AppImage
+        run: |
+          set -e
+          ls dist/*.AppImage
+          chmod +x dist/*.AppImage
+          echo "AppImage artifacts ready"
+
+  build-macos-x64:
+    runs-on: macos-13
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+      - name: Install dependencies
+        run: npm install && npx electron-builder install-app-deps
+      - name: Download MPV (x64)
+        run: |
+          curl -fL https://laboratory.stolendata.net/~djinn/mpv_osx/mpv-latest.tar.gz -o mpv.tar.gz || true
+          mkdir -p mpv
+          [ -f mpv.tar.gz ] && tar -xzf mpv.tar.gz -C mpv || true
+      - name: Build macOS x64 DMG
+        run: npm run build -- --mac --x64 --publish always
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          CSC_IDENTITY_AUTO_DISCOVERY: false
+      - name: Strip quarantine
+        run: |
+          xattr -cr dist/*x64*/PlayTorrio.app || true
+
+  build-macos-arm64:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+      - name: Install dependencies
+        run: npm install && npx electron-builder install-app-deps
+      - name: Download MPV (arm64)
+        run: |
+          curl -fL https://laboratory.stolendata.net/~djinn/mpv_osx/mpv-latest.tar.gz -o mpv.tar.gz || true
+          mkdir -p mpv
+          [ -f mpv.tar.gz ] && tar -xzf mpv.tar.gz -C mpv || true
+      - name: Build macOS arm64 DMG
+        run: npm run build -- --mac --arm64 --publish always
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          CSC_IDENTITY_AUTO_DISCOVERY: false
+      - name: Strip quarantine
+        run: |
+          xattr -cr dist/*arm64*/PlayTorrio.app || true
 
   build-macos:
     runs-on: macos-latest

@@ -14,7 +14,8 @@ import { createRequire } from 'module';
 // electron-updater is CommonJS; use default import + destructure for ESM
 import updaterPkg from 'electron-updater';
 // discord-rpc is CommonJS; default import works under ESM
-import RPC from 'discord-rpc';
+// Defer requiring discord-rpc to runtime so wrong-arch prebuilds don't crash startup
+// We'll attempt to load it inside setupDiscordRPC() with a safe try/catch
 import { startServer } from './server.mjs'; // Import the server
 // Chromecast module will be dynamically imported when needed
 
@@ -112,15 +113,28 @@ function readAutoUpdateEnabled() {
 const DISCORD_CLIENT_ID = '1430114242815725579';
 let discordRpc = null;
 let discordRpcReady = false;
+let DiscordRPCPkg = null; // will hold the module after lazy load
 
 function setupDiscordRPC() {
     try {
         if (!DISCORD_CLIENT_ID) return;
         // Avoid double init
         if (discordRpc) return;
-        try { RPC.register(DISCORD_CLIENT_ID); } catch(_) {}
+        try {
+            if (!DiscordRPCPkg) {
+                // Lazy require to avoid arch mismatch crashing early
+                // Using require so electron-builder can still handle CJS
+                // Wrap in try so Intel build doesn't die if arm64-only binary was packed
+                DiscordRPCPkg = require('discord-rpc');
+            }
+        } catch (e) {
+            console.warn('[Discord RPC] Module load failed (will disable RPC):', e?.message || e);
+            return; // disable silently
+        }
 
-        discordRpc = new RPC.Client({ transport: 'ipc' });
+        try { DiscordRPCPkg.register(DISCORD_CLIENT_ID); } catch(_) {}
+
+        discordRpc = new DiscordRPCPkg.Client({ transport: 'ipc' });
 
         const setBaseActivity = () => {
             try {
