@@ -6,6 +6,10 @@ on:
       - 'v*'
   workflow_dispatch:
 
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   build-windows:
     runs-on: windows-latest
@@ -109,94 +113,27 @@ jobs:
         run: |
           xattr -cr dist/*arm64*/PlayTorrio.app || true
 
-  build-macos:
-    runs-on: macos-latest
-    
+  finalize-release:
+    runs-on: ubuntu-latest
+    needs: [build-windows, build-linux, build-macos-x64, build-macos-arm64]
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '18'
-
-    # Signing is disabled by request; skip all Apple signing/notarization steps
-    - name: Disable mac updater and signing
-      run: |
-        echo "FORCE_ENABLE_UPDATER=0" >> $GITHUB_ENV
-        echo "Skipping macOS signing and notarization"
-      shell: bash
-        
-    - name: Install dependencies
-      run: npm install
-      
-    - name: Download MPV for macOS
-      run: |
-        # Download MPV portable (with fallback and error handling)
-        if ! curl -fL https://laboratory.stolendata.net/~djinn/mpv_osx/mpv-latest.tar.gz -o mpv.tar.gz; then
-          echo "⚠ MPV download failed from primary source"
-          # Try alternative community mirror
-          if ! curl -fL https://nightly.link/IntersectRaven/mpv-appimage/workflows/build/master/mpv-x86_64.AppImage.zip -o mpv.zip; then
-            echo "✗ All MPV download sources failed. Users will need system MPV (/Applications/mpv.app)"
-            exit 0  # Don't fail the build, just skip MPV bundling
-          fi
-        fi
-
-        mkdir -p mpv
-        if [ -f mpv.tar.gz ]; then
-          echo "✓ Extracting mpv.tar.gz..."
-          tar -xzf mpv.tar.gz -C mpv || true
-        elif [ -f mpv.zip ]; then
-          echo "✓ Extracting mpv.zip..."
-          unzip -o mpv.zip -d mpv || true
-        fi
-
-        # Normalize layout: ensure mpv/mpv.app exists at root
-        if [ -d "mpv/mpv.app" ]; then
-          echo "✓ mpv.app present at mpv/mpv.app"
-        else
-          found=$(find mpv -maxdepth 3 -name "mpv.app" | head -n 1)
-          if [ -n "$found" ]; then
-            echo "Moving $found to mpv/mpv.app"
-            rm -rf mpv/mpv.app
-            mv "$found" mpv/
-          else
-            echo "⚠ mpv.app not found after extraction; continuing without bundled MPV"
-          fi
-        fi
-
-        # Ensure binary is executable if present
-        if [ -f "mpv/mpv.app/Contents/MacOS/mpv" ]; then
-          chmod +x "mpv/mpv.app/Contents/MacOS/mpv"
-          echo "✓ Marked MPV binary as executable"
-          ls -la "mpv/mpv.app/Contents/MacOS/mpv"
-        fi
-        
-    - name: Verify Icon
-      run: |
-        mkdir -p build
-        if [ -f "icon.icns" ]; then
-          cp icon.icns build/icon.icns
-          echo "✓ Using existing icon.icns"
-        elif [ -f "build/icon.icns" ]; then
-          echo "✓ Icon already in build directory"
-        else
-          echo "Warning: icon.icns not found, using default Electron icon"
-        fi
-        
-    - name: Build macOS DMG (unsigned)
-      run: npm run build -- --mac --publish always
-      env:
-        GH_TOKEN: ${{ secrets.GH_TOKEN }}
-        CSC_IDENTITY_AUTO_DISCOVERY: false
-        FORCE_ENABLE_UPDATER: ${{ env.FORCE_ENABLE_UPDATER }}
-    
-    - name: Fix macOS Gatekeeper Issues
-      run: |
-        # Remove quarantine attributes from built app
-        echo "Removing quarantine attributes to prevent 'damaged app' errors..."
-        xattr -cr dist/mac*/PlayTorrio.app 2>/dev/null || true
-        xattr -cr dist/mac-arm64*/PlayTorrio.app 2>/dev/null || true
-        echo "✓ Quarantine attributes removed"
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Read version
+        id: ver
+        run: echo "version=$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
+      - name: Ensure tag uses v prefix
+        run: |
+          TAG="v${{ steps.ver.outputs.version }}"
+          echo "Using tag: $TAG"
+      - name: Update GitHub Release (title + notes, keep draft)
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.ver.outputs.version }}
+          name: v${{ steps.ver.outputs.version }}
+          generate_release_notes: true
+          draft: true
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
 

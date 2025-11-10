@@ -186,11 +186,51 @@ function setupAutoUpdater() {
         releaseType: 'release'
     });
 
-    // On macOS we do NOT auto-download; we only notify users to manually grab the DMG
-    autoUpdater.autoDownload = process.platform !== 'darwin';
+    // Disable auto download on all platforms; we'll start it manually after guards
+    // This avoids update loops on Windows when the same version is republished or install fails
+    autoUpdater.autoDownload = false;
     // We want to show the NSIS installer UI (non-silent) and exit immediately once ready
     // So do NOT auto-install on app quit; we will explicitly quitAndInstall when downloaded
     autoUpdater.autoInstallOnAppQuit = false;
+
+    // ---------- Update loop guard (persisted) ----------
+    const updaterStatePath = path.join(app.getPath('userData'), 'updater_state.json');
+    const readUpdaterState = () => {
+        try { return JSON.parse(fs.readFileSync(updaterStatePath, 'utf8')); } catch(_) { return {}; }
+    };
+    const writeUpdaterState = (obj) => {
+        try { fs.writeFileSync(updaterStatePath, JSON.stringify(obj || {}, null, 2)); } catch(_) {}
+    };
+    const clearUpdaterState = () => { try { fs.unlinkSync(updaterStatePath); } catch(_) {} };
+
+    const compareVersions = (a, b) => {
+        // returns 1 if a>b, -1 if a<b, 0 if equal
+        const pa = String(a||'').split('.').map(n=>parseInt(n,10)||0);
+        const pb = String(b||'').split('.').map(n=>parseInt(n,10)||0);
+        for (let i=0;i<Math.max(pa.length,pb.length);i++) {
+            const da = pa[i]||0, db = pb[i]||0;
+            if (da>db) return 1; if (da<db) return -1;
+        }
+        return 0;
+    };
+
+    const state = readUpdaterState();
+    const now = Date.now();
+    const deferWindowMs = 10*60*1000; // 10 minutes
+    const currentVersion = app.getVersion();
+    const attemptedVersion = state?.targetVersion;
+    const lastAttempt = state?.lastInstallAttempt || 0;
+    const recentAttempt = (now - lastAttempt) < deferWindowMs;
+    const installLikelySucceeded = attemptedVersion && compareVersions(currentVersion, attemptedVersion) >= 0;
+    if (installLikelySucceeded) {
+        // Upgrade finished; clear state
+        clearUpdaterState();
+    } else if (recentAttempt) {
+        console.log('[Updater] Recent install attempt detected; deferring update checks to avoid loop');
+        // Defer scheduling initial checks for this session; user can retry later or manual download
+        updaterActive = false;
+        return;
+    }
 
         autoUpdater.on('checking-for-update', () => {
             console.log('[Updater] Checking for updates...');
@@ -210,6 +250,11 @@ function setupAutoUpdater() {
         autoUpdater.on('update-available', (info) => {
             const releasesUrl = 'https://github.com/ayman707-ux/PlayTorrio/releases/latest';
             console.log('[Updater] Update available. New version:', info?.version || 'unknown', 'Current:', app.getVersion());
+            // Guard: Only proceed if remote version is greater than current
+            if (compareVersions(info?.version, app.getVersion()) <= 0) {
+                console.log('[Updater] Remote version is not greater than current; skipping download');
+                return;
+            }
             
             if (process.platform === 'darwin') {
                 // macOS: Show native notification, don't send to renderer (no progress bar)
@@ -229,17 +274,9 @@ function setupAutoUpdater() {
                 return; // Don't send to renderer, no progress UI
             }
             
-            // Windows/Linux: Send to renderer for progress UI
+            // Windows/Linux: start download programmatically to avoid auto-download race
             try {
-                if (mainWindow && !mainWindow.isDestroyed() && mainWindow.webContents) {
-                    if (mainWindow.webContents.isLoading()) {
-                        mainWindow.webContents.once('did-finish-load', () => {
-                            mainWindow.webContents.send('update-available', info || {});
-                        });
-                    } else {
-                        mainWindow.webContents.send('update-available', info || {});
-                    }
-                }
+                autoUpdater.downloadUpdate().catch(e=>console.error('[Updater] downloadUpdate failed:', e?.message||e));
             } catch(_) {}
         });
 
@@ -304,12 +341,13 @@ function setupAutoUpdater() {
                 return;
             }
             
-            // Prevent update loop: mark that we're installing
+            // Prevent update loop: mark that we're installing (persisted)
             if (app.isQuitting || global.updateInstalling) {
                 console.log('[Updater] Already installing/quitting, skipping duplicate install');
                 return;
             }
             global.updateInstalling = true;
+            writeUpdaterState({ lastInstallAttempt: Date.now(), targetVersion: info?.version || '' });
             
             console.log('[Updater] Update downloaded. Ready to install version:', info?.version || 'unknown', 'Current:', app.getVersion());
             try {
@@ -317,13 +355,13 @@ function setupAutoUpdater() {
                     mainWindow.webContents.send('update-downloaded', info || {});
                 }
             } catch(_) {}
-            // Immediately start installer with UI (isSilent=false) and run app after finish (isForceRunAfter=true)
+            // Start installer with UI; do not force run-after to reduce double-relaunch risk
             try {
                 console.log('[Updater] Launching installer and quitting app...');
                 // Small delay to allow renderer to show a toast before quitting
                 setTimeout(() => {
                     // Note: Microservices no longer running - all handled by server.mjs
-                    try { autoUpdater.quitAndInstall(false, true); } catch (e) {
+                    try { autoUpdater.quitAndInstall(false, false); } catch (e) {
                         console.error('[Updater] quitAndInstall failed:', e);
                         // As a fallback, force app to quit; installer will run on next start if needed
                         try { app.quit(); } catch(_) {}
