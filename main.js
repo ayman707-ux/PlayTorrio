@@ -107,6 +107,18 @@ function readAutoUpdateEnabled() {
     return true; // default ON
 }
 
+// Read discord rich presence preference from persisted settings
+function readDiscordRpcEnabled() {
+    try {
+        const settingsPath = path.join(app.getPath('userData'), 'settings.json');
+        if (fs.existsSync(settingsPath)) {
+            const s = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
+            return s.discordRpc !== false; // default ON if missing
+        }
+    } catch (_) {}
+    return true; // default ON
+}
+
 // ----------------------
 // Discord Rich Presence
 // ----------------------
@@ -2088,7 +2100,7 @@ if (!gotLock) {
             try { await dnsLookup('discord.com'); return true; } catch { return false; }
         })();
         if (online) {
-            setupDiscordRPC();
+            //if(readDiscordRPCEnabled(setupDiscordRPC()));
         } else {
             console.log('[Discord RPC] Skipping init: offline');
         }
@@ -3186,6 +3198,31 @@ if (!gotLock) {
         }
     });
 
+    //unused i think, copied from auto update
+    ipcMain.handle('get-discord-rpc-enabled', async () => {
+        return { success: true, enabled: !!readDiscordRpcEnabled() };
+    });
+    ipcMain.handle('set-discord-rpc-enabled', async (event, enabled) => {
+        try {
+            const settings = readMainSettings();
+            settings.discordRpc = !!enabled;
+            writeMainSettings(settings);
+            if (!enabled) {
+                // Cancel Discord RPC
+                try { if (discordRpc) discordRpc.destroy(); discordRpc = null; discordRpcReady = false;} catch(_) {}
+                console.log('[Discord RPC] Disabled by user settings');
+            } else {
+                // If not active yet and allowed by platform policy, initialize now
+                if (!discordRpc) {
+                    try { setupDiscordRPC(); } catch (e) { console.error('[Discord RPC] re-init failed:', e?.message || e); }
+                }
+            }
+            return { success: true, enabled: !!enabled };
+        } catch (e) {
+            return { success: false, error: e?.message || String(e) };
+        }
+    });
+
         // Initialize the auto-updater with platform-aware gating
         const shouldEnableUpdater = () => {
             if (!readAutoUpdateEnabled()) return false; // user disabled in settings
@@ -3219,6 +3256,17 @@ if (!gotLock) {
             }
         } catch (e) {
             console.error('[Updater] setup threw error (will not retry):', e?.message || e);
+        }
+        // try catch discord rpc
+        try {
+            // using getter function
+            if (readDiscordRpcEnabled()) {
+                setupDiscordRPC();
+            } else {
+                console.log('[Discord RPC] Not initialized (disabled in settings)');
+            }
+        } catch (e) {
+            console.error('[Discord RPC] setup threw error:', e?.message || e);
         }
     });
 }

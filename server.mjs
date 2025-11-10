@@ -368,6 +368,7 @@ export function startServer(userDataPath) {
             const s = JSON.parse(fs.readFileSync(SETTINGS_PATH, 'utf8'));
             return {
                 autoUpdate: true,
+                discordRpc: true,
                 useTorrentless: false,
                 torrentSource: 'torrentio',
                 useDebrid: false,
@@ -383,7 +384,7 @@ export function startServer(userDataPath) {
                 ...s,
             };
         } catch {
-            return { autoUpdate: true, useTorrentless: false, torrentSource: 'torrentio', useDebrid: false, debridProvider: 'realdebrid', rdToken: null, rdRefresh: null, rdClientId: null, rdCredId: null, rdCredSecret: null, adApiKey: null, tbApiKey: null, pmApiKey: null };
+            return { autoUpdate: true, discordRpc: true, useTorrentless: false, torrentSource: 'torrentio', useDebrid: false, debridProvider: 'realdebrid', rdToken: null, rdRefresh: null, rdClientId: null, rdCredId: null, rdCredSecret: null, adApiKey: null, tbApiKey: null, pmApiKey: null };
         }
     }
     function writeSettings(obj) {
@@ -453,6 +454,7 @@ export function startServer(userDataPath) {
             : !!s.rdToken;
         res.json({
             autoUpdate: s.autoUpdate !== false,
+            discordRpc: s.discordRpc !== false,
             useTorrentless: !!s.useTorrentless,
             torrentSource: s.torrentSource || 'torrentio',
             useDebrid: !!s.useDebrid,
@@ -468,6 +470,7 @@ export function startServer(userDataPath) {
         const next = {
             ...s,
             autoUpdate: req.body.autoUpdate !== undefined ? !!req.body.autoUpdate : (s.autoUpdate !== false),
+            discordRpc: req.body.discordRpc !== undefined ? !!req.body.discordRpc : (s.discordRpc !== false),
             useTorrentless: req.body.useTorrentless != null ? !!req.body.useTorrentless : !!s.useTorrentless,
             torrentSource: req.body.torrentSource !== undefined ? req.body.torrentSource : (s.torrentSource || 'torrentio'),
             useDebrid: req.body.useDebrid != null ? !!req.body.useDebrid : !!s.useDebrid,

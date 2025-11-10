@@ -9351,6 +9351,22 @@
                         </div>
                     </div>
 
+                    <!--setting to toggle discord rich presence rpc-->
+                    <div class="settings-card">
+                        <div class="settings-card-header">
+                            <h3><i class="fa-solid fa-link"></i> Rich Presence toggle</h3>
+                        </div>
+                        <div class="settings-card-body">
+                            <div class="checkbox-group">
+                                <input type="checkbox" id="rpcToggle" checked />
+                                <label for="rpcToggle">Toggle Discord Rich Presence</label>
+                            </div>
+                            <div style="margin-top:0.5rem; color:#9ca3af; font-size:0.9rem;">
+                                When enabled, discord rich presence will show your current activity as playing PlayTorrio. Changes apply on restarting application.
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Attribution Card -->
                     <div class="settings-card">
                         <div class="settings-card-header">
@@ -11663,11 +11679,16 @@ Your browser does not support the video tag.
                     const s = await res.json();
                     console.log('[Settings] Loaded settings:', s);
                     useTorrentless = !!s.useTorrentless;
-                            // Auto‑Updater toggle (default ON if missing)
-                            const autoUpdate = s.autoUpdate !== false; // treat undefined as true
-                            const autoUpdateToggles = document.querySelectorAll('#autoUpdateToggle');
-                            autoUpdateToggles.forEach(t => { t.checked = !!autoUpdate; });
+                    // Auto‑Updater toggle (default ON if missing)
+                    const autoUpdate = s.autoUpdate !== false; // treat undefined as true
+                    const autoUpdateToggles = document.querySelectorAll('#autoUpdateToggle');
+                    autoUpdateToggles.forEach(t => { t.checked = !!autoUpdate; });
                     
+                    //discord rpc toggle (default on if missing)
+                    const discordRpc = s.discordRpc !== false;
+                    const discordRpcToggles = document.querySelectorAll('#rpcToggle');
+                    discordRpcToggles.forEach(t => { t.checked = !!discordRpc; });
+
                     const useTorrentlessToggles = document.querySelectorAll('#useTorrentlessToggle');
                     useTorrentlessToggles.forEach(toggle => {
                         toggle.checked = useTorrentless;
@@ -13543,6 +13564,16 @@ Your browser does not support the video tag.
                 }
             }
             
+            // Get discord rpc setting (prefer visible)
+            const discordRpcToggles = document.querySelectorAll('#rpcToggle');
+            let discordRpcEnabled = true; // default ON
+            for (const el of discordRpcToggles) {
+                if (el.offsetParent !== null) {
+                    discordRpcEnabled = !!el.checked;
+                    break;
+                }
+            }
+
             // Handle fullscreen toggle - get the visible one
             const fullscreenToggles = document.querySelectorAll('#fullscreenToggle');
             let fullscreenToggle = null;
@@ -13598,7 +13629,7 @@ Your browser does not support the video tag.
             let apiResult = null;
             try {
                 // Build settings object
-                const settings = { useTorrentless: desiredTorrentless, autoUpdate: !!autoUpdateEnabled };
+                const settings = { useTorrentless: desiredTorrentless, autoUpdate: !!autoUpdateEnabled, discordRpc: !!discordRpcEnabled };
                 if (jackettUrl) settings.jackettUrl = jackettUrl;
                 if (cacheLocation) settings.cacheLocation = cacheLocation;
                 
