@@ -274,6 +274,13 @@ function setupAutoUpdater() {
                 return; // Don't send to renderer, no progress UI
             }
             
+            // Windows/Linux: Send to renderer to show progress bar, then start download
+            try {
+                if (mainWindow && mainWindow.webContents) {
+                    mainWindow.webContents.send('update-available', { version: info?.version });
+                }
+            } catch(_) {}
+            
             // Windows/Linux: start download programmatically to avoid auto-download race
             try {
                 autoUpdater.downloadUpdate().catch(e=>console.error('[Updater] downloadUpdate failed:', e?.message||e));
