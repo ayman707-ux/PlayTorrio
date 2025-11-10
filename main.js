@@ -1,5 +1,5 @@
 import { app, BrowserWindow, ipcMain, shell, clipboard, dialog, Menu } from 'electron';
-import { spawn, fork } from 'child_process';
+import { spawn, spawnSync, fork } from 'child_process';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
@@ -1064,6 +1064,72 @@ function openInVLC(win, streamUrl, infoHash, startSeconds) {
     }
 }
 
+// Migrate localStorage from default partition to persist:playtorrio partition
+async function migrateLocalStorageIfNeeded() {
+    try {
+        const { session } = require('electron');
+        const migrationFlagPath = path.join(app.getPath('userData'), '.localStorage_migrated');
+        
+        // Check if migration already done
+        if (fs.existsSync(migrationFlagPath)) {
+            console.log('[Migration] localStorage already migrated, skipping');
+            return;
+        }
+        
+        console.log('[Migration] Checking for localStorage data to migrate...');
+        
+        // Keys to migrate (playlists and downloaded music)
+        const keysToMigrate = ['pt_playlists_v1', 'pt_downloaded_music_v1'];
+        
+        // Access default partition storage
+        const defaultPartition = session.defaultSession;
+        const newPartition = session.fromPartition('persist:playtorrio', { cache: true });
+        
+        // Read from default partition using executeJavaScript in hidden window
+        const tempWin = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: false } });
+        await tempWin.loadURL('data:text/html,<html></html>');
+        
+        const oldData = await tempWin.webContents.executeJavaScript(`
+            const data = {};
+            ${JSON.stringify(keysToMigrate)}.forEach(key => {
+                const val = localStorage.getItem(key);
+                if (val) data[key] = val;
+            });
+            data;
+        `);
+        
+        tempWin.close();
+        
+        if (Object.keys(oldData).length === 0) {
+            console.log('[Migration] No old localStorage data found');
+            fs.writeFileSync(migrationFlagPath, Date.now().toString());
+            return;
+        }
+        
+        console.log('[Migration] Found data, copying to new partition:', Object.keys(oldData));
+        
+        // Write to new partition
+        const newWin = new BrowserWindow({ show: false, webPreferences: { partition: 'persist:playtorrio' } });
+        await newWin.loadURL('data:text/html,<html></html>');
+        
+        await newWin.webContents.executeJavaScript(`
+            const data = ${JSON.stringify(oldData)};
+            for (const [key, val] of Object.entries(data)) {
+                localStorage.setItem(key, val);
+            }
+        `);
+        
+        newWin.close();
+        
+        // Mark migration complete
+        fs.writeFileSync(migrationFlagPath, Date.now().toString());
+        console.log('[Migration] localStorage migration complete');
+    } catch (err) {
+        console.error('[Migration] Failed to migrate localStorage:', err);
+        // Don't block app startup on migration failure
+    }
+}
+
 function createWindow() {
     const isMac = process.platform === 'darwin';
     const win = new BrowserWindow({
@@ -1982,6 +2048,9 @@ if (!gotLock) {
     });
 
     app.whenReady().then(async () => {
+    // ---- Migrate localStorage from default to persist:playtorrio partition ----
+    await migrateLocalStorageIfNeeded();
+    
     // ---- Main process file logging (Windows crash diagnostics)
     try {
         const logsDir = path.join(app.getPath('userData'), 'logs');

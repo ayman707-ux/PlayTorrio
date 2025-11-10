@@ -802,130 +802,75 @@ export function startServer(userDataPath) {
         throw new Error('Failed to create TorBox torrent');
     }
 
-    // Get a TorBox direct link for streaming for a specific torrent/file id
+    // Get a TorBox direct link for streaming using official API
+    // Per official docs: GET /torrents/requestdl?token=KEY&torrent_id=ID&file_id=FILE&redirect=true
+    // This returns a permanent streaming URL that works directly in video players
     async function tbRequestDirectLink(torrentId, fileId) {
         const s = readSettings();
-        const authHeader = { Authorization: `Bearer ${s.tbApiKey}` };
-        const candidates = [
-            // Preferred: POST form, stream=true, redirect=false -> JSON
-            { method: 'POST', type: 'form', ep: '/api/torrents/requestdl', qs: {}, body: { torrent_id: String(torrentId), file_id: String(fileId), stream: 'true', redirect: 'false' } },
-            // Alt: POST form, no stream flag
-            { method: 'POST', type: 'form', ep: '/api/torrents/requestdl', qs: {}, body: { torrent_id: String(torrentId), file_id: String(fileId), redirect: 'false' } },
-            // Alt keys: id instead of torrent_id
-            { method: 'POST', type: 'form', ep: '/api/torrents/requestdl', qs: {}, body: { id: String(torrentId), file_id: String(fileId), stream: 'true', redirect: 'false' } },
-            // GET with query params
-            { method: 'GET', type: 'query', ep: '/api/torrents/requestdl', qs: { torrent_id: String(torrentId), file_id: String(fileId), stream: 'true', redirect: 'false' } },
-            { method: 'GET', type: 'query', ep: '/api/torrents/requestdl', qs: { id: String(torrentId), file_id: String(fileId), redirect: 'false' } },
-            // Redirect flow: let server 302, capture Location
-            { method: 'POST', type: 'form-redirect', ep: '/api/torrents/requestdl', qs: {}, body: { torrent_id: String(torrentId), file_id: String(fileId), stream: 'true', redirect: 'true' } },
-            { method: 'GET', type: 'redirect', ep: '/api/torrents/requestdl', qs: { torrent_id: String(torrentId), file_id: String(fileId), stream: 'true', redirect: 'true' } },
-        ];
-        let lastErr;
-        for (const c of candidates) {
-            try {
-                if (c.type === 'form' || c.type === 'query') {
-                    const headers = c.type === 'form' ? { ...authHeader, 'Content-Type': 'application/x-www-form-urlencoded', Accept: 'application/json' } : { ...authHeader, Accept: 'application/json' };
-                    const qs = new URLSearchParams(c.qs || {});
-                    const url = `${TB_BASE}${c.ep}${qs.toString() ? `?${qs}` : ''}`;
-                    const body = c.type === 'form' ? new URLSearchParams(c.body || {}) : undefined;
-                    const r = await fetch(url, { method: c.method, headers, body });
-                    const ct = r.headers.get('content-type') || '';
-                    let data = null;
-                    if (/json/i.test(ct)) { try { data = await r.json(); } catch {} }
-                    else { try { const t = await r.text(); if (t && /^https?:\/\//i.test(t.trim())) return t.trim(); } catch {} }
-                    const urlField = data?.url || data?.link || data?.data?.url || data?.data?.link;
-                    if (urlField && /^https?:\/\//i.test(urlField)) return urlField;
-                    lastErr = new Error('No direct URL in response');
-                } else if (c.type === 'form-redirect' || c.type === 'redirect') {
-                    const headers = c.type.startsWith('form') ? { ...authHeader, 'Content-Type': 'application/x-www-form-urlencoded' } : { ...authHeader };
-                    const qs = new URLSearchParams(c.qs || {});
-                    const url = `${TB_BASE}${c.ep}${qs.toString() ? `?${qs}` : ''}`;
-                    const body = c.type.startsWith('form') ? new URLSearchParams(c.body || {}) : undefined;
-                    const r = await fetch(url, { method: c.method, headers, body, redirect: 'manual' });
-                    const loc = r.headers.get('location');
-                    if (loc && /^https?:\/\//i.test(loc)) return loc;
-                    lastErr = new Error(`Unexpected status ${r.status}`);
+        if (!s.tbApiKey) throw new Error('Not authenticated with TorBox');
+        
+        // Official API endpoint: /api/torrents/requestdl with query params
+        // redirect=true returns a permanent CDN URL for streaming
+        const qs = new URLSearchParams({
+            token: s.tbApiKey,
+            torrent_id: String(torrentId),
+            file_id: String(fileId),
+            redirect: 'true'  // Returns permanent URL instead of temporary link
+        });
+        
+        const url = `${TB_BASE}/api/torrents/requestdl?${qs.toString()}`;
+        console.log('[TB][requestdl] calling:', url.replace(s.tbApiKey, 'API_KEY'));
+        
+        try {
+            // With redirect=true, API returns the direct CDN URL
+            // Can be used as permanent streaming link
+            const resp = await fetch(url, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${s.tbApiKey}`,
+                    'Accept': '*/*'
+                },
+                redirect: 'follow'  // Follow redirects to get final URL
+            });
+            
+            if (!resp.ok) {
+                const text = await resp.text();
+                console.error('[TB][requestdl] HTTP error:', resp.status, text);
+                
+                // Handle specific error cases
+                if (resp.status === 401) {
+                    throw new Error('TorBox authentication invalid');
                 }
-            } catch (e) {
-                lastErr = e;
-                // Try next variant on parameter mismatch or unsupported option
-                continue;
+                if (resp.status === 404) {
+                    throw new Error('TorBox torrent or file not found');
+                }
+                if (resp.status === 429) {
+                    throw new Error('TorBox rate limited');
+                }
+                
+                throw new Error(`TorBox requestdl failed: ${resp.status} ${text}`);
             }
-        }
-        if (lastErr) throw lastErr;
-        throw new Error('Failed to resolve TorBox direct link');
-    }
-
-    // TorBox Stream API per docs: /api/stream/createstream then /api/stream/getstreamdata
-    async function tbCreateStream({ id, file_id, type = 'torrent', chosen_subtitle_index = null, chosen_audio_index = 0 }) {
-        const s = readSettings();
-        const makeQs = (subIdx) => {
-            const qs = new URLSearchParams();
-            qs.set('id', String(id));
-            qs.set('file_id', String(file_id));
-            qs.set('type', String(type));
-            qs.set('chosen_audio_index', String(chosen_audio_index || 0));
-            // Handle subtitle index - null means no subtitle
-            if (subIdx === null || subIdx === undefined) {
-                // Don't set the parameter at all for null
-            } else {
-                qs.set('chosen_subtitle_index', String(subIdx));
+            
+            // The response should be the direct CDN URL as plain text or redirect
+            const directUrl = resp.url; // Final URL after redirects
+            
+            if (directUrl && /^https?:\/\//i.test(directUrl)) {
+                console.log('[TB][requestdl] success, CDN URL obtained');
+                return directUrl;
             }
-            return qs;
-        };
-        
-        // Call TorBox API directly, not through tbFetch to see raw response
-        const url = `${TB_BASE}/api/stream/createstream?${makeQs(chosen_subtitle_index).toString()}`;
-        console.log('[TB][createstream] calling:', url);
-        const resp = await fetch(url, {
-            headers: {
-                'Authorization': `Bearer ${s.tbApiKey}`,
-                'Accept': 'application/json'
-            }
-        });
-        
-        if (!resp.ok) {
+            
+            // Fallback: try reading response body
             const text = await resp.text();
-            console.error('[TB][createstream] HTTP error:', resp.status, text);
-            throw new Error(`TorBox createstream failed: ${resp.status} ${text}`);
-        }
-        
-        const data = await resp.json();
-        console.log('[TB][createstream] raw response:', JSON.stringify(data, null, 2));
-        return data;
-    }
-    
-    async function tbGetStreamData({ presigned_token, token, chosen_subtitle_index = null, chosen_audio_index = 0 }) {
-        const s = readSettings();
-        const qs = new URLSearchParams();
-        if (presigned_token) qs.set('presigned_token', presigned_token);
-        if (token) qs.set('token', token);
-        else if (s.tbApiKey) qs.set('token', s.tbApiKey);
-        if (chosen_subtitle_index === null || chosen_subtitle_index === undefined) {
-            // Don't set parameter for null
-        } else {
-            qs.set('chosen_subtitle_index', String(chosen_subtitle_index));
-        }
-        qs.set('chosen_audio_index', String(chosen_audio_index || 0));
-        
-        const url = `${TB_BASE}/api/stream/getstreamdata?${qs.toString()}`;
-        console.log('[TB][getstreamdata] calling:', url);
-        const resp = await fetch(url, {
-            headers: {
-                'Authorization': `Bearer ${s.tbApiKey}`,
-                'Accept': 'application/json'
+            if (text && /^https?:\/\//i.test(text.trim())) {
+                console.log('[TB][requestdl] success from response body');
+                return text.trim();
             }
-        });
-        
-        if (!resp.ok) {
-            const text = await resp.text();
-            console.error('[TB][getstreamdata] HTTP error:', resp.status, text);
-            throw new Error(`TorBox getstreamdata failed: ${resp.status} ${text}`);
+            
+            throw new Error('TorBox requestdl returned no valid URL');
+        } catch (e) {
+            console.error('[TB][requestdl] error:', e.message);
+            throw e;
         }
-        
-        const data = await resp.json();
-        console.log('[TB][getstreamdata] raw response:', JSON.stringify(data, null, 2));
-        return data;
     }
 
     function extractHttpUrls(obj, out = []) {
@@ -2449,72 +2394,46 @@ export function startServer(userDataPath) {
                     if (!m) return res.status(400).json({ error: 'Invalid TorBox link' });
                     const torrentId = m[1];
                     const fileId = m[2];
-                    // Preferred: use official stream creation to get a streamable URL
-                    try {
-                        const created = await tbCreateStream({ id: torrentId, file_id: fileId, type: 'torrent', chosen_subtitle_index: null, chosen_audio_index: 0 });
-                        
-                        // Check if createstream already provided the HLS URL (most common case)
-                        const directUrl = created?.data?.hls_url || created?.hls_url;
-                        if (directUrl && /^https?:\/\//i.test(directUrl)) {
-                            console.log('[TB][stream] using direct HLS URL from createstream:', directUrl);
-                            return res.json({ url: directUrl });
-                        }
-                        
-                        // Fallback: try getstreamdata flow if no direct URL
-                        let presigned = null;
-                        let userToken = null;
-                        
-                        // Check common response structures for tokens
-                        if (created?.success && created?.data) {
-                            presigned = created.data.presigned_token || created.data.presignedToken;
-                            userToken = created.data.token || created.data.user_token;
-                        } else if (created?.presigned_token || created?.token) {
-                            presigned = created.presigned_token || created.presignedToken;
-                            userToken = created.token;
-                        }
-                        
-                        // Fallback to deep search if not found
-                        if (!presigned) presigned = extractNamedStringDeep(created, ['presigned_token','presignedToken']);
-                        if (!userToken) userToken = extractNamedStringDeep(created, ['token', 'user_token']) || readSettings().tbApiKey;
-                        
-                        if (presigned && userToken) {
-                            console.log('[TB][stream] trying getstreamdata fallback');
-                            const sd = await tbGetStreamData({ presigned_token: presigned, token: userToken, chosen_subtitle_index: null, chosen_audio_index: 0 });
-                            // Try all possible URL fields from TorBox response
-                            const candidates = [
-                                sd?.playlist_url, sd?.hls_url, sd?.m3u8_url, sd?.stream_url, sd?.url,
-                                sd?.data?.playlist_url, sd?.data?.hls_url, sd?.data?.m3u8_url, sd?.data?.stream_url, sd?.data?.url,
-                                ...extractHttpUrls(sd)
-                            ].filter(u => u && /^https?:\/\//i.test(u));
-                            if (candidates.length) {
-                                console.log('[TB][stream] using URL from getstreamdata:', candidates[0]);
-                                return res.json({ url: candidates[0] });
-                            }
-                        }
-                        console.log('[TB][stream] no URL found in either response');
-                    } catch (e) {
-                        const msg = e?.message || '';
-                        if (/auth|unauthorized|token/i.test(msg)) return res.status(401).json({ error: 'TorBox authentication invalid. Please login again.', code: 'DEBRID_UNAUTH' });
-                        if (e?.code === 'TB_NETWORK') return res.status(503).json({ error: 'TorBox is unreachable right now. Please try again later.', code: 'TB_UNAVAILABLE' });
-                        // Fall through to requestdl fallback
-                    }
-                    // Fallback: request a direct link if stream API path didn’t yield a URL
+                    
+                    // Use official TorBox API: GET /torrents/requestdl with redirect=true
+                    // This returns a permanent streaming URL per official documentation
+                    console.log('[TB][link] requesting stream link for torrent:', torrentId, 'file:', fileId);
+                    
                     try {
                         const direct = await tbRequestDirectLink(torrentId, fileId);
-                        if (direct) return res.json({ url: direct });
-                    } catch {}
-                    return res.status(502).json({ error: 'Failed to request TorBox link' });
+                        if (direct && /^https?:\/\//i.test(direct)) {
+                            console.log('[TB][link] success, returning CDN URL');
+                            return res.json({ url: direct });
+                        }
+                        
+                        console.error('[TB][link] no valid URL returned');
+                        return res.status(502).json({ error: 'TorBox returned no valid stream URL' });
+                    } catch (e) {
+                        const msg = e?.message || '';
+                        console.error('[TB][link] error:', msg);
+                        
+                        if (/authentication invalid|401/i.test(msg)) {
+                            return res.status(401).json({ error: 'TorBox authentication invalid. Please login again.', code: 'DEBRID_UNAUTH' });
+                        }
+                        if (/not found|404/i.test(msg)) {
+                            return res.status(404).json({ error: 'TorBox torrent or file not found. The file may have been removed.', code: 'TB_NOT_FOUND' });
+                        }
+                        if (/rate limit|429/i.test(msg)) {
+                            return res.status(429).json({ error: 'TorBox rate limit exceeded. Please wait and try again.', code: 'TB_RATE_LIMIT' });
+                        }
+                        if (e?.code === 'TB_NETWORK' || /network|unreachable|econnrefused/i.test(msg)) {
+                            return res.status(503).json({ error: 'TorBox is unreachable right now. Please try again later.', code: 'TB_UNAVAILABLE' });
+                        }
+                        
+                        return res.status(502).json({ error: 'Failed to get TorBox stream link: ' + msg });
+                    }
                 } catch (e) {
                     const msg = e?.message || '';
-                    if (/authentication invalid/i.test(msg)) return res.status(401).json({ error: 'TorBox authentication invalid. Please login again.', code: 'DEBRID_UNAUTH' });
-                    if (e?.code === 'TB_NETWORK') return res.status(503).json({ error: 'TorBox is unreachable right now. Please try again later.', code: 'TB_UNAVAILABLE' });
-                    return res.status(502).json({ error: 'TorBox link request failed' });
+                    console.error('[TB][link] outer error:', msg);
+                    return res.status(502).json({ error: 'TorBox link request failed: ' + msg });
                 }
             }
             if (provider === 'premiumize') {
-                // For Premiumize, the links from file_list are already direct CDN URLs
-                // They come as either 'link' or 'stream_link' from /transfer/directdl or /transfer/list
-                console.log('[PM][link]', { link });
                 
                 // The link should already be a direct HTTPS URL ready for streaming
                 if (/^https?:\/\//i.test(link)) {

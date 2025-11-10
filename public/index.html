@@ -7553,39 +7553,7 @@
         </button>
     </div>
 </div>
-<!-- API Setup Modal -->
-<div class="api-setup-modal" id="apiSetupModal">
-    <div class="api-setup-content">
-        <h2 class="api-setup-title">
-            <i class="fas fa-key"></i>
-            Setup Required
-        </h2>
-        <p class="api-setup-description">
-            Welcome to PlayTorrio Streamer! To search for torrents, you need to provide your Jackett API key.
-            Please install Jackett, add the indexers you'd like to search torrents from, and paste the API key below.
-            You can download the installer by clicking
-            <button type="button" id="openJackettLink" style="background:#0d6efd;color:#fff;border:none;border-radius:6px;padding:0.25rem 0.6rem;cursor:pointer;font-weight:600;">Here</button>.
-            This will be saved locally and used to access your Jackett server.
-        </p>
-        <div class="api-input-group">
-            <label for="firstTimeApiKey">Jackett API Key:</label>
-            <input type="text" id="firstTimeApiKey" class="api-input" placeholder="Enter your Jackett API key..." />
-        </div>
-        <div class="api-setup-buttons">
-            <button class="api-btn api-btn-primary" id="saveFirstTimeApiKey">
-                <i class="fas fa-save"></i>
-                Save & Continue
-            </button>
-            <button class="api-btn api-btn-secondary" id="useTorrentlessSetup">
-                <i class="fas fa-play"></i>
-                Watch without Jackett
-            </button>
-            <button class="api-btn" id="videoTutorialFirst" style="background:#0d6efd; color:#fff;">
-                <i class="fas fa-video"></i> Video Tutorial
-            </button>
-        </div>
-    </div>
-</div>
+<!-- API Setup Modal - REMOVED -->
 
 <!-- Donate modal removed -->
 
@@ -9393,11 +9361,11 @@
                             <p style="margin:0 0 0.75rem;">Designed by <strong>Adnan Ahmed</strong>.</p>
                             <p style="margin:0 0 0.5rem;">
                                 <i class="fas fa-globe" style="color:var(--vlc-orange);"></i>
-                                <a href="https://adnan-ahmed.pages.dev/" target="_blank" style="color:#0d6efd; text-decoration:underline;">Website</a>
+                                <a href="https://adnan-ahmed.pages.dev/" target="_blank" style="color:#0d6efd; text-decoration:underline; cursor:pointer;" onclick="event.preventDefault(); if (window.electronAPI?.openExternal) { window.electronAPI.openExternal('https://adnan-ahmed.pages.dev/'); } else { window.open('https://adnan-ahmed.pages.dev/', '_blank'); }">Website</a>
                             </p>
                             <p style="margin:0 0 0.5rem;">
                                 <i class="fab fa-github" style="color:var(--vlc-orange);"></i>
-                                <a href="https://github.com/ddosintruders" target="_blank" style="color:#0d6efd; text-decoration:underline;">GitHub Profile</a>
+                                <a href="https://github.com/ddosintruders" target="_blank" style="color:#0d6efd; text-decoration:underline; cursor:pointer;" onclick="event.preventDefault(); if (window.electronAPI?.openExternal) { window.electronAPI.openExternal('https://github.com/ddosintruders'); } else { window.open('https://github.com/ddosintruders', '_blank'); }">GitHub Profile</a>
                             </p>
                             <p style="margin:0; font-size:0.75rem; opacity:0.8;">Credit preserved per creator request. Thank you Adnan for the visual identity.</p>
                         </div>
@@ -10985,11 +10953,11 @@ Your browser does not support the video tag.
         const torrentsContainer = document.getElementById('torrentsContainer');
         const torrentKeywordFilter = document.getElementById('torrentKeywordFilter');
         
-        // API Setup Modal elements
-        const apiSetupModal = document.getElementById('apiSetupModal');
-        const firstTimeApiKey = document.getElementById('firstTimeApiKey');
-        const saveFirstTimeApiKey = document.getElementById('saveFirstTimeApiKey');
-    const openJackettLinkBtn = document.getElementById('openJackettLink');
+        // API Setup Modal elements - REMOVED (modal disabled)
+        const apiSetupModal = null; // Modal removed
+        const firstTimeApiKey = null;
+        const saveFirstTimeApiKey = null;
+    const openJackettLinkBtn = null;
         
     // Donate modal removed - no DOM elements
         
@@ -11581,17 +11549,13 @@ Your browser does not support the video tag.
                 const data = await response.json();
                 hasApiKey = data.hasApiKey;
                 useTorrentless = !!data.useTorrentless;
-                if (!hasApiKey && !useTorrentless) {
-                    showApiSetupModal();
-                } else {
+                // Modal removed - no longer showing setup prompt
+                if (hasApiKey || useTorrentless) {
                     await loadCurrentApiKey();
-                    hideApiSetupModal();
                 }
             } catch (error) {
                 console.error('Error checking API key status:', error);
-                // If server is not up yet, still prompt the user to install Jackett / set API key
-                showApiSetupModal();
-                showNotification('Local server not ready. Enter Jackett key or choose Watch without Jackett.');
+                // Modal removed - silently continue
             }
         }
         
@@ -11623,18 +11587,14 @@ Your browser does not support the video tag.
             }
         }
         
-        // Show API setup modal
+        // Show API setup modal - DISABLED (modal removed)
         function showApiSetupModal() {
-            apiSetupModal.classList.add('active');
-            document.body.style.overflow = 'hidden';
-            // Notify user to install Jackett and provide API key, or use Torrentless
-            showNotification('Enter Jackett API key or choose Watch without Jackett (fewer sources, slower buffering).');
+            // Modal removed - do nothing
         }
         
-        // Hide API setup modal
+        // Hide API setup modal - DISABLED (modal removed)
         function hideApiSetupModal() {
-            apiSetupModal.classList.remove('active');
-            document.body.style.overflow = 'auto';
+            // Modal removed - do nothing
         }
         
         // Donate modal functionality removed
@@ -14370,36 +14330,21 @@ Your browser does not support the video tag.
             const current = select.value;
             select.innerHTML = '<option value="">All Categories</option>';
             
-            // Limit initial display to first 100 categories for performance
-            const maxInitial = 100;
-            const catsToShow = cats.slice(0, maxInitial);
-            
+            // Show all categories - dropdown will naturally scroll
             if (xtreamState.mode === 'm3u') {
-                catsToShow.forEach(name => {
+                cats.forEach(name => {
                     const opt = document.createElement('option');
                     opt.value = name;
                     opt.textContent = name;
                     select.appendChild(opt);
                 });
-                if (cats.length > maxInitial) {
-                    const opt = document.createElement('option');
-                    opt.disabled = true;
-                    opt.textContent = `... and ${cats.length - maxInitial} more (use search)`;
-                    select.appendChild(opt);
-                }
             } else {
-                catsToShow.forEach(c => {
+                cats.forEach(c => {
                     const opt = document.createElement('option');
                     opt.value = c.category_id;
                     opt.textContent = c.category_name || ('Category ' + c.category_id);
                     select.appendChild(opt);
                 });
-                if (cats.length > maxInitial) {
-                    const opt = document.createElement('option');
-                    opt.disabled = true;
-                    opt.textContent = `... and ${cats.length - maxInitial} more (scroll for all)`;
-                    select.appendChild(opt);
-                }
             }
             // try keep selection if exists
             if ([...select.options].some(o => o.value === current)) select.value = current;
@@ -15247,33 +15192,10 @@ Your browser does not support the video tag.
                 }
             }
             
-            // API Setup Modal
-            saveFirstTimeApiKey.addEventListener('click', saveFirstTimeApiKey_);
-            const useTorrentlessSetupBtn = document.getElementById('useTorrentlessSetup');
-            if (useTorrentlessSetupBtn) {
-                useTorrentlessSetupBtn.addEventListener('click', async () => {
-                    try {
-                        await fetch(`${API_BASE_URL}/settings`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ useTorrentless: true }) });
-                        // Also update local state so searches work immediately without reopening Settings
-                        useTorrentless = true;
-                        hideApiSetupModal();
-                        showNotification('Watch without Jackett enabled.');
-                        // If user was in the middle of searching, retry now
-                        try {
-                            const qEl = document.getElementById('searchInput');
-                            const q = qEl && qEl.value ? qEl.value.trim() : '';
-                            if (q) await searchMovies(q);
-                        } catch(_) {}
-                    } catch { showNotification('Failed to enable Watch without Jackett'); }
-                });
-            }
-            const videoTutorialFirstBtn = document.getElementById('videoTutorialFirst');
-            if (videoTutorialFirstBtn) {
-                videoTutorialFirstBtn.addEventListener('click', async () => {
-                    const url = 'https://www.youtube.com/watch?v=3igLReZFFzg';
-                    if (window.electronAPI?.openExternal) await window.electronAPI.openExternal(url);
-                });
-            }
+            // API Setup Modal - REMOVED (event listeners disabled)
+            // saveFirstTimeApiKey button removed
+            // useTorrentlessSetup button removed
+            // videoTutorialFirst button removed
             
             // Donate modal removed
             
@@ -16155,23 +16077,8 @@ Your browser does not support the video tag.
 
             // ===== END TRAKT EVENT LISTENERS =====
 
-            // Open Jackett installer link in default browser
-            if (openJackettLinkBtn) {
-                openJackettLinkBtn.addEventListener('click', async () => {
-                    const url = 'https://github.com/Jackett/Jackett/releases/latest/download/Jackett.Installer.Windows.exe';
-                    if (window.electronAPI?.openExternal) {
-                        const res = await window.electronAPI.openExternal(url);
-                        if (!res?.success) {
-                            showNotification('Failed to open browser. Copying link to clipboard.');
-                            try { await navigator.clipboard.writeText(url); } catch {}
-                        }
-                    } else {
-                        // Fallback: copy link if preload is unavailable
-                        showNotification('Copying link to clipboard. Open it in your browser.');
-                        try { await navigator.clipboard.writeText(url); } catch {}
-                    }
-                });
-            }
+            // Open Jackett installer link - REMOVED (button no longer exists)
+            
 
             // Open Jackett video tutorial in default browser
             const jackettTutorialBtn = document.getElementById('jackettTutorialBtn');
@@ -16206,20 +16113,11 @@ Your browser does not support the video tag.
                         e.stopPropagation();
                         hideSettingsModal();
                     }
-                    else if (apiSetupModal.classList.contains('active') && hasApiKey) {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        hideApiSetupModal();
-                    }
+                    // API Setup Modal removed - no longer checking for it
                 }
             });
             
-            // Enter key for API inputs
-            firstTimeApiKey.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') {
-                    saveFirstTimeApiKey_();
-                }
-            });
+            // Enter key for API inputs - REMOVED (firstTimeApiKey no longer exists)
             
             newApiKey.addEventListener('keypress', (e) => {
                 if (e.key === 'Enter') {
@@ -22433,10 +22331,7 @@ Your browser does not support the video tag.
             }
             
             console.log('[SERVERS] Streaming servers disabled, showing torrents');
-            if (!hasApiKey && !useTorrentless) {
-                showApiSetupModal();
-                return;
-            }
+            // Modal removed - no longer checking or showing setup prompt
             torrentsContainer.style.display = 'block';
             // Reset loaded state for new searches
             torrentsLoaded = false;
@@ -23212,23 +23107,27 @@ Your browser does not support the video tag.
                     iinaBtn.onclick = async (e) => {
                         e.stopPropagation();
                         if (file.url) {
-                            console.log('[111477] Opening in IINA:', file.url);
+                            console.log('[IINA] Opening in IINA:', file.url);
                             try {
-                                // Update Discord presence for 111477 IINA streaming
+                                // Update Discord presence for IINA streaming
                                 const title = currentContent?.title || currentContent?.name || 'Video';
                                 const seasonNum = (currentMediaType === 'tv' && currentSeason) ? currentSeason : null;
-                                updateDiscordForStreaming(title, '111477', seasonNum);
+                                updateDiscordForStreaming(title, 'IINA', seasonNum);
                                 
-                                const result = await window.electronAPI.openInIINA({ url: file.url });
+                                const result = await window.electronAPI.openInIINA({ 
+                                    streamUrl: file.url,
+                                    infoHash: currentInfoHash || null,
+                                    startSeconds: 0
+                                });
                                 if (result && result.success) {
                                     showNotification('Opening stream in IINA...', 'success', 3000);
-                                } else if (result && result.error && result.error.includes('not found')) {
+                                } else if (result && result.message && result.message.includes('not installed')) {
                                     showNotification('IINA not installed. Please install IINA from iina.io', 'error', 5000);
                                 } else {
-                                    showNotification('Failed to open in IINA: ' + (result?.error || 'Unknown error'));
+                                    showNotification('Failed to open in IINA: ' + (result?.message || 'Unknown error'));
                                 }
                             } catch (error) {
-                                console.error('[111477] IINA error:', error);
+                                console.error('[IINA] Error:', error);
                                 showNotification('Failed to open in IINA: ' + error.message);
                             }
                         } else {
