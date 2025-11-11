@@ -28152,16 +28152,31 @@ Your browser does not support the video tag.
             if (window.electronAPI) {
                 // When update check starts, show longer notification
                 window.electronAPI.onUpdateChecking?.((_info) => {
+                    console.log('[Update] Checking for updates...');
                     showNotification('🔍 Checking for updates...', 'info', 5000); // Show for 5 seconds
                 });
 
                 // When no update is available, show longer notification
                 window.electronAPI.onUpdateNotAvailable?.((_info) => {
+                    console.log('[Update] App is up to date');
                     showNotification('✅ App is up to date', 'success', 4000); // Show for 4 seconds
                 });
                 
                 // When update becomes available, show persistent overlay and notification
                 window.electronAPI.onUpdateAvailable?.((_info) => {
+                    console.log('[Update] Update available:', _info);
+                    
+                    // macOS: Show simple notification, don't show progress overlay
+                    if (_info?.manual || _info?.platform === 'darwin') {
+                        const downloadUrl = _info?.downloadUrl || 'https://github.com/ayman707-ux/PlayTorrio/releases/latest';
+                        showNotification(`Update ${_info?.version || ''} available! Please download the new DMG.`, 'info', 8000);
+                        // Optionally open download page automatically
+                        // window.open(downloadUrl, '_blank');
+                        return;
+                    }
+                    
+                    // Windows/Linux: Show progress overlay
+                    console.log('[Update] Showing download progress overlay');
                     showOverlay();
                     if (icon) { icon.className = 'fas fa-download'; icon.style.animation = 'pulse 1.5s ease-in-out infinite'; icon.style.color = '#a855f7'; }
                     if (text) text.textContent = 'Update found! Download starting, please wait...';
@@ -28178,6 +28193,7 @@ Your browser does not support the video tag.
                 
                 // Progress updates - keep overlay visible throughout download
                 window.electronAPI.onUpdateProgress?.((p) => {
+                    console.log('[Update] Download progress:', p?.percent + '%');
                     const percent = Math.max(0, Math.min(100, Math.round(p?.percent || 0)));
                     if (bar) bar.style.width = percent + '%';
                     if (pct) pct.textContent = percent + '%';
@@ -28190,6 +28206,7 @@ Your browser does not support the video tag.
                 
                 // Download finished - keep overlay visible and show persistent restart notification
                 window.electronAPI.onUpdateDownloaded?.((_info) => {
+                    console.log('[Update] Download completed, ready to install');
                     // Switch from download notification to restart-ready notification
                     hideUpdateNotification();
                     if (icon) { icon.className = 'fas fa-check-circle'; icon.style.animation = 'none'; icon.style.color = '#22c55e'; }

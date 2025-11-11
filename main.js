@@ -257,12 +257,12 @@ function setupAutoUpdater() {
             }
             
             if (process.platform === 'darwin') {
-                // macOS: Show native notification, don't send to renderer (no progress bar)
+                // macOS: Show native notification AND send to renderer
                 const { Notification } = require('electron');
                 if (Notification.isSupported()) {
                     const notification = new Notification({
                         title: 'PlayTorrio Update Available',
-                        body: `Version ${info?.version || 'newer'} is available. Click to download the new DMG.`,
+                        body: `Version ${info?.version || 'newer'} is available. Please download the new DMG.`,
                         silent: false
                     });
                     notification.on('click', () => {
@@ -270,19 +270,33 @@ function setupAutoUpdater() {
                     });
                     notification.show();
                 }
-                console.log('[Updater] macOS: User notified via system notification. Manual download required.');
-                return; // Don't send to renderer, no progress UI
+                
+                // Also send to renderer so user sees it in the app
+                try {
+                    if (mainWindow && !mainWindow.isDestroyed() && mainWindow.webContents) {
+                        mainWindow.webContents.send('update-available', { 
+                            version: info?.version,
+                            manual: true,
+                            platform: 'darwin',
+                            downloadUrl: releasesUrl
+                        });
+                    }
+                } catch(_) {}
+                
+                console.log('[Updater] macOS: User notified. Manual download required.');
+                return; // Don't auto-download on macOS
             }
             
             // Windows/Linux: Send to renderer to show progress bar, then start download
             try {
-                if (mainWindow && mainWindow.webContents) {
+                if (mainWindow && !mainWindow.isDestroyed() && mainWindow.webContents) {
                     mainWindow.webContents.send('update-available', { version: info?.version });
                 }
             } catch(_) {}
             
-            // Windows/Linux: start download programmatically to avoid auto-download race
+            // Windows/Linux: start download programmatically
             try {
+                console.log('[Updater] Starting update download...');
                 autoUpdater.downloadUpdate().catch(e=>console.error('[Updater] downloadUpdate failed:', e?.message||e));
             } catch(_) {}
         });
@@ -322,12 +336,22 @@ function setupAutoUpdater() {
 
         autoUpdater.on('download-progress', (progressObj) => {
             const pct = Math.round(progressObj?.percent || 0);
-            console.log(`[Updater] Download progress: ${pct}% (${Math.round(progressObj?.transferred || 0)}/${Math.round(progressObj?.total || 0)} bytes)`);
+            const transferred = Math.round((progressObj?.transferred || 0) / 1024 / 1024);
+            const total = Math.round((progressObj?.total || 0) / 1024 / 1024);
+            console.log(`[Updater] Download progress: ${pct}% (${transferred}MB/${total}MB)`);
+            
             try {
-                if (mainWindow && !mainWindow.isDestroyed()) {
-                    mainWindow.webContents.send('update-download-progress', progressObj || {});
+                if (mainWindow && !mainWindow.isDestroyed() && mainWindow.webContents) {
+                    mainWindow.webContents.send('update-download-progress', {
+                        percent: pct,
+                        transferred: progressObj?.transferred,
+                        total: progressObj?.total,
+                        bytesPerSecond: progressObj?.bytesPerSecond
+                    });
                 }
-            } catch(_) {}
+            } catch(e) {
+                console.error('[Updater] Failed to send progress to renderer:', e);
+            }
         });
 
         autoUpdater.on('update-downloaded', async (info) => {
