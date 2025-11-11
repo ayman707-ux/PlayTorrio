@@ -5273,6 +5273,9 @@ export function startServer(userDataPath) {
         // Don't exit the process, just log it
     });
 
+    // Track active sockets for forceful shutdown
+    const activeSockets = new Set();
+
     const server = app.listen(PORT, () => {
         console.log(`\n${'='.repeat(70)}`);
         console.log(`🚀 UNIFIED SERVER RUNNING ON http://localhost:${PORT}`);
@@ -5300,6 +5303,12 @@ export function startServer(userDataPath) {
         console.log(`\n${'='.repeat(70)}\n`);
     });
 
+    // Track connections for later forced destroy
+    server.on('connection', (socket) => {
+        activeSockets.add(socket);
+        socket.on('close', () => { activeSockets.delete(socket); });
+    });
+
     // Handle server errors
     server.on('error', (err) => {
         console.error('[Server Error]:', err);
@@ -5307,6 +5316,15 @@ export function startServer(userDataPath) {
             console.error(`Port ${PORT} is already in use. Please close other instances or change the port.`);
         }
     });
+
+    // Augment server with forceful shutdown helpers
+    server.destroyAllSockets = () => {
+        for (const s of activeSockets) {
+            try { s.destroy(); } catch(_) {}
+        }
+        activeSockets.clear();
+    };
+    server.getActiveSocketCount = () => activeSockets.size;
 
     return { server, client, clearCache };
 }

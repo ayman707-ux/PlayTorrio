@@ -1314,6 +1314,19 @@ function createWindow() {
             }
         }, 2000);
     });
+
+    // Ensure closing the window triggers app shutdown
+    win.on('close', (e) => {
+        if (!cleanupComplete) {
+            console.log('[Window] Close requested; starting graceful shutdown...');
+            e.preventDefault();
+            performGracefulShutdown();
+        }
+    });
+
+    win.on('closed', () => {
+        try { mainWindow = null; } catch(_) {}
+    });
     
     return win;
 }
@@ -3223,61 +3236,150 @@ if (!gotLock) {
     });
 }
 
-// Graceful shutdown
-app.on('will-quit', () => {
+// Graceful shutdown flag
+let isShuttingDown = false;
+let cleanupComplete = false;
+
+// Graceful shutdown function
+async function performGracefulShutdown() {
+    if (isShuttingDown) return;
+    isShuttingDown = true;
+    // Ensure no auto-restarts or background tasks continue
     app.isQuitting = true;
     
-    // Clear API cache on exit
-    console.log('Clearing API cache on exit...');
-    if (global.clearApiCache) {
-        try {
-            global.clearApiCache();
-        } catch (error) {
-            console.error('Error clearing cache:', error);
-        }
-    }
+    console.log('[Shutdown] Starting graceful shutdown...');
     
-    // Clean up Discord RPC
     try {
-        if (discordRpc) {
-            try { discordRpc.clearActivity().catch(() => {}); } catch(_) {}
-            try { discordRpc.destroy(); } catch(_) {}
-            discordRpc = null;
+        // Clear API cache on exit
+        console.log('[Shutdown] Clearing API cache...');
+        if (global.clearApiCache) {
+            try {
+                global.clearApiCache();
+            } catch (error) {
+                console.error('[Shutdown] Error clearing cache:', error);
+            }
         }
-    } catch(_) {}
-    // Shut down the webtorrent client
-    if (webtorrentClient) {
-        webtorrentClient.destroy(() => {
-            console.log('WebTorrent client destroyed.');
-        });
+        
+        // Clean up Discord RPC
+        console.log('[Shutdown] Cleaning up Discord RPC...');
+        try {
+            if (discordRpc) {
+                try { await discordRpc.clearActivity(); } catch(_) {}
+                try { discordRpc.destroy(); } catch(_) {}
+                discordRpc = null;
+            }
+        } catch(_) {}
+        
+        // Shut down the webtorrent client FIRST (before server)
+        console.log('[Shutdown] Destroying WebTorrent client...');
+        if (webtorrentClient) {
+            await new Promise((resolve) => {
+                try {
+                    // Remove all torrents first
+                    const torrents = webtorrentClient.torrents.slice();
+                    console.log(`[Shutdown] Destroying ${torrents.length} torrents...`);
+                    torrents.forEach(torrent => {
+                        try {
+                            torrent.destroy();
+                        } catch (e) {
+                            console.error('[Shutdown] Error destroying torrent:', e);
+                        }
+                    });
+                    
+                    // Then destroy the client
+                    webtorrentClient.destroy((err) => {
+                        if (err) console.error('[Shutdown] WebTorrent destroy error:', err);
+                        else console.log('[Shutdown] WebTorrent client destroyed.');
+                        webtorrentClient = null;
+                        resolve();
+                    });
+                    
+                    // Force resolve after 2 seconds
+                    setTimeout(resolve, 2000);
+                } catch (e) {
+                    console.error('[Shutdown] Error during WebTorrent cleanup:', e);
+                    resolve();
+                }
+            });
+        }
+        
+        // Shut down the HTTP server
+        console.log('[Shutdown] Closing HTTP server...');
+        if (httpServer) {
+            await new Promise((resolve) => {
+                try {
+                    // Close server and all connections
+                    if (typeof httpServer.destroyAllSockets === 'function') {
+                        try {
+                            const n = httpServer.getActiveSocketCount ? httpServer.getActiveSocketCount() : undefined;
+                            console.log(`[Shutdown] Destroying active sockets${n !== undefined ? ` (${n})` : ''}...`);
+                        } catch(_) {}
+                        httpServer.destroyAllSockets();
+                    } else {
+                        httpServer.closeAllConnections && httpServer.closeAllConnections();
+                    }
+                    httpServer.close((err) => {
+                        if (err) console.error('[Shutdown] HTTP server close error:', err);
+                        else console.log('[Shutdown] HTTP server closed.');
+                        httpServer = null;
+                        resolve();
+                    });
+                    
+                    // Force resolve after 2 seconds
+                    setTimeout(resolve, 2000);
+                } catch (e) {
+                    console.error('[Shutdown] Error closing HTTP server:', e);
+                    resolve();
+                }
+            });
+        }
+        
+        console.log('[Shutdown] Cleanup complete.');
+        cleanupComplete = true;
+        // Hard-exit to guarantee all processes (including the console host) terminate
+        try { process.exit(0); } catch(_) { app.exit(0); }
+    } catch (error) {
+        console.error('[Shutdown] Error during shutdown:', error);
+        cleanupComplete = true;
+        try { process.exit(1); } catch(_) { app.exit(1); }
     }
-    // Shut down the HTTP server
-    if (httpServer) {
-        httpServer.close(() => {
-            console.log('HTTP server closed.');
-        });
+}
+
+// Before quit - run cleanup
+app.on('before-quit', async (event) => {
+    if (!cleanupComplete) {
+        event.preventDefault();
+        await performGracefulShutdown();
+        // performGracefulShutdown will force-exit; this is just a safeguard
+        try { app.exit(0); } catch(_) {}
     }
+});
+
+// Will quit - final check
+app.on('will-quit', (event) => {
+    app.isQuitting = true;
     
-    // Shut down TorrentDownload scraper server
-    // ============================================================================
-    // NOTE: Microservice processes no longer used - all handled by server.mjs
-    // ============================================================================
-    // if (torrentlessProc) {
-    //     try { torrentlessProc.kill('SIGTERM'); } catch(_) {}
-    //     torrentlessProc = null;
-    // }
-    // if (svc111477Proc) {
-    //     try { svc111477Proc.kill('SIGTERM'); } catch(_) {}
-    //     svc111477Proc = null;
-    // }
-    // if (booksProc) {
-    //     try { booksProc.kill('SIGTERM'); } catch(_) {}
-    //     booksProc = null;
-    // }
-    // if (randomBookProc) {
-    //     try { randomBookProc.kill('SIGTERM'); } catch(_) {}
-    //     randomBookProc = null;
-    // }
+    if (!cleanupComplete) {
+        console.warn('[Shutdown] Cleanup not complete in will-quit, forcing...');
+        event.preventDefault();
+        
+        // Force cleanup with timeout
+        const forceQuit = setTimeout(() => {
+            console.warn('[Shutdown] Force exiting...');
+            process.exit(0);
+        }, 3000);
+        
+        performGracefulShutdown(); // it will call process.exit itself
+    }
+});
+
+// Ensure closing the last window triggers graceful shutdown explicitly (especially on Windows)
+app.on('window-all-closed', () => {
+    if (!cleanupComplete) {
+        performGracefulShutdown();
+    } else {
+        try { process.exit(0); } catch(_) { app.exit(0); }
+    }
 });
 
 app.on('window-all-closed', () => {

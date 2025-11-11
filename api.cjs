@@ -15,14 +15,13 @@ try {
 
 // Export a function that registers all API routes on an existing Express app
 function registerApiRoutes(app) {
-    // Rate limiting
-    const limiter = rateLimit({
-        windowMs: 15 * 60 * 1000, // 15 minutes
-        max: 100,
-        message: 'Too many requests from this IP, please try again later.'
-    });
-
-    app.use(limiter);
+    // Rate limiting - DISABLED for local use (was: 100 requests per 15 minutes)
+    // const limiter = rateLimit({
+    //     windowMs: 15 * 60 * 1000, // 15 minutes
+    //     max: 100,
+    //     message: 'Too many requests from this IP, please try again later.'
+    // });
+    // app.use(limiter);
 
 // ============================================================================
 // COMMON CONSTANTS & HELPERS
@@ -678,6 +677,12 @@ const TORRENTLESS_SEARCH_RATE_WINDOW_MS = 10000;
 const torrentless_lastApiByIp = new Map();
 
 function torrentless_apiRateLimiter(req, res, next) {
+    // DISABLED - No rate limiting for local use
+    next();
+    return;
+    
+    // Original rate limiter code (disabled)
+    /*
     try {
         const now = Date.now();
         const ip = req.ip || req.connection?.remoteAddress || 'unknown';
@@ -700,6 +705,7 @@ function torrentless_apiRateLimiter(req, res, next) {
     } catch (e) {
         next();
     }
+    */
 }
 
 app.get('/torrentless/api/health', (_req, res) => {

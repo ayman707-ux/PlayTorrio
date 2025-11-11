@@ -8621,6 +8621,12 @@
             <div id="music-download-minimized-progress" style="height:100%; width:0%; background: linear-gradient(90deg, #10b981, #059669, #10b981); background-size: 200% 100%; animation: shimmer 2s infinite; transition: width 0.4s ease;"></div>
         </div>
         <div id="music-download-minimized-status" style="margin-top:0.4rem; text-align:center; color:var(--secondary); font-size:0.75rem;"></div>
+        <div id="music-download-queue-info" style="margin-top:0.5rem; padding-top:0.5rem; border-top:1px solid rgba(16,185,129,0.2); display:none;">
+            <div style="font-size:0.75rem; color:var(--secondary); display:flex; align-items:center; justify-content:space-between;">
+                <span><i class="fas fa-list" style="color:#10b981; margin-right:0.3rem;"></i>Queue:</span>
+                <span id="music-download-queue-count" style="color:#10b981; font-weight:600;">0</span>
+            </div>
+        </div>
     </div>
 
     <!-- Music Player Modal (transparent overlay + custom controls) -->
@@ -9332,6 +9338,24 @@
                                 <small style="margin-top:0.5rem; color:var(--secondary); font-size:0.85rem; display:block;">
                                     <i class="fas fa-info-circle"></i> Choose your preferred color scheme
                                 </small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="settings-card">
+                        <div class="settings-card-header">
+                            <h3><i class="fab fa-discord"></i> Discord Activity</h3>
+                        </div>
+                        <div class="settings-card-body">
+                            <div class="checkbox-group">
+                                <input type="checkbox" id="discordActivityToggle" checked />
+                                <label for="discordActivityToggle">
+                                    <i class="fab fa-discord" style="margin-right:0.25rem; color:#5865F2;"></i>
+                                    <strong>Show Discord Rich Presence</strong>
+                                </label>
+                            </div>
+                            <div style="margin-top:0.5rem; color:#9ca3af; font-size:0.9rem;">
+                                <i class="fas fa-info-circle"></i> Display what you're watching on your Discord profile
                             </div>
                         </div>
                     </div>
@@ -11204,9 +11228,38 @@ Your browser does not support the video tag.
         let discordStreamingActive = false;
         let discordMusicActive = false;
 
+        // Check if Discord activity is enabled
+        async function isDiscordActivityEnabled() {
+            try {
+                const res = await fetch(`${API_BASE_URL}/settings`);
+                if (res.ok) {
+                    const settings = await res.json();
+                    return settings.discordActivity !== false; // default ON if missing
+                }
+            } catch (e) {
+                console.error('[Discord] Failed to check activity setting:', e);
+            }
+            return true; // default ON if error
+        }
+
         // Update Discord presence for streaming
         async function updateDiscordForStreaming(contentTitle, provider = 'PlayTorrio', season = null) {
             if (!window.electronAPI?.updateDiscordPresence) return;
+            
+            // Check if Discord activity is enabled
+            const activityEnabled = await isDiscordActivityEnabled();
+            if (!activityEnabled) {
+                // Clear Discord presence if disabled
+                if (discordStreamingActive) {
+                    try {
+                        await window.electronAPI.updateDiscordPresence(null);
+                        discordStreamingActive = false;
+                    } catch (e) {
+                        console.error('[Discord] Failed to clear presence:', e);
+                    }
+                }
+                return;
+            }
             
             try {
                 discordStreamingActive = true;
@@ -11240,6 +11293,21 @@ Your browser does not support the video tag.
         // Update Discord presence for music
         async function updateDiscordForMusic(songTitle, artist, album) {
             if (!window.electronAPI?.updateDiscordPresence) return;
+            
+            // Check if Discord activity is enabled
+            const activityEnabled = await isDiscordActivityEnabled();
+            if (!activityEnabled) {
+                // Clear Discord presence if disabled
+                if (discordMusicActive) {
+                    try {
+                        await window.electronAPI.updateDiscordPresence(null);
+                        discordMusicActive = false;
+                    } catch (e) {
+                        console.error('[Discord] Failed to clear presence:', e);
+                    }
+                }
+                return;
+            }
             
             try {
                 discordMusicActive = true;
@@ -11667,6 +11735,11 @@ Your browser does not support the video tag.
                             const autoUpdate = s.autoUpdate !== false; // treat undefined as true
                             const autoUpdateToggles = document.querySelectorAll('#autoUpdateToggle');
                             autoUpdateToggles.forEach(t => { t.checked = !!autoUpdate; });
+                    
+                            // Discord Activity toggle (default ON if missing)
+                            const discordActivity = s.discordActivity !== false; // treat undefined as true
+                            const discordActivityToggles = document.querySelectorAll('#discordActivityToggle');
+                            discordActivityToggles.forEach(t => { t.checked = !!discordActivity; });
                     
                     const useTorrentlessToggles = document.querySelectorAll('#useTorrentlessToggle');
                     useTorrentlessToggles.forEach(toggle => {
@@ -13543,6 +13616,16 @@ Your browser does not support the video tag.
                 }
             }
             
+            // Get Discord Activity setting (prefer visible)
+            const discordActivityToggles = document.querySelectorAll('#discordActivityToggle');
+            let discordActivityEnabled = true; // default ON
+            for (const el of discordActivityToggles) {
+                if (el.offsetParent !== null) {
+                    discordActivityEnabled = !!el.checked;
+                    break;
+                }
+            }
+            
             // Handle fullscreen toggle - get the visible one
             const fullscreenToggles = document.querySelectorAll('#fullscreenToggle');
             let fullscreenToggle = null;
@@ -13598,7 +13681,11 @@ Your browser does not support the video tag.
             let apiResult = null;
             try {
                 // Build settings object
-                const settings = { useTorrentless: desiredTorrentless, autoUpdate: !!autoUpdateEnabled };
+                const settings = { 
+                    useTorrentless: desiredTorrentless, 
+                    autoUpdate: !!autoUpdateEnabled,
+                    discordActivity: !!discordActivityEnabled
+                };
                 if (jackettUrl) settings.jackettUrl = jackettUrl;
                 if (cacheLocation) settings.cacheLocation = cacheLocation;
                 
@@ -13609,6 +13696,11 @@ Your browser does not support the video tag.
                     body: JSON.stringify(settings)
                 });
                 useTorrentless = desiredTorrentless;
+
+                // If Discord activity was disabled, clear the presence
+                if (!discordActivityEnabled) {
+                    await clearDiscordPresence();
+                }
 
                 // If an API key was provided, attempt to save it; otherwise skip quietly
                 if (apiKey) {
@@ -18109,6 +18201,45 @@ Your browser does not support the video tag.
             let currentDownloadPoll = null;
             let currentDownloadCancelled = false;
             let isDownloadMinimized = false;
+            
+            // Download queue system
+            let downloadQueue = [];
+            let isProcessingQueue = false;
+
+            // Update queue display
+            function updateQueueDisplay() {
+                const queueInfo = document.getElementById('music-download-queue-info');
+                const queueCount = document.getElementById('music-download-queue-count');
+                
+                if (downloadQueue.length > 0) {
+                    if (queueInfo) queueInfo.style.display = 'block';
+                    if (queueCount) queueCount.textContent = downloadQueue.length;
+                } else {
+                    if (queueInfo) queueInfo.style.display = 'none';
+                }
+            }
+
+            // Process download queue
+            async function processDownloadQueue() {
+                if (isProcessingQueue || downloadQueue.length === 0) {
+                    return;
+                }
+                
+                isProcessingQueue = true;
+                
+                // Process only ONE item from the queue
+                const item = downloadQueue.shift();
+                updateQueueDisplay();
+                
+                try {
+                    await downloadMusicTrackInternal(item.trackId, item.title, item.artistName, item.coverSrc);
+                } catch (error) {
+                    console.error('Queue download error:', error);
+                    showNotification(`Failed to download "${item.title}"`, 'error');
+                }
+                
+                isProcessingQueue = false;
+            }
 
             // Helper: fetch image and return as data URL for offline cover storage
             async function fetchImageAsDataURL(url) {
@@ -18144,10 +18275,11 @@ Your browser does not support the video tag.
             }
 
             // Download music track function
-            async function downloadMusicTrack(trackId, title, artistName, coverSrc) {
+            async function downloadMusicTrackInternal(trackId, title, artistName, coverSrc) {
                 // Guard: only one download at a time
                 if (currentDownloadId || currentDownloadController) {
-                    showNotification('Please wait for the current download to finish', 'info');
+                    // Should not happen with queue system, but just in case
+                    console.warn('Download already in progress, skipping');
                     return;
                 }
                 // Create new AbortController for this download
@@ -18273,6 +18405,11 @@ Your browser does not support the video tag.
                             currentDownloadId = null;
                             // Return focus to the music search bar so user can continue searching
                             try { musicSearchInput && musicSearchInput.focus && musicSearchInput.focus(); } catch(_) {}
+                            
+                            // Process next item in queue
+                            if (downloadQueue.length > 0) {
+                                setTimeout(() => processDownloadQueue(), 500);
+                            }
                         }, 1500);
 
                         showNotification(`Downloaded "${title}"`, 'success');
@@ -18312,6 +18449,11 @@ Your browser does not support the video tag.
                         } else {
                             showNotification(`Download failed: ${error.message}`, 'error');
                         }
+                        
+                        // Process next item in queue after error/cancellation
+                        if (downloadQueue.length > 0) {
+                            setTimeout(() => processDownloadQueue(), 1000);
+                        }
                     });
 
                 } catch (error) {
@@ -18324,7 +18466,40 @@ Your browser does not support the video tag.
                     showNotification(`Failed to start download: ${error.message}`, 'error');
                     // Ensure focus returns to the search bar on error
                     try { musicSearchInput && musicSearchInput.focus && musicSearchInput.focus(); } catch(_) {}
+                    
+                    // Process next item in queue after initial error
+                    if (downloadQueue.length > 0) {
+                        setTimeout(() => processDownloadQueue(), 1000);
+                    }
                 }
+            }
+
+            // Public download function - handles queue
+            async function downloadMusicTrack(trackId, title, artistName, coverSrc) {
+                // Check if already downloaded
+                const downloaded = getDownloadedMusic();
+                if (downloaded.some(d => d.id === String(trackId))) {
+                    showNotification(`"${title}" is already downloaded`, 'info');
+                    return;
+                }
+                
+                // Check if already in queue
+                if (downloadQueue.some(item => item.trackId === trackId)) {
+                    showNotification(`"${title}" is already in queue`, 'info');
+                    return;
+                }
+                
+                // If currently downloading
+                if (currentDownloadId || currentDownloadController) {
+                    // Add to queue
+                    downloadQueue.push({ trackId, title, artistName, coverSrc });
+                    updateQueueDisplay();
+                    showNotification(`"${title}" added to download queue (position ${downloadQueue.length})`, 'info');
+                    return;
+                }
+                
+                // Start downloading immediately (completion handler will process queue)
+                await downloadMusicTrackInternal(trackId, title, artistName, coverSrc);
             }
 
             // Minimize download button handler
@@ -18872,8 +19047,9 @@ Your browser does not support the video tag.
                         const filePath = e.currentTarget.getAttribute('data-path');
                         if (filePath && window.electronAPI?.showFolderInExplorer) {
                             try {
-                                // Get the directory path from file path
-                                const dirPath = filePath.substring(0, filePath.lastIndexOf('\\'));
+                                // Get the directory path from file path (cross-platform)
+                                const lastSlash = Math.max(filePath.lastIndexOf('/'), filePath.lastIndexOf('\\'));
+                                const dirPath = lastSlash > 0 ? filePath.substring(0, lastSlash) : filePath;
                                 await window.electronAPI.showFolderInExplorer(dirPath);
                             } catch (error) {
                                 console.error('Failed to open folder:', error);
