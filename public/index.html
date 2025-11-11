@@ -11227,6 +11227,7 @@ Your browser does not support the video tag.
         // Discord Rich Presence tracking
         let discordStreamingActive = false;
         let discordMusicActive = false;
+        let discordActivityEnabled = true; // Cached value, updated when settings change
 
         // Check if Discord activity is enabled
         async function isDiscordActivityEnabled() {
@@ -11234,12 +11235,14 @@ Your browser does not support the video tag.
                 const res = await fetch(`${API_BASE_URL}/settings`);
                 if (res.ok) {
                     const settings = await res.json();
-                    return settings.discordActivity !== false; // default ON if missing
+                    // Default ON if missing (undefined), but respect explicit false
+                    discordActivityEnabled = settings.discordActivity === undefined ? true : settings.discordActivity;
+                    return discordActivityEnabled;
                 }
             } catch (e) {
                 console.error('[Discord] Failed to check activity setting:', e);
             }
-            return true; // default ON if error
+            return discordActivityEnabled; // Return cached value if error
         }
 
         // Update Discord presence for streaming
@@ -11737,7 +11740,8 @@ Your browser does not support the video tag.
                             autoUpdateToggles.forEach(t => { t.checked = !!autoUpdate; });
                     
                             // Discord Activity toggle (default ON if missing)
-                            const discordActivity = s.discordActivity !== false; // treat undefined as true
+                            const discordActivity = s.discordActivity === undefined ? true : s.discordActivity;
+                            discordActivityEnabled = discordActivity; // Update cached value
                             const discordActivityToggles = document.querySelectorAll('#discordActivityToggle');
                             discordActivityToggles.forEach(t => { t.checked = !!discordActivity; });
                     
@@ -13697,8 +13701,12 @@ Your browser does not support the video tag.
                 });
                 useTorrentless = desiredTorrentless;
 
-                // If Discord activity was disabled, clear the presence
+                // Update the cached Discord activity flag
+                discordActivityEnabled = !!discordActivityEnabled;
+                
+                // If Discord activity was disabled, clear the presence immediately
                 if (!discordActivityEnabled) {
+                    console.log('[Settings] Discord activity disabled, clearing presence');
                     await clearDiscordPresence();
                 }
 
