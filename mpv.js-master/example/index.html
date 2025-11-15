@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    html, body, #main {
+      margin: 0;
+      height: 100%;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background: #141414;
+      color: #fff;
+    }
+    .container {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      background: #000;
+    }
+    .player-wrapper {
+      flex: 1;
+      position: relative;
+      background: #000;
+      overflow: hidden;
+    }
+    .player {
+      width: 100%;
+      height: 100%;
+    }
+    .controls-overlay {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.7) 50%, transparent 100%);
+      padding: 60px 40px 20px 40px;
+      transition: opacity 0.3s ease;
+      pointer-events: auto;
+      z-index: 999999;
+    }
+    .progress-container {
+      width: 100%;
+      margin-bottom: 20px;
+      cursor: pointer;
+    }
+    .progress-bar {
+      width: 100%;
+      height: 5px;
+      background: rgba(255, 255, 255, 0.3);
+      border-radius: 3px;
+      position: relative;
+      transition: height 0.2s;
+    }
+    .progress-container:hover .progress-bar {
+      height: 8px;
+    }
+    .progress-filled {
+      height: 100%;
+      background: #e50914;
+      border-radius: 3px;
+      position: relative;
+      transition: width 0.1s;
+    }
+    .progress-thumb {
+      position: absolute;
+      right: -6px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 14px;
+      height: 14px;
+      background: #e50914;
+      border-radius: 50%;
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+    .progress-container:hover .progress-thumb {
+      opacity: 1;
+    }
+    .time-display {
+      display: flex;
+      justify-content: space-between;
+      font-size: 13px;
+      color: #fff;
+      margin-bottom: 15px;
+      font-weight: 500;
+    }
+    .controls-bottom {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .controls-left {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+    .controls-right {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+    .control-btn {
+      background: transparent;
+      border: none;
+      color: #fff;
+      cursor: pointer;
+      padding: 0;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+      width: 40px;
+      height: 40px;
+      flex-shrink: 0;
+    }
+    .control-btn:hover {
+      background: rgba(255, 255, 255, 0.1);
+      transform: scale(1.1);
+    }
+    .control-btn:active {
+      transform: scale(0.95);
+    }
+    .control-btn.play-pause {
+      width: 50px;
+      height: 50px;
+      background: rgba(255, 255, 255, 0.1);
+    }
+    .control-btn.play-pause:hover {
+      background: rgba(255, 255, 255, 0.2);
+    }
+    .control-btn.skip {
+      width: 44px;
+      height: 44px;
+    }
+    .control-btn svg {
+      fill: currentColor;
+      display: block;
+    }
+    .volume-container {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .volume-slider {
+      width: 80px;
+      height: 4px;
+      background: rgba(255, 255, 255, 0.3);
+      border-radius: 2px;
+      cursor: pointer;
+      position: relative;
+    }
+    .volume-filled {
+      height: 100%;
+      background: #fff;
+      border-radius: 2px;
+      pointer-events: none;
+    }
+    .url-input-popup {
+      position: fixed;
+      bottom: 140px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 10px;
+      background: rgba(0, 0, 0, 0.95);
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.8);
+      z-index: 1000000;
+      min-width: 500px;
+      pointer-events: auto;
+    }
+    .url-input-popup * {
+      pointer-events: auto;
+    }
+    .url-input-field {
+      flex: 1;
+      height: 45px;
+      padding: 0 20px;
+      font-size: 15px;
+      border: 2px solid #333;
+      outline: none;
+      background: #2a2a2a;
+      color: #fff;
+      border-radius: 4px;
+      transition: all 0.2s;
+      cursor: text;
+    }
+    .url-input-field::placeholder {
+      color: #8c8c8c;
+    }
+    .url-input-field:focus {
+      background: #333;
+      border-color: #e50914;
+    }
+    .watch-btn {
+      height: 45px;
+      padding: 0 30px;
+      background: #e50914;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .watch-btn:hover {
+      background: #f40612;
+      transform: scale(1.05);
+    }
+    .watch-btn:active {
+      transform: scale(0.95);
+    }
+    .subtitles-menu {
+      position: fixed;
+      bottom: 100px;
+      right: 40px;
+      background: rgba(0, 0, 0, 0.95);
+      border-radius: 8px;
+      min-width: 250px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.8);
+      z-index: 1000000;
+      overflow: hidden;
+    }
+    .subtitles-menu-header {
+      padding: 15px 20px;
+      font-size: 16px;
+      font-weight: 600;
+      border-bottom: 1px solid #333;
+      color: #fff;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .refresh-tracks-btn {
+      background: transparent;
+      border: 1px solid #555;
+      color: #fff;
+      width: 28px;
+      height: 28px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+    }
+    .refresh-tracks-btn:hover {
+      background: rgba(255, 255, 255, 0.1);
+      border-color: #e50914;
+    }
+    .subtitles-menu-item {
+      padding: 12px 20px;
+      cursor: pointer;
+      transition: background 0.2s;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: #fff;
+      font-size: 14px;
+    }
+    .subtitles-menu-item:hover {
+      background: rgba(255, 255, 255, 0.1);
+    }
+    .subtitles-menu-item .checkmark {
+      color: #e50914;
+      font-weight: bold;
+      font-size: 18px;
+    }
+    .track-input-container {
+      padding: 15px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0, 0, 0, 0.3);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    input[type="range"] {
+      -webkit-appearance: none;
+      appearance: none;
+      background: transparent;
+      cursor: pointer;
+      width: 80px;
+      height: 20px;
+      margin: 0;
+      padding: 0;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 14px;
+      height: 14px;
+      background: #fff;
+      border-radius: 50%;
+      cursor: pointer;
+      margin-top: -5px;
+    }
+    input[type="range"]::-webkit-slider-runnable-track {
+      background: rgba(255, 255, 255, 0.3);
+      height: 4px;
+      border-radius: 2px;
+    }
+  </style>
+</head>
+<body>
+  <div id="main"></div>
+  <script src="../node_modules/babel-standalone/babel.js"></script>
+  <script type="text/babel" src="renderer.js"></script>
+</body>
+</html>

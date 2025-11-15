@@ -34,7 +34,9 @@ const require = createRequire(import.meta.url);
 if (process.platform === 'linux') {
     app.commandLine.appendSwitch('no-sandbox');
     app.commandLine.appendSwitch('disable-setuid-sandbox');
+    app.commandLine.appendSwitch('disable-dev-shm-usage'); // Fix for Steam Deck /dev/shm permission issues
     console.log('[Linux] Sandbox disabled for AppImage compatibility');
+    console.log('[Linux] dev-shm-usage disabled for Steam Deck compatibility');
 }
 
 // ----------------------
@@ -542,7 +544,7 @@ async function cleanupOldInstallersAndCaches() {
 
 // Ensure processes are terminated when updater begins quitting
 app.on('before-quit-for-update', () => {
-    // Note: Microservices no longer running - all handled by server.mjs on port 3000
+    // Note: Microservices no longer running - all handled by server.mjs on port 6987
 });
 
 // Function to clear the webtorrent temp folder
@@ -821,10 +823,10 @@ async function openInMPV(win, streamUrl, infoHash, startSeconds) {
         
         // Detect if this is a local torrent stream (file selector from Jackett/Torrentio/Comet/PlayTorrio)
         const isLocalTorrentStream = streamUrl && (
-            streamUrl.includes('localhost:3000/api/stream-file') || 
-            streamUrl.includes('127.0.0.1:3000/api/stream-file') ||
-            streamUrl.includes('localhost:3000/stream') || 
-            streamUrl.includes('127.0.0.1:3000/stream')
+            streamUrl.includes('localhost:6987/api/stream-file') || 
+            streamUrl.includes('127.0.0.1:6987/api/stream-file') ||
+            streamUrl.includes('localhost:6987/stream') || 
+            streamUrl.includes('127.0.0.1:6987/stream')
         );
         
         let args = [];
@@ -1107,6 +1109,13 @@ async function migrateLocalStorageIfNeeded() {
             return;
         }
         
+        // Skip migration on Linux if shared memory is unavailable (Steam Deck, etc.)
+        if (process.platform === 'linux') {
+            console.log('[Migration] Skipping localStorage migration on Linux due to potential shared memory issues');
+            fs.writeFileSync(migrationFlagPath, Date.now().toString());
+            return;
+        }
+        
         console.log('[Migration] Checking for localStorage data to migrate...');
         
         // Keys to migrate (playlists and downloaded music)
@@ -1224,7 +1233,7 @@ function createWindow() {
 
     // Prevent navigation away from the app, but open allowed reader domains externally
     win.webContents.on('will-navigate', (event, url) => {
-        if (url.startsWith('http://127.0.0.1:3000') || url.startsWith('http://localhost:3000')) {
+        if (url.startsWith('http://127.0.0.1:6987') || url.startsWith('http://localhost:6987')) {
             return; // internal app navigation
         }
         if (isAllowedReaderDomain(url)) {
@@ -1263,7 +1272,7 @@ function createWindow() {
             setTimeout(() => {
                 if (win && !win.isDestroyed()) {
                     console.log('[Window] Retrying load after failure...');
-                    win.loadURL('http://localhost:3000').catch(e => {
+                    win.loadURL('http://localhost:6987').catch(e => {
                         console.error('[Window] Retry failed:', e);
                     });
                 }
@@ -1280,7 +1289,7 @@ function createWindow() {
         
         for (let i = 0; i < maxAttempts; i++) {
             try {
-                const response = await got('http://localhost:3000', { 
+                const response = await got('http://localhost:6987', { 
                     timeout: { request: 2000 }, 
                     retry: { limit: 0 },
                     throwHttpErrors: false 
@@ -1291,14 +1300,14 @@ function createWindow() {
                     // Ensure window is ready to load
                     if (win && !win.isDestroyed()) {
                         try {
-                            await win.loadURL('http://localhost:3000');
+                            await win.loadURL('http://localhost:6987');
                             console.log('[Window] UI loaded successfully');
                             return;
                         } catch (loadErr) {
                             console.error('[Window] Failed to load URL:', loadErr);
                             // Retry once
                             await new Promise(resolve => setTimeout(resolve, 1000));
-                            await win.loadURL('http://localhost:3000');
+                            await win.loadURL('http://localhost:6987');
                             return;
                         }
                     } else {
@@ -1318,7 +1327,7 @@ function createWindow() {
         console.warn('[Window] Server did not respond after 15s, attempting to load anyway...');
         if (win && !win.isDestroyed()) {
             try {
-                await win.loadURL('http://localhost:3000');
+                await win.loadURL('http://localhost:6987');
             } catch (err) {
                 console.error('[Window] Failed to load URL in fallback:', err);
             }
@@ -1332,7 +1341,7 @@ function createWindow() {
         setTimeout(() => {
             if (win && !win.isDestroyed()) {
                 console.log('[Window] Final attempt to load URL...');
-                win.loadURL('http://localhost:3000').catch(e => {
+                win.loadURL('http://localhost:6987').catch(e => {
                     console.error('[Window] Final load attempt failed:', e);
                 });
             }
@@ -2130,14 +2139,14 @@ if (!gotLock) {
             console.log('[Discord RPC] Skipping init: offline');
         }
     } catch(_) {}
-    // Start the unified server (port 3000) - handles all API routes including anime, books, torrents, etc.
+    // Start the unified server (port 6987) - handles all API routes including anime, books, torrents, etc.
     try {
         const { server, client, clearCache } = startServer(app.getPath('userData'));
         httpServer = server;
         webtorrentClient = client;
         // Store clearCache function globally for cleanup on exit
         global.clearApiCache = clearCache;
-        console.log('✅ Main API server started on port 3000');
+        console.log('✅ Main API server started on port 6987');
     } catch (e) {
         console.error('[Server] Failed to start API server:', e?.stack || e);
         try { dialog.showErrorBox('PlayTorrio', 'Failed to start internal server. Some features may not work.'); } catch(_) {}
@@ -2145,14 +2154,14 @@ if (!gotLock) {
 
     // ============================================================================
     // NOTE: All microservices below are now integrated into server.mjs via api.cjs
-    // No need to start individual servers - all routes available on localhost:3000
+    // No need to start individual servers - all routes available on localhost:6987
     // ============================================================================
-    // startTorrentless();  // Now: localhost:3000/torrentless/api/*
-    // start111477();       // Now: localhost:3000/111477/api/*
-    // startBooks();        // Now: localhost:3000/zlib/*
-    // startRandomBook();   // Now: localhost:3000/otherbook/api/*
-    // startAnime();        // Now: localhost:3000/anime/api/*
-    // startTorrentio();    // Now: localhost:3000/torrentio/api/*
+    // startTorrentless();  // Now: localhost:6987/torrentless/api/*
+    // start111477();       // Now: localhost:6987/111477/api/*
+    // startBooks();        // Now: localhost:6987/zlib/*
+    // startRandomBook();   // Now: localhost:6987/otherbook/api/*
+    // startAnime();        // Now: localhost:6987/anime/api/*
+    // startTorrentio();    // Now: localhost:6987/torrentio/api/*
 
         mainWindow = createWindow();
     // Schedule cleanup of old installers/caches shortly after startup
@@ -2478,7 +2487,7 @@ if (!gotLock) {
             const alreadyProxied = /\/stream\/debrid\?url=/.test(urlToProxy);
             if (!alreadyProxied) {
                 // Wrap through proxy so PC handles fetching/caching
-                urlToProxy = `http://localhost:3000/stream/debrid?url=${encodeURIComponent(streamUrl)}`;
+                urlToProxy = `http://localhost:6987/stream/debrid?url=${encodeURIComponent(streamUrl)}`;
             }
             
             // Replace localhost with network IP on same subnet as device

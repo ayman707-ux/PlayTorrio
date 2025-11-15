@@ -257,7 +257,7 @@ app.get('/anime/', (req, res) => {
     res.json({
         message: 'Anime Scraper API',
         usage: 'GET /anime/api/{searchQuery}',
-        example: 'http://localhost:3000/anime/api/one%20punch%20man'
+        example: 'http://localhost:6987/anime/api/one%20punch%20man'
     });
 });
 
@@ -306,7 +306,8 @@ app.get('/torrentio/api/:imdbid', async (req, res) => {
 
         const torrentioUrl = `https://torrentio.strem.fun/providers=yts,eztv,rarbg,1337x,thepiratebay,kickasstorrents,torrentgalaxy,magnetdl,horriblesubs,nyaasi,tokyotosho,anidex/stream/movie/${imdbid}.json`;
         
-        const response = await axios.get(torrentioUrl);
+        const axiosInstance = createAxiosInstance();
+        const response = await axiosInstance.get(torrentioUrl);
         
         if (!response.data || !response.data.streams || response.data.streams.length === 0) {
             return res.status(404).json({ error: 'No streams found for this movie' });
@@ -360,7 +361,8 @@ app.get('/torrentio/api/:imdbid/:season/:episode', async (req, res) => {
 
         const torrentioUrl = `https://torrentio.strem.fun/providers=yts,eztv,rarbg,1337x,thepiratebay,kickasstorrents,torrentgalaxy,magnetdl,horriblesubs,nyaasi,tokyotosho,anidex/stream/series/${imdbid}:${season}:${episode}.json`;
         
-        const response = await axios.get(torrentioUrl);
+        const axiosInstance = createAxiosInstance();
+        const response = await axiosInstance.get(torrentioUrl);
         
         if (!response.data || !response.data.streams || response.data.streams.length === 0) {
             return res.status(404).json({ error: 'No streams found for this episode' });
@@ -2121,7 +2123,7 @@ app.get('/', (req, res) => {
                     info: '/anime/',
                     health: '/anime/health'
                 },
-                example: 'http://localhost:3000/anime/api/one%20punch%20man'
+                example: 'http://localhost:6987/anime/api/one%20punch%20man'
             },
             torrentio: {
                 description: 'Movie & TV show torrents via Torrentio',
@@ -2131,8 +2133,8 @@ app.get('/', (req, res) => {
                     info: '/torrentio/'
                 },
                 examples: {
-                    movie: 'http://localhost:3000/torrentio/api/tt5950044',
-                    tvshow: 'http://localhost:3000/torrentio/api/tt13159924/2/1'
+                    movie: 'http://localhost:6987/torrentio/api/tt5950044',
+                    tvshow: 'http://localhost:6987/torrentio/api/tt13159924/2/1'
                 }
             },
             torrentless: {
@@ -2142,7 +2144,7 @@ app.get('/', (req, res) => {
                     proxy: '/torrentless/api/proxy?url={url}',
                     health: '/torrentless/api/health'
                 },
-                example: 'http://localhost:3000/torrentless/api/search?q=ubuntu'
+                example: 'http://localhost:6987/torrentless/api/search?q=ubuntu'
             },
             zlib: {
                 description: 'Z-Library book search & read links',
@@ -2153,7 +2155,7 @@ app.get('/', (req, res) => {
                     test: '/zlib/test',
                     health: '/zlib/health'
                 },
-                example: 'http://localhost:3000/zlib/search/python%20programming'
+                example: 'http://localhost:6987/zlib/search/python%20programming'
             },
             moviebox: {
                 description: 'MovieBox/FMovies scraper with TMDB lookup',
@@ -2164,7 +2166,7 @@ app.get('/', (req, res) => {
                     movieByTmdbId: '/moviebox/{tmdbId}',
                     tvByTmdbId: '/moviebox/tv/{tmdbId}/{season}/{episode}'
                 },
-                example: 'http://localhost:3000/moviebox/api/Greys%20anatomy?mode=prefix&se=22&ep=1'
+                example: 'http://localhost:6987/moviebox/api/Greys%20anatomy?mode=prefix&se=22&ep=1'
             },
             otherbook: {
                 description: 'Book search via RandomBook/LibGen with covers',
@@ -2174,7 +2176,7 @@ app.get('/', (req, res) => {
                     info: '/otherbook/',
                     health: '/otherbook/health'
                 },
-                example: 'http://localhost:3000/otherbook/api/search/The%20midnight%20library'
+                example: 'http://localhost:6987/otherbook/api/search/The%20midnight%20library'
             },
             lib111477: {
                 description: 'Movie/TV show directory parser with TMDB integration',
@@ -2190,7 +2192,7 @@ app.get('/', (req, res) => {
                     parseBatch: 'POST /111477/api/parse-batch',
                     health: '/111477/health'
                 },
-                example: 'http://localhost:3000/111477/api/tmdb/movie/550'
+                example: 'http://localhost:6987/111477/api/tmdb/movie/550'
             }
         },
         timestamp: new Date().toISOString()
