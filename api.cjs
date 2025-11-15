@@ -1407,26 +1407,37 @@ app.get('/api/moviebox/:query', moviebox_handleSearch);
 // ============================================================================
 
 const ZLIB_DOMAINS = [
+    'z-lib.io',
+    'zlibrary-global.se',
+    'booksc.org',       
+    '1lib.sk',      
     'z-lib.gd',
     'z-library.sk',
-    'z-lib.fm',
-    'z-lib.io',
-    'z-lib.se',
     'zlibrary.to',
-    'singlelogin.re',
-    'z-library.se'
+    'z-lib.fm',
+    'z-lib.se',
+    'z-lib.is',
+    'z-lib.org'
 ];
 
 function zlib_createAxiosInstance() {
     return axios.create({
-        timeout: 30000,
+        timeout: 45000, // Increased from 30s to 45s for slower connections
+        maxRedirects: 5,
+        validateStatus: (status) => status >= 200 && status < 400, // Accept redirects
         headers: {
             'User-Agent': getRandomUserAgent(),
-            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-            'Accept-Language': 'en-US,en;q=0.5',
-            'Accept-Encoding': 'gzip, deflate',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
+            'Accept-Language': 'en-US,en;q=0.9',
+            'Accept-Encoding': 'gzip, deflate, br',
+            'Cache-Control': 'no-cache',
+            'Pragma': 'no-cache',
+            'DNT': '1',
             'Connection': 'keep-alive',
             'Upgrade-Insecure-Requests': '1',
+            'Sec-Fetch-Dest': 'document',
+            'Sec-Fetch-Mode': 'navigate',
+            'Sec-Fetch-Site': 'none'
         }
     });
 }
@@ -1434,9 +1445,12 @@ function zlib_createAxiosInstance() {
 async function zlib_getReadLink(bookUrl, workingDomain) {
     try {
         const axiosInstance = zlib_createAxiosInstance();
-        const response = await axiosInstance.get(bookUrl);
+        const response = await axiosInstance.get(bookUrl, {
+            timeout: 20000 // Shorter timeout for individual book pages
+        });
         
         if (response.status !== 200) {
+            console.log(`[ZLIB] Non-200 status for book page: ${response.status}`);
             return null;
         }
 
@@ -1453,7 +1467,8 @@ async function zlib_getReadLink(bookUrl, workingDomain) {
             '.dlButton.reader-link',
             'a.btn[href*="reader"]',
             '.btn-primary[href*="reader"]',
-            'a[data-book_id][href*="reader"]'
+            'a[data-book_id][href*="reader"]',
+            'a[onclick*="reader"]'
         ];
         
         for (const selector of readSelectors) {
@@ -1463,7 +1478,7 @@ async function zlib_getReadLink(bookUrl, workingDomain) {
                 const $el = $(el);
                 const href = $el.attr('href');
                 
-                if (href && href.includes('reader.z-lib')) {
+                if (href && (href.includes('reader.z-lib') || href.includes('reader.singlelogin.site'))) {
                     readerUrl = href;
                     return false;
                 }
@@ -1514,21 +1529,23 @@ app.get('/zlib/search/:query', async (req, res) => {
                 
                 const response = await axiosInstance.get(searchUrl);
                 
-                if (response.status === 200 && response.data) {
+                if (response.status === 200 && response.data && response.data.length > 100) {
                     searchResults = response.data;
                     workingDomain = domain;
-                    console.log(`[ZLIB] Successfully connected to: ${domain}`);
+                    console.log(`[ZLIB] ✅ Successfully connected to: ${domain}`);
                     break;
                 }
             } catch (error) {
-                console.log(`[ZLIB] Failed to connect to ${domain}: ${error.message}`);
+                console.log(`[ZLIB] ❌ Failed to connect to ${domain}: ${error.code || error.message}`);
                 continue;
             }
         }
 
         if (!searchResults) {
+            console.error('[ZLIB] All domains failed. Domains tried:', ZLIB_DOMAINS);
             return res.status(503).json({ 
-                error: 'Unable to connect to any Z-Library servers. They might be temporarily down or blocked.',
+                error: 'Unable to connect to any Z-Library servers. They might be temporarily down, blocked by your ISP, or require a VPN.',
+                suggestion: 'Try using a VPN or check if Z-Library is accessible in your region.',
                 domains_tried: ZLIB_DOMAINS
             });
         }
@@ -1678,21 +1695,44 @@ app.get('/zlib/search/:query', async (req, res) => {
 
         console.log(`[ZLIB] Successfully parsed ${books.length} books, fetching read links...`);
         
+        // Fetch read links for all books (not just first 5) but with parallel processing
         const booksWithReadLinks = [];
-        for (let i = 0; i < Math.min(books.length, 5); i++) {
-            const book = books[i];
-            const readLink = await zlib_getReadLink(book.bookUrl, workingDomain);
-            
-            booksWithReadLinks.push({
-                title: book.title,
-                author: book.author,
-                photo: book.coverUrl || 'No image available',
-                readLink: readLink || 'Read link not available',
-                bookUrl: book.bookUrl,
-                format: book.format,
-                year: book.year
-            });
-        }
+        const readLinkPromises = books.map(async (book) => {
+            try {
+                const readLink = await zlib_getReadLink(book.bookUrl, workingDomain);
+                return {
+                    title: book.title,
+                    author: book.author,
+                    photo: book.coverUrl || 'No image available',
+                    readLink: readLink || 'Read link not available',
+                    bookUrl: book.bookUrl,
+                    format: book.format,
+                    year: book.year
+                };
+            } catch (error) {
+                console.error(`[ZLIB] Error fetching read link for "${book.title}":`, error.message);
+                // Return book without read link instead of failing
+                return {
+                    title: book.title,
+                    author: book.author,
+                    photo: book.coverUrl || 'No image available',
+                    readLink: 'Read link not available',
+                    bookUrl: book.bookUrl,
+                    format: book.format,
+                    year: book.year
+                };
+            }
+        });
+        
+        // Process all books in parallel with timeout protection
+        const results = await Promise.allSettled(readLinkPromises);
+        results.forEach((result) => {
+            if (result.status === 'fulfilled' && result.value) {
+                booksWithReadLinks.push(result.value);
+            }
+        });
+
+        console.log(`[ZLIB] Returning ${booksWithReadLinks.length} books with read links`);
 
         res.json({
             query: query,

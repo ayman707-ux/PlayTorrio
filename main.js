@@ -89,6 +89,11 @@ try {
         try { console.error('[Global] uncaughtException:', err?.stack || err); } catch(_) {}
     });
     process.on('unhandledRejection', (reason) => {
+        // Ignore Discord RPC errors - they're non-critical
+        if (reason?.message?.includes('Unknown Error') && reason?.code === 1000) {
+            console.warn('[Discord RPC] Non-critical error ignored:', reason?.message);
+            return;
+        }
         try { console.error('[Global] unhandledRejection:', reason); } catch(_) {}
     });
 } catch(_) {}
@@ -161,11 +166,18 @@ function setupDiscordRPC() {
             console.log('✅ Discord Rich Presence active!');
         });
 
+        discordRpc.on('error', (err) => {
+            console.warn('[Discord RPC] Connection error:', err?.message || err);
+            discordRpcReady = false;
+        });
+
         discordRpc.login({ clientId: DISCORD_CLIENT_ID }).catch((err) => {
-            console.error('[Discord RPC] login failed:', err?.message || err);
+            console.warn('[Discord RPC] Login failed (Discord may not be running):', err?.message || err);
+            discordRpcReady = false;
         });
     } catch (e) {
         console.error('[Discord RPC] setup failed:', e?.message || e);
+        discordRpcReady = false;
     }
 }
 

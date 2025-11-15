@@ -17540,6 +17540,12 @@ Your browser does not support the video tag.
                         }
                     } catch(_) {}
                     const response = await fetch(`${booksBase}/search/${encodedQuery}`);
+                    
+                    if (!response.ok) {
+                        const errorData = await response.json().catch(() => ({}));
+                        throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+                    }
+                    
                     const data = await response.json();
                     
                     console.log('[BOOKS] Search results:', data);
@@ -17567,14 +17573,24 @@ Your browser does not support the video tag.
                     booksLoading.style.display = 'none';
                     booksResults.style.display = 'none';
                     booksEmpty.style.display = 'block';
+                    
+                    // Show more detailed error message
+                    const errorMsg = error.message || 'Unknown error';
+                    const isConnectionError = errorMsg.includes('Unable to connect') || errorMsg.includes('503');
+                    
                     booksEmpty.innerHTML = `
                         <div class="books-empty-icon">
                             <i class="fas fa-exclamation-triangle"></i>
                         </div>
                         <h3>Search Error</h3>
-                        <p>Failed to search books. Please check your connection and try again.</p>
+                        <p>${isConnectionError ? 
+                            'Z-Library servers are currently unreachable. This may be due to ISP blocking or regional restrictions.' : 
+                            'Failed to search books. Please check your connection and try again.'
+                        }</p>
+                        ${isConnectionError ? '<p style="font-size: 0.9em; opacity: 0.7; margin-top: 0.5rem;">💡 Tip: Try using a VPN if Z-Library is blocked in your region.</p>' : ''}
+                        <p style="font-size: 0.85em; opacity: 0.6; margin-top: 1rem;">Error: ${errorMsg}</p>
                     `;
-                    showNotification('Failed to search books', 'error');
+                    showNotification(isConnectionError ? 'Z-Library unreachable - try VPN' : 'Failed to search books', 'error');
                 }
             }
             
