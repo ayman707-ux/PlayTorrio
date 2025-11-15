@@ -637,6 +637,17 @@
             flex-direction: column;
             gap: 0.5rem;
         }
+
+        /* Disable hover animation on Live TV page trakt-card container */
+        #livetv-page .trakt-card {
+            transition: none !important;
+        }
+        #livetv-page .trakt-card:hover {
+            transform: none !important;
+            box-shadow: none !important;
+            border-color: rgba(255,255,255,0.15) !important;
+        }
+
         .livetv-stream-actions {
             display: flex;
             gap: 0.75rem;
@@ -22409,19 +22420,18 @@ Your browser does not support the video tag.
         function handleScroll(e) {
             let shouldLoad = false;
             
-            // Disable infinite scroll for new UI when on "All" category (uses sliders instead)
-            // Enable it for Movies or TV Shows
-            if (document.body.classList.contains('ui-new')) {
+            // Disable infinite scroll ONLY on Home "All" in new UI (uses sliders)
+            // Keep infinite scroll enabled for other routes like genreDetails
+            if (document.body.classList.contains('ui-new') && activeRoute === 'home') {
                 if (currentCategory === 'all') {
-                    return; // No infinite scroll for "All"
+                    return; // No infinite scroll for Home "All" section
                 }
-                // Allow infinite scroll for movie/tv categories
             }
             
             // Check if we're in NEW UI mode (scrolling inside main element)
             if (document.body.classList.contains('ui-new')) {
                 const mainElement = document.querySelector('.app-main main');
-                if (mainElement && e && e.target === mainElement) {
+                if (mainElement) {
                     const scrollTop = mainElement.scrollTop;
                     const scrollHeight = mainElement.scrollHeight;
                     const clientHeight = mainElement.clientHeight;
