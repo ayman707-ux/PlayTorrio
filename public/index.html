@@ -11635,7 +11635,7 @@ Your browser does not support the video tag.
         
         // Check if user has joined Discord and show modal if not
         function checkDiscordPrompt() {
-            const hasJoinedDiscord = localStorage.getItem('hasJoinedDiscord');
+            const hasJoinedDiscord = localStorage.getItem('pt_discord_dismissed_v1');
             if (!hasJoinedDiscord) {
                 // Wait a bit for the page to fully load before showing the discord modal
                 setTimeout(() => {
@@ -15638,7 +15638,7 @@ Your browser does not support the video tag.
                             window.open(url, '_blank', 'noopener');
                         }
                         // Mark as joined so modal doesn't show again
-                        localStorage.setItem('hasJoinedDiscord', 'true');
+                        localStorage.setItem('pt_discord_dismissed_v1', 'true');
                         hideDiscordModal();
                         showNotification('Opening Discord invite...', 'success');
                     } catch(err) {
@@ -15650,7 +15650,7 @@ Your browser does not support the video tag.
             if (discordDontShowBtn) {
                 discordDontShowBtn.addEventListener('click', () => {
                     // Persist user's preference to never show this modal again
-                    localStorage.setItem('hasJoinedDiscord', 'true');
+                    localStorage.setItem('pt_discord_dismissed_v1', 'true');
                     hideDiscordModal();
                     showNotification("We'll stop showing this.", 'success');
                 });
