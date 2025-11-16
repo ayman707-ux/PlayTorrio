@@ -28552,16 +28552,16 @@ Your browser does not support the video tag.
                 window.electronAPI.onUpdateAvailable?.((_info) => {
                     console.log('[Update] Update available:', _info);
                     
-                    // macOS: Show simple notification, don't show progress overlay
+                    // macOS: Show simple notification ONLY, don't show progress overlay or download anything
                     if (_info?.manual || _info?.platform === 'darwin') {
                         const downloadUrl = _info?.downloadUrl || 'https://github.com/ayman707-ux/PlayTorrio/releases/latest';
-                        showNotification(`Update ${_info?.version || ''} available! Please download the new DMG.`, 'info', 8000);
-                        // Optionally open download page automatically
-                        // window.open(downloadUrl, '_blank');
+                        showNotification(`🎉 Update ${_info?.version || ''} available! Please download the new DMG from GitHub.`, 'info', 10000);
+                        console.log('[Update] macOS: Manual download required. URL:', downloadUrl);
+                        // Do NOT show progress overlay on macOS
                         return;
                     }
                     
-                    // Windows/Linux: Show progress overlay
+                    // Windows/Linux ONLY: Show progress overlay
                     console.log('[Update] Showing download progress overlay');
                     showOverlay();
                     if (icon) { icon.className = 'fas fa-download'; icon.style.animation = 'pulse 1.5s ease-in-out infinite'; icon.style.color = '#a855f7'; }
