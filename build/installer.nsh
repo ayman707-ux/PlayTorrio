@@ -2,10 +2,11 @@
   ; Use product name so this tracks your package.json build.productName
   !define APPNAME "${PRODUCT_NAME}"
 
-  ; Remove Electron userData (already handled by deleteAppDataOnUninstall, but keep as safety)
-  RMDir /r "$APPDATA\${APPNAME}"
+  ; DO NOT REMOVE APPDATA - User data (playlists, downloads, settings) lives here!
+  ; User must manually delete if they want to clear data
+  ; RMDir /r "$APPDATA\${APPNAME}"  ; DISABLED - Preserves user data across updates
 
-  ; Remove Local caches and updater remnants
+  ; Remove Local caches and updater remnants (safe to delete - these are caches)
   RMDir /r "$LOCALAPPDATA\${APPNAME}"
   RMDir /r "$LOCALAPPDATA\${APPNAME}-updater"
 

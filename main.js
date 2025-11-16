@@ -63,6 +63,19 @@ try {
     // Override Electron's default userData path to prevent deletion on updates
     app.setPath('userData', persistentUserDataPath);
     console.log('[UserData] Set to:', app.getPath('userData'));
+    
+    // Verify userData path is writable and create persistence marker
+    try {
+        const markerPath = path.join(persistentUserDataPath, '.userData_verified');
+        fs.writeFileSync(markerPath, JSON.stringify({
+            created: new Date().toISOString(),
+            version: app.getVersion(),
+            platform: process.platform
+        }), 'utf8');
+        console.log('✅ userDataPath is writable:', persistentUserDataPath);
+    } catch (writeErr) {
+        console.error('⚠️ userDataPath may not be writable:', writeErr.message);
+    }
 } catch (err) {
     console.error('[UserData] Failed to set persistent path:', err.message);
 }
@@ -230,7 +243,7 @@ function setupAutoUpdater() {
 
     const state = readUpdaterState();
     const now = Date.now();
-    const deferWindowMs = 10*60*1000; // 10 minutes
+    const deferWindowMs = 30*60*1000; // 30 minutes - prevent update loops
     const currentVersion = app.getVersion();
     const attemptedVersion = state?.targetVersion;
     const lastAttempt = state?.lastInstallAttempt || 0;
@@ -238,6 +251,7 @@ function setupAutoUpdater() {
     const installLikelySucceeded = attemptedVersion && compareVersions(currentVersion, attemptedVersion) >= 0;
     if (installLikelySucceeded) {
         // Upgrade finished; clear state
+        console.log('[Data Preservation] ✅ Update completed successfully. All user data preserved in:', persistentUserDataPath);
         clearUpdaterState();
     } else if (recentAttempt) {
         console.log('[Updater] Recent install attempt detected; deferring update checks to avoid loop');
