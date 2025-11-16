@@ -3268,6 +3268,30 @@ if (!gotLock) {
         }
     });
 
+    // User preferences API (file-based for reliability across platforms)
+    ipcMain.handle('get-user-pref', async (event, key) => {
+        try {
+            const settings = readMainSettings();
+            const userPrefs = settings.userPrefs || {};
+            return { success: true, value: userPrefs[key] };
+        } catch (e) {
+            return { success: false, error: e?.message || String(e) };
+        }
+    });
+    ipcMain.handle('set-user-pref', async (event, key, value) => {
+        try {
+            const settings = readMainSettings();
+            if (!settings.userPrefs) settings.userPrefs = {};
+            settings.userPrefs[key] = value;
+            writeMainSettings(settings);
+            console.log('[UserPrefs] Saved', key, '=', value);
+            return { success: true };
+        } catch (e) {
+            console.error('[UserPrefs] Failed to save', key, ':', e?.message);
+            return { success: false, error: e?.message || String(e) };
+        }
+    });
+
         // Initialize the auto-updater with platform-aware gating
         const shouldEnableUpdater = () => {
             if (!readAutoUpdateEnabled()) return false; // user disabled in settings

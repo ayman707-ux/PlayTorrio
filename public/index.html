@@ -11634,13 +11634,27 @@ Your browser does not support the video tag.
         }
         
         // Check if user has joined Discord and show modal if not
-        function checkDiscordPrompt() {
-            const hasJoinedDiscord = localStorage.getItem('pt_discord_dismissed_v1');
-            if (!hasJoinedDiscord) {
-                // Wait a bit for the page to fully load before showing the discord modal
-                setTimeout(() => {
-                    showDiscordModal();
-                }, 1000);
+        async function checkDiscordPrompt() {
+            try {
+                // Use file-based preference for reliability on Linux
+                const result = await window.electronAPI?.getUserPref?.('discord_dismissed');
+                const dismissed = result?.success ? result.value : localStorage.getItem('pt_discord_dismissed_v1');
+                
+                if (!dismissed) {
+                    // Wait a bit for the page to fully load before showing the discord modal
+                    setTimeout(() => {
+                        showDiscordModal();
+                    }, 1000);
+                }
+            } catch (err) {
+                console.error('[Discord] Failed to check preference:', err);
+                // Fallback to localStorage
+                const hasJoinedDiscord = localStorage.getItem('pt_discord_dismissed_v1');
+                if (!hasJoinedDiscord) {
+                    setTimeout(() => {
+                        showDiscordModal();
+                    }, 1000);
+                }
             }
         }
 
@@ -15637,8 +15651,11 @@ Your browser does not support the video tag.
                         } else {
                             window.open(url, '_blank', 'noopener');
                         }
-                        // Mark as joined so modal doesn't show again
+                        // Save to both file and localStorage for reliability
                         localStorage.setItem('pt_discord_dismissed_v1', 'true');
+                        if (window.electronAPI?.setUserPref) {
+                            await window.electronAPI.setUserPref('discord_dismissed', true);
+                        }
                         hideDiscordModal();
                         showNotification('Opening Discord invite...', 'success');
                     } catch(err) {
@@ -15648,9 +15665,12 @@ Your browser does not support the video tag.
                 });
             }
             if (discordDontShowBtn) {
-                discordDontShowBtn.addEventListener('click', () => {
-                    // Persist user's preference to never show this modal again
+                discordDontShowBtn.addEventListener('click', async () => {
+                    // Save to both file and localStorage for reliability
                     localStorage.setItem('pt_discord_dismissed_v1', 'true');
+                    if (window.electronAPI?.setUserPref) {
+                        await window.electronAPI.setUserPref('discord_dismissed', true);
+                    }
                     hideDiscordModal();
                     showNotification("We'll stop showing this.", 'success');
                 });

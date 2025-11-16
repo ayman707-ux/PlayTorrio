@@ -85,6 +85,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   showOpenDialog: (options) => ipcRenderer.invoke('show-open-dialog', options),
   writeFile: (filePath, data) => ipcRenderer.invoke('write-file', filePath, data),
   readFile: (filePath) => ipcRenderer.invoke('read-file', filePath),
+  // User preferences (file-based, reliable across platforms)
+  getUserPref: (key) => ipcRenderer.invoke('get-user-pref', key),
+  setUserPref: (key, value) => ipcRenderer.invoke('set-user-pref', key, value),
   // WebChimera exposure (optional, may be null if not installed)
   wcjs: {
     available: Boolean(wcRendererMod),
