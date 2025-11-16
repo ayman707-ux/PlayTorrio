@@ -8,6 +8,7 @@ import os from 'os';
 import got from 'got';
 import { pipeline as streamPipelineCb } from 'stream';
 import { promisify } from 'util';
+// v1.9.9 - Enhanced Linux AppImage compatibility with universal fixes
 import dns from 'dns';
 import { createRequire } from 'module';
 
