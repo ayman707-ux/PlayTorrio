@@ -1747,7 +1747,8 @@ export function startServer(userDataPath) {
                 console.log('[PM][prepare] directdl response:', JSON.stringify(data, null, 2));
                 
                 // directdl returns: { status: 'success', content: [...files with links...] }
-                if (data?.status === 'success' && Array.isArray(data.content)) {
+                // This is the instant cached scenario
+                if (data?.status === 'success' && Array.isArray(data.content) && data.content.length > 0) {
                     const files = [];
                     for (let idx = 0; idx < data.content.length; idx++) {
                         const f = data.content[idx];
@@ -1768,16 +1769,17 @@ export function startServer(userDataPath) {
                     }
                     
                     const infoObj = {
-                        id: 'directdl', // No transfer ID for directdl
-                        filename: 'Premiumize Direct Download',
+                        id: 'directdl',
+                        filename: data.filename || 'Premiumize Direct Download',
                         files
                     };
                     
+                    console.log('[PM][prepare] directdl success, returning', files.length, 'files');
                     return res.json({ id: 'directdl', info: infoObj });
                 }
                 
-                // Fallback: if directdl didn't work, try transfer/create
-                console.log('[PM][prepare] directdl failed, trying transfer/create');
+                // Not cached - create transfer and wait for it to finish
+                console.log('[PM][prepare] not cached, creating transfer');
                 let transferData;
                 try {
                     transferData = await pmFetch('/transfer/create', {
@@ -1789,51 +1791,93 @@ export function startServer(userDataPath) {
                     throw e;
                 }
                 
-                const transferId = transferData?.id || transferData?.transfer?.id;
+                const transferId = transferData?.id;
                 if (!transferId) return res.status(500).json({ error: 'Failed to create Premiumize transfer' });
                 
-                console.log('[PM][prepare] transfer created:', transferId);
+                console.log('[PM][prepare] transfer created:', transferId, 'waiting for completion...');
                 
-                // Wait for transfer to be ready and fetch file list
+                // Poll transfer status until finished
                 let infoObj = null;
-                for (let i = 0; i < 15; i++) {
+                let folderId = null;
+                
+                for (let i = 0; i < 30; i++) {
                     try {
                         const listData = await pmFetch('/transfer/list');
-                        if (listData && listData.status === 'success' && Array.isArray(listData.transfers)) {
+                        if (listData?.status === 'success' && Array.isArray(listData.transfers)) {
                             const transfer = listData.transfers.find(t => String(t.id) === String(transferId));
-                            if (transfer && transfer.status === 'finished') {
-                                const files = [];
-                                const fileList = Array.isArray(transfer.file_list) ? transfer.file_list : [];
-                                
-                                for (let idx = 0; idx < fileList.length; idx++) {
-                                    const f = fileList[idx];
-                                    const fname = f.path || f.name || `file_${idx}`;
-                                    const fsize = Number(f.size || 0);
-                                    const flink = f.stream_link || f.link || '';
-                                    
-                                    files.push({
-                                        id: idx,
-                                        path: fname,
-                                        filename: fname,
-                                        bytes: fsize,
-                                        size: fsize,
-                                        links: flink ? [flink] : []
-                                    });
-                                }
-                                
-                                infoObj = {
-                                    id: String(transferId),
-                                    filename: transfer.name || 'Premiumize Transfer',
-                                    files
-                                };
-                                
-                                if (files.length > 0) break;
+                            
+                            if (!transfer) {
+                                console.log('[PM][prepare] transfer not found in list, waiting...');
+                                await new Promise(r => setTimeout(r, 2000));
+                                continue;
+                            }
+                            
+                            console.log('[PM][prepare] transfer status:', transfer.status, 'progress:', transfer.progress);
+                            
+                            if (transfer.status === 'finished' && transfer.folder_id) {
+                                folderId = transfer.folder_id;
+                                console.log('[PM][prepare] transfer finished, folder_id:', folderId);
+                                break;
+                            }
+                            
+                            if (transfer.status === 'error' || transfer.status === 'banned') {
+                                const errMsg = transfer.message || 'Transfer failed';
+                                console.error('[PM][prepare] transfer failed:', errMsg);
+                                return res.status(500).json({ error: 'Premiumize transfer failed: ' + errMsg });
                             }
                         }
                     } catch (e) {
-                        console.log('[PM][prepare] waiting for files:', e.message);
+                        console.log('[PM][prepare] error polling status:', e.message);
                     }
-                    await new Promise(r => setTimeout(r, 1000));
+                    await new Promise(r => setTimeout(r, 2000));
+                }
+                
+                if (!folderId) {
+                    console.log('[PM][prepare] timeout waiting for transfer, returning empty');
+                    return res.json({ 
+                        id: String(transferId), 
+                        info: { id: String(transferId), filename: 'Premiumize Transfer (pending)', files: [] }
+                    });
+                }
+                
+                // Fetch files from folder
+                try {
+                    console.log('[PM][prepare] fetching folder contents for folder_id:', folderId);
+                    const folderData = await pmFetch(`/folder/list?id=${encodeURIComponent(folderId)}`);
+                    
+                    if (folderData?.status === 'success' && Array.isArray(folderData.content)) {
+                        const files = [];
+                        
+                        for (let idx = 0; idx < folderData.content.length; idx++) {
+                            const f = folderData.content[idx];
+                            
+                            // Skip folders, only process files
+                            if (f.type === 'folder') continue;
+                            
+                            const fname = f.name || `file_${idx}`;
+                            const fsize = Number(f.size || 0);
+                            const flink = f.stream_link || f.link || '';
+                            
+                            files.push({
+                                id: idx,
+                                path: fname,
+                                filename: fname,
+                                bytes: fsize,
+                                size: fsize,
+                                links: flink ? [flink] : []
+                            });
+                        }
+                        
+                        infoObj = {
+                            id: String(transferId),
+                            filename: transferData.name || 'Premiumize Transfer',
+                            files
+                        };
+                        
+                        console.log('[PM][prepare] folder fetched successfully, returning', files.length, 'files');
+                    }
+                } catch (e) {
+                    console.error('[PM][prepare] error fetching folder:', e.message);
                 }
                 
                 if (!infoObj) {
