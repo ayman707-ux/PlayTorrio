@@ -8,7 +8,6 @@ import os from 'os';
 import got from 'got';
 import { pipeline as streamPipelineCb } from 'stream';
 import { promisify } from 'util';
-// v1.9.9 - Enhanced Linux AppImage compatibility with universal fixes
 import dns from 'dns';
 import { createRequire } from 'module';
 
@@ -32,23 +31,20 @@ const require = createRequire(import.meta.url);
 // ===================================================
 
 // --------------------------------------------------
-// UNIVERSAL LINUX APPIMAGE FIX BLOCK
+// LINUX APPIMAGE FIX (Electron < 9 compatible)
 // --------------------------------------------------
 if (process.platform === "linux") {
     console.log("[Linux] Applying AppImage compatibility patches");
 
-    // REQUIRED for AppImage
     app.commandLine.appendSwitch("no-sandbox");
     app.commandLine.appendSwitch("disable-setuid-sandbox");
     app.commandLine.appendSwitch("disable-gpu-sandbox");
+    app.commandLine.appendSwitch("disable-gpu");
     app.commandLine.appendSwitch("no-zygote");
-
-    // REQUIRED for frameless windows + GPU issues
-    app.disableHardwareAcceleration();
+    app.commandLine.appendSwitch("ignore-gpu-blacklist");
 
     if (process.env.APPIMAGE) {
         console.log("[Linux] Detected AppImage mode");
-        app.disableHardwareAcceloration();
         app.commandLine.appendSwitch("disable-gpu");
     }
 }
