@@ -30,13 +30,26 @@ const require = createRequire(import.meta.url);
 // PLATFORM-SPECIFIC INITIALIZATION
 // ===================================================
 
-// Linux: Disable sandboxing for AppImage compatibility
-if (process.platform === 'linux') {
-    app.commandLine.appendSwitch('no-sandbox');
-    app.commandLine.appendSwitch('disable-setuid-sandbox');
-    app.commandLine.appendSwitch('disable-dev-shm-usage'); // Fix for Steam Deck /dev/shm permission issues
-    console.log('[Linux] Sandbox disabled for AppImage compatibility');
-    console.log('[Linux] dev-shm-usage disabled for Steam Deck compatibility');
+// --------------------------------------------------
+// UNIVERSAL LINUX APPIMAGE FIX BLOCK
+// --------------------------------------------------
+if (process.platform === "linux") {
+    console.log("[Linux] Applying AppImage compatibility patches");
+
+    // REQUIRED for AppImage
+    app.commandLine.appendSwitch("no-sandbox");
+    app.commandLine.appendSwitch("disable-setuid-sandbox");
+    app.commandLine.appendSwitch("disable-gpu-sandbox");
+    app.commandLine.appendSwitch("no-zygote");
+
+    // REQUIRED for frameless windows + GPU issues
+    app.disableHardwareAcceleration();
+
+    if (process.env.APPIMAGE) {
+        console.log("[Linux] Detected AppImage mode");
+        app.disableHardwareAcceloration();
+        app.commandLine.appendSwitch("disable-gpu");
+    }
 }
 
 // ----------------------
