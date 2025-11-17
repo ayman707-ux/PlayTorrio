@@ -2144,6 +2144,15 @@ function spawnMpvJsPlayer(url, tmdbId, seasonNum = null, episodeNum = null) {
         
         const electronPath = path.join(mpvJsPath, 'node_modules', 'electron', 'dist', 'electron.exe');
         const indexPath = path.join(mpvJsPath, 'example', 'index.js');
+
+        if (!fs.existsSync(indexPath)) {
+            console.error('[MPV.js] example/index.js missing at', indexPath);
+            return { success: false, message: 'mpv.js example entry not found' };
+        }
+        if (!fs.existsSync(electronPath)) {
+            console.error('[MPV.js] electron.exe missing at', electronPath);
+            return { success: false, message: 'mpv.js electron runtime missing' };
+        }
         
         // Build args:
         // - Movies: [indexPath, url, tmdbId]
