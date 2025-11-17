@@ -16964,7 +16964,104 @@ Your browser does not support the video tag.
                 if (rc) rc.addEventListener('click', (e) => e.stopPropagation());
             }
 
+            // Robust Season/Episode parser for torrent filenames
+            function parseSeasonEpisodeFromTitle(title) {
+                if (!title || typeof title !== 'string') return null;
+                const t = title.replace(/[_\.-]/g, ' ').toLowerCase();
+
+                // Try common compact forms first: S01E01, S1E1, S01.E01, S01 E01
+                let m = /\b[s](\d{1,2})\s*[\.\-\s_]*[e](\d{1,3})\b/i.exec(title);
+                if (m) return { season: parseInt(m[1], 10), episode: parseInt(m[2], 10) };
+
+                // Forms like S1 EP7 or S01 Ep 07
+                m = /\b[s](\d{1,2})\s*[\.\-\s_]*(?:ep|episode)\s*(\d{1,3})\b/i.exec(title);
+                if (m) return { season: parseInt(m[1], 10), episode: parseInt(m[2], 10) };
+
+                // Bracketed forms like [S01E07] or (S01E07)
+                m = /[\[(]\s*s?(\d{1,2})\s*[\.\-\s_]*e?(\d{1,3})\s*[\])]?/i.exec(title);
+                if (m && m[1] && m[2]) return { season: parseInt(m[1], 10), episode: parseInt(m[2], 10) };
+
+                // 1x07, 01x07 (with optional spaces)
+                m = /(?:^|\D)(\d{1,2})\s*[x]\s*(\d{1,3})(?!\d)/i.exec(title);
+                if (m) return { season: parseInt(m[1], 10), episode: parseInt(m[2], 10) };
+
+                // Hyphenated season-episode inside brackets (e.g., [1-07])
+                m = /[\[(]\s*(\d{1,2})\s*[-_]\s*(\d{1,3})\s*[\])]/i.exec(title);
+                if (m) return { season: parseInt(m[1], 10), episode: parseInt(m[2], 10) };
+
+                // Season 1 Episode 7 (various spacings) ('series' synonym)
+                m = /(season|series)\s*(\d{1,2})\s*(?:episode|ep)\s*(\d{1,3})/i.exec(t);
+                if (m) return { season: parseInt(m[2], 10), episode: parseInt(m[3], 10) };
+
+                // Episode 7 Season 1 (reverse order) ('series' synonym)
+                m = /(?:episode|ep)\s*(\d{1,3})\s*(season|series)\s*(\d{1,2})/i.exec(t);
+                if (m) return { season: parseInt(m[3], 10), episode: parseInt(m[1], 10) };
+
+                // S01 01 or S1 1 (space-separated)
+                m = /\b[s](\d{1,2})\s+(\d{1,3})\b/i.exec(t);
+                if (m) return { season: parseInt(m[1], 10), episode: parseInt(m[2], 10) };
+
+                // If only episode is found, return partial; caller may fill season from UI state
+                m = /\b(?:episode|ep)\s*(\d{1,3})\b/i.exec(t);
+                if (m) return { season: undefined, episode: parseInt(m[1], 10) };
+
+                return null;
+            }
+
             async function handlePlayNowClick() {
+                // On Windows: Use mpv.js player
+                // On Mac/Linux: Use HTML5 player
+                if (!currentStreamUrl) {
+                    showNotification('No file selected to play');
+                    return;
+                }
+                
+                // Try to launch mpv.js player on Windows
+                try {
+                    const tmdbId = currentContent?.id?.toString() || '';
+                    let seasonNum = null;
+                    let episodeNum = null;
+                    
+                    // For Nuvio provider, prefer UI-selected season/episode from modal state
+                    if (currentMediaType === 'tv' && selectedProvider === 'nuvio') {
+                        if (lastSearchedSeason && lastSearchedEpisode) {
+                            seasonNum = String(lastSearchedSeason);
+                            episodeNum = String(lastSearchedEpisode);
+                        }
+                    } else if (currentMediaType === 'tv' && currentSelectedVideoName) {
+                        // Torrents: extract S/E from filename using robust parser
+                        const se = parseSeasonEpisodeFromTitle(currentSelectedVideoName);
+                        if (se) {
+                            if (typeof se.season === 'number' && typeof se.episode === 'number') {
+                                seasonNum = String(se.season);
+                                episodeNum = String(se.episode);
+                            } else if (typeof se.episode === 'number' && currentSeason) {
+                                // Partial match: use UI's currentSeason if available
+                                seasonNum = String(currentSeason);
+                                episodeNum = String(se.episode);
+                            }
+                        }
+                    }
+                    
+                    const result = await window.electronAPI.spawnMpvjsPlayer({
+                        url: currentStreamUrl,
+                        tmdbId: tmdbId,
+                        seasonNum: seasonNum,
+                        episodeNum: episodeNum
+                    });
+                    
+                    if (result.success) {
+                        showNotification('Player launched');
+                        return;
+                    }
+                    
+                    // If mpv.js fails (not Windows), fall through to HTML5 player
+                    console.log('[Play Now] mpv.js not available, using HTML5 player');
+                } catch (err) {
+                    console.log('[Play Now] Using HTML5 player:', err.message);
+                }
+                
+                // Original HTML5 player logic for non-Windows or fallback
                 // Ensure we have latest resume info; fetch if not present
                 let res = resumeInfo;
                 if ((!res || typeof res.position !== 'number') && resumeKey) {
@@ -23303,10 +23400,46 @@ Your browser does not support the video tag.
 
             // Add event listeners for Nuvio play buttons
             document.querySelectorAll('.play-nuvio-btn').forEach(btn => {
-                btn.addEventListener('click', () => {
+                btn.addEventListener('click', async () => {
                     const url = btn.dataset.url;
                     const name = btn.dataset.name;
-                    playNuvioStream(url, name);
+                    try {
+                        // Set current stream context
+                        currentStreamUrl = url;
+                        currentSelectedVideoName = name;
+
+                        // Attempt Windows mpv.js (with UI-provided S/E for TV)
+                        let launched = false;
+                        try {
+                            const tmdbId = currentContent?.id?.toString() || '';
+                            let seasonNum = null;
+                            let episodeNum = null;
+                            if (currentMediaType === 'tv' && lastSearchedSeason && lastSearchedEpisode) {
+                                seasonNum = String(lastSearchedSeason);
+                                episodeNum = String(lastSearchedEpisode);
+                            }
+                            const res = await window.electronAPI.spawnMpvjsPlayer({
+                                url,
+                                tmdbId,
+                                seasonNum,
+                                episodeNum
+                            });
+                            if (res?.success) {
+                                launched = true;
+                                showNotification('Player launched');
+                                return;
+                            }
+                        } catch (_) {}
+
+                        // Fallback to HTML5 player
+                        const title = currentContent?.title || currentContent?.name || 'Video';
+                        const sNum = (currentMediaType === 'tv' && currentSeason) ? currentSeason : null;
+                        updateDiscordForStreaming(title, 'Nuvio', sNum);
+                        openCustomPlayer();
+                    } catch (e) {
+                        console.error('[Nuvio] Play Now error:', e);
+                        showNotification('Failed to play stream', 'error');
+                    }
                 });
             });
 
@@ -23706,6 +23839,56 @@ Your browser does not support the video tag.
                 info.appendChild(title);
                 info.appendChild(meta);
 
+                // New: Play Now button (Windows mpv.js if available, otherwise HTML5 fallback)
+                const playNowBtn = document.createElement('button');
+                playNowBtn.className = 'btn';
+                playNowBtn.innerHTML = '<i class="fas fa-play"></i> Play Now';
+                playNowBtn.style.marginLeft = '1rem';
+                playNowBtn.onclick = async (e) => {
+                    e.stopPropagation();
+                    if (!file.url) {
+                        showNotification('No stream URL available');
+                        return;
+                    }
+                    try {
+                        const tmdbId = currentContent?.id?.toString() || '';
+                        let seasonNum = null;
+                        let episodeNum = null;
+                        if (currentMediaType === 'tv' && lastSearchedSeason && lastSearchedEpisode) {
+                            seasonNum = String(lastSearchedSeason);
+                            episodeNum = String(lastSearchedEpisode);
+                        }
+
+                        // Try mpv.js (Windows-only)
+                        let launched = false;
+                        try {
+                            const res = await window.electronAPI.spawnMpvjsPlayer({
+                                url: file.url,
+                                tmdbId,
+                                seasonNum,
+                                episodeNum
+                            });
+                            if (res?.success) {
+                                launched = true;
+                                showNotification('Player launched');
+                            }
+                        } catch (_) {}
+
+                        if (!launched) {
+                            // Fallback to HTML5 player
+                            currentStreamUrl = file.url;
+                            currentSelectedVideoName = file.name || 'Video';
+                            const title = currentContent?.title || currentContent?.name || 'Video';
+                            const sNum = (currentMediaType === 'tv' && currentSeason) ? currentSeason : null;
+                            updateDiscordForStreaming(title, '111477', sNum);
+                            openCustomPlayer();
+                        }
+                    } catch (err) {
+                        console.error('[111477] Play Now error:', err);
+                        showNotification('Failed to play: ' + (err?.message || 'Unknown error'));
+                    }
+                };
+
                 const playBtn = document.createElement('button');
                 playBtn.className = 'btn';
                 playBtn.innerHTML = '<i class="fas fa-play"></i> Open in MPV';
@@ -23736,6 +23919,7 @@ Your browser does not support the video tag.
                 };
 
                 item.appendChild(info);
+                item.appendChild(playNowBtn);
                 item.appendChild(playBtn);
                 
                 // Add IINA button on macOS

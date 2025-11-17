@@ -11,6 +11,7 @@ class Main extends React.PureComponent {
     super(props);
     this.mpv = null;
     this.hideControlsTimeout = null;
+    this.subPosInterval = null;
     this.state = {
       pause: true,
       "time-pos": 0,
@@ -26,7 +27,16 @@ class Main extends React.PureComponent {
       subtitleTracks: [],
       audioTracks: [],
       currentSubTrack: null,
-      currentAudioTrack: null
+      currentAudioTrack: null,
+      "demuxer-cache-duration": 0,
+      "demuxer-cache-time": 0,
+      "sub-delay": 0,
+      "paused-for-cache": false,
+      "core-idle": true,
+      "sub-pos": 100,
+      "sub-visibility": true,
+      externalSubtitles: [],
+      loadingExternalSubs: false
     };
     this.handleKeyDown = this.handleKeyDown.bind(this);
     this.handleMPVReady = this.handleMPVReady.bind(this);
@@ -58,6 +68,18 @@ class Main extends React.PureComponent {
     this.loadSubtitleTracks = this.loadSubtitleTracks.bind(this);
     this.loadAudioTracks = this.loadAudioTracks.bind(this);
     this.loadAllTracks = this.loadAllTracks.bind(this);
+    this.nextSubtitleTrack = this.nextSubtitleTrack.bind(this);
+    this.prevSubtitleTrack = this.prevSubtitleTrack.bind(this);
+    this.increaseSubDelay = this.increaseSubDelay.bind(this);
+    this.decreaseSubDelay = this.decreaseSubDelay.bind(this);
+    this.moveSubtitleUp = this.moveSubtitleUp.bind(this);
+    this.moveSubtitleDown = this.moveSubtitleDown.bind(this);
+    this.toggleSubVisibility = this.toggleSubVisibility.bind(this);
+    this.startMoveSubUp = this.startMoveSubUp.bind(this);
+    this.startMoveSubDown = this.startMoveSubDown.bind(this);
+    this.stopMoveSubPosition = this.stopMoveSubPosition.bind(this);
+    this.loadExternalSubtitles = this.loadExternalSubtitles.bind(this);
+    this.loadExternalSubtitle = this.loadExternalSubtitle.bind(this);
   }
   componentDidMount() {
     document.addEventListener("keydown", this.handleKeyDown, false);
@@ -67,6 +89,9 @@ class Main extends React.PureComponent {
     document.removeEventListener("keydown", this.handleKeyDown, false);
     if (this.hideControlsTimeout) {
       clearTimeout(this.hideControlsTimeout);
+    }
+    if (this.subPosInterval) {
+      clearInterval(this.subPosInterval);
     }
   }
   handleKeyDown(e) {
@@ -92,12 +117,56 @@ class Main extends React.PureComponent {
     this.mpv = mpv;
     console.log("MPV Ready - available methods:", Object.keys(mpv));
     const observe = mpv.observe.bind(mpv);
-    ["pause", "time-pos", "duration", "eof-reached", "volume", "mute", "track-list", "sid", "aid"].forEach(observe);
+    ["pause", "time-pos", "duration", "eof-reached", "volume", "mute", "track-list", "sid", "aid", "demuxer-cache-duration", "demuxer-cache-time", "sub-delay", "paused-for-cache", "core-idle", "sub-pos", "sub-visibility"].forEach(observe);
     this.mpv.property("hwdec", "auto");
     this.mpv.property("volume", this.state.volume);
     // Enable subtitle auto-loading
     this.mpv.property("sub-auto", "fuzzy");
     this.mpv.property("sub-file-paths", "");
+    
+    // Auto-load URL if provided from command line
+    const initialUrl = remote.getGlobal("initialUrl");
+    if (initialUrl) {
+      this.mpv.command("loadfile", initialUrl);
+      this.setState({url: initialUrl});
+      
+      // Load external subtitles if TMDB ID is provided
+      const tmdbId = remote.getGlobal("tmdbId");
+      if (tmdbId) {
+        this.loadExternalSubtitles(tmdbId);
+      }
+    }
+  }
+  loadExternalSubtitles(tmdbId) {
+    const seasonNum = remote.getGlobal("seasonNum");
+    const episodeNum = remote.getGlobal("episodeNum");
+    
+    let url = `https://sub.wyzie.ru/search?id=${tmdbId}`;
+    if (seasonNum && episodeNum) {
+      url += `&season=${seasonNum}&episode=${episodeNum}`;
+    }
+    
+    this.setState({loadingExternalSubs: true});
+    
+    fetch(url)
+      .then(response => response.json())
+      .then(data => {
+        console.log("External subtitles fetched:", data);
+        this.setState({
+          externalSubtitles: data,
+          loadingExternalSubs: false
+        });
+      })
+      .catch(error => {
+        console.error("Error fetching external subtitles:", error);
+        this.setState({loadingExternalSubs: false});
+      });
+  }
+  loadExternalSubtitle(subtitleUrl) {
+    if (!this.mpv) return;
+    // Load external subtitle file
+    this.mpv.command("sub-add", subtitleUrl);
+    this.setState({showSubtitlesMenu: false});
   }
   handlePropertyChange(name, value) {
     if (name === "time-pos" && this.seeking) {
@@ -126,12 +195,17 @@ class Main extends React.PureComponent {
   }
   toggleFullscreen() {
     const win = remote.getCurrentWindow();
-    if (this.state.fullscreen) {
-      win.unmaximize();
-    } else {
+    const newFullscreenState = !this.state.fullscreen;
+    
+    if (newFullscreenState) {
+      // Entering fake fullscreen: maximize and hide title bar
       win.maximize();
+    } else {
+      // Exiting fake fullscreen: unmaximize and show title bar
+      win.unmaximize();
     }
-    this.setState({fullscreen: !this.state.fullscreen});
+    
+    this.setState({fullscreen: newFullscreenState});
   }
   togglePause(e) {
     if (e && e.target) e.target.blur();
@@ -255,10 +329,56 @@ class Main extends React.PureComponent {
     });
   }
   toggleSubtitlesMenu() {
-    // Use 'J' key to cycle through subtitles
-    if (this.mpv) {
-      this.mpv.keypress({key: 'J'});
+    this.setState({showSubtitlesMenu: !this.state.showSubtitlesMenu});
+  }
+  nextSubtitleTrack() {
+    if (!this.mpv) return;
+    // Use 'j' key to cycle to next subtitle track
+    this.mpv.keypress({key: 'j'});
+  }
+  prevSubtitleTrack() {
+    if (!this.mpv) return;
+    // Use 'J' (Shift+j) key to cycle to previous subtitle track
+    this.mpv.keypress({key: 'J', shiftKey: true});
+  }
+  increaseSubDelay() {
+    if (!this.mpv) return;
+    // Use 'x' key to increase subtitle delay by 100ms
+    this.mpv.keypress({key: 'x'});
+  }
+  decreaseSubDelay() {
+    if (!this.mpv) return;
+    // Use 'z' key to decrease subtitle delay by 100ms
+    this.mpv.keypress({key: 'z'});
+  }
+  moveSubtitleUp() {
+    if (!this.mpv) return;
+    // Use 'r' key to move subtitle position up
+    this.mpv.keypress({key: 'r'});
+  }
+  moveSubtitleDown() {
+    if (!this.mpv) return;
+    // Use 't' key to move subtitle position down
+    this.mpv.keypress({key: 't'});
+  }
+  startMoveSubUp() {
+    this.moveSubtitleUp();
+    this.subPosInterval = setInterval(() => this.moveSubtitleUp(), 100);
+  }
+  startMoveSubDown() {
+    this.moveSubtitleDown();
+    this.subPosInterval = setInterval(() => this.moveSubtitleDown(), 100);
+  }
+  stopMoveSubPosition() {
+    if (this.subPosInterval) {
+      clearInterval(this.subPosInterval);
+      this.subPosInterval = null;
     }
+  }
+  toggleSubVisibility() {
+    if (!this.mpv) return;
+    // Use 'v' key to toggle subtitle visibility
+    this.mpv.keypress({key: 'v'});
   }
   selectSubtitleTrack(id) {
     this.mpv.property("sid", id);
@@ -297,7 +417,7 @@ class Main extends React.PureComponent {
       clearTimeout(this.hideControlsTimeout);
     }
     this.hideControlsTimeout = setTimeout(() => {
-      if (!this.state.pause) {
+      if (!this.state.pause && !this.state.showSubtitlesMenu && !this.state.showAudioMenu) {
         this.setState({showControls: false});
       }
     }, 2000);
@@ -306,15 +426,49 @@ class Main extends React.PureComponent {
     const progressPercent = this.state.duration > 0
       ? (this.state["time-pos"] / this.state.duration) * 100
       : 0;
+    
+    // Calculate cache percentage
+    const cacheEndTime = this.state["demuxer-cache-time"] || this.state["time-pos"];
+    const cachePercent = this.state.duration > 0
+      ? (cacheEndTime / this.state.duration) * 100
+      : 0;
 
     return (
       <div className="container" onMouseMove={this.handleMouseMove}>
+        <div className={`title-bar ${this.state.fullscreen ? 'hidden' : ''}`}>
+          <div className="title-bar-drag">
+            <div className="title-bar-title">PlayTorrio Player</div>
+          </div>
+          <div className="window-controls">
+            <button className="window-btn minimize" onClick={this.handleMinimize} title="Minimize">
+              <svg viewBox="0 0 12 12">
+                <line x1="1" y1="6" x2="11" y2="6" strokeWidth="1.5" strokeLinecap="round"/>
+              </svg>
+            </button>
+            <button className="window-btn maximize" onClick={this.handleMaximize} title="Maximize">
+              <svg viewBox="0 0 12 12">
+                <rect x="2" y="2" width="8" height="8" strokeWidth="1.5" rx="1"/>
+              </svg>
+            </button>
+            <button className="window-btn close" onClick={this.handleClose} title="Close">
+              <svg viewBox="0 0 12 12">
+                <path d="M2.5 2.5 L9.5 9.5 M9.5 2.5 L2.5 9.5" strokeWidth="1.5" strokeLinecap="round"/>
+              </svg>
+            </button>
+          </div>
+        </div>
         <div className="player-wrapper">
           <ReactMPV
             className="player"
             onReady={this.handleMPVReady}
             onPropertyChange={this.handlePropertyChange}
           />
+          {(this.state["paused-for-cache"] || (this.state["core-idle"] && !this.state.duration)) && (
+            <div className="loading-overlay">
+              <div className="spinner"></div>
+              <div className="loading-text">{this.state.duration ? 'Buffering...' : 'Loading...'}</div>
+            </div>
+          )}
           <div className="controls-overlay" style={{opacity: this.state.showControls ? 1 : 0}}>
             <div className="progress-container" 
                  onClick={(e) => {
@@ -324,6 +478,7 @@ class Main extends React.PureComponent {
                    this.mpv.property("time-pos", pos * this.state.duration);
                  }}>
               <div className="progress-bar">
+                <div className="progress-cache" style={{width: `${cachePercent}%`}}></div>
                 <div className="progress-filled" style={{width: `${progressPercent}%`}}>
                   <div className="progress-thumb"></div>
                 </div>
@@ -408,11 +563,6 @@ class Main extends React.PureComponent {
                     <span style={{fontSize: '14px', marginLeft: '4px', fontWeight: 'bold'}}>#{this.state.currentSubTrack}</span>
                   )}
                 </button>
-                <button className="control-btn" onClick={this.toggleUrlInput} title="Load URL">
-                  <svg viewBox="0 0 24 24" width="24" height="24">
-                    <path d="M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z"/>
-                  </svg>
-                </button>
                 <button className="control-btn" onClick={this.toggleFullscreen} title="Fullscreen">
                   {this.state.fullscreen ? (
                     <svg viewBox="0 0 24 24" width="24" height="24">
@@ -429,10 +579,102 @@ class Main extends React.PureComponent {
           </div>
 
           {this.state.showSubtitlesMenu && (
-            <div className="subtitles-menu">
+            <div className="subtitles-menu" 
+                 style={{opacity: this.state.showControls ? 1 : 0, pointerEvents: this.state.showControls ? 'auto' : 'none'}}
+                 onMouseMove={this.handleMouseMove}
+            >
               <div className="subtitles-menu-header">
-                Subtitle Tracks
+                Subtitles ({this.state.subtitleTracks.length} available)
               </div>
+              
+              <div className="subtitle-navigation">
+                <button className="nav-btn" onClick={this.prevSubtitleTrack} title="Previous Subtitle">
+                  <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+                    <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
+                  </svg>
+                </button>
+                <div className="current-sub-info">
+                  <div className="sub-track-number">Track #{this.state.currentSubTrack || 'Off'}</div>
+                  <div className="sub-track-name">
+                    {this.state.currentSubTrack 
+                      ? (this.state.subtitleTracks.find(t => t.id === this.state.currentSubTrack) 
+                         ? (this.state.subtitleTracks.find(t => t.id === this.state.currentSubTrack).title || 
+                            this.state.subtitleTracks.find(t => t.id === this.state.currentSubTrack).lang || 'Unknown')
+                         : 'Unknown')
+                      : 'Disabled'}
+                  </div>
+                </div>
+                <button className="nav-btn" onClick={this.nextSubtitleTrack} title="Next Subtitle">
+                  <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+                    <path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/>
+                  </svg>
+                </button>
+              </div>
+
+              <div className="subtitle-delay-controls">
+                <div className="delay-label">Subtitle Delay</div>
+                <div className="delay-buttons">
+                  <button className="delay-btn" onClick={this.decreaseSubDelay} title="Decrease delay by 100ms (Z)">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                      <path d="M19 13H5v-2h14v2z"/>
+                    </svg>
+                    <span>100ms</span>
+                  </button>
+                  <div className="delay-value">{(this.state["sub-delay"] * 1000).toFixed(0)}ms</div>
+                  <button className="delay-btn" onClick={this.increaseSubDelay} title="Increase delay by 100ms (X)">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                      <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
+                    </svg>
+                    <span>100ms</span>
+                  </button>
+                </div>
+              </div>
+
+              <div className="subtitle-delay-controls">
+                <div className="delay-label">Subtitle Position</div>
+                <div className="delay-buttons">
+                  <button 
+                    className="delay-btn" 
+                    onMouseDown={this.startMoveSubUp}
+                    onMouseUp={this.stopMoveSubPosition}
+                    onMouseLeave={this.stopMoveSubPosition}
+                    title="Move subtitles up (R) - Hold to repeat"
+                  >
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                      <path d="M7.41 15.41L12 10.83l4.59 4.58L18 14l-6-6-6 6z"/>
+                    </svg>
+                    <span>Up</span>
+                  </button>
+                  <div className="delay-value">{this.state["sub-pos"]}</div>
+                  <button 
+                    className="delay-btn" 
+                    onMouseDown={this.startMoveSubDown}
+                    onMouseUp={this.stopMoveSubPosition}
+                    onMouseLeave={this.stopMoveSubPosition}
+                    title="Move subtitles down (T) - Hold to repeat"
+                  >
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                      <path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6z"/>
+                    </svg>
+                    <span>Down</span>
+                  </button>
+                </div>
+              </div>
+
+              <div className="subtitle-visibility-control">
+                <button className="visibility-btn" onClick={this.toggleSubVisibility}>
+                  <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+                    {this.state["sub-visibility"] ? (
+                      <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>
+                    ) : (
+                      <path d="M12 7c2.76 0 5 2.24 5 5 0 .65-.13 1.26-.36 1.83l2.92 2.92c1.51-1.26 2.7-2.89 3.43-4.75-1.73-4.39-6-7.5-11-7.5-1.4 0-2.74.25-3.98.7l2.16 2.16C10.74 7.13 11.35 7 12 7zM2 4.27l2.28 2.28.46.46C3.08 8.3 1.78 10.02 1 12c1.73 4.39 6 7.5 11 7.5 1.55 0 3.03-.3 4.38-.84l.42.42L19.73 22 21 20.73 3.27 3 2 4.27zM7.53 9.8l1.55 1.55c-.05.21-.08.43-.08.65 0 1.66 1.34 3 3 3 .22 0 .44-.03.65-.08l1.55 1.55c-.67.33-1.41.53-2.2.53-2.76 0-5-2.24-5-5 0-.79.2-1.53.53-2.2zm4.31-.78l3.15 3.15.02-.16c0-1.66-1.34-3-3-3l-.17.01z"/>
+                    )}
+                  </svg>
+                  <span>{this.state["sub-visibility"] ? 'Hide Subtitles (V)' : 'Show Subtitles (V)'}</span>
+                </button>
+              </div>
+
+              <div className="subtitle-list-header">MPV Tracks</div>
               <div className="subtitles-menu-item" onClick={() => this.selectSubtitleTrack(0)}>
                 <span>Off</span>
                 {(this.state.currentSubTrack === 0 || this.state.currentSubTrack === false) && <span className="checkmark">✓</span>}
@@ -443,44 +685,56 @@ class Main extends React.PureComponent {
                   className="subtitles-menu-item" 
                   onClick={() => this.selectSubtitleTrack(track.id)}
                 >
-                  <span>{track.name}</span>
+                  <span>#{track.id} - {track.title || track.lang || 'Unknown'}</span>
                   {this.state.currentSubTrack === track.id && <span className="checkmark">✓</span>}
                 </div>
               ))}
-              <div className="track-input-container">
-                <span style={{marginRight: '10px'}}>Or enter track #:</span>
-                <input 
-                  type="number" 
-                  min="1"
-                  max="999"
-                  placeholder="Track #"
-                  style={{
-                    width: '60px',
-                    padding: '4px 8px',
-                    borderRadius: '3px',
-                    border: '1px solid #555',
-                    background: '#222',
-                    color: '#fff'
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      const trackNum = parseInt(e.target.value);
-                      if (trackNum > 0) {
-                        this.selectSubtitleTrack(trackNum);
-                        e.target.value = '';
-                      }
-                    }
-                  }}
-                />
-              </div>
-              <div style={{fontSize: '11px', opacity: 0.7, padding: '8px 15px', borderTop: '1px solid rgba(255,255,255,0.1)'}}>
-                Tip: Press J to cycle through tracks
+              
+              {this.state.externalSubtitles.length > 0 && (
+                <div>
+                  <div className="subtitle-list-header">External Subtitles</div>
+                  {(() => {
+                    const grouped = {};
+                    this.state.externalSubtitles.forEach(sub => {
+                      const lang = sub.display;
+                      if (!grouped[lang]) grouped[lang] = [];
+                      grouped[lang].push(sub);
+                    });
+                    
+                    return Object.keys(grouped).sort().map(lang => {
+                      const subs = grouped[lang];
+                      return subs.map((sub, index) => {
+                        const displayName = subs.length > 1 ? `${lang} ${index + 1}` : lang;
+                        return (
+                          <div 
+                            key={sub.id} 
+                            className="subtitles-menu-item external-sub-item" 
+                            onClick={() => this.loadExternalSubtitle(sub.url)}
+                          >
+                            <img src={sub.flagUrl} alt={lang} style={{width: '20px', height: '15px', marginRight: '8px'}} />
+                            <span>{displayName}</span>
+                          </div>
+                        );
+                      });
+                    });
+                  })()}
+                </div>
+              )}
+              
+              {this.state.loadingExternalSubs && (
+                <div style={{padding: '15px', textAlign: 'center', color: 'rgba(224, 179, 255, 0.7)', fontSize: '12px'}}>
+                  Loading external subtitles...
+                </div>
+              )}
+              
+              <div style={{fontSize: '11px', opacity: 0.6, padding: '8px 15px', borderTop: '1px solid rgba(139, 63, 219, 0.2)', textAlign: 'center'}}>
+                J = Cycle | Z/X = Delay | R/T = Position | V = Visibility
               </div>
             </div>
           )}
 
           {this.state.showAudioMenu && (
-            <div className="subtitles-menu" style={{right: '130px'}}>
+            <div className="subtitles-menu" style={{right: '130px', opacity: this.state.showControls ? 1 : 0, pointerEvents: this.state.showControls ? 'auto' : 'none'}}>
               <div className="subtitles-menu-header">
                 Audio Tracks
               </div>

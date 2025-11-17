@@ -14,6 +14,8 @@ try {
 
 contextBridge.exposeInMainWorld('electronAPI', {
   platform: process.platform, // 'darwin', 'win32', 'linux'
+  // Windows-only mpv.js launcher
+  spawnMpvjsPlayer: (payload) => ipcRenderer.invoke('spawn-mpvjs-player', payload),
   openInMPV: (data) => ipcRenderer.invoke('open-in-mpv', data),
   openMPVDirect: (url) => ipcRenderer.invoke('open-mpv-direct', url),
   // Advanced MPV opener with headers and options

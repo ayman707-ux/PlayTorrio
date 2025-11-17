@@ -2121,6 +2121,62 @@ function startTorrentio() {
     }
 }
 
+/**
+ * Spawn mpv.js player (Windows only)
+ * @param {string} url - Stream URL
+ * @param {string} tmdbId - TMDB ID
+ * @param {string} seasonNum - Season number (for shows)
+ * @param {string} episodeNum - Episode number (for shows)
+ */
+function spawnMpvJsPlayer(url, tmdbId, seasonNum = null, episodeNum = null) {
+    if (process.platform !== 'win32') {
+        console.log('[MPV.js] Not Windows, skipping mpv.js player');
+        return { success: false, message: 'mpv.js player is only available on Windows' };
+    }
+    
+    try {
+        const __filename = fileURLToPath(import.meta.url);
+        const __dirname = path.dirname(__filename);
+        
+        const mpvJsPath = app.isPackaged
+            ? path.join(process.resourcesPath, 'mpv.js-master')
+            : path.join(__dirname, 'mpv.js-master');
+        
+        const electronPath = path.join(mpvJsPath, 'node_modules', 'electron', 'dist', 'electron.exe');
+        const indexPath = path.join(mpvJsPath, 'example', 'index.js');
+        
+        // Build args:
+        // - Movies: [indexPath, url, tmdbId]
+        // - TV:     [indexPath, tmdbId, seasonNum, episodeNum]
+        let args;
+        if (seasonNum && episodeNum) {
+            args = [indexPath, tmdbId, String(seasonNum), String(episodeNum)];
+        } else {
+            args = [indexPath, url, tmdbId];
+        }
+        
+        console.log('[MPV.js] Spawning player:', { electronPath, args });
+        
+        const playerProcess = spawn(electronPath, args, {
+            stdio: 'ignore',
+            detached: false
+        });
+        
+        playerProcess.on('error', (err) => {
+            console.error('[MPV.js] Player error:', err);
+        });
+        
+        playerProcess.on('exit', (code) => {
+            console.log('[MPV.js] Player exited with code:', code);
+        });
+        
+        return { success: true, message: 'MPV.js player launched' };
+    } catch (err) {
+        console.error('[MPV.js] Failed to spawn player:', err);
+        return { success: false, message: err.message };
+    }
+}
+
 // Enforce single instance with a friendly error on second run
 const gotLock = app.requestSingleInstanceLock();
 if (!gotLock) {
@@ -2305,6 +2361,12 @@ if (!gotLock) {
             console.error('Error launching MPV with headers:', e);
             return { success: false, message: e?.message || 'Failed to launch MPV with headers' };
         }
+    });
+
+    // IPC handler to spawn mpv.js player (Windows only)
+    ipcMain.handle('spawn-mpvjs-player', async (event, { url, tmdbId, seasonNum, episodeNum }) => {
+        console.log('[MPV.js] Received spawn request:', { url, tmdbId, seasonNum, episodeNum });
+        return spawnMpvJsPlayer(url, tmdbId, seasonNum, episodeNum);
     });
 
     // Direct MPV launch for external URLs (111477, etc.)
