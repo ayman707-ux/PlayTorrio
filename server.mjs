@@ -1552,26 +1552,10 @@ export function startServer(userDataPath) {
                                 console.log('[RD][prepare] Reusing existing torrent', { id: match.id, status: match.status });
                                 let info = await rdFetch(`/torrents/info/${match.id}`);
                                 
-                                // If torrent is already downloaded and has NO selected files, auto-select ALL files
-                                // This ensures links are available immediately for downloaded torrents
-                                if (info.status === 'downloaded' && Array.isArray(info.files)) {
-                                    const hasSelected = info.files.some(f => f.selected === 1);
-                                    if (!hasSelected) {
-                                        console.log('[RD][prepare] Auto-selecting all files for downloaded torrent');
-                                        const allFileIds = info.files.map(f => f.id).join(',');
-                                        try {
-                                            await rdFetch(`/torrents/selectFiles/${match.id}`, {
-                                                method: 'POST',
-                                                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                                                body: new URLSearchParams({ files: allFileIds })
-                                            });
-                                            // Refetch info to get updated links
-                                            info = await rdFetch(`/torrents/info/${match.id}`);
-                                        } catch (e) {
-                                            console.warn('[RD][prepare] Auto-select failed:', e?.message);
-                                        }
-                                    }
-                                }
+                                // Don't auto-select files - let user choose which file they want
+                                // Auto-selecting all files causes RD to cache/download entire season packs
+                                // which wastes bandwidth and can lead to wrong file selection
+                                // File selection happens later via /api/debrid/select-files when user clicks
                                 
                                 return res.json({ id: match.id, info, reused: true });
                             }
@@ -1592,12 +1576,23 @@ export function startServer(userDataPath) {
                 if (!id) return res.status(500).json({ error: 'Failed to add magnet' });
                 console.log('[RD][prepare] added', { id });
                 
-                // DO NOT auto-select files here - wait for user to choose specific file
-                // This prevents RD from downloading all files in multi-file torrents
-                // File selection happens later via /api/debrid/select-files when user clicks
-                console.log('[RD][prepare] Skipping auto-select to prevent bulk download');
+                // CRITICAL: For cached torrents, we MUST select files immediately
+                // Otherwise RD times out and starts downloading from scratch
+                // We select "all" here to claim the cache, then user can switch to specific file later
+                console.log('[RD][prepare] Selecting all files to claim cache...');
                 
-                // Fetch latest info (may already contain links for cached items)
+                try {
+                    await rdFetch(`/torrents/selectFiles/${id}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                        body: new URLSearchParams({ files: 'all' })
+                    });
+                    console.log('[RD][prepare] Files selected - cache claimed');
+                } catch (e) {
+                    console.warn('[RD][prepare] Failed to select files:', e?.message);
+                }
+                
+                // Fetch latest info (should now have links for cached items)
                 let info = await rdFetch(`/torrents/info/${id}`);
                 
                 return res.json({ id, info });
@@ -4163,33 +4158,31 @@ export function startServer(userDataPath) {
             const file = torrent.files[fileIndex];
             if (!file) return res.status(404).send('File not found');
 
-            // Ensure only the selected video file and all subtitle files are downloaded
+            // Ensure only the selected video file is downloaded (STRICT file-only mode)
             try {
                 // Deselect everything first
                 torrent.files.forEach(f => f.deselect());
                 try { torrent.deselect(0, Math.max(0, torrent.pieces.length - 1), false); } catch {}
-                // Select the chosen video file
+                
+                // Select ONLY the chosen video file - WebTorrent will handle piece selection intelligently
                 file.select();
                 
-                // ============ ULTIMATE PIECE PRIORITIZATION STRATEGY ============
+                // ============ OPTIMIZED PIECE PRIORITIZATION (FILE-ONLY) ============
                 const pieceLength = torrent.pieceLength;
                 const fileStart = Math.max(0, Math.floor(file.offset / pieceLength));
                 const fileEnd = Math.max(fileStart, Math.floor((file.offset + file.length - 1) / pieceLength));
                 
-                // Select the entire file range with priority
-                try {
-                    torrent.select(fileStart, fileEnd, 2);  // High priority for entire file
-                } catch {}
+                console.log(`[STREAM] Selected file pieces: ${fileStart}-${fileEnd} (${fileEnd - fileStart + 1} pieces)`);
                 
                 // ============ PHASE 1: CRITICAL INITIAL BUFFER (20MB) ============
-                // Larger initial buffer = smoother playback start, less stuttering
-                const criticalBytes = 20 * 1024 * 1024; // 20MB critical buffer (2x increase)
+                // Prioritize first pieces for instant playback start
+                const criticalBytes = 20 * 1024 * 1024; // 20MB critical buffer
                 const criticalPieces = Math.ceil(criticalBytes / pieceLength);
                 const criticalEnd = Math.min(fileStart + criticalPieces, fileEnd);
                 
                 console.log(`[OPTIMIZATION] Critical buffer: ${(criticalBytes / 1024 / 1024).toFixed(1)}MB (pieces ${fileStart}-${criticalEnd})`);
                 
-                // Download critical pieces with MAXIMUM priority
+                // Download critical pieces with MAXIMUM priority (only within file boundaries)
                 for (let i = fileStart; i <= criticalEnd; i++) {
                     try {
                         torrent.critical(i, i);  // Highest priority
@@ -4230,14 +4223,7 @@ export function startServer(userDataPath) {
                 
                 console.log(`[Streaming] Optimized piece selection: Critical→Extended→End→Rarest for ${file.name}`);
                 console.log(`[Streaming] Total file pieces: ${fileEnd - fileStart + 1}, File size: ${(file.length / 1024 / 1024).toFixed(1)}MB`);
-                
-                
-                // Select all subtitle files so they download alongside
-                torrent.files.forEach(f => {
-                    if (/\.(srt|vtt|ass)$/i.test(f.name)) {
-                        try { f.select(); } catch {}
-                    }
-                });
+                console.log(`[Streaming] ONLY downloading selected file: ${file.name}`);
             } catch {}
 
             res.setHeader('Accept-Ranges', 'bytes');
@@ -4306,9 +4292,11 @@ export function startServer(userDataPath) {
             const file = torrent.files[idx];
             if (!file) return res.status(404).json({ success: false, error: 'File not found' });
             try {
-                // Deselect everything then select this file
+                // Deselect everything then select ONLY this file
                 torrent.files.forEach(f => f.deselect());
                 try { torrent.deselect(0, Math.max(0, torrent.pieces.length - 1), false); } catch {}
+                
+                // Select only the target file - WebTorrent handles piece selection
                 file.select();
                 
                 // OPTIMIZATION: Prioritize first pieces for faster playback start
@@ -4316,10 +4304,7 @@ export function startServer(userDataPath) {
                 const fileStart = Math.max(0, Math.floor(file.offset / pieceLength));
                 const fileEnd = Math.max(fileStart, Math.floor((file.offset + file.length - 1) / pieceLength));
                 
-                // Select the entire file range
-                try {
-                    torrent.select(fileStart, fileEnd, 1);
-                } catch {}
+                console.log(`[Prepare] Selected file pieces: ${fileStart}-${fileEnd}`);
                 
                 // CRITICAL: Prioritize first 15MB for pre-buffering (more than streaming)
                 const priorityBytes = 15 * 1024 * 1024; // 15MB for prepare
@@ -4342,13 +4327,7 @@ export function startServer(userDataPath) {
                 }
                 
                 console.log(`[Prepare] Pre-buffering pieces ${fileStart}-${priorityEnd} of ${fileStart}-${fileEnd} for ${file.name}`);
-                
-                // Also preselect all subtitle files
-                torrent.files.forEach(f => {
-                    if (/\.(srt|vtt|ass)$/i.test(f.name)) {
-                        try { f.select(); } catch {}
-                    }
-                });
+                console.log(`[Prepare] ONLY downloading selected file: ${file.name}`);
             } catch {}
 
             return res.json({
