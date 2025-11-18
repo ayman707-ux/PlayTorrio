@@ -65,7 +65,7 @@ jobs:
           echo "AppImage artifacts ready"
 
   build-macos-x64:
-    runs-on: macos-15-large
+    runs-on: macos-15
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
