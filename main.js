@@ -1303,8 +1303,14 @@ function createWindow() {
     
     win.webContents.on('did-fail-load', (event, errorCode, errorDescription, validatedURL) => {
         console.error('[Window] Failed to load:', errorCode, errorDescription, validatedURL);
-        // Retry on failure
-        if (errorCode !== -3) { // -3 is ERR_ABORTED (user navigated away)
+        
+        // Don't retry if it's an iframe that failed (like iptvplaytorrio.pages.dev)
+        // Only retry if the main app URL (localhost:6987) fails
+        const isMainAppUrl = validatedURL.includes('localhost:6987');
+        
+        // -3 is ERR_ABORTED (user navigated away)
+        // -27 is ERR_BLOCKED_BY_RESPONSE (CORS/iframe block - ignore these)
+        if (isMainAppUrl && errorCode !== -3 && errorCode !== -27) {
             setTimeout(() => {
                 if (win && !win.isDestroyed()) {
                     console.log('[Window] Retrying load after failure...');
