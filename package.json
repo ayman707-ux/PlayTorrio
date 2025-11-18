@@ -1,6 +1,6 @@
 {
   "name": "playtorrio",
-  "version": "2.0.3",
+  "version": "2.0.4",
   "description": "Ayman's PlayTorrio an all in one media center",
   "author": {
     "name": "Ayman",
@@ -63,7 +63,7 @@
       "node_modules/**/*",
       "mpv/**",
       "VLC/**",
-      "!mpv.js-master/**"
+      "!mpv.js-master-updated/**"
     ],
     "asarUnpack": [
       "mpv/**",
@@ -80,7 +80,7 @@
       "extraResources": [
         { "from": "mpv", "to": "mpv", "filter": ["**/*"] },
         { "from": "VLC", "to": "VLC", "filter": ["**/*"] },
-        { "from": "mpv.js-master", "to": "mpv.js-master", "filter": ["**/*"] }
+        { "from": "mpv.js-master-updated", "to": "mpv.js-master-updated", "filter": ["**/*"] }
       ]
     },
     "nsis": {
