@@ -117,6 +117,58 @@ class Player extends React.PureComponent {
 
 Currently only React component is provided.
 
+### Performance Tuning
+
+The native plugin now supports several environment variables you can set **before** launching Electron/NW.js to tune playback quality and smoothness across diverse hardware:
+
+| Variable | Purpose | Typical Values | Default |
+|----------|---------|----------------|---------|
+| `MPVJS_HWDEC` | Hardware decoding mode | `auto`, `auto-safe`, `dxva2`, `vaapi`, `cuda`, `vulkan` | `auto-safe` |
+| `MPVJS_VO` | Video output driver | `gpu`, `gpu-next`, `libmpv` specific | `gpu` |
+| `MPVJS_VIDEOSYNC` | Sync strategy (smoothness vs. A/V lock) | `display-resample`, `audio`, `display-vdrop` | unset (mpv default) |
+| `MPVJS_PROFILE` | mpv quality profile | `gpu-hq` (expensive), custom | unset |
+| `MPVJS_INTERPOLATION` | Enable frame interpolation | `yes` / `no` | unset (off) |
+| `MPVJS_SCALE` | Scaling algorithm | `lanczos`, `ewa_lanczossharp`, etc. | unset (mpv default) |
+| `MPVJS_DITHER_DEPTH` | Dither bit depth | `8`, `0` (disable) | unset |
+| `MPVJS_OBSERVE_STATS` | Emit properties for stats | any non-empty string | unset |
+
+Example (Windows PowerShell):
+
+```powershell
+$env:MPVJS_HWDEC='auto'
+$env:MPVJS_VIDEOSYNC='display-resample'
+$env:MPVJS_PROFILE='gpu-hq'
+$env:MPVJS_OBSERVE_STATS='1'
+npm start
+```
+
+If users on low-end GPUs experience jitter, try lowering scaling complexity:
+
+```powershell
+$env:MPVJS_PROFILE=''
+$env:MPVJS_SCALE='bilinear'
+$env:MPVJS_INTERPOLATION='no'
+```
+
+If users see frame judder at 24/25fps on 60Hz displays, enabling:
+
+```powershell
+$env:MPVJS_VIDEOSYNC='display-resample'
+```
+
+often helps, but it may slightly increase CPU/GPU usage. Hardware decoding (`MPVJS_HWDEC=auto`) usually reduces jitter by lowering copy overhead.
+
+To collect drop/present frame counts set `MPVJS_OBSERVE_STATS` and listen for `property_change` events for:
+
+- `drop-frame-count`
+- `vo-present-frame-count`
+- `display-fps`
+- `estimated-vf-fps`
+
+Use these to adapt quality dynamically (e.g., reduce scaling algorithm if `drop-frame-count` rises).
+
+The plugin now only renders when mpv signals a new frame, reducing redundant GPU work on static frames (e.g., pause state or unchanged OSD).
+
 ### See also
 
 * [mpv properties documentation](https://mpv.io/manual/master/#property-list)

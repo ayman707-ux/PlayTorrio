@@ -281,10 +281,13 @@ class MPVInstance : public pp::Instance {
   }
 
   static void HandleMPVUpdate(void* ctx) {
-    // printf("@@@ UPDATE\n");
     MPVInstance* b = static_cast<MPVInstance*>(ctx);
-    pp::Module::Get()->core()->CallOnMainThread(
-        0, b->callback_factory_.NewCallback(&MPVInstance::OnGetFrame));
+    // Query mpv for update flags to avoid redundant renders.
+    int update_flags = mpv_render_context_update(b->mpv_gl_);
+    if (update_flags & MPV_RENDER_UPDATE_FRAME) {
+      pp::Module::Get()->core()->CallOnMainThread(
+          0, b->callback_factory_.NewCallback(&MPVInstance::OnGetFrame));
+    }
   }
 
   bool InitGL() {
@@ -316,6 +319,40 @@ class MPVInstance : public pp::Instance {
     char* verbose = getenv("MPVJS_VERBOSE");
     if (verbose && strlen(verbose))
       mpv_set_option_string(mpv_, "msg-level", "all=v");
+
+    // Performance tuning env vars (set before initialize for certain options).
+    char* hwdec = getenv("MPVJS_HWDEC");
+    if (hwdec && *hwdec) {
+      mpv_set_option_string(mpv_, "hwdec", hwdec);
+    } else {
+      mpv_set_option_string(mpv_, "hwdec", "auto-safe");
+    }
+    char* vo = getenv("MPVJS_VO");
+    if (vo && *vo) {
+      mpv_set_option_string(mpv_, "vo", vo);
+    } else {
+      mpv_set_option_string(mpv_, "vo", "gpu");
+    }
+    char* videosync = getenv("MPVJS_VIDEOSYNC");
+    if (videosync && *videosync) {
+      mpv_set_option_string(mpv_, "video-sync", videosync);
+    }
+    char* profile = getenv("MPVJS_PROFILE");
+    if (profile && *profile) {
+      mpv_set_option_string(mpv_, "profile", profile);
+    }
+    char* interpolation = getenv("MPVJS_INTERPOLATION");
+    if (interpolation && *interpolation) {
+      mpv_set_option_string(mpv_, "interpolation", interpolation);
+    }
+    char* scale = getenv("MPVJS_SCALE");
+    if (scale && *scale) {
+      mpv_set_option_string(mpv_, "scale", scale);
+    }
+    char* dither_depth = getenv("MPVJS_DITHER_DEPTH");
+    if (dither_depth && *dither_depth) {
+      mpv_set_option_string(mpv_, "dither-depth", dither_depth);
+    }
 
     // Can't be set after initialize in mpv 0.18.
     mpv_set_option_string(mpv_, "input-default-bindings", "yes");
@@ -354,6 +391,13 @@ class MPVInstance : public pp::Instance {
   void LoadMPV() {
     mpv_set_wakeup_callback(mpv_, HandleMPVWakeup, this);
     mpv_render_context_set_update_callback(mpv_gl_, HandleMPVUpdate, this);
+    char* obs = getenv("MPVJS_OBSERVE_STATS");
+    if (obs && *obs) {
+      mpv_observe_property(mpv_, 0, "drop-frame-count", MPV_FORMAT_NODE);
+      mpv_observe_property(mpv_, 0, "vo-present-frame-count", MPV_FORMAT_NODE);
+      mpv_observe_property(mpv_, 0, "display-fps", MPV_FORMAT_NODE);
+      mpv_observe_property(mpv_, 0, "estimated-vf-fps", MPV_FORMAT_NODE);
+    }
     PostData("ready", Var::Null());
   }
 
