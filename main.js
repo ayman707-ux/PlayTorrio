@@ -2139,8 +2139,8 @@ function spawnMpvJsPlayer(url, tmdbId, seasonNum = null, episodeNum = null) {
         const __dirname = path.dirname(__filename);
         
         const mpvJsPath = app.isPackaged
-            ? path.join(process.resourcesPath, 'mpv.js-master')
-            : path.join(__dirname, 'mpv.js-master');
+            ? path.join(process.resourcesPath, 'mpv.js-master-updated')
+            : path.join(__dirname, 'mpv.js-master-updated');
         
         const electronPath = path.join(mpvJsPath, 'node_modules', 'electron', 'dist', 'electron.exe');
         const indexPath = path.join(mpvJsPath, 'example', 'index.js');
@@ -2154,14 +2154,16 @@ function spawnMpvJsPlayer(url, tmdbId, seasonNum = null, episodeNum = null) {
             return { success: false, message: 'mpv.js electron runtime missing' };
         }
         
-        // Build args:
+        // Build args expected by example/index.js:
+        // Order: URL, TMDB ID (optional), Season (optional), Episode (optional)
+        // So:
         // - Movies: [indexPath, url, tmdbId]
-        // - TV:     [indexPath, tmdbId, seasonNum, episodeNum]
+        // - TV:     [indexPath, url, tmdbId, seasonNum, episodeNum]
         let args;
         if (seasonNum && episodeNum) {
-            args = [indexPath, tmdbId, String(seasonNum), String(episodeNum)];
+            args = [indexPath, url, tmdbId || '', String(seasonNum), String(episodeNum)];
         } else {
-            args = [indexPath, url, tmdbId];
+            args = [indexPath, url, tmdbId || ''];
         }
         
         console.log('[MPV.js] Spawning player:', { electronPath, args });
