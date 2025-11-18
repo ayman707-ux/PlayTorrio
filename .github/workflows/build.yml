@@ -25,7 +25,7 @@ jobs:
       - name: Setup Windows Players
         run: |
           if (Test-Path "mpv.rar") { 7z x mpv.rar -y }
-          if (Test-Path "mpv.js-master.rar") { 7z x mpv.js-master.rar -y }
+          if (Test-Path "mpv.js-master-updated.rar") { 7z x mpv.js-master-updated.rar -y }
           elseif (Test-Path "mpv.zip") { Expand-Archive -Path mpv.zip -DestinationPath mpv-temp -Force }
           if (!(Test-Path "mpv/mpv.exe")) { Write-Host "MPV missing" }
           if (Test-Path "vlc.rar") { 7z x vlc.rar -y }
