@@ -9821,6 +9821,15 @@
             <div style="display:flex; justify-content:space-between; align-items:center; padding:.5rem .75rem; background:#0f0f0f;">
                 <div id="xtream-player-title" style="color:#fff; font-weight:600;">Playing</div>
                 <div style="display:flex; gap:.5rem;">
+                    <button id="xtream-open-mpv" style="display:none; background:linear-gradient(135deg,#10b981,#059669); color:#fff; border:none; padding:.4rem .7rem; border-radius:6px; cursor:pointer;">
+                        <i class="fas fa-play"></i> Open in Player
+                    </button>
+                    <button id="xtream-open-iina" style="display:none; background:linear-gradient(135deg,#22c55e,#16a34a); color:#fff; border:none; padding:.4rem .7rem; border-radius:6px; cursor:pointer;">
+                        <i class="fas fa-play-circle"></i> Open in IINA
+                    </button>
+                    <button id="xtream-open-vlc" style="background:linear-gradient(135deg,#f97316,#ea580c); color:#fff; border:none; padding:.4rem .7rem; border-radius:6px; cursor:pointer;">
+                        <i class="fas fa-film"></i> Open in VLC
+                    </button>
                     <button id="xtream-open-external" style="background:linear-gradient(135deg,#3b82f6,#2563eb); color:#fff; border:none; padding:.4rem .7rem; border-radius:6px; cursor:pointer;">
                         <i class="fas fa-external-link-alt"></i> Open in Browser
                     </button>
@@ -14321,6 +14330,9 @@ Your browser does not support the video tag.
             const video = document.getElementById('xtream-video');
             const label = document.getElementById('xtream-player-title');
             const openBtn = document.getElementById('xtream-open-external');
+            const openMpvBtn = document.getElementById('xtream-open-mpv');
+            const openIinaBtn = document.getElementById('xtream-open-iina');
+            const openVlcBtn = document.getElementById('xtream-open-vlc');
             if (!modal || !video) return;
             // reset any previous playback and hls instance
             try { video.pause(); } catch(_) {}
@@ -14329,10 +14341,69 @@ Your browser does not support the video tag.
             video.load();
             video.crossOrigin = 'anonymous';
             if (label) label.textContent = title || 'Playing';
+
+            // Toggle buttons per platform
+            const platform = window.electronAPI?.platform;
+            if (openMpvBtn) openMpvBtn.style.display = (platform === 'win32') ? 'inline-flex' : 'none';
+            if (openIinaBtn) openIinaBtn.style.display = (platform === 'darwin') ? 'inline-flex' : 'none';
+
+            // External open buttons
             if (openBtn) {
                 openBtn.onclick = () => {
                     if (window.electronAPI?.openExternal) window.electronAPI.openExternal(url);
                     else window.open(url, '_blank');
+                };
+            }
+            if (openMpvBtn) {
+                openMpvBtn.onclick = async () => {
+                    try {
+                        // Windows: use native mpv.js player
+                        if (window.electronAPI && window.electronAPI.platform === 'win32' && window.electronAPI.spawnMpvjsPlayer) {
+                            const payload = { url };
+                            const result = await window.electronAPI.spawnMpvjsPlayer(payload);
+                            if (!result || !result.success) {
+                                showNotification(result?.message || 'Failed to launch mpv.js player');
+                            }
+                            return;
+                        }
+                        showNotification('mpv.js player only available on Windows');
+                    } catch (e) {
+                        showNotification('Failed to launch player: ' + (e?.message || e));
+                    }
+                };
+            }
+            if (openIinaBtn) {
+                openIinaBtn.onclick = async () => {
+                    try {
+                        if (!window.electronAPI || !window.electronAPI.openInIINA) {
+                            showNotification('IINA integration not available in this environment');
+                            return;
+                        }
+                        const data = { streamUrl: url };
+                        const result = await window.electronAPI.openInIINA(data);
+                        if (!result || !result.success) {
+                            showNotification(result?.message || 'Failed to launch IINA');
+                        }
+                    } catch (e) {
+                        showNotification('Failed to launch IINA: ' + (e?.message || e));
+                    }
+                };
+            }
+            if (openVlcBtn) {
+                openVlcBtn.onclick = async () => {
+                    try {
+                        if (!window.electronAPI || !window.electronAPI.openInVLC) {
+                            showNotification('VLC integration not available in this environment');
+                            return;
+                        }
+                        const data = { streamUrl: url };
+                        const result = await window.electronAPI.openInVLC(data);
+                        if (!result || !result.success) {
+                            showNotification(result?.message || 'Failed to launch VLC');
+                        }
+                    } catch (e) {
+                        showNotification('Failed to launch VLC: ' + (e?.message || e));
+                    }
                 };
             }
             modal.style.display = 'flex';

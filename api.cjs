@@ -662,7 +662,18 @@ function torrentless_buildRequest(urlStr, { userAgent }) {
             'Sec-Fetch-User': '?1'
         },
         decompress: true,
-        validateStatus: (s) => s >= 200 && s < 400,
+        validateStatus: () => true, // Accept all status codes to prevent unhandled rejections
+    }).then(response => {
+        // Check status after receiving response
+        if (response.status >= 200 && response.status < 400) {
+            return response;
+        }
+        // For rate limits or other errors, throw with proper message
+        if (response.status === 429) {
+            const retryAfter = response.headers['retry-after'] || '10';
+            throw new Error(`Rate limited (429). Retry after ${retryAfter}s`);
+        }
+        throw new Error(`HTTP ${response.status}: ${response.statusText || 'Request failed'}`);
     });
 }
 

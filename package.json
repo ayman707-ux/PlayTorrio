@@ -1,6 +1,6 @@
 {
   "name": "playtorrio",
-  "version": "2.0.6",
+  "version": "2.0.7",
   "description": "Ayman's PlayTorrio an all in one media center",
   "author": {
     "name": "Ayman",
@@ -29,6 +29,7 @@
     "got": "^14.4.7",
     "jszip": "^3.10.1",
     "koffi": "^2.14.1",
+    "m3u8stream": "^0.8.6",
     "mdns-js": "^1.0.3",
     "mime-types": "^2.1.35",
     "multer": "^2.0.1",
@@ -78,9 +79,27 @@
         "nsis"
       ],
       "extraResources": [
-        { "from": "mpv", "to": "mpv", "filter": ["**/*"] },
-        { "from": "VLC", "to": "VLC", "filter": ["**/*"] },
-        { "from": "mpv.js-master-updated", "to": "mpv.js-master-updated", "filter": ["**/*"] }
+        {
+          "from": "mpv",
+          "to": "mpv",
+          "filter": [
+            "**/*"
+          ]
+        },
+        {
+          "from": "VLC",
+          "to": "VLC",
+          "filter": [
+            "**/*"
+          ]
+        },
+        {
+          "from": "mpv.js-master-updated",
+          "to": "mpv.js-master-updated",
+          "filter": [
+            "**/*"
+          ]
+        }
       ]
     },
     "nsis": {
@@ -100,7 +119,10 @@
     "mac": {
       "icon": "build/icon.icns",
       "category": "public.app-category.entertainment",
-      "target": ["dmg", "zip"],
+      "target": [
+        "dmg",
+        "zip"
+      ],
       "artifactName": "${productName}-mac-${arch}.${ext}",
       "hardenedRuntime": false,
       "identity": null,
@@ -138,11 +160,15 @@
       "target": [
         {
           "target": "AppImage",
-          "arch": ["x64"]
+          "arch": [
+            "x64"
+          ]
         },
         {
           "target": "deb",
-          "arch": ["x64"]
+          "arch": [
+            "x64"
+          ]
         }
       ],
       "category": "AudioVideo",
@@ -157,7 +183,6 @@
       "synopsis": "Stream Movies, TV Shows, Anime, Books, Music & Games",
       "description": "All-in-one media center for streaming entertainment"
     },
-    
     "afterPack": "build/afterPack.cjs",
     "afterAllArtifactBuild": "build/afterAllArtifactBuild.cjs",
     "appImage": {
