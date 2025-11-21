@@ -13,7 +13,7 @@
     "start": "electron .",
     "serve": "node server.mjs",
     "build": "electron-builder --publish always",
-    "postinstall": "electron-builder install-app-deps"
+    "postinstall": "electron-builder install-app-deps && node node_modules/puppeteer/install.mjs"
   },
   "dependencies": {
     "axios": "^1.7.4",
@@ -35,6 +35,7 @@
     "multer": "^2.0.1",
     "node-fetch": "^3.3.2",
     "parse-torrent": "^9.0.3",
+    "puppeteer": "^21.11.0",
     "webtorrent": "^2.6.8",
     "xml2js": "^0.6.2"
   },
