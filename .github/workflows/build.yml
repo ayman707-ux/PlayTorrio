@@ -22,8 +22,10 @@ jobs:
           node-version: '20'
       - name: Install dependencies
         run: npm install
-      - name: Install Puppeteer
-        run: npm install puppeteer@^21.0.0
+      - name: Install Puppeteer (skip Chromium)
+        run: |
+          set PUPPETEER_SKIP_DOWNLOAD=true
+          npm install puppeteer@^21.0.0
       - name: Setup Windows Players
         run: |
           if (Test-Path "mpv.rar") { 7z x mpv.rar -y }
@@ -51,8 +53,10 @@ jobs:
           node-version: '20'
       - name: Install dependencies
         run: npm install
-      - name: Install Puppeteer
-        run: npm install puppeteer@^21.0.0
+      - name: Install Puppeteer (skip Chromium)
+        run: |
+          export PUPPETEER_SKIP_DOWNLOAD=true
+          npm install puppeteer@^21.0.0
       - name: Prepare resources
         run: |
           mkdir -p mpv VLC build
@@ -79,8 +83,10 @@ jobs:
           node-version: '20'
       - name: Install dependencies
         run: npm install && npx electron-builder install-app-deps
-      - name: Install Puppeteer
-        run: npm install puppeteer@^21.0.0
+      - name: Install Puppeteer (skip Chromium)
+        run: |
+          export PUPPETEER_SKIP_DOWNLOAD=true
+          npm install puppeteer@^21.0.0
       - name: Download MPV (x64)
         run: |
           curl -fL https://laboratory.stolendata.net/~djinn/mpv_osx/mpv-latest.tar.gz -o mpv.tar.gz || true
@@ -106,8 +112,10 @@ jobs:
           node-version: '20'
       - name: Install dependencies
         run: npm install && npx electron-builder install-app-deps
-      - name: Install Puppeteer
-        run: npm install puppeteer@^21.0.0
+      - name: Install Puppeteer (skip Chromium)
+        run: |
+          export PUPPETEER_SKIP_DOWNLOAD=true
+          npm install puppeteer@^21.0.0
       - name: Download MPV (arm64)
         run: |
           curl -fL https://laboratory.stolendata.net/~djinn/mpv_osx/mpv-latest.tar.gz -o mpv.tar.gz || true
