@@ -6,135 +6,77 @@ on:
       - 'v*'
   workflow_dispatch:
 
-concurrency:
-  group: release-${{ github.ref }}
-  cancel-in-progress: false
-
 jobs:
   build-windows:
     runs-on: windows-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-      - name: Setup Node.js
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js 22
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: 22
+
       - name: Install dependencies
-        run: npm install
-      - name: Setup Windows Players
-        run: |
-          if (Test-Path "mpv.rar") { 7z x mpv.rar -y }
-          if (Test-Path "mpv.js-master-updated.rar") { 7z x mpv.js-master-updated.rar -y }
-          elseif (Test-Path "mpv.zip") { Expand-Archive -Path mpv.zip -DestinationPath mpv-temp -Force }
-          if (!(Test-Path "mpv/mpv.exe")) { Write-Host "MPV missing" }
-          if (Test-Path "vlc.rar") { 7z x vlc.rar -y }
-      - name: Verify Icons
-        run: |
-          if (!(Test-Path build)) { mkdir build }
-          if (Test-Path icon.ico) { Copy-Item icon.ico build/icon.ico -Force }
+        run: npm ci
+
       - name: Build Windows Installer
-        run: npm run build -- --win --publish always
+        run: npm run build -- --win --publish onTag
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
 
   build-linux:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-      - name: Setup Node.js
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js 22
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: 22
+
       - name: Install dependencies
-        run: npm install
-      - name: Prepare resources
-        run: |
-          mkdir -p mpv VLC build
-          [ -f icon.png ] && cp icon.png build/icon.png || true
+        run: npm ci
+
       - name: Build Linux Packages
-        run: npm run build -- --linux --publish always
+        run: npm run build -- --linux --publish onTag
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
-      - name: Verify AppImage
-        run: |
-          set -e
-          ls dist/*.AppImage
-          chmod +x dist/*.AppImage
-          echo "AppImage artifacts ready"
 
   build-macos-x64:
-    runs-on: macos-15
+    runs-on: macos-13   # Intel
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-      - name: Setup Node.js
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js 22
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: 22
+
       - name: Install dependencies
-        run: npm install && npx electron-builder install-app-deps
-      - name: Download MPV (x64)
-        run: |
-          curl -fL https://laboratory.stolendata.net/~djinn/mpv_osx/mpv-latest.tar.gz -o mpv.tar.gz || true
-          mkdir -p mpv
-          [ -f mpv.tar.gz ] && tar -xzf mpv.tar.gz -C mpv || true
-      - name: Build macOS x64 DMG
-        run: npm run build -- --mac --x64 --publish always
+        run: npm ci && npx electron-builder install-app-deps
+
+      - name: Build macOS x64
+        run: npm run build -- --mac --x64 --publish onTag
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
           CSC_IDENTITY_AUTO_DISCOVERY: false
-      - name: Strip quarantine
-        run: |
-          xattr -cr dist/*x64*/PlayTorrio.app || true
 
   build-macos-arm64:
-    runs-on: macos-latest
+    runs-on: macos-14   # Apple Silicon
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-      - name: Setup Node.js
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js 22
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: 22
+
       - name: Install dependencies
-        run: npm install && npx electron-builder install-app-deps
-      - name: Download MPV (arm64)
-        run: |
-          curl -fL https://laboratory.stolendata.net/~djinn/mpv_osx/mpv-latest.tar.gz -o mpv.tar.gz || true
-          mkdir -p mpv
-          [ -f mpv.tar.gz ] && tar -xzf mpv.tar.gz -C mpv || true
-      - name: Build macOS arm64 DMG
-        run: npm run build -- --mac --arm64 --publish always
+        run: npm ci && npx electron-builder install-app-deps
+
+      - name: Build macOS arm64
+        run: npm run build -- --mac --arm64 --publish onTag
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
           CSC_IDENTITY_AUTO_DISCOVERY: false
-      - name: Strip quarantine
-        run: |
-          xattr -cr dist/*arm64*/PlayTorrio.app || true
-
-  finalize-release:
-    runs-on: ubuntu-latest
-    needs: [build-windows, build-linux, build-macos-x64, build-macos-arm64]
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-      - name: Read version
-        id: ver
-        run: echo "version=$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
-      - name: Ensure tag uses v prefix
-        run: |
-          TAG="v${{ steps.ver.outputs.version }}"
-          echo "Using tag: $TAG"
-      - name: Update GitHub Release (title + notes, keep draft)
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: v${{ steps.ver.outputs.version }}
-          name: v${{ steps.ver.outputs.version }}
-          generate_release_notes: true
-          draft: true
-          prerelease: false
-        env:
-          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
-

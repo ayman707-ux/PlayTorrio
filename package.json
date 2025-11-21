@@ -51,7 +51,9 @@
       "provider": "github",
       "owner": "ayman707-ux",
       "repo": "PlayTorrio",
-      "releaseType": "release"
+      "releaseType": "release",
+      "draft": true
+
     },
     "files": [
       "main.js",
