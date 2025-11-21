@@ -76,6 +76,7 @@ jobs:
       - name: Install dependencies
         timeout-minutes: 45
         run: |
+          export PUPPETEER_SKIP_DOWNLOAD=true
           npm install --verbose || npm install --verbose || npm install --verbose
           npx electron-builder install-app-deps
       - name: Download MPV (x64)
@@ -104,6 +105,7 @@ jobs:
       - name: Install dependencies
         timeout-minutes: 45
         run: |
+          export PUPPETEER_SKIP_DOWNLOAD=true
           npm install --verbose || npm install --verbose || npm install --verbose
           npx electron-builder install-app-deps
       - name: Download MPV (arm64)

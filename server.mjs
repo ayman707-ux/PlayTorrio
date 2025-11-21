@@ -12,7 +12,7 @@ import os from 'os';
 import zlib from 'zlib';
 import crypto from 'crypto';
 import { createRequire } from 'module';
-import { spawn } from 'child_process';
+import { spawn, execSync } from 'child_process';
 import ffmpegPath from 'ffmpeg-static';
 import axios from 'axios';
 import * as cheerio from 'cheerio';
@@ -21,6 +21,43 @@ import puppeteer from 'puppeteer';
 // Import the CommonJS api.cjs module
 const require = createRequire(import.meta.url);
 const { registerApiRoutes } = require('./api.cjs');
+
+// Helper function to find Chrome/Chromium executable
+function findChromiumExecutable() {
+    const platform = process.platform;
+    const possiblePaths = [];
+    
+    if (platform === 'win32') {
+        possiblePaths.push(
+            'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
+            'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe',
+            path.join(process.env.LOCALAPPDATA || '', 'Google\\Chrome\\Application\\chrome.exe'),
+            path.join(process.env.PROGRAMFILES || '', 'Google\\Chrome\\Application\\chrome.exe'),
+            'C:\\Program Files\\Chromium\\Application\\chrome.exe'
+        );
+    } else if (platform === 'darwin') {
+        possiblePaths.push(
+            '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+            '/Applications/Chromium.app/Contents/MacOS/Chromium',
+            path.join(os.homedir(), '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome')
+        );
+    } else {
+        possiblePaths.push(
+            '/usr/bin/google-chrome',
+            '/usr/bin/chromium',
+            '/usr/bin/chromium-browser',
+            '/snap/bin/chromium'
+        );
+    }
+    
+    for (const chromePath of possiblePaths) {
+        if (fs.existsSync(chromePath)) {
+            return chromePath;
+        }
+    }
+    
+    return null;
+}
 
 // This function will be imported and called by main.js
 export function startServer(userDataPath, executablePath = null) {
@@ -5598,6 +5635,16 @@ export function startServer(userDataPath, executablePath = null) {
                 });
             }
             
+            // Check if running on macOS
+            if (process.platform === 'darwin') {
+                res.setHeader('Content-Type', 'text/event-stream');
+                res.setHeader('Cache-Control', 'no-cache');
+                res.setHeader('Connection', 'keep-alive');
+                res.write(`data: ${JSON.stringify({ error: 'Comics are unavailable for Mac yet' })}\n\n`);
+                res.end();
+                return;
+            }
+            
             res.setHeader('Content-Type', 'text/event-stream');
             res.setHeader('Cache-Control', 'no-cache');
             res.setHeader('Connection', 'keep-alive');
@@ -5632,17 +5679,13 @@ export function startServer(userDataPath, executablePath = null) {
                 ]
             };
             
-            // Use Electron's bundled Chromium if executablePath is provided
-            // On Windows: executablePath is the .exe itself (use parent process)
-            // On macOS: executablePath is inside .app bundle (use parent process)
-            // On Linux: executablePath is the AppImage or binary (use parent process)
-            if (executablePath) {
-                // Electron executable can launch Chromium via puppeteer
-                // We use puppeteer-core's ability to use Electron as the browser
-                launchOptions.executablePath = executablePath;
-                console.log(`[Comics] Using Electron's Chromium: ${executablePath}`);
+            // Try to find Chrome/Chromium on the system
+            const chromePath = findChromiumExecutable();
+            if (chromePath) {
+                launchOptions.executablePath = chromePath;
+                console.log(`[Comics] Using system Chrome/Chromium: ${chromePath}`);
             } else {
-                console.log(`[Comics] Using system Chromium (puppeteer default)`);
+                console.log(`[Comics] No Chrome found, using puppeteer's bundled Chromium`);
             }
             
             browser = await puppeteer.launch(launchOptions);
