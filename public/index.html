@@ -10258,52 +10258,48 @@
         <div class="page-header-enhanced">
             <div class="page-title-section">
                 <h2 class="section-title">
-                    <i class="fas fa-mask" style="color: #f97316;"></i> <span>Comics</span>
+                    <i class="fas fa-mask" style="color: #f97316;"></i> <span>Comics Library</span>
                 </h2>
-                <p class="page-subtitle">Read comics from ReadComicsOnline</p>
+                <p class="page-subtitle">Read comics from ReadComicOnline</p>
             </div>
         </div>
 
         <!-- Search Section -->
         <div style="max-width: 900px; margin: 0 auto 2rem;">
             <div style="background: rgba(255,255,255,0.1); border-radius: 12px; padding: 1rem; box-shadow: 0 4px 12px rgba(0,0,0,0.3); position: relative;">
-                <i class="fas fa-search" style="position: absolute; left: 1.5rem; top: 50%; transform: translateY(-50%); color: #f97316; font-size: 1.2rem; pointer-events: none;"></i>
-                <input id="comicsSearchInput" placeholder="Search for comics..." type="text" style="width: 100%; padding: 1rem 1rem 1rem 3rem; background: rgba(0,0,0,0.4); border: 2px solid rgba(249, 115, 22, 0.3); border-radius: 10px; color: var(--light); font-size: 1.1rem; transition: all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94), transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); box-sizing: border-box;" />
+                <i class="fas fa-search" style="position: absolute; left: 1.5rem; top: 50%; transform: translateY(-50%); color: #f97316; font-size: 1.2rem; pointer-events: none; z-index: 1;"></i>
+                <input id="comics-search-input" placeholder="Search for comics... (e.g., Superman, Spider Man)" type="text" style="width: 100%; padding: 1rem 1rem 1rem 3rem; background: rgba(0,0,0,0.4); border: 2px solid rgba(249, 115, 22, 0.3); border-radius: 10px; color: var(--light); font-size: 1.1rem; transition: all 0.3s ease; box-sizing: border-box; outline: none;" />
             </div>
+        </div>
+        
+        <div id="comics-search-container" style="max-width: 1400px; margin: 0 auto 30px; display: flex; gap: 10px; align-items: center; justify-content: center;">
+            <button id="comics-search-btn" style="display: none;">Search</button>
+            <button id="comics-browse-btn" style="padding: 12px 30px; font-size: 16px; font-weight: bold; border: none; border-radius: 10px; cursor: pointer; background: linear-gradient(135deg, rgba(249, 115, 22, 0.2), rgba(234, 88, 12, 0.2)); color: #f97316; border: 2px solid rgba(249, 115, 22, 0.5); display: none; transition: all 0.3s ease;">Browse All</button>
+            <button id="comics-back-btn" style="background: linear-gradient(135deg, rgba(249, 115, 22, 0.2), rgba(234, 88, 12, 0.2)); color: #f97316; border: 2px solid rgba(249, 115, 22, 0.5); display: none; padding: 12px 30px; font-size: 16px; font-weight: bold; border-radius: 10px; cursor: pointer; transition: all 0.3s ease;">← Back</button>
         </div>
 
         <!-- Comics Grid -->
-        <div id="comicsGrid" class="movies-grid" style="margin-top: 2rem;">
+        <div id="comics-container" class="movies-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 20px; max-width: 1400px; margin: 0 auto;">
             <!-- Comics cards will be loaded here -->
         </div>
-        <div class="loading" id="comicsLoadingIndicator" style="display: none;">
-            <i class="fas fa-spinner"></i> Loading comics...
-        </div>
-    </div>
-
-    <!-- Comics Reader Page -->
-    <div id="comics-reader-page" style="display: none; background: #000; min-height: 100vh; position: relative;">
-        <!-- Floating Back Button -->
-        <button id="comicsReaderBack" style="position: sticky; top: 1rem; left: 1rem; z-index: 1000; background: var(--secondary); border: none; padding: 0.75rem 1.5rem; border-radius: 8px; color: white; font-size: 1rem; cursor: pointer; display: flex; align-items: center; gap: 0.5rem; transition: all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94), transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); box-shadow: 0 4px 12px rgba(0,0,0,0.5); width: fit-content; margin-bottom: 1rem;">
-            <i class="fas fa-arrow-left"></i> Back
-        </button>
         
-        <!-- Keyboard Navigation Hint -->
-        <div style="position: fixed; right: 1.5rem; top: 50%; transform: translateY(-50%); z-index: 900; background: rgba(0,0,0,0.7); padding: 1rem; border-radius: 8px; color: white; font-size: 0.9rem; text-align: center; backdrop-filter: blur(10px); box-shadow: 0 4px 12px rgba(0,0,0,0.5); max-width: 120px;">
-            <i class="fas fa-keyboard" style="font-size: 1.5rem; margin-bottom: 0.5rem; display: block;"></i>
-            <p style="margin: 0; line-height: 1.4;">Use arrow keys to scroll</p>
-            <div style="margin-top: 0.5rem; font-size: 1.2rem;">
-                <div><i class="fas fa-arrow-up"></i></div>
-                <div><i class="fas fa-arrow-down"></i></div>
-            </div>
+        <!-- Load More Button -->
+        <div id="comics-load-more-container" style="text-align: center; margin: 2rem auto; max-width: 1400px; display: none;">
+            <button id="comics-load-more-btn" style="padding: 15px 40px; font-size: 18px; font-weight: bold; border: none; border-radius: 12px; cursor: pointer; background: linear-gradient(135deg, #f97316, #ea580c); color: #fff; transition: all 0.3s ease; box-shadow: 0 4px 12px rgba(249, 115, 22, 0.4);">
+                <i class="fas fa-arrow-down"></i> Load More Comics
+            </button>
         </div>
-
-        <div id="comicsReaderTitle" style="text-align: center; padding: 1rem; color: white; font-size: 1.5rem; font-weight: 600;">
-            <!-- Chapter title will be here -->
+        
+        <!-- Issues Container -->
+        <div id="comics-issues-container" style="max-width: 1400px; margin: 0 auto; display: none;"></div>
+        
+        <!-- Reader Container -->
+        <div id="comics-reader-container" style="max-width: 1000px; margin: 0 auto; display: none;">
+            <div id="comics-page-loader" style="text-align: center; padding: 20px; color: #888;">Loading pages...</div>
         </div>
-        <div id="comicsReaderPages" style="max-width: 1200px; margin: 0 auto; padding: 1rem;">
-            <!-- Pages will be loaded here -->
-        </div>
+        
+        <!-- Loading Indicator -->
+        <div id="comics-loading" style="text-align: center; padding: 20px; font-size: 18px; color: #888;">Loading...</div>
     </div>
 
     <!-- Manga Page -->
@@ -11643,7 +11639,7 @@ Your browser does not support the video tag.
             initIptvSourceSelector(); // Initialize IPTV dropdown
             initializeBookTorrio(); // Initialize BookTorrio functionality
             initializeAnime(); // Initialize Anime functionality
-            initializeComics(); // Initialize Comics functionality
+            // Comics initialization moved to showSection when page is shown
             initializeManga(); // Initialize Manga functionality
             initializeSettingsTabs(); // Initialize settings page tab switching
             setWindowsUsername(); // Set Windows username in sidebar
@@ -22122,6 +22118,15 @@ Your browser does not support the video tag.
                     }
                 }
                 
+                // Initialize Comics when showing comics page
+                if (section === 'comics' && el) {
+                    try { initializeComics(); } catch(err) { console.error('Error initializing comics:', err); }
+                } else {
+                    // Deactivate comics when switching to another page
+                    console.log('[COMICS] Deactivating comics page');
+                    comicsPageActive = false;
+                }
+                
                 // Update Discord presence for MiniGames
                 if (section === 'minigames') {
                     if (window.electronAPI?.updateDiscordPresence) {
@@ -24938,7 +24943,12 @@ Your browser does not support the video tag.
                                     // If rate limited or disabled endpoint reported, stop trying
                                     try {
                                         const t = await fres.text();
-                                        if (/RD_RATE_LIMIT|RD_FEATURE_UNAVAILABLE/i.test(t)) return null;
+                                        if (/RD_RATE_LIMIT|RD_FEATURE_UNAVAILABLE|TB_NO_SEEDS/i.test(t)) {
+                                            if (/TB_NO_SEEDS/i.test(t)) {
+                                                showNotification('❌ This torrent has no seeders and cannot be cached. Try a different release.', 'error');
+                                            }
+                                            return null;
+                                        }
                                     } catch {}
                                     await new Promise(r => setTimeout(r, intervalMs));
                                     continue;
@@ -24981,7 +24991,12 @@ Your browser does not support the video tag.
                                     // If rate limited or disabled endpoint reported, stop trying
                                     try {
                                         const t = await fres.text();
-                                        if (/RD_RATE_LIMIT|RD_FEATURE_UNAVAILABLE/i.test(t)) return null;
+                                        if (/RD_RATE_LIMIT|RD_FEATURE_UNAVAILABLE|TB_NO_SEEDS/i.test(t)) {
+                                            if (/TB_NO_SEEDS/i.test(t)) {
+                                                showNotification('❌ This torrent has no seeders. Try a different release.', 'error');
+                                            }
+                                            return null;
+                                        }
                                     } catch {}
                                     await new Promise(r => setTimeout(r, intervalMs));
                                     continue;
@@ -28263,261 +28278,492 @@ Your browser does not support the video tag.
 
         // ========== COMICS FUNCTIONALITY ==========
         
-        let comicsList = [];
+        let comicsCurrentPage = 1;
         let comicsIsLoading = false;
-        
-        async function initializeComics() {
-            const comicsSearchInput = document.getElementById('comicsSearchInput');
-            const comicsGrid = document.getElementById('comicsGrid');
-            const comicsLoadingIndicator = document.getElementById('comicsLoadingIndicator');
-            const comicsReaderPage = document.getElementById('comics-reader-page');
-            const comicsReaderBack = document.getElementById('comicsReaderBack');
-            
-            let searchTimeout = null;
-            
-            // Load popular comics on init
-            loadPopularComics();
-            
-            // Search functionality
-            comicsSearchInput.addEventListener('input', () => {
-                clearTimeout(searchTimeout);
-                const query = comicsSearchInput.value.trim();
-                
-                if (!query) {
-                    loadPopularComics();
-                    return;
-                }
-                
-                searchTimeout = setTimeout(() => {
-                    searchComics(query);
-                }, 500);
-            });
-            
-            comicsSearchInput.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') {
-                    const query = comicsSearchInput.value.trim();
-                    if (query) {
-                        clearTimeout(searchTimeout);
-                        searchComics(query);
-                    }
-                }
-            });
-            
-            // Back from reader
-            comicsReaderBack.addEventListener('click', () => {
-                comicsReaderPage.style.display = 'none';
-                document.getElementById('comics-page').style.display = '';
-            });
-            
-            // Add hover effect for back button
-            comicsReaderBack.addEventListener('mouseenter', () => {
-                comicsReaderBack.style.transform = 'scale(1.05)';
-            });
-            comicsReaderBack.addEventListener('mouseleave', () => {
-                comicsReaderBack.style.transform = 'scale(1)';
-            });
-            
-            async function loadPopularComics() {
-                if (comicsIsLoading) return;
-                
-                comicsIsLoading = true;
-                comicsLoadingIndicator.style.display = 'block';
-                comicsGrid.innerHTML = '';
-                
-                try {
-                    const response = await fetch('http://localhost:6987/api/comics/all');
-                    const data = await response.json();
-                    
-                    if (data.success && data.data) {
-                        comicsList = data.data;
-                        displayComics(data.data, true);
-                    }
-                } catch (error) {
-                    console.error('Error loading comics:', error);
-                    comicsGrid.innerHTML = '<p style="text-align: center; color: white; grid-column: 1 / -1;">Failed to load comics. Please try again.</p>';
-                } finally {
-                    comicsIsLoading = false;
-                    comicsLoadingIndicator.style.display = 'none';
-                }
+        let comicsHasMore = true;
+        let comicsIsSearchMode = false;
+        let comicsCurrentView = 'browse'; // browse, issues, reader
+        let comicsCurrentComic = null;
+        let comicsActiveEventSource = null; // Track active streaming connection
+        let comicsPageActive = false; // Track if comics page is currently active
+
+        function stopComicsActiveStream() {
+            if (comicsActiveEventSource) {
+                console.log('Closing active comics stream connection');
+                comicsActiveEventSource.close();
+                comicsActiveEventSource = null;
             }
+        }
+
+        function showComicsView(view) {
+            comicsCurrentView = view;
+            const comicsContainer = document.getElementById('comics-container');
+            const comicsIssuesContainer = document.getElementById('comics-issues-container');
+            const comicsReaderContainer = document.getElementById('comics-reader-container');
+            const comicsLoadingDiv = document.getElementById('comics-loading');
+            const comicsBackBtn = document.getElementById('comics-back-btn');
+            const comicsLoadMoreContainer = document.getElementById('comics-load-more-container');
             
-            async function searchComics(query) {
-                if (comicsIsLoading) return;
-                
-                comicsIsLoading = true;
-                comicsLoadingIndicator.style.display = 'block';
-                comicsGrid.innerHTML = '';
-                
-                try {
-                    const response = await fetch(`http://localhost:6987/api/comics/search?query=${encodeURIComponent(query)}`);
-                    const data = await response.json();
-                    
-                    if (data.success && data.data && data.data.length > 0) {
-                        displayComics(data.data, false);
-                    } else {
-                        comicsGrid.innerHTML = '<p style="text-align: center; color: white; grid-column: 1 / -1;">No comics found matching your search.</p>';
-                    }
-                } catch (error) {
-                    console.error('Error searching comics:', error);
-                    comicsGrid.innerHTML = '<p style="text-align: center; color: white; grid-column: 1 / -1;">Failed to search comics. Please try again.</p>';
-                } finally {
-                    comicsIsLoading = false;
-                    comicsLoadingIndicator.style.display = 'none';
-                }
+            if (comicsContainer) comicsContainer.style.display = view === 'browse' ? 'grid' : 'none';
+            if (comicsIssuesContainer) comicsIssuesContainer.style.display = view === 'issues' ? 'block' : 'none';
+            if (comicsReaderContainer) comicsReaderContainer.style.display = view === 'reader' ? 'block' : 'none';
+            if (comicsLoadingDiv) comicsLoadingDiv.style.display = view === 'browse' ? 'block' : 'none';
+            if (comicsBackBtn) comicsBackBtn.style.display = view !== 'browse' ? 'inline-block' : 'none';
+            if (comicsLoadMoreContainer) comicsLoadMoreContainer.style.display = view === 'browse' ? 'block' : 'none';
+        }
+
+        async function searchComicsNew(query) {
+            if (!query.trim()) return;
+            
+            const comicsContainer = document.getElementById('comics-container');
+            const comicsLoadingDiv = document.getElementById('comics-loading');
+            const comicsBrowseBtn = document.getElementById('comics-browse-btn');
+            
+            comicsIsSearchMode = true;
+            comicsIsLoading = true;
+            comicsHasMore = false;
+            if (comicsContainer) comicsContainer.innerHTML = '';
+            if (comicsLoadingDiv) {
+                comicsLoadingDiv.style.display = 'block';
+                comicsLoadingDiv.textContent = 'Searching...';
             }
-            
-            function displayComics(comics, skipFirst20 = false) {
-                comicsGrid.innerHTML = '';
-                
-                // Skip first 20 comics only for popular comics list
-                const comicsToDisplay = skipFirst20 ? comics.slice(20) : comics;
-                
-                comicsToDisplay.forEach(comic => {
-                    const card = document.createElement('div');
-                    card.className = 'movie-card';
-                    card.style.cursor = 'pointer';
-                    
-                    // Always use proxy for poster images to get proper headers
-                    const rawPosterUrl = comic.poster || '';
-                    const posterUrl = rawPosterUrl ? `http://localhost:6987/api/comics/image-proxy?url=${encodeURIComponent(rawPosterUrl)}` : 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22300%22 height=%22450%22%3E%3Crect width=%22300%22 height=%22450%22 fill=%22%23333%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 fill=%22%23666%22 font-family=%22Arial%22 font-size=%2220%22%3ENo Image%3C/text%3E%3C/svg%3E';
-                    const title = comic.title || comic.value || 'Unknown Comic';
-                    const comicUrl = comic.comicUrl || comic.url || '';
-                    
-                    card.innerHTML = `
-                        <img src="${posterUrl}" alt="${title}" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22300%22 height=%22450%22%3E%3Crect width=%22300%22 height=%22450%22 fill=%22%23333%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 fill=%22%23666%22 font-family=%22Arial%22 font-size=%2220%22%3ENo Image%3C/text%3E%3C/svg%3E'">
-                        <div class="movie-info">
-                            <h3>${title}</h3>
-                            ${comic.latestIssue ? `<p style="color: #f97316; font-size: 0.9rem; margin-top: 0.5rem;"><i class="fas fa-book"></i> ${comic.latestIssue}</p>` : ''}
-                            ${comic.date ? `<p style="color: #9ca3af; font-size: 0.85rem; margin-top: 0.25rem;">${comic.date}</p>` : ''}
-                        </div>
-                    `;
-                    
-                    card.addEventListener('click', () => {
-                        showComicDetails(comic);
+            if (comicsBrowseBtn) comicsBrowseBtn.style.display = 'inline-block';
+            showComicsView('browse');
+
+            try {
+                const response = await fetch(`http://localhost:6987/api/comics/search/${encodeURIComponent(query)}`);
+                const data = await response.json();
+
+                if (data.success && data.comics.length > 0) {
+                    data.comics.forEach(comic => {
+                        addComicToGrid(comic);
                     });
-                    
-                    comicsGrid.appendChild(card);
-                });
-            }
-            
-            async function showComicDetails(comic) {
-                const title = comic.title || comic.value || 'Unknown Comic';
-                const comicUrl = comic.comicUrl || comic.url || '';
-                
-                if (!comicUrl) {
-                    alert('Comic URL not available');
-                    return;
+                    comicsLoadingDiv.textContent = `Found ${data.count} results for "${query}"`;
+                } else {
+                    comicsLoadingDiv.innerHTML = `<div style="color: #ff4444;">No comics found for "${query}"</div>`;
                 }
+            } catch (error) {
+                console.error('Error searching comics:', error);
+                comicsLoadingDiv.innerHTML = '<div style="color: #ff4444;">Error searching comics. Please try again.</div>';
+            } finally {
+                comicsIsLoading = false;
+            }
+        }
+
+        function addComicToGrid(comic) {
+            const comicDiv = document.createElement('div');
+            comicDiv.className = 'movie-card';
+            comicDiv.style.cssText = 'background: var(--card-bg); border-radius: 12px; overflow: hidden; transition: all 0.3s ease; cursor: pointer; border: 1px solid rgba(249, 115, 22, 0.2); box-shadow: 0 4px 12px rgba(0,0,0,0.3);';
+            
+            comicDiv.innerHTML = `
+                <img src="${comic.poster}" alt="${comic.title}" style="width: 100%; height: 300px; object-fit: cover; display: block;" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22200%22 height=%22300%22%3E%3Crect width=%22200%22 height=%22300%22 fill=%22%23333%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 fill=%22%23666%22 text-anchor=%22middle%22 dy=%22.3em%22%3ENo Image%3C/text%3E%3C/svg%3E'">
+                <div style="padding: 15px; font-size: 14px; font-weight: bold; text-align: center; min-height: 60px; display: flex; align-items: center; justify-content: center; color: var(--light);">${comic.title}</div>
+            `;
+            
+            comicDiv.onmouseover = () => {
+                comicDiv.style.transform = 'translateY(-8px)';
+                comicDiv.style.borderColor = '#f97316';
+                comicDiv.style.boxShadow = '0 8px 24px rgba(249, 115, 22, 0.4)';
+            };
+            comicDiv.onmouseout = () => {
+                comicDiv.style.transform = 'translateY(0)';
+                comicDiv.style.borderColor = 'rgba(249, 115, 22, 0.2)';
+                comicDiv.style.boxShadow = '0 4px 12px rgba(0,0,0,0.3)';
+            };
+            
+            comicDiv.onclick = () => {
+                if (comic.link) {
+                    const slug = comic.link.replace('https://readcomiconline.li/Comic/', '');
+                    loadComicsIssues(slug, comic.title);
+                }
+            };
+            
+            const comicsContainer = document.getElementById('comics-container');
+            if (comicsContainer) comicsContainer.appendChild(comicDiv);
+        }
+
+        async function loadComicsIssues(slug, title) {
+            comicsCurrentComic = { slug, title };
+            const comicsIssuesContainer = document.getElementById('comics-issues-container');
+            if (comicsIssuesContainer) comicsIssuesContainer.innerHTML = '<div style="text-align: center; padding: 20px; color: #888;">Loading issues...</div>';
+            showComicsView('issues');
+
+            try {
+                const response = await fetch(`http://localhost:6987/api/comics/issues/${slug}`);
+                const data = await response.json();
+
+                comicsIssuesContainer.innerHTML = '';
+
+                if (data.success && data.issues.length > 0) {
+                    const titleDiv = document.createElement('h2');
+                    titleDiv.textContent = title;
+                    titleDiv.style.cssText = 'margin-bottom: 20px; text-align: center; color: #fff;';
+                    comicsIssuesContainer.appendChild(titleDiv);
+
+                    data.issues.forEach(issue => {
+                        const issueDiv = document.createElement('div');
+                        issueDiv.style.cssText = 'background: var(--card-bg); border-radius: 10px; padding: 15px 20px; margin-bottom: 10px; cursor: pointer; transition: all 0.3s ease; display: flex; justify-content: space-between; align-items: center; border: 1px solid rgba(249, 115, 22, 0.2);';
+                        
+                        issueDiv.innerHTML = `
+                            <div style="font-weight: bold; flex: 1; color: var(--light);">${issue.title}</div>
+                            <div style="color: #9ca3af; font-size: 14px;">${issue.date}</div>
+                        `;
+                        
+                        issueDiv.onmouseover = () => {
+                            issueDiv.style.background = 'rgba(249, 115, 22, 0.15)';
+                            issueDiv.style.borderColor = '#f97316';
+                            issueDiv.style.transform = 'translateX(8px)';
+                        };
+                        issueDiv.onmouseout = () => {
+                            issueDiv.style.background = 'var(--card-bg)';
+                            issueDiv.style.borderColor = 'rgba(249, 115, 22, 0.2)';
+                            issueDiv.style.transform = 'translateX(0)';
+                        };
+                        issueDiv.onclick = () => loadComicsPages(issue.link, issue.title);
+                        
+                        comicsIssuesContainer.appendChild(issueDiv);
+                    });
+                } else {
+                    comicsIssuesContainer.innerHTML = '<div style="color: #ff4444; text-align: center;">No issues found</div>';
+                }
+            } catch (error) {
+                console.error('Error loading issues:', error);
+                comicsIssuesContainer.innerHTML = '<div style="color: #ff4444; text-align: center;">Error loading issues. Please try again.</div>';
+            }
+        }
+
+        async function loadComicsPages(issueLink, issueTitle) {
+            // Stop any existing stream before starting a new one
+            stopComicsActiveStream();
+            
+            const comicsReaderContainer = document.getElementById('comics-reader-container');
+            if (comicsReaderContainer) comicsReaderContainer.innerHTML = `
+                <h2 style="text-align:center;margin-bottom:20px;color:#fff;">${issueTitle}</h2>
                 
-                // Create modal for chapter selection
-                const modal = document.createElement('div');
-                modal.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 10000; display: flex; align-items: center; justify-content: center; padding: 2rem; box-sizing: border-box;';
-                
-                modal.innerHTML = `
-                    <div style="background: var(--card-bg); border-radius: 16px; max-width: 900px; width: 100%; max-height: 90vh; overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); display: flex; flex-direction: column;">
-                        <div style="padding: 2rem; border-bottom: 1px solid rgba(255,255,255,0.1);">
-                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-                                <h2 style="color: #f97316; font-size: 1.75rem; margin: 0;">${title}</h2>
-                                <button id="closeComicModal" style="background: rgba(255,255,255,0.1); border: none; color: white; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; font-size: 1.5rem; display: flex; align-items: center; justify-content: center; transition: all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94), transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);">×</button>
-                            </div>
-                        </div>
-                        <div id="comicChapters" style="padding: 2rem; overflow-y: auto; flex: 1;">
-                            <div style="text-align: center; color: white;"><i class="fas fa-spinner fa-spin"></i> Loading chapters...</div>
-                        </div>
+                <!-- Keyboard Navigation Hint -->
+                <div style="position: fixed; right: 2rem; top: 50%; transform: translateY(-50%); z-index: 900; background: rgba(0,0,0,0.85); padding: 1.5rem; border-radius: 12px; color: white; font-size: 0.95rem; text-align: center; backdrop-filter: blur(10px); box-shadow: 0 8px 24px rgba(0,0,0,0.5); border: 1px solid rgba(249, 115, 22, 0.3); max-width: 140px;">
+                    <i class="fas fa-keyboard" style="font-size: 2rem; margin-bottom: 0.75rem; display: block; color: #f97316;"></i>
+                    <p style="margin: 0; line-height: 1.5; font-weight: 600;">Use Arrow Keys<br>to Scroll</p>
+                    <div style="margin-top: 1rem; font-size: 1.5rem; display: flex; flex-direction: column; gap: 0.5rem;">
+                        <div style="color: #f97316;"><i class="fas fa-arrow-up"></i> Up</div>
+                        <div style="color: #f97316;"><i class="fas fa-arrow-down"></i> Down</div>
                     </div>
-                `;
+                </div>
                 
-                document.body.appendChild(modal);
+                <div id="comics-page-loader" style="text-align: center; padding: 20px; color: #888;">Connecting...</div>
+            `;
+            showComicsView('reader');
+
+            try {
+                // Use EventSource for streaming
+                comicsActiveEventSource = new EventSource(`http://localhost:6987/api/comics/read-stream?link=${encodeURIComponent(issueLink)}`);
                 
-                document.getElementById('closeComicModal').addEventListener('click', () => {
-                    document.body.removeChild(modal);
-                });
+                let pageCount = 0;
+                const loaderDiv = document.getElementById('comics-page-loader');
                 
-                // Load chapters
-                try {
-                    const response = await fetch(`http://localhost:6987/api/comics/chapters?url=${encodeURIComponent(comicUrl)}`);
-                    const data = await response.json();
+                comicsActiveEventSource.onmessage = (event) => {
+                    const data = JSON.parse(event.data);
                     
-                    const chaptersContainer = document.getElementById('comicChapters');
-                    
-                    if (data.success && data.data && data.data.length > 0) {
-                        chaptersContainer.innerHTML = '';
+                    if (data.type === 'total') {
+                        if (loaderDiv) loaderDiv.textContent = `Loading 0/${data.count} pages...`;
+                    } else if (data.type === 'page') {
+                        pageCount++;
+                        if (loaderDiv) loaderDiv.textContent = `Loading ${pageCount}...`;
                         
-                        data.data.forEach(chapter => {
-                            const chapterCard = document.createElement('div');
-                            chapterCard.style.cssText = 'background: rgba(255,255,255,0.1); padding: 1rem; border-radius: 8px; cursor: pointer; transition: all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94), transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); border: 1px solid rgba(249, 115, 22, 0.3); margin-bottom: 0.75rem;';
-                            
-                            chapterCard.innerHTML = `
-                                <div style="font-weight: 600; color: #f97316; margin-bottom: 0.25rem;">${chapter.title}</div>
-                                ${chapter.date ? `<div style="font-size: 0.85rem; color: #9ca3af;">${chapter.date}</div>` : ''}
-                            `;
-                            
-                            chapterCard.addEventListener('mouseenter', () => {
-                                chapterCard.style.background = 'rgba(249, 115, 22, 0.2)';
-                                chapterCard.style.transform = 'translateX(4px)';
-                            });
-                            
-                            chapterCard.addEventListener('mouseleave', () => {
-                                chapterCard.style.background = 'rgba(255,255,255,0.1)';
-                                chapterCard.style.transform = 'translateX(0)';
-                            });
-                            
-                            chapterCard.addEventListener('click', () => {
-                                document.body.removeChild(modal);
-                                readComicChapter(chapter.url, chapter.title);
-                            });
-                            
-                            chaptersContainer.appendChild(chapterCard);
-                        });
-                    } else {
-                        chaptersContainer.innerHTML = '<p style="text-align: center; color: white;">No chapters available.</p>';
+                        // Add the image immediately
+                        const img = document.createElement('img');
+                        img.style.cssText = 'width: 100%; margin-bottom: 10px; border-radius: 8px;';
+                        img.src = `http://localhost:6987/api/proxy-image?url=${encodeURIComponent(data.url)}`;
+                        img.alt = `Page ${data.pageNumber}`;
+                        img.loading = 'lazy';
+                        
+                        img.onerror = () => {
+                            console.error(`Failed to load page ${data.pageNumber}: ${data.url}`);
+                            img.style.display = 'none';
+                        };
+                        
+                        comicsReaderContainer.appendChild(img);
+                    } else if (data.type === 'done') {
+                        if (loaderDiv) {
+                            loaderDiv.textContent = `Loaded ${pageCount} pages`;
+                            setTimeout(() => {
+                                if (loaderDiv && loaderDiv.parentNode) loaderDiv.remove();
+                            }, 2000);
+                        }
+                        stopComicsActiveStream();
+                    } else if (data.type === 'error') {
+                        if (loaderDiv) loaderDiv.remove();
+                        comicsReaderContainer.innerHTML += `<div style="color: #ff4444; text-align: center;">Error: ${data.message}</div>`;
+                        stopComicsActiveStream();
                     }
-                } catch (error) {
-                    console.error('Error loading chapters:', error);
-                    document.getElementById('comicChapters').innerHTML = '<p style="text-align: center; color: #ef4444;">Failed to load chapters. Please try again.</p>';
-                }
+                };
+                
+                comicsActiveEventSource.onerror = (error) => {
+                    console.error('EventSource error:', error);
+                    stopComicsActiveStream();
+                    const loaderDiv = document.getElementById('comics-page-loader');
+                    if (loaderDiv) {
+                        loaderDiv.remove();
+                        comicsReaderContainer.innerHTML += '<div style="color: #ff4444; text-align: center;">Connection error. Please try again.</div>';
+                    }
+                };
+                
+            } catch (error) {
+                console.error('Error loading pages:', error);
+                const loaderDiv = document.getElementById('comics-page-loader');
+                if (loaderDiv) loaderDiv.remove();
+                comicsReaderContainer.innerHTML += '<div style="color: #ff4444; text-align: center;">Error loading pages. Please try again.</div>';
+            }
+        }
+
+        async function loadComicsAll(page) {
+            if (comicsIsLoading || !comicsHasMore || comicsIsSearchMode) {
+                console.log('[COMICS] loadComicsAll blocked:', { comicsIsLoading, comicsHasMore, comicsIsSearchMode });
+                return;
             }
             
-            async function readComicChapter(chapterUrl, chapterTitle) {
-                const comicsReaderPage = document.getElementById('comics-reader-page');
-                const comicsPage = document.getElementById('comics-page');
+            const comicsLoadingDiv = document.getElementById('comics-loading');
+            if (!comicsLoadingDiv) {
+                console.log('[COMICS] comics-loading div not found');
+                return;
+            }
+            
+            console.log('[COMICS] Loading comics page:', page);
+            comicsIsLoading = true;
+            comicsLoadingDiv.style.display = 'block';
+
+            try {
+                const response = await fetch(`http://localhost:6987/api/comics/all?page=${page}`);
+                const data = await response.json();
+
+                console.log('[COMICS] Comics response:', data.success, 'comics count:', data.comics?.length);
+
+                if (data.success && data.comics.length > 0) {
+                    data.comics.forEach(comic => {
+                        addComicToGrid(comic);
+                    });
+
+                    comicsCurrentPage++;
+                    console.log('[COMICS] Comics loaded, next page will be:', comicsCurrentPage);
+                } else {
+                    comicsHasMore = false;
+                    comicsLoadingDiv.textContent = 'No more comics to load';
+                    console.log('[COMICS] No more comics available');
+                }
+            } catch (error) {
+                console.error('[COMICS] Error loading comics:', error);
+                comicsLoadingDiv.innerHTML = '<div style="color: #ff4444;">Error loading comics. Please try again.</div>';
+            } finally {
+                comicsIsLoading = false;
+                if (comicsHasMore) {
+                    comicsLoadingDiv.style.display = 'none';
+                }
                 
-                // Hide main comics page
-                comicsPage.style.display = 'none';
-                
-                // Show reader page
-                comicsReaderPage.style.display = 'block';
-                document.getElementById('comicsReaderTitle').textContent = chapterTitle;
-                const pagesContainer = document.getElementById('comicsReaderPages');
-                pagesContainer.innerHTML = '<div style="text-align: center; color: white; padding: 2rem;"><i class="fas fa-spinner fa-spin"></i> Loading pages...</div>';
-                
-                try {
-                    const response = await fetch(`http://localhost:6987/api/comics/pages?url=${encodeURIComponent(chapterUrl)}`);
-                    const data = await response.json();
-                    
-                    if (data.success && data.data && data.data.length > 0) {
-                        pagesContainer.innerHTML = '';
-                        
-                        data.data.forEach((page, index) => {
-                            const pageUrl = `http://localhost:6987/api/comics/image-proxy?url=${encodeURIComponent(page.url)}`;
-                            
-                            const img = document.createElement('img');
-                            img.src = pageUrl;
-                            img.alt = `Page ${page.pageNumber}`;
-                            img.style.cssText = 'width: 100%; height: auto; margin-bottom: 0.5rem; border-radius: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.5);';
-                            img.loading = 'lazy';
-                            
-                            pagesContainer.appendChild(img);
-                        });
-                    } else {
-                        throw new Error('No pages found');
-                    }
-                } catch (error) {
-                    console.error('Error reading chapter:', error);
-                    pagesContainer.innerHTML = '<p style="color: #ef4444; text-align: center; padding: 2rem;">Failed to load pages. Please try again.</p>';
+                // Update load more button visibility
+                const loadMoreContainer = document.getElementById('comics-load-more-container');
+                const loadMoreBtn = document.getElementById('comics-load-more-btn');
+                if (loadMoreContainer) {
+                    loadMoreContainer.style.display = comicsHasMore && !comicsIsSearchMode ? 'block' : 'none';
                 }
             }
         }
+
+        // Infinite scroll functionality for comics
+        function handleComicsScroll() {
+            console.log('[COMICS SCROLL HANDLER] Called! Active:', comicsPageActive, 'View:', comicsCurrentView);
+            
+            // Only work if comics page is active and in browse mode
+            if (!comicsPageActive) {
+                console.log('[COMICS SCROLL HANDLER] Blocked - page not active');
+                return;
+            }
+            if (comicsCurrentView !== 'browse') {
+                console.log('[COMICS SCROLL HANDLER] Blocked - not in browse view');
+                return;
+            }
+            
+            const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+            const scrollHeight = document.documentElement.scrollHeight;
+            const clientHeight = document.documentElement.clientHeight;
+            
+            const distanceFromBottom = scrollHeight - (scrollTop + clientHeight);
+            
+            console.log('[COMICS SCROLL HANDLER] Scroll info:', {
+                scrollTop,
+                scrollHeight,
+                clientHeight,
+                distanceFromBottom
+            });
+
+            // Load more when user is near bottom (within 300px)
+            if (distanceFromBottom <= 300) {
+                console.log('[COMICS SCROLL] Near bottom! Distance:', distanceFromBottom, 'Loading page:', comicsCurrentPage);
+                loadComicsAll(comicsCurrentPage);
+            }
+        }
+
+        // Throttle scroll event for comics
+        let comicsScrollTimeout;
+        let lastScrollLog = 0;
+        window.addEventListener('scroll', () => {
+            // Log occasionally for debugging (every 1 second max)
+            const now = Date.now();
+            if (now - lastScrollLog > 1000) {
+                console.log('[COMICS SCROLL EVENT] Fired. Active:', comicsPageActive, 'View:', comicsCurrentView);
+                lastScrollLog = now;
+            }
+            
+            if (comicsScrollTimeout) {
+                clearTimeout(comicsScrollTimeout);
+            }
+            comicsScrollTimeout = setTimeout(handleComicsScroll, 100);
+        });
+
+        // Search functionality - search on input with debounce
+        let comicsSearchDebounce = null;
+        const comicsSearchInput = document.getElementById('comics-search-input');
+        if (comicsSearchInput) {
+        comicsSearchInput.addEventListener('input', () => {
+            clearTimeout(comicsSearchDebounce);
+            const query = comicsSearchInput.value.trim();
+            
+            if (!query) {
+                // If search is cleared, go back to browse mode
+                const comicsContainer = document.getElementById('comics-container');
+                const comicsBrowseBtn = document.getElementById('comics-browse-btn');
+                comicsIsSearchMode = false;
+                comicsHasMore = true;
+                comicsCurrentPage = 1;
+                if (comicsContainer) comicsContainer.innerHTML = '';
+                if (comicsBrowseBtn) comicsBrowseBtn.style.display = 'none';
+                showComicsView('browse');
+                loadComicsAll(comicsCurrentPage);
+                return;
+            }
+            
+            comicsSearchDebounce = setTimeout(() => {
+                searchComicsNew(query);
+            }, 500);
+        });
+
+        comicsSearchInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                clearTimeout(comicsSearchDebounce);
+                const query = comicsSearchInput.value.trim();
+                if (query) searchComicsNew(query);
+            }
+        });
+        }
+
+        // Browse all functionality
+        const comicsBrowseBtn = document.getElementById('comics-browse-btn');
+        if (comicsBrowseBtn) {
+        comicsBrowseBtn.addEventListener('click', () => {
+            const comicsContainer = document.getElementById('comics-container');
+            const comicsSearchInput = document.getElementById('comics-search-input');
+            comicsIsSearchMode = false;
+            comicsHasMore = true;
+            comicsCurrentPage = 1;
+            if (comicsContainer) comicsContainer.innerHTML = '';
+            comicsBrowseBtn.style.display = 'none';
+            if (comicsSearchInput) comicsSearchInput.value = '';
+            showComicsView('browse');
+            loadComicsAll(comicsCurrentPage);
+        });
+        
+        // Add hover effects for buttons
+        comicsBrowseBtn.addEventListener('mouseenter', () => {
+            comicsBrowseBtn.style.background = 'linear-gradient(135deg, rgba(249, 115, 22, 0.4), rgba(234, 88, 12, 0.4))';
+            comicsBrowseBtn.style.transform = 'translateY(-2px)';
+        });
+        comicsBrowseBtn.addEventListener('mouseleave', () => {
+            comicsBrowseBtn.style.background = 'linear-gradient(135deg, rgba(249, 115, 22, 0.2), rgba(234, 88, 12, 0.2))';
+            comicsBrowseBtn.style.transform = 'translateY(0)';
+        });
+        }
+        
+        const comicsBackBtn = document.getElementById('comics-back-btn');
+        if (comicsBackBtn) {
+        comicsBackBtn.addEventListener('mouseenter', () => {
+            comicsBackBtn.style.background = 'linear-gradient(135deg, rgba(249, 115, 22, 0.4), rgba(234, 88, 12, 0.4))';
+            comicsBackBtn.style.transform = 'translateY(-2px)';
+        });
+        comicsBackBtn.addEventListener('mouseleave', () => {
+            comicsBackBtn.style.background = 'linear-gradient(135deg, rgba(249, 115, 22, 0.2), rgba(234, 88, 12, 0.2))';
+            comicsBackBtn.style.transform = 'translateY(0)';
+        });
+
+        // Back button functionality
+        comicsBackBtn.addEventListener('click', () => {
+            // Stop any active streaming when navigating away
+            stopComicsActiveStream();
+            
+            if (comicsCurrentView === 'reader') {
+                // Go back to issues
+                if (comicsCurrentComic) {
+                    loadComicsIssues(comicsCurrentComic.slug, comicsCurrentComic.title);
+                }
+            } else if (comicsCurrentView === 'issues') {
+                // Go back to browse
+                showComicsView('browse');
+            }
+        });
+        }
+        
+        // Load More button functionality
+        const comicsLoadMoreBtn = document.getElementById('comics-load-more-btn');
+        if (comicsLoadMoreBtn) {
+            comicsLoadMoreBtn.addEventListener('click', () => {
+                console.log('[COMICS] Load More button clicked, loading page:', comicsCurrentPage);
+                loadComicsAll(comicsCurrentPage);
+            });
+            
+            comicsLoadMoreBtn.addEventListener('mouseenter', () => {
+                comicsLoadMoreBtn.style.transform = 'translateY(-4px)';
+                comicsLoadMoreBtn.style.boxShadow = '0 8px 24px rgba(249, 115, 22, 0.6)';
+            });
+            
+            comicsLoadMoreBtn.addEventListener('mouseleave', () => {
+                comicsLoadMoreBtn.style.transform = 'translateY(0)';
+                comicsLoadMoreBtn.style.boxShadow = '0 4px 12px rgba(249, 115, 22, 0.4)';
+            });
+        }
+
+        // Clean up on page unload
+        window.addEventListener('beforeunload', () => {
+            stopComicsActiveStream();
+        });
+
+        // Initialize comics when comics page is shown
+        function initializeComics() {
+            console.log('[COMICS] initializeComics called');
+            comicsPageActive = true;
+            console.log('[COMICS] comicsPageActive set to true');
+            const comicsContainer = document.getElementById('comics-container');
+            
+            // Only load if we haven't loaded anything yet
+            if (!comicsContainer) {
+                console.log('[COMICS] Comics container not found');
+                return;
+            }
+            
+            console.log('[COMICS] Comics container found, children:', comicsContainer.children.length, 'currentPage:', comicsCurrentPage);
+            
+            // Always load if container is empty
+            if (comicsContainer.children.length === 0) {
+                console.log('[COMICS] Container empty - loading page 1');
+                // Reset pagination
+                comicsCurrentPage = 1;
+                comicsHasMore = true;
+                comicsIsSearchMode = false;
+                showComicsView('browse');
+                loadComicsAll(comicsCurrentPage);
+            } else {
+                console.log('[COMICS] Already has comics loaded');
+            }
+        }
+
+
 
         // Initialize the app on DOMContentLoaded
         document.addEventListener('DOMContentLoaded', init);

@@ -14,6 +14,9 @@ import crypto from 'crypto';
 import { createRequire } from 'module';
 import { spawn } from 'child_process';
 import ffmpegPath from 'ffmpeg-static';
+import axios from 'axios';
+import * as cheerio from 'cheerio';
+import puppeteer from 'puppeteer';
 
 // Import the CommonJS api.cjs module
 const require = createRequire(import.meta.url);
@@ -1691,7 +1694,25 @@ export function startServer(userDataPath) {
                             const rawFiles = tor.files || tor.file_list || [];
                             const stateRaw = (tor.download_state || tor.downloadState || tor.state || tor.status || '').toString().toLowerCase();
                             const isCached = stateRaw.includes('cached');
-                            console.log('[TB][files] found', rawFiles.length, 'files, state:', stateRaw, 'cached:', isCached);
+                            const isStalled = stateRaw.includes('stalled');
+                            const hasFiles = rawFiles.length > 0;
+                            console.log('[TB][files] found', rawFiles.length, 'files, state:', stateRaw, 'cached:', isCached, 'stalled:', isStalled);
+                            
+                            // If stalled with no files/progress and not cached, attempt to request download
+                            if (isStalled && !isCached && !hasFiles && i === 0) {
+                                console.log('[TB][prepare] Torrent is stalled/uncached, attempting to request download...');
+                                try {
+                                    await tbFetch('/api/torrents/controltorrent', {
+                                        method: 'POST',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({ torrent_id: String(tor.id || id), operation: 'reannounce' })
+                                    });
+                                    console.log('[TB][prepare] Requested reannounce, waiting for peers...');
+                                } catch (controlErr) {
+                                    console.warn('[TB][prepare] Failed to control torrent:', controlErr?.message);
+                                }
+                            }
+                            
                             let counter = 1;
                             for (const f of rawFiles) {
                                 // Use the actual file ID from TorBox - they use f.id starting from 0
@@ -1711,7 +1732,32 @@ export function startServer(userDataPath) {
                     } catch {}
                     await new Promise(r => setTimeout(r, 800));
                 }
-                if (!infoObj) infoObj = { id: String(id), filename: 'TorBox Torrent', files: [] };
+                
+                // If after polling we still have no files, check final state
+                if (!infoObj || !infoObj.files || infoObj.files.length === 0) {
+                    try {
+                        const finalCheck = await tbFetch(`/api/torrents/mylist?id=${encodeURIComponent(String(id))}&bypassCache=true`);
+                        const finalTor = Array.isArray(finalCheck?.data) ? finalCheck.data[0] : (finalCheck?.data || finalCheck || null);
+                        if (finalTor) {
+                            const finalState = (finalTor.download_state || finalTor.state || '').toString().toLowerCase();
+                            const finalFiles = finalTor.files || finalTor.file_list || [];
+                            const finalSeeds = Number(finalTor.seeds || 0);
+                            const finalPeers = Number(finalTor.peers || 0);
+                            
+                            if (finalState.includes('stalled') && finalFiles.length === 0 && finalSeeds === 0 && finalPeers === 0) {
+                                console.warn('[TB][prepare] Torrent is stalled with no seeds/peers after polling');
+                                return res.status(503).json({ 
+                                    error: 'This torrent has no seeders and cannot be cached by TorBox. Try a different release.', 
+                                    code: 'TB_NO_SEEDS',
+                                    id: String(id)
+                                });
+                            }
+                        }
+                    } catch {}
+                    
+                    if (!infoObj) infoObj = { id: String(id), filename: 'TorBox Torrent', files: [] };
+                }
+                
                 return res.json({ id: String(id), info: infoObj });
             } else if (provider === 'premiumize') {
                 console.log('[PM][prepare] transfer/directdl');
@@ -2267,6 +2313,25 @@ export function startServer(userDataPath) {
                         const rawFiles = tor.files || tor.file_list || [];
                         const stateRaw = (tor.download_state || tor.downloadState || tor.state || tor.status || '').toString().toLowerCase();
                         const isCached = stateRaw.includes('cached');
+                        const isStalled = stateRaw.includes('stalled');
+                        const progress = Number(tor.progress || 0);
+                        const seeds = Number(tor.seeds || 0);
+                        const peers = Number(tor.peers || 0);
+                        
+                        // If stalled with no progress and no peers, it can't be cached
+                        if (isStalled && !isCached && progress === 0 && seeds === 0 && peers === 0 && rawFiles.length === 0) {
+                            console.warn('[TB][files] Torrent is permanently stalled (no seeds)');
+                            return res.status(503).json({ 
+                                error: 'This torrent has no seeders and cannot be cached. Try a different release.',
+                                code: 'TB_NO_SEEDS',
+                                id: String(id),
+                                filename: tor?.name || tor?.filename || null,
+                                files: [],
+                                status: stateRaw,
+                                progress: 0
+                            });
+                        }
+                        
                         let counter = 1;
                         for (const f of rawFiles) {
                             const fid = f.id || f.file_id || counter;
@@ -4971,14 +5036,31 @@ export function startServer(userDataPath) {
             // Start ffmpeg process
             // Resolve ffmpeg binary path (handle asar packaging)
             let resolvedFfmpegPath = ffmpegPath || 'ffmpeg';
+            let useFfmpeg = true;
             try {
                 if (resolvedFfmpegPath && resolvedFfmpegPath.includes('app.asar')) {
                     resolvedFfmpegPath = resolvedFfmpegPath.replace('app.asar', 'app.asar.unpacked');
                 }
                 // If path doesn't exist (packaged quirks), fall back to PATH lookup
-                if (resolvedFfmpegPath && !fs.existsSync(resolvedFfmpegPath)) {
-                    console.warn(`[Music Download] ffmpeg binary not found at ${resolvedFfmpegPath}. Falling back to PATH executable.`);
-                    resolvedFfmpegPath = 'ffmpeg';
+                if (resolvedFfmpegPath && resolvedFfmpegPath !== 'ffmpeg') {
+                    if (!fs.existsSync(resolvedFfmpegPath)) {
+                        console.warn(`[Music Download] ffmpeg binary not found at ${resolvedFfmpegPath}. Falling back to PATH executable.`);
+                        resolvedFfmpegPath = 'ffmpeg';
+                    } else {
+                        // Check if executable (Linux AppImage permission issue)
+                        try {
+                            fs.accessSync(resolvedFfmpegPath, fs.constants.X_OK);
+                        } catch (permErr) {
+                            console.warn(`[Music Download] ffmpeg binary not executable at ${resolvedFfmpegPath}. Attempting to set permissions...`);
+                            try {
+                                fs.chmodSync(resolvedFfmpegPath, 0o755);
+                                console.log('[Music Download] Successfully set executable permission');
+                            } catch (chmodErr) {
+                                console.warn('[Music Download] Failed to set executable permission, falling back to PATH');
+                                resolvedFfmpegPath = 'ffmpeg';
+                            }
+                        }
+                    }
                 }
             } catch (_) {}
 
@@ -5042,7 +5124,7 @@ export function startServer(userDataPath) {
                 }
             });
 
-            ffmpeg.on('close', (code) => {
+            ffmpeg.on('close', async (code, signal) => {
                 // Remove process reference
                 if (downloadId) downloadProcesses.delete(downloadId);
                 if (code === 0) {
@@ -5055,18 +5137,86 @@ export function startServer(userDataPath) {
                         downloadProgress.get(downloadId).progress = 100;
                     }
                     
-                    res.json({ 
-                        success: true, 
-                        message: 'Download complete',
-                        filePath: outputPath 
-                    });
+                    if (!res.headersSent) {
+                        res.json({ 
+                            success: true, 
+                            message: 'Download complete',
+                            filePath: outputPath 
+                        });
+                    }
                     
                     // Clean up progress after 5 seconds
                     setTimeout(() => {
                         if (downloadId) downloadProgress.delete(downloadId);
                     }, 5000);
                 } else {
-                    console.error(`[Music Download] ✗ FFmpeg exited with code ${code}`);
+                    const exitInfo = code !== null ? `code ${code}` : signal ? `signal ${signal}` : 'unknown reason';
+                    console.error(`[Music Download] ✗ FFmpeg exited with ${exitInfo}`);
+                    
+                    // If FFmpeg failed (especially with null code/signal on Linux), try direct download
+                    if (code === null || signal) {
+                        console.log('[Music Download] Attempting direct download fallback (no conversion)...');
+                        try {
+                            // Determine extension from URL
+                            const urlLower = trackUrl.toLowerCase();
+                            let directExt = 'flac';
+                            if (urlLower.includes('.mp3')) directExt = 'mp3';
+                            else if (urlLower.includes('.m4a')) directExt = 'm4a';
+                            else if (urlLower.includes('.aac')) directExt = 'aac';
+                            else if (urlLower.includes('.ogg')) directExt = 'ogg';
+                            
+                            const directFilename = `${sanitize(songName)} - ${sanitize(artistName)}.${directExt}`;
+                            const directOutputPath = path.join(downloadDir, directFilename);
+                            
+                            // Download directly using fetch/stream
+                            const https = await import('https');
+                            const http = await import('http');
+                            const protocol = trackUrl.startsWith('https') ? https : http;
+                            
+                            await new Promise((resolve, reject) => {
+                                const file = fs.createWriteStream(directOutputPath);
+                                protocol.get(trackUrl, (response) => {
+                                    if (response.statusCode !== 200) {
+                                        reject(new Error(`HTTP ${response.statusCode}`));
+                                        return;
+                                    }
+                                    response.pipe(file);
+                                    file.on('finish', () => {
+                                        file.close();
+                                        resolve();
+                                    });
+                                }).on('error', (err) => {
+                                    fs.unlinkSync(directOutputPath);
+                                    reject(err);
+                                });
+                            });
+                            
+                            console.log('[Music Download] ✓ Direct download complete (fallback)!');
+                            console.log(`[Music Download] Saved to: ${directOutputPath}\n`);
+                            
+                            if (downloadId && downloadProgress.has(downloadId)) {
+                                downloadProgress.get(downloadId).complete = true;
+                                downloadProgress.get(downloadId).progress = 100;
+                                downloadProgress.get(downloadId).filePath = directOutputPath;
+                            }
+                            
+                            if (!res.headersSent) {
+                                res.json({ 
+                                    success: true, 
+                                    message: 'Download complete (direct)',
+                                    filePath: directOutputPath 
+                                });
+                            }
+                            
+                            setTimeout(() => {
+                                if (downloadId) downloadProgress.delete(downloadId);
+                            }, 5000);
+                            return;
+                        } catch (fallbackErr) {
+                            console.error('[Music Download] ✗ Direct download fallback also failed:', fallbackErr.message);
+                        }
+                    }
+                    
                     // Clean up partial file
                     if (fs.existsSync(outputPath)) {
                         try { 
@@ -5077,10 +5227,12 @@ export function startServer(userDataPath) {
                     
                     if (downloadId) downloadProgress.delete(downloadId);
                     
-                    res.status(500).json({ 
-                        success: false, 
-                        error: `FFmpeg exited with code ${code}` 
-                    });
+                    if (!res.headersSent) {
+                        res.status(500).json({ 
+                            success: false, 
+                            error: `FFmpeg failed: ${exitInfo}` 
+                        });
+                    }
                 }
             });
 
@@ -5265,6 +5417,371 @@ export function startServer(userDataPath) {
     // ===== GLOBAL ERROR HANDLERS =====
     
     // Catch-all 404 handler for undefined routes
+    // ===== COMICS API ENDPOINTS (readcomiconline.li scraper) =====
+    
+    // API endpoint to get comics with pagination
+    app.get('/api/comics/all', async (req, res) => {
+        try {
+            const page = req.query.page || 1;
+            const url = `https://readcomiconline.li/ComicList/Newest?page=${page}`;
+            
+            console.log(`[Comics] Fetching comics from: ${url}`);
+            
+            const response = await axios.get(url, {
+                headers: {
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+                }
+            });
+            
+            const $ = cheerio.load(response.data);
+            const comics = [];
+            
+            $('.list-comic .item').each((index, element) => {
+                const $item = $(element);
+                const $link = $item.find('a');
+                const $img = $link.find('img');
+                
+                const title = $item.find('span.title').text().trim();
+                const posterPath = $img.attr('src');
+                const comicLink = $link.attr('href');
+                
+                if (title && posterPath) {
+                    comics.push({
+                        title: title,
+                        poster: `https://readcomiconline.li${posterPath}`,
+                        link: comicLink ? `https://readcomiconline.li${comicLink}` : null
+                    });
+                }
+            });
+            
+            console.log(`[Comics] Found ${comics.length} comics on page ${page}`);
+            
+            res.json({
+                success: true,
+                page: parseInt(page),
+                comics: comics,
+                count: comics.length
+            });
+            
+        } catch (error) {
+            console.error('[Comics] Error scraping comics:', error.message);
+            res.status(500).json({
+                success: false,
+                error: error.message
+            });
+        }
+    });
+
+    // API endpoint to search comics
+    app.get('/api/comics/search/:query', async (req, res) => {
+        try {
+            const query = req.params.query;
+            const url = 'https://readcomiconline.li/Search/Comic';
+            const keyword = query.replace(/ /g, '+');
+            
+            console.log(`[Comics] Searching comics with query: ${query}`);
+            
+            const response = await axios.post(url, `keyword=${keyword}`, {
+                headers: {
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                }
+            });
+            
+            const $ = cheerio.load(response.data);
+            const comics = [];
+            
+            $('.list-comic .item').each((index, element) => {
+                const $item = $(element);
+                const $link = $item.find('a').first();
+                const $img = $link.find('img');
+                
+                const title = $item.find('span.title').text().trim();
+                const posterPath = $img.attr('src');
+                const comicLink = $link.attr('href');
+                
+                if (title && posterPath) {
+                    comics.push({
+                        title: title,
+                        poster: `https://readcomiconline.li${posterPath}`,
+                        link: comicLink ? `https://readcomiconline.li${comicLink}` : null
+                    });
+                }
+            });
+            
+            console.log(`[Comics] Found ${comics.length} comics for query: ${query}`);
+            
+            res.json({
+                success: true,
+                query: query,
+                comics: comics,
+                count: comics.length
+            });
+            
+        } catch (error) {
+            console.error('[Comics] Error searching comics:', error.message);
+            res.status(500).json({
+                success: false,
+                error: error.message
+            });
+        }
+    });
+
+    // API endpoint to get issues for a comic
+    app.get('/api/comics/issues/:slug', async (req, res) => {
+        try {
+            const slug = req.params.slug;
+            const url = `https://readcomiconline.li/Comic/${slug}`;
+            
+            console.log(`[Comics] Fetching issues from: ${url}`);
+            
+            const response = await axios.get(url, {
+                headers: {
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+                }
+            });
+            
+            const $ = cheerio.load(response.data);
+            const issues = [];
+            
+            $('table tr').each((index, element) => {
+                const $row = $(element);
+                const $link = $row.find('td:first-child a');
+                const $date = $row.find('td:nth-child(2)');
+                
+                if ($link.length > 0) {
+                    const issueTitle = $link.text().trim();
+                    const issuePath = $link.attr('href');
+                    const issueDate = $date.text().trim();
+                    
+                    if (issueTitle && issuePath) {
+                        issues.push({
+                            title: issueTitle,
+                            link: issuePath,
+                            date: issueDate
+                        });
+                    }
+                }
+            });
+            
+            console.log(`[Comics] Found ${issues.length} issues for ${slug}`);
+            
+            res.json({
+                success: true,
+                slug: slug,
+                issues: issues,
+                count: issues.length
+            });
+            
+        } catch (error) {
+            console.error('[Comics] Error scraping issues:', error.message);
+            res.status(500).json({
+                success: false,
+                error: error.message
+            });
+        }
+    });
+
+    // Streaming endpoint to fetch comic pages in real-time
+    app.get('/api/comics/read-stream', async (req, res) => {
+        let browser;
+        let page;
+        let isAborted = false;
+        
+        try {
+            const issueLink = req.query.link;
+            
+            if (!issueLink) {
+                return res.status(400).json({
+                    success: false,
+                    error: 'Issue link is required'
+                });
+            }
+            
+            res.setHeader('Content-Type', 'text/event-stream');
+            res.setHeader('Cache-Control', 'no-cache');
+            res.setHeader('Connection', 'keep-alive');
+            
+            req.on('close', async () => {
+                console.log('[Comics] Client disconnected, aborting stream...');
+                isAborted = true;
+                if (page) {
+                    try { await page.close(); } catch (e) {}
+                }
+                if (browser) {
+                    try { await browser.close(); browser = null; } catch (e) {}
+                }
+            });
+            
+            const linkParts = issueLink.split('?');
+            const baseUrl = linkParts[0];
+            const params = linkParts[1] || '';
+            const baseFullUrl = `https://readcomiconline.li${baseUrl}?${params}&s=s2`;
+            
+            console.log(`[Comics] Streaming comic pages from: ${baseFullUrl}`);
+            
+            browser = await puppeteer.launch({
+                headless: 'new',
+                args: [
+                    '--no-sandbox', 
+                    '--disable-setuid-sandbox',
+                    '--disable-dev-shm-usage',
+                    '--disable-accelerated-2d-canvas',
+                    '--disable-gpu',
+                    '--window-size=1920x1080'
+                ]
+            });
+            
+            page = await browser.newPage();
+            
+            await page.setRequestInterception(true);
+            page.on('request', (request) => {
+                const resourceType = request.resourceType();
+                if (['stylesheet', 'font', 'media'].includes(resourceType)) {
+                    request.abort();
+                } else {
+                    request.continue();
+                }
+            });
+            
+            await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36');
+            await page.setExtraHTTPHeaders({
+                'Referer': 'https://readcomiconline.li/'
+            });
+            
+            await page.goto(`${baseFullUrl}#1`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+            await page.waitForSelector('#divImage img', { timeout: 10000 });
+            await page.waitForTimeout(2000);
+            
+            const totalPages = await page.evaluate(() => {
+                const selectElement = document.querySelector('select#selectPage, select.selectPage');
+                if (selectElement) {
+                    return selectElement.options.length;
+                }
+                const pageLinks = document.querySelectorAll('a[href*="#"]');
+                let maxPage = 1;
+                pageLinks.forEach(link => {
+                    const match = link.href.match(/#(\d+)$/);
+                    if (match) {
+                        const pageNum = parseInt(match[1]);
+                        if (pageNum > maxPage) maxPage = pageNum;
+                    }
+                });
+                return maxPage;
+            });
+            
+            console.log(`[Comics] Streaming ${totalPages} pages`);
+            
+            res.write(`data: ${JSON.stringify({ type: 'total', count: totalPages })}\n\n`);
+            
+            const seenUrls = new Set();
+            
+            for (let i = 1; i <= totalPages; i++) {
+                if (isAborted) {
+                    console.log('[Comics] Stream aborted by client');
+                    break;
+                }
+                
+                console.log(`[Comics] Streaming page ${i}/${totalPages}`);
+                
+                await page.evaluate((pageNum) => {
+                    const selectElement = document.querySelector('select#selectPage, select.selectPage');
+                    if (selectElement) {
+                        selectElement.value = pageNum.toString();
+                        const event = new Event('change', { bubbles: true });
+                        selectElement.dispatchEvent(event);
+                    } else {
+                        const link = document.querySelector(`a[href$="#${pageNum}"]`);
+                        if (link) link.click();
+                    }
+                }, i);
+                
+                await page.waitForTimeout(1500);
+                
+                const imageUrl = await page.evaluate(() => {
+                    const images = document.querySelectorAll('#divImage img');
+                    for (let img of images) {
+                        const src = img.getAttribute('src');
+                        if (src && src.includes('http') && 
+                            !src.includes('loading.gif') && 
+                            (src.includes('rconet.biz') || src.includes('blogspot.com'))) {
+                            const style = window.getComputedStyle(img);
+                            if (style.display !== 'none' && img.offsetHeight > 0) {
+                                return src;
+                            }
+                        }
+                    }
+                    return null;
+                });
+                
+                if (imageUrl && !seenUrls.has(imageUrl)) {
+                    seenUrls.add(imageUrl);
+                    res.write(`data: ${JSON.stringify({ type: 'page', url: imageUrl, pageNumber: i })}\n\n`);
+                } else if (!imageUrl) {
+                    console.log(`[Comics] Warning: No image found for page ${i}`);
+                }
+                
+                if (i % 10 === 0) {
+                    await page.evaluate(() => {
+                        if (window.gc) window.gc();
+                    });
+                }
+            }
+            
+            res.write(`data: ${JSON.stringify({ type: 'done' })}\n\n`);
+            res.end();
+            
+            await page.close();
+            await browser.close();
+            browser = null;
+            
+            console.log('[Comics] Browser closed, memory freed');
+            
+        } catch (error) {
+            if (browser) {
+                try { await browser.close(); browser = null; } catch (e) {
+                    console.error('[Comics] Error closing browser:', e.message);
+                }
+            }
+            console.error('[Comics] Error streaming comic pages:', error.message);
+            res.write(`data: ${JSON.stringify({ type: 'error', message: error.message })}\n\n`);
+            res.end();
+        }
+    });
+
+    // Proxy endpoint to fetch images with proper headers
+    app.get('/api/proxy-image', async (req, res) => {
+        try {
+            const imageUrl = req.query.url;
+            
+            if (!imageUrl) {
+                return res.status(400).send('Image URL is required');
+            }
+            
+            const response = await axios.get(imageUrl, {
+                responseType: 'arraybuffer',
+                timeout: 30000,
+                headers: {
+                    'Referer': 'https://readcomiconline.li/',
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+                },
+                validateStatus: (status) => status < 500
+            });
+            
+            const contentType = response.headers['content-type'] || 'image/jpeg';
+            res.set('Content-Type', contentType);
+            res.set('Cache-Control', 'public, max-age=86400');
+            res.send(response.data);
+            
+        } catch (error) {
+            console.error('[Comics] Error proxying image:', error.message);
+            res.status(500).send('Error loading image');
+        }
+    });
+
+    // ===== END COMICS API =====
+
+    // 404 handler - must come after all routes
     app.use((req, res, next) => {
         if (!res.headersSent) {
             res.status(404).json({ error: 'Route not found: ' + req.path });
