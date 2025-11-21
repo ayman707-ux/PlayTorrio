@@ -23,7 +23,7 @@ const require = createRequire(import.meta.url);
 const { registerApiRoutes } = require('./api.cjs');
 
 // This function will be imported and called by main.js
-export function startServer(userDataPath) {
+export function startServer(userDataPath, executablePath = null) {
     // Ensure userDataPath directory exists with proper permissions
     try {
         if (!fs.existsSync(userDataPath)) {
@@ -5620,7 +5620,7 @@ export function startServer(userDataPath) {
             
             console.log(`[Comics] Streaming comic pages from: ${baseFullUrl}`);
             
-            browser = await puppeteer.launch({
+            const launchOptions = {
                 headless: 'new',
                 args: [
                     '--no-sandbox', 
@@ -5630,7 +5630,22 @@ export function startServer(userDataPath) {
                     '--disable-gpu',
                     '--window-size=1920x1080'
                 ]
-            });
+            };
+            
+            // Use Electron's bundled Chromium if executablePath is provided
+            // On Windows: executablePath is the .exe itself (use parent process)
+            // On macOS: executablePath is inside .app bundle (use parent process)
+            // On Linux: executablePath is the AppImage or binary (use parent process)
+            if (executablePath) {
+                // Electron executable can launch Chromium via puppeteer
+                // We use puppeteer-core's ability to use Electron as the browser
+                launchOptions.executablePath = executablePath;
+                console.log(`[Comics] Using Electron's Chromium: ${executablePath}`);
+            } else {
+                console.log(`[Comics] Using system Chromium (puppeteer default)`);
+            }
+            
+            browser = await puppeteer.launch(launchOptions);
             
             page = await browser.newPage();
             

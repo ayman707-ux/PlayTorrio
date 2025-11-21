@@ -2250,7 +2250,7 @@ if (!gotLock) {
     } catch(_) {}
     // Start the unified server (port 6987) - handles all API routes including anime, books, torrents, etc.
     try {
-        const { server, client, clearCache } = startServer(app.getPath('userData'));
+        const { server, client, clearCache } = startServer(app.getPath('userData'), app.getPath('exe'));
         httpServer = server;
         webtorrentClient = client;
         // Store clearCache function globally for cleanup on exit
