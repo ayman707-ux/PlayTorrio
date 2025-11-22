@@ -25,13 +25,32 @@ jobs:
       - name: Verify Chromium Download
         run: |
           Write-Host "Checking for Chromium..."
-          $chromiumPath = "$env:LOCALAPPDATA\.cache\puppeteer\chrome"
+          $chromiumPath = "$env:USERPROFILE\.cache\puppeteer\chrome"
           if (Test-Path $chromiumPath) {
             Write-Host "✓ Chromium found at: $chromiumPath"
             Get-ChildItem $chromiumPath | ForEach-Object { Write-Host "  - $_" }
           } else {
-            Write-Host "⚠ Chromium not found, retrying install..."
-            npm install puppeteer@^21.0.0
+            Write-Host "⚠ Chromium not found at $chromiumPath"
+            Write-Host "Checking alternative location..."
+            $chromiumPath2 = "$env:LOCALAPPDATA\.cache\puppeteer\chrome"
+            if (Test-Path $chromiumPath2) {
+              Write-Host "✓ Chromium found at: $chromiumPath2"
+              Get-ChildItem $chromiumPath2 | ForEach-Object { Write-Host "  - $_" }
+            } else {
+              Write-Host "⚠ Chromium not found, retrying install..."
+              npm install puppeteer@^21.0.0
+              Write-Host "Verifying Chromium after retry..."
+              if (Test-Path "$env:USERPROFILE\.cache\puppeteer\chrome") {
+                Write-Host "✓✓ SUCCESS: Chromium installed at $env:USERPROFILE\.cache\puppeteer\chrome"
+                Get-ChildItem "$env:USERPROFILE\.cache\puppeteer\chrome"
+              } elseif (Test-Path "$env:LOCALAPPDATA\.cache\puppeteer\chrome") {
+                Write-Host "✓✓ SUCCESS: Chromium installed at $env:LOCALAPPDATA\.cache\puppeteer\chrome"
+                Get-ChildItem "$env:LOCALAPPDATA\.cache\puppeteer\chrome"
+              } else {
+                Write-Host "✗✗ FAILED: Chromium still not found after retry!"
+                exit 1
+              }
+            }
           }
       - name: Setup Windows Players
         run: |
@@ -70,6 +89,14 @@ jobs:
           else
             echo "⚠ Chromium not found, retrying install..."
             npm install puppeteer@^21.0.0
+            echo "Verifying Chromium after retry..."
+            if [ -d "$HOME/.cache/puppeteer/chrome" ]; then
+              echo "✓✓ SUCCESS: Chromium installed at $HOME/.cache/puppeteer/chrome"
+              ls -la "$HOME/.cache/puppeteer/chrome"
+            else
+              echo "✗✗ FAILED: Chromium still not found after retry!"
+              exit 1
+            fi
           fi
       - name: Prepare resources
         run: |
