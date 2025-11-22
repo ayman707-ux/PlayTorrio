@@ -1,6 +1,6 @@
 {
   "name": "playtorrio",
-  "version": "2.1.1",
+  "version": "2.1.2",
   "description": "Ayman's PlayTorrio an all in one media center",
   "author": {
     "name": "Ayman",
@@ -14,7 +14,7 @@
     "serve": "node server.mjs",
     "prebuild": "node build/copyChromium.cjs",
     "build": "electron-builder --publish always",
-    "postinstall": "electron-builder install-app-deps && node node_modules/puppeteer/install.mjs"
+    "postinstall": "electron-builder install-app-deps"
   },
   "dependencies": {
     "axios": "^1.7.4",
@@ -37,7 +37,7 @@
     "node-cache": "^5.1.2",
     "node-fetch": "^3.3.2",
     "parse-torrent": "^9.0.3",
-    "puppeteer": "^21.11.0",
+    "puppeteer-core": "^21.11.0",
     "webtorrent": "^2.6.8",
     "xml2js": "^0.6.2"
   },
@@ -145,7 +145,16 @@
         "NSMicrophoneUsageDescription": "PlayTorrio does not require microphone access.",
         "NSCameraUsageDescription": "PlayTorrio does not require camera access.",
         "NSAppleEventsUsageDescription": "PlayTorrio needs to control external media players."
-      }
+      },
+      "extraResources": [
+        {
+          "from": "chromium-bundle",
+          "to": "chromium-bundle",
+          "filter": [
+            "**/*"
+          ]
+        }
+      ]
     },
     "dmg": {
       "title": "${productName}",

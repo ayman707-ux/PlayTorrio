@@ -59,6 +59,40 @@ module.exports = async function afterPack(context) {
       
       
       console.log('[afterPack] ✓ Linux build prepared');
+    } else if (context.electronPlatformName === 'darwin') {
+      // Verify Chromium bundle for macOS
+      const resourcesDir = path.join(context.appOutDir, '..', 'Resources');
+      const chromiumBundleDir = path.join(resourcesDir, 'chromium-bundle');
+      
+      console.log('[afterPack][Chromium] Checking for bundled Chromium on macOS...');
+      console.log('[afterPack][Chromium] Looking in:', chromiumBundleDir);
+      
+      if (fs.existsSync(chromiumBundleDir)) {
+        const chromiumDirs = fs.readdirSync(chromiumBundleDir);
+        console.log('[afterPack][Chromium] ✓ Chromium bundle found with versions:', chromiumDirs);
+        
+        // Find chrome executable (different names for arm64 vs x64)
+        for (const versionDir of chromiumDirs) {
+          const possiblePaths = [
+            path.join(chromiumBundleDir, versionDir, 'chrome-mac-arm64', 'Google Chrome for Testing.app', 'Contents', 'MacOS', 'Google Chrome for Testing'),
+            path.join(chromiumBundleDir, versionDir, 'chrome-mac-x64', 'Google Chrome for Testing.app', 'Contents', 'MacOS', 'Google Chrome for Testing')
+          ];
+          
+          for (const chromePath of possiblePaths) {
+            if (fs.existsSync(chromePath)) {
+              console.log('[afterPack][Chromium] ✓✓ Chrome executable found at:', chromePath);
+              // Set executable permission
+              fs.chmodSync(chromePath, 0o755);
+              console.log('[afterPack][Chromium] ✓✓ Set executable permission on Chrome');
+              break;
+            }
+          }
+        }
+      } else {
+        console.warn('[afterPack][Chromium] ⚠⚠ WARNING: Chromium bundle NOT FOUND! Comics will not work!');
+      }
+      
+      console.log('[afterPack] ✓ macOS build prepared');
     } else if (context.electronPlatformName === 'win32') {
       // Verify Chromium bundle
       const resourcesDir = path.join(context.appOutDir, 'resources');

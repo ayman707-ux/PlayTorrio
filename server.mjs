@@ -16,7 +16,7 @@ import { spawn, execSync } from 'child_process';
 import ffmpegPath from 'ffmpeg-static';
 import axios from 'axios';
 import * as cheerio from 'cheerio';
-import puppeteer from 'puppeteer';
+import puppeteer from 'puppeteer-core';
 
 // Import the CommonJS api.cjs module
 const require = createRequire(import.meta.url);
@@ -25,22 +25,43 @@ const { registerApiRoutes } = require('./api.cjs');
 // Helper function to find bundled Chromium executable
 function findBundledChromium() {
     const platform = process.platform;
-    const isDev = !process.env.PORTABLE_EXECUTABLE_DIR && !process.resourcesPath;
+    // Better dev detection: check if we're running from node_modules/electron (dev) or actual app package (prod)
+    const isDev = process.resourcesPath && process.resourcesPath.includes('node_modules');
     
-    if (isDev) {
+    console.log('[Chromium] ===== CHROMIUM SEARCH START =====');
+    console.log('[Chromium] Platform:', platform);
+    console.log('[Chromium] Mode:', isDev ? 'DEVELOPMENT' : 'PRODUCTION');
+    console.log('[Chromium] process.cwd():', process.cwd());
+    console.log('[Chromium] process.resourcesPath:', process.resourcesPath || 'undefined');
+    
+    if (isDev || !process.resourcesPath) {
         // Development mode - check chromium-bundle in project root
         const devChromiumBase = path.join(process.cwd(), 'chromium-bundle');
+        console.log('[Chromium] Checking dev path:', devChromiumBase);
+        console.log('[Chromium] Dev path exists:', fs.existsSync(devChromiumBase));
+        
         if (fs.existsSync(devChromiumBase)) {
             const versions = fs.readdirSync(devChromiumBase);
+            console.log('[Chromium] Found versions in dev:', versions);
+            
             if (versions.length > 0) {
                 let chromePath;
                 if (platform === 'win32') {
                     chromePath = path.join(devChromiumBase, versions[0], 'chrome-win64', 'chrome.exe');
                 } else if (platform === 'linux') {
                     chromePath = path.join(devChromiumBase, versions[0], 'chrome-linux64', 'chrome');
+                } else if (platform === 'darwin') {
+                    // Mac has different structure with .app bundle
+                    const arch = process.arch;
+                    const macFolder = arch === 'arm64' ? 'chrome-mac-arm64' : 'chrome-mac-x64';
+                    chromePath = path.join(devChromiumBase, versions[0], macFolder, 'Google Chrome for Testing.app', 'Contents', 'MacOS', 'Google Chrome for Testing');
                 }
+                console.log('[Chromium] Checking chrome executable at:', chromePath);
+                console.log('[Chromium] Chrome executable exists:', fs.existsSync(chromePath));
+                
                 if (chromePath && fs.existsSync(chromePath)) {
-                    console.log('[Chromium] Found bundled Chromium (dev):', chromePath);
+                    console.log('[Chromium] ✓✓✓ USING BUNDLED CHROMIUM (DEV):', chromePath);
+                    console.log('[Chromium] ===== CHROMIUM SEARCH END =====');
                     return chromePath;
                 }
             }
@@ -48,26 +69,51 @@ function findBundledChromium() {
     } else {
         // Production mode - check in resources
         const resourcesPath = process.resourcesPath;
-        const chromiumBase = path.join(resourcesPath, 'chromium-bundle');
         
-        if (fs.existsSync(chromiumBase)) {
-            const versions = fs.readdirSync(chromiumBase);
-            if (versions.length > 0) {
-                let chromePath;
-                if (platform === 'win32') {
-                    chromePath = path.join(chromiumBase, versions[0], 'chrome-win64', 'chrome.exe');
-                } else if (platform === 'linux') {
-                    chromePath = path.join(chromiumBase, versions[0], 'chrome-linux64', 'chrome');
-                }
-                if (chromePath && fs.existsSync(chromePath)) {
-                    console.log('[Chromium] Found bundled Chromium (prod):', chromePath);
-                    return chromePath;
+        // For Linux/Mac with asar, check app.asar.unpacked first
+        const unpackedChromiumBase = path.join(resourcesPath, 'app.asar.unpacked', 'chromium-bundle');
+        const directChromiumBase = path.join(resourcesPath, 'chromium-bundle');
+        
+        console.log('[Chromium] Checking production paths:');
+        console.log('[Chromium]   1. Unpacked:', unpackedChromiumBase);
+        console.log('[Chromium]   2. Direct:', directChromiumBase);
+        
+        // Try unpacked location first (Linux asar packaging)
+        for (const chromiumBase of [unpackedChromiumBase, directChromiumBase]) {
+            console.log('[Chromium] Checking path:', chromiumBase);
+            console.log('[Chromium] Path exists:', fs.existsSync(chromiumBase));
+            
+            if (fs.existsSync(chromiumBase)) {
+                const versions = fs.readdirSync(chromiumBase);
+                console.log('[Chromium] Found versions in prod:', versions);
+                
+                if (versions.length > 0) {
+                    let chromePath;
+                    if (platform === 'win32') {
+                        chromePath = path.join(chromiumBase, versions[0], 'chrome-win64', 'chrome.exe');
+                    } else if (platform === 'linux') {
+                        chromePath = path.join(chromiumBase, versions[0], 'chrome-linux64', 'chrome');
+                    } else if (platform === 'darwin') {
+                        // Mac has different structure with .app bundle
+                        const arch = process.arch;
+                        const macFolder = arch === 'arm64' ? 'chrome-mac-arm64' : 'chrome-mac-x64';
+                        chromePath = path.join(chromiumBase, versions[0], macFolder, 'Google Chrome for Testing.app', 'Contents', 'MacOS', 'Google Chrome for Testing');
+                    }
+                    console.log('[Chromium] Checking chrome executable at:', chromePath);
+                    console.log('[Chromium] Chrome executable exists:', fs.existsSync(chromePath));
+                    
+                    if (chromePath && fs.existsSync(chromePath)) {
+                        console.log('[Chromium] ✓✓✓ USING BUNDLED CHROMIUM (PROD):', chromePath);
+                        console.log('[Chromium] ===== CHROMIUM SEARCH END =====');
+                        return chromePath;
+                    }
                 }
             }
         }
     }
     
-    console.log('[Chromium] Bundled Chromium not found');
+    console.log('[Chromium] ✗✗✗ BUNDLED CHROMIUM NOT FOUND');
+    console.log('[Chromium] ===== CHROMIUM SEARCH END =====');
     return null;
 }
 
@@ -5733,17 +5779,23 @@ export function startServer(userDataPath, executablePath = null) {
             
             // Priority 2: Try system Chrome/Chromium as fallback
             if (!chromePath) {
+                console.log('[Comics] Bundled Chromium not found, searching for system Chrome...');
                 chromePath = findChromiumExecutable();
                 if (chromePath) {
-                    console.log(`[Comics] Using system Chrome/Chromium: ${chromePath}`);
+                    console.log(`[Comics] ⚠⚠⚠ USING SYSTEM CHROME (NOT BUNDLED): ${chromePath}`);
                 } else {
-                    console.log(`[Comics] No Chrome found, trying puppeteer's default`);
+                    console.log(`[Comics] ✗✗✗ NO CHROME FOUND ANYWHERE - Comics will fail`);
                 }
             }
             
             if (chromePath) {
                 launchOptions.executablePath = chromePath;
-                console.log(`[Comics] Using Chrome at: ${chromePath}`);
+                console.log(`[Comics] ===== FINAL CHROME SELECTION =====`);
+                console.log(`[Comics] Chrome path: ${chromePath}`);
+                console.log(`[Comics] Is bundled: ${chromePath.includes('chromium-bundle')}`);
+                console.log(`[Comics] =====================================`);
+            } else {
+                console.log(`[Comics] ⚠⚠⚠ WARNING: No executablePath set, puppeteer-core will likely fail`);
             }
             
             browser = await puppeteer.launch(launchOptions);
