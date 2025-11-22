@@ -215,6 +215,12 @@ function setupAutoUpdater() {
             return;
         }
 
+        // Check if auto-updates are disabled in settings
+        if (!readAutoUpdateEnabled()) {
+            console.log('[Updater] Auto-updates disabled in settings');
+            return;
+        }
+
     // Configure updater to only check current platform
     autoUpdater.setFeedURL({
         provider: 'github',
