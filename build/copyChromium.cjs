@@ -8,7 +8,20 @@ function copyChromiumToProject() {
     let cacheDir;
     
     if (platform === 'win32') {
-        cacheDir = path.join(os.homedir(), 'AppData', 'Local', '.cache', 'puppeteer');
+        // Try both possible locations on Windows
+        const cacheDirs = [
+            path.join(os.homedir(), '.cache', 'puppeteer'),
+            path.join(os.homedir(), 'AppData', 'Local', '.cache', 'puppeteer')
+        ];
+        for (const dir of cacheDirs) {
+            if (fs.existsSync(dir)) {
+                cacheDir = dir;
+                break;
+            }
+        }
+        if (!cacheDir) {
+            cacheDir = cacheDirs[0]; // Default to first option
+        }
     } else if (platform === 'darwin') {
         cacheDir = path.join(os.homedir(), '.cache', 'puppeteer');
     } else {
