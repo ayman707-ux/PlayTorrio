@@ -22,35 +22,18 @@ jobs:
           node-version: '20'
       - name: Install dependencies
         run: npm install
-      - name: Verify Chromium Download
+      - name: Verify Chromium Bundle
         run: |
-          Write-Host "Checking for Chromium..."
-          $chromiumPath = "$env:USERPROFILE\.cache\puppeteer\chrome"
-          if (Test-Path $chromiumPath) {
-            Write-Host "✓ Chromium found at: $chromiumPath"
-            Get-ChildItem $chromiumPath | ForEach-Object { Write-Host "  - $_" }
-          } else {
-            Write-Host "⚠ Chromium not found at $chromiumPath"
-            Write-Host "Checking alternative location..."
-            $chromiumPath2 = "$env:LOCALAPPDATA\.cache\puppeteer\chrome"
-            if (Test-Path $chromiumPath2) {
-              Write-Host "✓ Chromium found at: $chromiumPath2"
-              Get-ChildItem $chromiumPath2 | ForEach-Object { Write-Host "  - $_" }
-            } else {
-              Write-Host "⚠ Chromium not found, retrying install..."
-              npm install puppeteer@^21.0.0
-              Write-Host "Verifying Chromium after retry..."
-              if (Test-Path "$env:USERPROFILE\.cache\puppeteer\chrome") {
-                Write-Host "✓✓ SUCCESS: Chromium installed at $env:USERPROFILE\.cache\puppeteer\chrome"
-                Get-ChildItem "$env:USERPROFILE\.cache\puppeteer\chrome"
-              } elseif (Test-Path "$env:LOCALAPPDATA\.cache\puppeteer\chrome") {
-                Write-Host "✓✓ SUCCESS: Chromium installed at $env:LOCALAPPDATA\.cache\puppeteer\chrome"
-                Get-ChildItem "$env:LOCALAPPDATA\.cache\puppeteer\chrome"
-              } else {
-                Write-Host "✗✗ FAILED: Chromium still not found after retry!"
-                exit 1
-              }
+          Write-Host "Checking for bundled Chromium in chromium-bundle/..."
+          if (Test-Path "chromium-bundle") {
+            Write-Host "✓✓✓ Chromium bundle directory found"
+            Get-ChildItem chromium-bundle -Recurse -File | Where-Object {$_.Name -like "chrome.exe"} | ForEach-Object {
+              Write-Host "✓ Found chrome.exe at: $($_.FullName)"
             }
+          } else {
+            Write-Host "✗✗✗ ERROR: Chromium bundle not found!"
+            Write-Host "The prebuild script should have downloaded Chromium."
+            exit 1
           }
       - name: Setup Windows Players
         run: |
@@ -79,24 +62,18 @@ jobs:
           node-version: '20'
       - name: Install dependencies
         run: npm install
-      - name: Verify Chromium Download
+      - name: Verify Chromium Bundle
         run: |
-          echo "Checking for Chromium..."
-          chromiumPath="$HOME/.cache/puppeteer/chrome"
-          if [ -d "$chromiumPath" ]; then
-            echo "✓ Chromium found at: $chromiumPath"
-            ls -la "$chromiumPath"
+          echo "Checking for bundled Chromium in chromium-bundle/..."
+          if [ -d "chromium-bundle" ]; then
+            echo "✓✓✓ Chromium bundle directory found"
+            find chromium-bundle -name "chrome" -type f | while read -r chrome_file; do
+              echo "✓ Found chrome at: $chrome_file"
+            done
           else
-            echo "⚠ Chromium not found, retrying install..."
-            npm install puppeteer@^21.0.0
-            echo "Verifying Chromium after retry..."
-            if [ -d "$HOME/.cache/puppeteer/chrome" ]; then
-              echo "✓✓ SUCCESS: Chromium installed at $HOME/.cache/puppeteer/chrome"
-              ls -la "$HOME/.cache/puppeteer/chrome"
-            else
-              echo "✗✗ FAILED: Chromium still not found after retry!"
-              exit 1
-            fi
+            echo "✗✗✗ ERROR: Chromium bundle not found!"
+            echo "The prebuild script should have downloaded Chromium."
+            exit 1
           fi
       - name: Prepare resources
         run: |
@@ -124,10 +101,20 @@ jobs:
           node-version: '20'
       - name: Install dependencies
         timeout-minutes: 45
+        run: npm install --verbose || npm install --verbose || npm install --verbose
+      - name: Verify Chromium Bundle
         run: |
-          export PUPPETEER_SKIP_DOWNLOAD=true
-          npm install --verbose || npm install --verbose || npm install --verbose
-          npx electron-builder install-app-deps
+          echo "Checking for bundled Chromium in chromium-bundle/..."
+          if [ -d "chromium-bundle" ]; then
+            echo "✓✓✓ Chromium bundle directory found"
+            find chromium-bundle -name "Google Chrome for Testing" -type f | while read -r chrome_file; do
+              echo "✓ Found Chrome at: $chrome_file"
+            done
+          else
+            echo "✗✗✗ ERROR: Chromium bundle not found!"
+            echo "The prebuild script should have downloaded Chromium."
+            exit 1
+          fi
       - name: Download MPV (x64)
         run: |
           curl -fL https://laboratory.stolendata.net/~djinn/mpv_osx/mpv-latest.tar.gz -o mpv.tar.gz || true
@@ -153,10 +140,20 @@ jobs:
           node-version: '20'
       - name: Install dependencies
         timeout-minutes: 45
+        run: npm install --verbose || npm install --verbose || npm install --verbose
+      - name: Verify Chromium Bundle
         run: |
-          export PUPPETEER_SKIP_DOWNLOAD=true
-          npm install --verbose || npm install --verbose || npm install --verbose
-          npx electron-builder install-app-deps
+          echo "Checking for bundled Chromium in chromium-bundle/..."
+          if [ -d "chromium-bundle" ]; then
+            echo "✓✓✓ Chromium bundle directory found"
+            find chromium-bundle -name "Google Chrome for Testing" -type f | while read -r chrome_file; do
+              echo "✓ Found Chrome at: $chrome_file"
+            done
+          else
+            echo "✗✗✗ ERROR: Chromium bundle not found!"
+            echo "The prebuild script should have downloaded Chromium."
+            exit 1
+          fi
       - name: Download MPV (arm64)
         run: |
           curl -fL https://laboratory.stolendata.net/~djinn/mpv_osx/mpv-latest.tar.gz -o mpv.tar.gz || true
