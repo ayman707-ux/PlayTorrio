@@ -48,45 +48,41 @@ async function downloadAndExtractChromium() {
     // Download the zip file
     await new Promise((resolve, reject) => {
         const file = fs.createWriteStream(zipPath);
+        
+        const handleResponse = (response) => {
+            const totalSize = parseInt(response.headers['content-length'], 10);
+            let downloadedSize = 0;
+            
+            response.on('data', (chunk) => {
+                downloadedSize += chunk.length;
+                const percent = ((downloadedSize / totalSize) * 100).toFixed(1);
+                process.stdout.write(`\r[Chromium] Downloaded: ${percent}% (${(downloadedSize / 1024 / 1024).toFixed(1)} MB)`);
+            });
+            
+            response.pipe(file);
+        };
+        
+        file.on('finish', () => {
+            file.close(() => {
+                console.log('\n[Chromium] Download complete!');
+                resolve();
+            });
+        });
+        
+        file.on('error', (err) => {
+            fs.unlinkSync(zipPath);
+            reject(err);
+        });
+        
         https.get(downloadUrl, (response) => {
             if (response.statusCode === 302 || response.statusCode === 301) {
                 // Follow redirect
-                https.get(response.headers.location, (redirectResponse) => {
-                    const totalSize = parseInt(redirectResponse.headers['content-length'], 10);
-                    let downloadedSize = 0;
-                    
-                    redirectResponse.on('data', (chunk) => {
-                        downloadedSize += chunk.length;
-                        const percent = ((downloadedSize / totalSize) * 100).toFixed(1);
-                        process.stdout.write(`\r[Chromium] Downloaded: ${percent}% (${(downloadedSize / 1024 / 1024).toFixed(1)} MB)`);
-                    });
-                    
-                    redirectResponse.pipe(file);
-                    file.on('finish', () => {
-                        file.close();
-                        console.log('\n[Chromium] Download complete!');
-                        resolve();
-                    });
-                }).on('error', reject);
+                https.get(response.headers.location, handleResponse).on('error', reject);
             } else {
-                const totalSize = parseInt(response.headers['content-length'], 10);
-                let downloadedSize = 0;
-                
-                response.on('data', (chunk) => {
-                    downloadedSize += chunk.length;
-                    const percent = ((downloadedSize / totalSize) * 100).toFixed(1);
-                    process.stdout.write(`\r[Chromium] Downloaded: ${percent}% (${(downloadedSize / 1024 / 1024).toFixed(1)} MB)`);
-                });
-                
-                response.pipe(file);
-                file.on('finish', () => {
-                    file.close();
-                    console.log('\n[Chromium] Download complete!');
-                    resolve();
-                });
+                handleResponse(response);
             }
         }).on('error', (err) => {
-            fs.unlinkSync(zipPath);
+            if (fs.existsSync(zipPath)) fs.unlinkSync(zipPath);
             reject(err);
         });
     });

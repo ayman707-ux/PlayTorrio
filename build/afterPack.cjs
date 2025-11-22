@@ -61,10 +61,13 @@ module.exports = async function afterPack(context) {
       console.log('[afterPack] ✓ Linux build prepared');
     } else if (context.electronPlatformName === 'darwin') {
       // Verify Chromium bundle for macOS
-      const resourcesDir = path.join(context.appOutDir, '..', 'Resources');
+      // On Mac, resources are at: dist/mac-{arch}/PlayTorrio.app/Contents/Resources/
+      const appPath = path.join(context.appOutDir, 'PlayTorrio.app');
+      const resourcesDir = path.join(appPath, 'Contents', 'Resources');
       const chromiumBundleDir = path.join(resourcesDir, 'chromium-bundle');
       
       console.log('[afterPack][Chromium] Checking for bundled Chromium on macOS...');
+      console.log('[afterPack][Chromium] App path:', appPath);
       console.log('[afterPack][Chromium] Looking in:', chromiumBundleDir);
       
       if (fs.existsSync(chromiumBundleDir)) {
