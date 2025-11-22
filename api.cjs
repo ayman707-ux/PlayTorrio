@@ -5,6 +5,11 @@ const cheerio = require('cheerio');
 const path = require('path');
 const rateLimit = require('express-rate-limit');
 const fs = require('fs').promises;
+const NodeCache = require('node-cache');
+
+// Initialize cache with 1 hour TTL
+const gamesCache = new NodeCache({ stdTTL: 3600 });
+
 // Optional MovieBox fetcher module (from bundled MovieBox API)
 let movieboxFetcher = null;
 try {
@@ -57,130 +62,333 @@ function createAxiosInstance() {
 // ============================================================================
 
 // Helper function to get download links from a game page
-async function getGameDownloadLinks(url) {
+// ============================================================================
+// GAMES SERVICE (SteamRip API)
+// ============================================================================
+
+// Constants
+const GAMES_API_URL = "https://api.ascendara.app";
+const GAMES_BACKUP_CDN = "https://cdn.ascendara.app/files/data.json";
+
+// Helper function to sanitize text
+function sanitizeGameText(text) {
+    if (!text) return text;
+    return text
+        .replace(/â€™/g, "'")
+        .replace(/â€"/g, "—")
+        .replace(/â€œ/g, '"')
+        .replace(/â€/g, '"')
+        .replace(/Â®/g, '®')
+        .replace(/â„¢/g, '™')
+        .replace(/Ã©/g, 'é')
+        .replace(/Ã¨/g, 'è')
+        .replace(/Ã /g, 'à')
+        .replace(/Ã´/g, 'ô');
+}
+
+// Fetch games from API with caching
+async function fetchGamesData(source = 'steamrip') {
+    const cacheKey = `games_${source}`;
+    const cachedData = gamesCache.get(cacheKey);
+    
+    if (cachedData) {
+        return cachedData;
+    }
+
+    let endpoint = `${GAMES_API_URL}/json/games`;
+    if (source === 'fitgirl') {
+        endpoint = `${GAMES_API_URL}/json/sources/fitgirl/games`;
+    }
+
     try {
-        await new Promise(resolve => setTimeout(resolve, 500));
-        
-        const response = await axios.get(url, {
-            headers: {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
-                'Accept-Language': 'en-US,en;q=0.9',
-                'Referer': 'https://steamunderground.net/'
+        const response = await axios.get(endpoint);
+        const data = response.data;
+
+        // Sanitize game titles
+        if (data.games) {
+            data.games = data.games.map(game => ({
+                ...game,
+                name: sanitizeGameText(game.name),
+                game: sanitizeGameText(game.game),
+            }));
+        }
+
+        const result = {
+            games: data.games || [],
+            metadata: {
+                apiversion: data.metadata?.apiversion,
+                games: data.games?.length || 0,
+                getDate: data.metadata?.getDate,
+                source: data.metadata?.source || source,
+                imagesAvailable: true,
             },
-            timeout: 15000
-        });
+        };
 
-        const $ = cheerio.load(response.data);
-        const downloadLinks = [];
-
-        $('.download-mirrors-container .DownloadButtonContainer a').each((index, element) => {
-            const $link = $(element);
-            const linkUrl = $link.attr('href');
-            const linkName = $link.text().trim();
-            
-            if (linkUrl && linkName) {
-                downloadLinks.push({
-                    name: linkName,
-                    url: linkUrl
-                });
-            }
-        });
-
-        return downloadLinks;
+        gamesCache.set(cacheKey, result);
+        return result;
     } catch (error) {
-        console.error(`Error getting download links for ${url}:`, error.message);
-        return [];
+        console.warn('Primary Games API failed, trying backup CDN:', error.message);
+        
+        try {
+            const response = await axios.get(GAMES_BACKUP_CDN);
+            const data = response.data;
+
+            if (data.games) {
+                data.games = data.games.map(game => ({
+                    ...game,
+                    name: sanitizeGameText(game.name),
+                    game: sanitizeGameText(game.game),
+                }));
+            }
+
+            const result = {
+                games: data.games || [],
+                metadata: {
+                    apiversion: data.metadata?.apiversion,
+                    games: data.games?.length || 0,
+                    getDate: data.metadata?.getDate,
+                    source: data.metadata?.source || source,
+                    imagesAvailable: false,
+                },
+            };
+
+            gamesCache.set(cacheKey, result);
+            return result;
+        } catch (cdnError) {
+            throw new Error('Failed to fetch game data from both primary and backup sources');
+        }
     }
 }
 
-// Games search endpoint
-app.get('/api/games/search/:query', async (req, res) => {
-    const query = req.params.query || '';
-    
-    if (!query) {
-        return res.status(400).json({ error: 'Query parameter is required' });
-    }
-
+// Get all games
+app.get('/api/games/all', async (req, res) => {
     try {
-        const searchUrl = `https://steamunderground.net/?s=${encodeURIComponent(query)}`;
-        
-        await new Promise(resolve => setTimeout(resolve, 500));
-        
-        const response = await axios.get(searchUrl, {
-            headers: {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
-                'Accept-Language': 'en-US,en;q=0.9',
-                'Referer': 'https://steamunderground.net/'
-            },
-            timeout: 15000,
-            validateStatus: function (status) {
-                return status >= 200 && status < 500;
-            }
-        });
-
-        if (response.status === 403) {
-            return res.status(403).json({ 
-                error: 'Access blocked by website', 
-                message: 'The website is blocking automated requests.'
-            });
-        }
-
-        const $ = cheerio.load(response.data);
-        const games = [];
-
-        // Parse search results (limit to 20)
-        const gamePromises = [];
-        
-        $('li.row-type.content_out').each((index, element) => {
-            // Limit to 20 results
-            if (index >= 20) return false;
-            
-            const $item = $(element);
-            
-            const $titleLink = $item.find('h4.title a');
-            const title = $titleLink.text().trim();
-            const link = $titleLink.attr('href');
-            const image = $item.find('.thumb img').attr('src');
-            const excerpt = $item.find('.excerpt').text().trim();
-            const date = $item.find('.post-date').text().trim();
-            
-            const versionMatch = title.match(/\(([^)]+)\)$/);
-            const version = versionMatch ? versionMatch[1] : 'Latest';
-            
-            if (title && link) {
-                // Create a promise to get download links for each game
-                const gamePromise = getGameDownloadLinks(link.trim()).then(downloadLinks => ({
-                    title,
-                    link: link.trim(),
-                    image: image || null,
-                    version: version,
-                    excerpt: excerpt.substring(0, 150) || null,
-                    date: date || null,
-                    downloadLinks: downloadLinks
-                }));
-                
-                gamePromises.push(gamePromise);
-            }
-        });
-
-        // Wait for all download links to be fetched
-        const gamesWithDownloads = await Promise.all(gamePromises);
-
-        res.json({ 
-            query: query,
-            count: gamesWithDownloads.length,
-            games: gamesWithDownloads 
-        });
-
+        const source = req.query.source || 'steamrip';
+        const data = await fetchGamesData(source);
+        res.json(data);
     } catch (error) {
-        console.error('Error scraping games:', error.message);
         res.status(500).json({ 
-            error: 'Failed to scrape data', 
+            error: 'Failed to fetch games', 
             message: error.message 
         });
     }
+});
+
+// Get random top games (for carousel/home screen)
+app.get('/api/games/random', async (req, res) => {
+    try {
+        const count = parseInt(req.query.count) || 8;
+        const minWeight = parseInt(req.query.minWeight) || 7;
+        const source = req.query.source || 'steamrip';
+        
+        const { games } = await fetchGamesData(source);
+        
+        // Filter games with high weights and images
+        const validGames = games.filter(game => 
+            game.weight >= minWeight && game.imgID
+        );
+
+        // Shuffle and return requested number of games
+        const shuffled = validGames.sort(() => 0.5 - Math.random());
+        const result = shuffled.slice(0, count);
+        
+        res.json({ 
+            games: result,
+            count: result.length 
+        });
+    } catch (error) {
+        res.status(500).json({ 
+            error: 'Failed to fetch random games', 
+            message: error.message 
+        });
+    }
+});
+
+// Search games
+app.get('/api/games/search/:query', async (req, res) => {
+    try {
+        const query = req.params.query || '';
+        const source = req.query.source || 'steamrip';
+        
+        if (!query.trim()) {
+            return res.json({ games: [], count: 0 });
+        }
+
+        const { games } = await fetchGamesData(source);
+        const searchTerm = query.toLowerCase();
+        
+        const results = games.filter(game =>
+            game.title?.toLowerCase().includes(searchTerm) ||
+            game.game?.toLowerCase().includes(searchTerm) ||
+            game.description?.toLowerCase().includes(searchTerm)
+        );
+        
+        res.json({ 
+            games: results, 
+            count: results.length,
+            query: query 
+        });
+    } catch (error) {
+        res.status(500).json({ 
+            error: 'Failed to search games', 
+            message: error.message 
+        });
+    }
+});
+
+// Get games by category
+app.get('/api/games/category/:category', async (req, res) => {
+    try {
+        const { category } = req.params;
+        const source = req.query.source || 'steamrip';
+        
+        const { games } = await fetchGamesData(source);
+        
+        const results = games.filter(game =>
+            game.category && 
+            Array.isArray(game.category) && 
+            game.category.includes(category)
+        );
+        
+        res.json({ 
+            games: results, 
+            count: results.length,
+            category: category 
+        });
+    } catch (error) {
+        res.status(500).json({ 
+            error: 'Failed to fetch games by category', 
+            message: error.message 
+        });
+    }
+});
+
+// Get specific game by image ID
+app.get('/api/games/:imgID', async (req, res) => {
+    try {
+        const { imgID } = req.params;
+        const source = req.query.source || 'steamrip';
+        
+        const { games } = await fetchGamesData(source);
+        
+        const game = games.find(g => g.imgID === imgID);
+        
+        if (!game) {
+            return res.status(404).json({ 
+                error: 'Game not found',
+                imgID: imgID 
+            });
+        }
+        
+        res.json({ game });
+    } catch (error) {
+        res.status(500).json({ 
+            error: 'Failed to fetch game', 
+            message: error.message 
+        });
+    }
+});
+
+// Proxy for game images
+app.get('/api/games/image/:imgID', async (req, res) => {
+    try {
+        const { imgID } = req.params;
+        const source = req.query.source || 'steamrip';
+        
+        let imageUrl;
+        if (source === 'fitgirl') {
+            imageUrl = `${GAMES_API_URL}/v2/fitgirl/image/${imgID}`;
+        } else {
+            imageUrl = `${GAMES_API_URL}/v2/image/${imgID}`;
+        }
+        
+        console.log(`[GAMES] Fetching image from: ${imageUrl}`);
+        
+        const response = await axios.get(imageUrl, { 
+            responseType: 'arraybuffer',
+            timeout: 10000
+        });
+        
+        res.set('Content-Type', response.headers['content-type'] || 'image/jpeg');
+        res.set('Cache-Control', 'public, max-age=86400'); // Cache for 24 hours
+        res.send(response.data);
+    } catch (error) {
+        console.error(`[GAMES] Image fetch error for ${req.params.imgID}:`, error.message);
+        // Return a 404 instead of JSON error so image onerror handles it
+        res.status(404).send('Image not found');
+    }
+});
+
+// Get all categories
+app.get('/api/games/categories', async (req, res) => {
+    try {
+        const source = req.query.source || 'steamrip';
+        const { games } = await fetchGamesData(source);
+        
+        const categoriesSet = new Set();
+        games.forEach(game => {
+            if (game.category && Array.isArray(game.category)) {
+                game.category.forEach(cat => categoriesSet.add(cat));
+            }
+        });
+        
+        const categories = Array.from(categoriesSet).sort();
+        
+        res.json({ 
+            categories,
+            count: categories.length 
+        });
+    } catch (error) {
+        res.status(500).json({ 
+            error: 'Failed to fetch categories', 
+            message: error.message 
+        });
+    }
+});
+
+// Get game covers for search (limited results)
+app.get('/api/games/covers', async (req, res) => {
+    try {
+        const query = req.query.q || '';
+        const limit = parseInt(req.query.limit) || 20;
+        const source = req.query.source || 'steamrip';
+        
+        if (!query.trim()) {
+            return res.json({ covers: [], count: 0 });
+        }
+
+        const { games } = await fetchGamesData(source);
+        const searchTerm = query.toLowerCase();
+        
+        const results = games
+            .filter(game => game.game?.toLowerCase().includes(searchTerm))
+            .slice(0, limit)
+            .map(game => ({
+                id: game.game,
+                title: game.game,
+                imgID: game.imgID,
+            }));
+        
+        res.json({ 
+            covers: results, 
+            count: results.length,
+            query: query 
+        });
+    } catch (error) {
+        res.status(500).json({ 
+            error: 'Failed to search covers', 
+            message: error.message 
+        });
+    }
+});
+
+// Clear games cache endpoint
+app.post('/api/games/cache/clear', (req, res) => {
+    gamesCache.flushAll();
+    res.json({ 
+        message: 'Games cache cleared successfully',
+        timestamp: new Date().toISOString()
+    });
 });
 
 // ============================================================================
