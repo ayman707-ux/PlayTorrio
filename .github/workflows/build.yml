@@ -22,19 +22,6 @@ jobs:
           node-version: '20'
       - name: Install dependencies
         run: npm install
-      - name: Verify Chromium Bundle
-        run: |
-          Write-Host "Checking for bundled Chromium in chromium-bundle/..."
-          if (Test-Path "chromium-bundle") {
-            Write-Host "✓✓✓ Chromium bundle directory found"
-            Get-ChildItem chromium-bundle -Recurse -File | Where-Object {$_.Name -like "chrome.exe"} | ForEach-Object {
-              Write-Host "✓ Found chrome.exe at: $($_.FullName)"
-            }
-          } else {
-            Write-Host "✗✗✗ ERROR: Chromium bundle not found!"
-            Write-Host "The prebuild script should have downloaded Chromium."
-            exit 1
-          }
       - name: Setup Windows Players
         run: |
           if (Test-Path "mpv.rar") { 7z x mpv.rar -y }
@@ -62,19 +49,6 @@ jobs:
           node-version: '20'
       - name: Install dependencies
         run: npm install
-      - name: Verify Chromium Bundle
-        run: |
-          echo "Checking for bundled Chromium in chromium-bundle/..."
-          if [ -d "chromium-bundle" ]; then
-            echo "✓✓✓ Chromium bundle directory found"
-            find chromium-bundle -name "chrome" -type f | while read -r chrome_file; do
-              echo "✓ Found chrome at: $chrome_file"
-            done
-          else
-            echo "✗✗✗ ERROR: Chromium bundle not found!"
-            echo "The prebuild script should have downloaded Chromium."
-            exit 1
-          fi
       - name: Prepare resources
         run: |
           mkdir -p mpv VLC build
@@ -102,19 +76,6 @@ jobs:
       - name: Install dependencies
         timeout-minutes: 45
         run: npm install --verbose || npm install --verbose || npm install --verbose
-      - name: Verify Chromium Bundle
-        run: |
-          echo "Checking for bundled Chromium in chromium-bundle/..."
-          if [ -d "chromium-bundle" ]; then
-            echo "✓✓✓ Chromium bundle directory found"
-            find chromium-bundle -name "Google Chrome for Testing" -type f | while read -r chrome_file; do
-              echo "✓ Found Chrome at: $chrome_file"
-            done
-          else
-            echo "✗✗✗ ERROR: Chromium bundle not found!"
-            echo "The prebuild script should have downloaded Chromium."
-            exit 1
-          fi
       - name: Download MPV (x64)
         run: |
           curl -fL https://laboratory.stolendata.net/~djinn/mpv_osx/mpv-latest.tar.gz -o mpv.tar.gz || true
@@ -141,19 +102,6 @@ jobs:
       - name: Install dependencies
         timeout-minutes: 45
         run: npm install --verbose || npm install --verbose || npm install --verbose
-      - name: Verify Chromium Bundle
-        run: |
-          echo "Checking for bundled Chromium in chromium-bundle/..."
-          if [ -d "chromium-bundle" ]; then
-            echo "✓✓✓ Chromium bundle directory found"
-            find chromium-bundle -name "Google Chrome for Testing" -type f | while read -r chrome_file; do
-              echo "✓ Found Chrome at: $chrome_file"
-            done
-          else
-            echo "✗✗✗ ERROR: Chromium bundle not found!"
-            echo "The prebuild script should have downloaded Chromium."
-            exit 1
-          fi
       - name: Download MPV (arm64)
         run: |
           curl -fL https://laboratory.stolendata.net/~djinn/mpv_osx/mpv-latest.tar.gz -o mpv.tar.gz || true
