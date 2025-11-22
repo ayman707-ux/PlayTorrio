@@ -1,6 +1,6 @@
 {
   "name": "playtorrio",
-  "version": "2.0.9",
+  "version": "2.1.0",
   "description": "Ayman's PlayTorrio an all in one media center",
   "author": {
     "name": "Ayman",
@@ -12,6 +12,7 @@
   "scripts": {
     "start": "electron .",
     "serve": "node server.mjs",
+    "prebuild": "node build/copyChromium.cjs",
     "build": "electron-builder --publish always",
     "postinstall": "electron-builder install-app-deps && node node_modules/puppeteer/install.mjs"
   },
@@ -65,11 +66,13 @@
       "node_modules/**/*",
       "mpv/**",
       "VLC/**",
+      "chromium-bundle/**",
       "!mpv.js-master-updated/**"
     ],
     "asarUnpack": [
       "mpv/**",
       "VLC/**",
+      "chromium-bundle/**",
       "node_modules/ffmpeg-static/**"
     ],
     "extraResources": [],
@@ -97,6 +100,13 @@
         {
           "from": "mpv.js-master-updated",
           "to": "mpv.js-master-updated",
+          "filter": [
+            "**/*"
+          ]
+        },
+        {
+          "from": "chromium-bundle",
+          "to": "chromium-bundle",
           "filter": [
             "**/*"
           ]

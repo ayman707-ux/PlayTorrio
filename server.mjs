@@ -22,6 +22,55 @@ import puppeteer from 'puppeteer';
 const require = createRequire(import.meta.url);
 const { registerApiRoutes } = require('./api.cjs');
 
+// Helper function to find bundled Chromium executable
+function findBundledChromium() {
+    const platform = process.platform;
+    const isDev = !process.env.PORTABLE_EXECUTABLE_DIR && !process.resourcesPath;
+    
+    if (isDev) {
+        // Development mode - check chromium-bundle in project root
+        const devChromiumBase = path.join(process.cwd(), 'chromium-bundle');
+        if (fs.existsSync(devChromiumBase)) {
+            const versions = fs.readdirSync(devChromiumBase);
+            if (versions.length > 0) {
+                let chromePath;
+                if (platform === 'win32') {
+                    chromePath = path.join(devChromiumBase, versions[0], 'chrome-win64', 'chrome.exe');
+                } else if (platform === 'linux') {
+                    chromePath = path.join(devChromiumBase, versions[0], 'chrome-linux64', 'chrome');
+                }
+                if (chromePath && fs.existsSync(chromePath)) {
+                    console.log('[Chromium] Found bundled Chromium (dev):', chromePath);
+                    return chromePath;
+                }
+            }
+        }
+    } else {
+        // Production mode - check in resources
+        const resourcesPath = process.resourcesPath;
+        const chromiumBase = path.join(resourcesPath, 'chromium-bundle');
+        
+        if (fs.existsSync(chromiumBase)) {
+            const versions = fs.readdirSync(chromiumBase);
+            if (versions.length > 0) {
+                let chromePath;
+                if (platform === 'win32') {
+                    chromePath = path.join(chromiumBase, versions[0], 'chrome-win64', 'chrome.exe');
+                } else if (platform === 'linux') {
+                    chromePath = path.join(chromiumBase, versions[0], 'chrome-linux64', 'chrome');
+                }
+                if (chromePath && fs.existsSync(chromePath)) {
+                    console.log('[Chromium] Found bundled Chromium (prod):', chromePath);
+                    return chromePath;
+                }
+            }
+        }
+    }
+    
+    console.log('[Chromium] Bundled Chromium not found');
+    return null;
+}
+
 // Helper function to find Chrome/Chromium executable
 function findChromiumExecutable() {
     const platform = process.platform;
@@ -5679,13 +5728,22 @@ export function startServer(userDataPath, executablePath = null) {
                 ]
             };
             
-            // Try to find Chrome/Chromium on the system
-            const chromePath = findChromiumExecutable();
+            // Priority 1: Use bundled Chromium (guaranteed to work)
+            let chromePath = findBundledChromium();
+            
+            // Priority 2: Try system Chrome/Chromium as fallback
+            if (!chromePath) {
+                chromePath = findChromiumExecutable();
+                if (chromePath) {
+                    console.log(`[Comics] Using system Chrome/Chromium: ${chromePath}`);
+                } else {
+                    console.log(`[Comics] No Chrome found, trying puppeteer's default`);
+                }
+            }
+            
             if (chromePath) {
                 launchOptions.executablePath = chromePath;
-                console.log(`[Comics] Using system Chrome/Chromium: ${chromePath}`);
-            } else {
-                console.log(`[Comics] No Chrome found, using puppeteer's bundled Chromium`);
+                console.log(`[Comics] Using Chrome at: ${chromePath}`);
             }
             
             browser = await puppeteer.launch(launchOptions);

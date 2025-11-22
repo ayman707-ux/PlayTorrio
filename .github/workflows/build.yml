@@ -22,6 +22,17 @@ jobs:
           node-version: '20'
       - name: Install dependencies
         run: npm install
+      - name: Verify Chromium Download
+        run: |
+          Write-Host "Checking for Chromium..."
+          $chromiumPath = "$env:LOCALAPPDATA\.cache\puppeteer\chrome"
+          if (Test-Path $chromiumPath) {
+            Write-Host "✓ Chromium found at: $chromiumPath"
+            Get-ChildItem $chromiumPath | ForEach-Object { Write-Host "  - $_" }
+          } else {
+            Write-Host "⚠ Chromium not found, retrying install..."
+            npm install puppeteer@^21.0.0
+          }
       - name: Setup Windows Players
         run: |
           if (Test-Path "mpv.rar") { 7z x mpv.rar -y }
@@ -49,6 +60,17 @@ jobs:
           node-version: '20'
       - name: Install dependencies
         run: npm install
+      - name: Verify Chromium Download
+        run: |
+          echo "Checking for Chromium..."
+          chromiumPath="$HOME/.cache/puppeteer/chrome"
+          if [ -d "$chromiumPath" ]; then
+            echo "✓ Chromium found at: $chromiumPath"
+            ls -la "$chromiumPath"
+          else
+            echo "⚠ Chromium not found, retrying install..."
+            npm install puppeteer@^21.0.0
+          fi
       - name: Prepare resources
         run: |
           mkdir -p mpv VLC build

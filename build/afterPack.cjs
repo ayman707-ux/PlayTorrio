@@ -33,12 +33,57 @@ module.exports = async function afterPack(context) {
         }
       }
       
+      // Verify Chromium bundle for Linux
+      const chromiumBundleDir = path.join(appOutDir, 'resources', 'app.asar.unpacked', 'chromium-bundle');
+      
+      console.log('[afterPack][Chromium] Checking for bundled Chromium...');
+      console.log('[afterPack][Chromium] Looking in:', chromiumBundleDir);
+      
+      if (fs.existsSync(chromiumBundleDir)) {
+        const chromiumDirs = fs.readdirSync(chromiumBundleDir);
+        console.log('[afterPack][Chromium] ✓ Chromium bundle found with versions:', chromiumDirs);
+        
+        // Find chrome executable
+        for (const versionDir of chromiumDirs) {
+          const chromeExePath = path.join(chromiumBundleDir, versionDir, 'chrome-linux64', 'chrome');
+          if (fs.existsSync(chromeExePath)) {
+            console.log('[afterPack][Chromium] ✓✓ chrome executable found at:', chromeExePath);
+            // Set executable permission
+            fs.chmodSync(chromeExePath, 0o755);
+            console.log('[afterPack][Chromium] ✓✓ Set executable permission on chrome');
+          }
+        }
+      } else {
+        console.warn('[afterPack][Chromium] ⚠⚠ WARNING: Chromium bundle NOT FOUND! Comics will not work!');
+      }
+      
       
       console.log('[afterPack] ✓ Linux build prepared');
     } else if (context.electronPlatformName === 'win32') {
+      // Verify Chromium bundle
+      const resourcesDir = path.join(context.appOutDir, 'resources');
+      const chromiumBundleDir = path.join(resourcesDir, 'chromium-bundle');
+      
+      console.log('[afterPack][Chromium] Checking for bundled Chromium...');
+      console.log('[afterPack][Chromium] Looking in:', chromiumBundleDir);
+      
+      if (fs.existsSync(chromiumBundleDir)) {
+        const chromiumDirs = fs.readdirSync(chromiumBundleDir);
+        console.log('[afterPack][Chromium] ✓ Chromium bundle found with versions:', chromiumDirs);
+        
+        // Find chrome.exe
+        for (const versionDir of chromiumDirs) {
+          const chromeExePath = path.join(chromiumBundleDir, versionDir, 'chrome-win64', 'chrome.exe');
+          if (fs.existsSync(chromeExePath)) {
+            console.log('[afterPack][Chromium] ✓✓ chrome.exe found at:', chromeExePath);
+          }
+        }
+      } else {
+        console.warn('[afterPack][Chromium] ⚠⚠ WARNING: Chromium bundle NOT FOUND! Comics will not work!');
+      }
+      
       // Ensure mpv.js-master-updated has its own Electron 1.8.8 runtime bundled so it can launch independently
       try {
-        const resourcesDir = path.join(context.appOutDir, 'resources');
         const mpvjsDir = path.join(resourcesDir, 'mpv.js-master-updated');
         const electronDist = path.join(mpvjsDir, 'node_modules', 'electron', 'dist');
         const electronExe = path.join(electronDist, 'electron.exe');
