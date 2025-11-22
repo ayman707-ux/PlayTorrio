@@ -197,13 +197,8 @@ class Main extends React.PureComponent {
     const win = remote.getCurrentWindow();
     const newFullscreenState = !this.state.fullscreen;
     
-    if (newFullscreenState) {
-      // Entering fake fullscreen: maximize and hide title bar
-      win.maximize();
-    } else {
-      // Exiting fake fullscreen: unmaximize and show title bar
-      win.unmaximize();
-    }
+    // Use true fullscreen mode which hides taskbar
+    win.setFullScreen(newFullscreenState);
     
     this.setState({fullscreen: newFullscreenState});
   }

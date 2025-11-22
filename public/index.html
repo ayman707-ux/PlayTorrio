@@ -15685,9 +15685,9 @@ Your browser does not support the video tag.
                 }
                 if (grid) grid.innerHTML = '';
                 
-                // Fetch available sports from watchfooty.live
+                // Fetch available sports from watchfooty.st
                 console.log('[LiveTV] Fetching sports from API...');
-                const sportsResponse = await fetch('https://watchfooty.live/api/v1/sports');
+                const sportsResponse = await fetch('https://watchfooty.st/api/v1/sports');
                 
                 if (!sportsResponse.ok) {
                     throw new Error(`API returned ${sportsResponse.status}: ${sportsResponse.statusText}`);
@@ -15770,7 +15770,7 @@ Your browser does not support the video tag.
                 
                 // Fetch matches for the selected sport
                 console.log(`[LiveTV] Fetching matches for category: ${category}`);
-                const response = await fetch(`https://watchfooty.live/api/v1/matches/${category}`);
+                const response = await fetch(`https://watchfooty.st/api/v1/matches/${category}`);
                 if (!response.ok) {
                     throw new Error(`API returned ${response.status}: ${response.statusText}`);
                 }
@@ -15854,7 +15854,7 @@ Your browser does not support the video tag.
                     card.className = 'livetv-match-card';
                     
                     // Use watchfooty poster or fallback
-                    const posterUrl = match.poster ? `https://watchfooty.live${match.poster}` : '';
+                    const posterUrl = match.poster ? `https://watchfooty.st${match.poster}` : '';
                     const posterHTML = posterUrl 
                         ? `<img loading="lazy" src="${posterUrl}" alt="${match.title}" class="livetv-poster" onerror="this.parentElement.querySelector('.livetv-poster-placeholder').style.display='flex'; this.style.display='none';">
                            <div class="livetv-poster-placeholder" style="display:none;"><i class="fas fa-play-circle"></i></div>`
