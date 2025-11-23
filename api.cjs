@@ -2589,6 +2589,10 @@ function lib111477_parseMovieDirectory(html, baseUrl) {
     const files = [];
     const videoExtensions = ['.mkv', '.mp4', '.avi', '.mov', '.wmv', '.flv', '.webm', '.m4v'];
     
+    // Extract base domain from baseUrl
+    const urlObj = new URL(baseUrl);
+    const baseDomain = `${urlObj.protocol}//${urlObj.host}`;
+    
     $('tr').each((index, element) => {
         const link = $(element).find('a').first();
         const href = link.attr('href');
@@ -2603,14 +2607,26 @@ function lib111477_parseMovieDirectory(html, baseUrl) {
         if (hasVideoExtension) {
             const sizeCell = $(element).find('td[data-sort]');
             const fileSize = sizeCell.attr('data-sort') || '0';
-            let fileUrl = href;
-            if (!href.startsWith('http')) {
-                fileUrl = baseUrl.endsWith('/') ? baseUrl + href : baseUrl + '/' + href;
+            
+            let fileUrl;
+            if (href.startsWith('http://') || href.startsWith('https://')) {
+                // Absolute URL
+                fileUrl = href;
+            } else if (href.startsWith('/')) {
+                // Root-relative path
+                fileUrl = baseDomain + href;
+            } else {
+                // Relative path - just append the filename to baseUrl
+                // Make sure baseUrl ends with /
+                const normalizedBase = baseUrl.endsWith('/') ? baseUrl : baseUrl + '/';
+                fileUrl = normalizedBase + encodeURIComponent(fileName);
             }
+            
             files.push({
                 name: fileName,
                 url: fileUrl,
                 size: fileSize,
+                sizeBytes: parseInt(fileSize),
                 sizeFormatted: lib111477_formatFileSize(parseInt(fileSize))
             });
         }
@@ -2639,6 +2655,10 @@ function lib111477_parseTvDirectory(html, baseUrl, filterSeason = null, filterEp
     const files = [];
     const videoExtensions = ['.mkv', '.mp4', '.avi', '.mov', '.wmv', '.flv', '.webm', '.m4v'];
     
+    // Extract base domain from baseUrl
+    const urlObj = new URL(baseUrl);
+    const baseDomain = `${urlObj.protocol}//${urlObj.host}`;
+    
     $('tr').each((index, element) => {
         const link = $(element).find('a').first();
         const href = link.attr('href');
@@ -2660,15 +2680,27 @@ function lib111477_parseTvDirectory(html, baseUrl, filterSeason = null, filterEp
             
             const sizeCell = $(element).find('td[data-sort]');
             const fileSize = sizeCell.attr('data-sort') || '0';
-            let fileUrl = href;
-            if (!href.startsWith('http')) {
-                fileUrl = baseUrl.endsWith('/') ? baseUrl + href : baseUrl + '/' + href;
+            
+            let fileUrl;
+            if (href.startsWith('http://') || href.startsWith('https://')) {
+                // Absolute URL
+                fileUrl = href;
+            } else if (href.startsWith('/')) {
+                // Root-relative path
+                fileUrl = baseDomain + href;
+            } else {
+                // Relative path - just append the filename to baseUrl
+                // Make sure baseUrl ends with /
+                const normalizedBase = baseUrl.endsWith('/') ? baseUrl : baseUrl + '/';
+                fileUrl = normalizedBase + encodeURIComponent(fileName);
             }
+            
             const episodeInfo = lib111477_extractEpisodeInfo(fileName);
             files.push({
                 name: fileName,
                 url: fileUrl,
                 size: fileSize,
+                sizeBytes: parseInt(fileSize),
                 sizeFormatted: lib111477_formatFileSize(parseInt(fileSize)),
                 episode: episodeInfo
             });
