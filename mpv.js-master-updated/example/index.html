@@ -22,6 +22,10 @@
       height: 100%;
       background: #0f0519;
     }
+    .container.hide-cursor,
+    .container.hide-cursor * {
+      cursor: none !important;
+    }
     .title-bar {
       height: 50px;
       background: rgba(15, 5, 25, 0.95);
@@ -182,14 +186,30 @@
     }
     .controls-overlay {
       position: fixed;
+      top: 50px;
       bottom: 0;
       left: 0;
       right: 0;
-      background: linear-gradient(to top, rgba(26, 10, 46, 0.98) 0%, rgba(15, 5, 25, 0.85) 50%, transparent 100%);
-      padding: 80px 50px 30px 50px;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
       transition: opacity 0.3s ease;
       pointer-events: auto;
       z-index: 999999;
+    }
+    .controls-overlay::before {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 300px;
+      background: linear-gradient(to top, rgba(26, 10, 46, 0.98) 0%, rgba(15, 5, 25, 0.85) 50%, transparent 100%);
+      pointer-events: none;
+      z-index: -1;
+    }
+    .controls-content {
+      padding: 0 50px 30px 50px;
     }
     .progress-container {
       width: 100%;

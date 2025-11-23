@@ -2140,7 +2140,7 @@ function startTorrentio() {
  * @param {string} seasonNum - Season number (for shows)
  * @param {string} episodeNum - Episode number (for shows)
  */
-function spawnMpvJsPlayer(url, tmdbId, seasonNum = null, episodeNum = null) {
+function spawnMpvJsPlayer(url, tmdbId, seasonNum = null, episodeNum = null, subtitles = null) {
     if (process.platform !== 'win32') {
         console.log('[MPV.js] Not Windows, skipping mpv.js player');
         return { success: false, message: 'mpv.js player is only available on Windows' };
@@ -2167,18 +2167,25 @@ function spawnMpvJsPlayer(url, tmdbId, seasonNum = null, episodeNum = null) {
         }
         
         // Build args expected by example/index.js:
-        // Order: URL, TMDB ID (optional), Season (optional), Episode (optional)
+        // Order: URL, TMDB ID (optional), Season (optional), Episode (optional), Subtitles JSON (optional)
         // So:
         // - Movies: [indexPath, url, tmdbId]
         // - TV:     [indexPath, url, tmdbId, seasonNum, episodeNum]
+        // - Anime with subs: [indexPath, url, tmdbId, seasonNum, episodeNum, subtitlesJSON]
         let args;
         if (seasonNum && episodeNum) {
             args = [indexPath, url, tmdbId || '', String(seasonNum), String(episodeNum)];
+            if (subtitles && Array.isArray(subtitles) && subtitles.length > 0) {
+                args.push(JSON.stringify(subtitles));
+            }
         } else {
             args = [indexPath, url, tmdbId || ''];
+            if (subtitles && Array.isArray(subtitles) && subtitles.length > 0) {
+                args.push('', '', JSON.stringify(subtitles)); // Empty season/episode for movies
+            }
         }
         
-        console.log('[MPV.js] Spawning player:', { electronPath, args });
+        console.log('[MPV.js] Spawning player:', { electronPath, args, hasSubtitles: !!subtitles });
         
         const playerProcess = spawn(electronPath, args, {
             stdio: 'ignore',
@@ -2387,9 +2394,9 @@ if (!gotLock) {
     });
 
     // IPC handler to spawn mpv.js player (Windows only)
-    ipcMain.handle('spawn-mpvjs-player', async (event, { url, tmdbId, seasonNum, episodeNum }) => {
-        console.log('[MPV.js] Received spawn request:', { url, tmdbId, seasonNum, episodeNum });
-        return spawnMpvJsPlayer(url, tmdbId, seasonNum, episodeNum);
+    ipcMain.handle('spawn-mpvjs-player', async (event, { url, tmdbId, seasonNum, episodeNum, subtitles }) => {
+        console.log('[MPV.js] Received spawn request:', { url, tmdbId, seasonNum, episodeNum, hasSubtitles: !!subtitles });
+        return spawnMpvJsPlayer(url, tmdbId, seasonNum, episodeNum, subtitles);
     });
 
     // Direct MPV launch for external URLs (111477, etc.)

@@ -130,7 +130,39 @@ class Main extends React.PureComponent {
       this.mpv.command("loadfile", initialUrl);
       this.setState({url: initialUrl});
       
-      // Load external subtitles if TMDB ID is provided
+      // Load Realm subtitles if provided (for anime) - DO THIS FIRST
+      const realmSubtitles = remote.getGlobal("subtitles");
+      console.log("[Realm Subtitles] Raw global subtitles:", realmSubtitles);
+      
+      if (realmSubtitles && Array.isArray(realmSubtitles) && realmSubtitles.length > 0) {
+        console.log("[Realm Subtitles] Found subtitles:", realmSubtitles);
+        
+        // Filter out thumbnail tracks
+        const actualSubtitles = realmSubtitles.filter(sub => sub.kind !== 'thumbnails');
+        console.log("[Realm Subtitles] After filtering thumbnails:", actualSubtitles);
+        
+        // Map to the format expected by the player UI
+        // Need: display, id, flagUrl, url
+        const mappedSubtitles = actualSubtitles.map((sub, index) => ({
+          id: `realm_${index}`,
+          display: sub.label || `Track ${index + 1}`,
+          url: sub.url,
+          flagUrl: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMTUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjIwIiBoZWlnaHQ9IjE1IiBmaWxsPSIjOGI1Y2Y2Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtc2l6ZT0iOCIgZmlsbD0id2hpdGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiPlI8L3RleHQ+PC9zdmc+', // Purple "R" badge
+          title: sub.label,
+          language: sub.label,
+          kind: sub.kind
+        }));
+        
+        console.log("[Realm Subtitles] Mapped subtitles:", mappedSubtitles);
+        console.log("[Realm Subtitles] Setting state with externalSubtitles");
+        
+        // Set state synchronously so wyzie check can see it
+        this.state.externalSubtitles = mappedSubtitles;
+        
+        console.log(`[Realm Subtitles] Added ${mappedSubtitles.length} subtitle tracks to menu`);
+      }
+      
+      // Load external subtitles if TMDB ID is provided (only if no Realm subtitles)
       const tmdbId = remote.getGlobal("tmdbId");
       if (tmdbId) {
         this.loadExternalSubtitles(tmdbId);
@@ -138,6 +170,12 @@ class Main extends React.PureComponent {
     }
   }
   loadExternalSubtitles(tmdbId) {
+    // Skip wyzie fetch if Realm subtitles are already loaded
+    if (this.state.externalSubtitles && this.state.externalSubtitles.length > 0) {
+      console.log("[Wyzie Subtitles] Skipping - Realm subtitles already loaded");
+      return;
+    }
+    
     const seasonNum = remote.getGlobal("seasonNum");
     const episodeNum = remote.getGlobal("episodeNum");
     
@@ -429,7 +467,7 @@ class Main extends React.PureComponent {
       : 0;
 
     return (
-      <div className="container" onMouseMove={this.handleMouseMove}>
+      <div className={`container ${this.state.showControls ? '' : 'hide-cursor'}`} onMouseMove={this.handleMouseMove}>
         <div className={`title-bar ${this.state.fullscreen ? 'hidden' : ''}`}>
           <div className="title-bar-drag">
             <div className="title-bar-title">PlayTorrio Player</div>
@@ -465,27 +503,28 @@ class Main extends React.PureComponent {
             </div>
           )}
           <div className="controls-overlay" style={{opacity: this.state.showControls ? 1 : 0}}>
-            <div className="progress-container" 
-                 onClick={(e) => {
-                   if (!this.state.duration) return;
-                   const rect = e.currentTarget.getBoundingClientRect();
-                   const pos = (e.clientX - rect.left) / rect.width;
-                   this.mpv.property("time-pos", pos * this.state.duration);
-                 }}>
-              <div className="progress-bar">
-                <div className="progress-cache" style={{width: `${cachePercent}%`}}></div>
-                <div className="progress-filled" style={{width: `${progressPercent}%`}}>
-                  <div className="progress-thumb"></div>
+            <div className="controls-content">
+              <div className="progress-container" 
+                   onClick={(e) => {
+                     if (!this.state.duration) return;
+                     const rect = e.currentTarget.getBoundingClientRect();
+                     const pos = (e.clientX - rect.left) / rect.width;
+                     this.mpv.property("time-pos", pos * this.state.duration);
+                   }}>
+                <div className="progress-bar">
+                  <div className="progress-cache" style={{width: `${cachePercent}%`}}></div>
+                  <div className="progress-filled" style={{width: `${progressPercent}%`}}>
+                    <div className="progress-thumb"></div>
+                  </div>
                 </div>
               </div>
-            </div>
-            
-            <div className="time-display">
-              <span>{this.formatTime(this.state["time-pos"])}</span>
-              <span>{this.formatTime(this.state.duration)}</span>
-            </div>
+              
+              <div className="time-display">
+                <span>{this.formatTime(this.state["time-pos"])}</span>
+                <span>{this.formatTime(this.state.duration)}</span>
+              </div>
 
-            <div className="controls-bottom">
+              <div className="controls-bottom">
               <div className="controls-left">
                 <button className="control-btn skip" onClick={this.handleSkipBackward} title="Rewind 10s">
                   <svg viewBox="0 0 24 24" width="28" height="28">
@@ -570,6 +609,7 @@ class Main extends React.PureComponent {
                   )}
                 </button>
               </div>
+            </div>
             </div>
           </div>
 

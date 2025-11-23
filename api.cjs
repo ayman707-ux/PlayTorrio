@@ -3263,9 +3263,293 @@ app.get('/health', (req, res) => {
         status: 'healthy',
         uptime: process.uptime(),
         timestamp: new Date().toISOString(),
-        services: ['anime', 'torrentio', 'torrentless', 'zlib', 'otherbook', '111477']
+        services: ['anime', 'torrentio', 'torrentless', 'zlib', 'otherbook', '111477', 'realm']
     });
 });
+
+// ============================================================================
+// REALM ANIME SOURCES
+// ============================================================================
+
+const https = require('https');
+const zlib = require('zlib');
+
+// Proxy endpoint to handle referer headers for realm streams
+app.get('/api/realm/proxy', async (req, res) => {
+    const { url, referer } = req.query;
+    
+    if (!url) {
+        return res.status(400).json({ error: 'Missing url parameter' });
+    }
+    
+    try {
+        const parsedUrl = new URL(url);
+        
+        // Determine if this is an HLS playlist or segment
+        const isPlaylist = parsedUrl.pathname.includes('.m3u8');
+        const isSegment = parsedUrl.pathname.includes('.ts') || parsedUrl.pathname.includes('.aac');
+        
+        const options = {
+            hostname: parsedUrl.hostname,
+            path: parsedUrl.pathname + parsedUrl.search,
+            method: 'GET',
+            headers: {
+                'User-Agent': getRandomUserAgent(),
+                'Accept': isPlaylist ? 'application/vnd.apple.mpegurl, */*' : '*/*',
+                'Accept-Language': 'en-US,en;q=0.9',
+                'Connection': 'keep-alive',
+            }
+        };
+        
+        // Add referer headers if provided - use for all requests
+        const effectiveReferer = referer || parsedUrl.origin;
+        if (effectiveReferer) {
+            options.headers['Referer'] = effectiveReferer;
+            try {
+                options.headers['Origin'] = new URL(effectiveReferer).origin;
+            } catch (e) {
+                options.headers['Origin'] = parsedUrl.origin;
+            }
+        }
+        
+        // Forward Range header from client for seeking
+        if (req.headers.range) {
+            options.headers['Range'] = req.headers.range;
+        }
+        
+        const protocol = parsedUrl.protocol === 'https:' ? https : require('http');
+        
+        const proxyReq = protocol.request(options, (proxyRes) => {
+            // Set status code
+            res.status(proxyRes.statusCode);
+            
+            // For HLS playlists, we need to modify the content to proxy all URLs
+            if (isPlaylist && proxyRes.headers['content-type']?.includes('mpegurl')) {
+                let data = '';
+                
+                proxyRes.on('data', (chunk) => {
+                    data += chunk.toString();
+                });
+                
+                proxyRes.on('end', () => {
+                    // Replace all URLs in the playlist with proxied versions
+                    const lines = data.split('\n');
+                    const modifiedLines = lines.map(line => {
+                        line = line.trim();
+                        
+                        // Skip empty lines and comments (except URI lines)
+                        if (!line || (line.startsWith('#') && !line.includes('URI='))) {
+                            return line;
+                        }
+                        
+                        // Handle #EXT-X-KEY lines with URI
+                        if (line.startsWith('#EXT-X-KEY') && line.includes('URI=')) {
+                            return line.replace(/URI="([^"]+)"/g, (match, uri) => {
+                                const absoluteUrl = uri.startsWith('http') ? uri : new URL(uri, url).href;
+                                const proxiedUrl = `http://localhost:6987/api/realm/proxy?url=${encodeURIComponent(absoluteUrl)}&referer=${encodeURIComponent(effectiveReferer)}`;
+                                return `URI="${proxiedUrl}"`;
+                            });
+                        }
+                        
+                        // Handle segment URLs (non-comment lines)
+                        if (!line.startsWith('#')) {
+                            const absoluteUrl = line.startsWith('http') ? line : new URL(line, url).href;
+                            return `http://localhost:6987/api/realm/proxy?url=${encodeURIComponent(absoluteUrl)}&referer=${encodeURIComponent(effectiveReferer)}`;
+                        }
+                        
+                        return line;
+                    });
+                    
+                    const modifiedPlaylist = modifiedLines.join('\n');
+                    
+                    // Set headers
+                    res.setHeader('Content-Type', 'application/vnd.apple.mpegurl');
+                    res.setHeader('Content-Length', Buffer.byteLength(modifiedPlaylist));
+                    res.setHeader('Access-Control-Allow-Origin', '*');
+                    res.setHeader('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
+                    res.setHeader('Access-Control-Allow-Headers', 'Range, Content-Type, Authorization');
+                    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+                    
+                    res.send(modifiedPlaylist);
+                });
+                
+                proxyRes.on('error', (err) => {
+                    console.error('[Realm Proxy] Playlist error:', err);
+                    if (!res.headersSent) {
+                        res.status(500).json({ error: 'Playlist processing error' });
+                    }
+                });
+            } else {
+                // For non-playlist content, stream directly
+                // Forward important headers
+                if (proxyRes.headers['content-type']) {
+                    res.setHeader('Content-Type', proxyRes.headers['content-type']);
+                }
+                if (proxyRes.headers['content-length']) {
+                    res.setHeader('Content-Length', proxyRes.headers['content-length']);
+                }
+                if (proxyRes.headers['accept-ranges']) {
+                    res.setHeader('Accept-Ranges', proxyRes.headers['accept-ranges']);
+                }
+                if (proxyRes.headers['content-range']) {
+                    res.setHeader('Content-Range', proxyRes.headers['content-range']);
+                }
+                
+                // CORS headers - critical for HLS playback
+                res.setHeader('Access-Control-Allow-Origin', '*');
+                res.setHeader('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
+                res.setHeader('Access-Control-Allow-Headers', 'Range, Content-Type, Authorization');
+                res.setHeader('Access-Control-Expose-Headers', 'Content-Length, Content-Range, Accept-Ranges');
+                
+                // Cache control
+                if (isSegment) {
+                    res.setHeader('Cache-Control', 'public, max-age=31536000');
+                } else {
+                    res.setHeader('Cache-Control', 'no-cache');
+                }
+                
+                // Stream the response directly
+                proxyRes.pipe(res);
+            }
+        });
+        
+        proxyReq.on('error', (error) => {
+            console.error('[Realm Proxy] Request error:', error.message);
+            if (!res.headersSent) {
+                res.status(500).json({ error: 'Proxy request failed', details: error.message });
+            }
+        });
+        
+        // Handle client disconnect
+        req.on('close', () => {
+            proxyReq.destroy();
+        });
+        
+        req.on('error', () => {
+            proxyReq.destroy();
+        });
+        
+        proxyReq.end();
+    } catch (error) {
+        console.error('[Realm Proxy] Error:', error.message);
+        if (!res.headersSent) {
+            res.status(500).json({ error: error.message });
+        }
+    }
+});
+
+// Realm anime sources endpoint
+app.get('/api/realm/:anilistId/:episodeNumber', async (req, res) => {
+    const { anilistId, episodeNumber } = req.params;
+    
+    if (!anilistId || !episodeNumber) {
+        return res.status(400).json({ error: 'Missing anilistId or episodeNumber' });
+    }
+    
+    try {
+        const providers = [
+            'allmanga',
+            'animez',
+            'animepahe',
+            'zencloud',
+            'animepahe-dub',
+            'allmanga-dub',
+            'hanime-tv'
+        ];
+        
+        const results = {};
+        
+        const promises = providers.map(provider =>
+            fetchFromRealmProvider(provider, parseInt(anilistId), parseInt(episodeNumber))
+                .then(data => {
+                    results[provider] = data;
+                })
+                .catch(error => {
+                    results[provider] = { error: error.message };
+                })
+        );
+        
+        await Promise.all(promises);
+        
+        res.json(results);
+    } catch (error) {
+        console.error('[Realm] Error:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+function fetchFromRealmProvider(provider, anilistId, episodeNumber) {
+    return new Promise((resolve, reject) => {
+        const postData = JSON.stringify({
+            provider: provider,
+            anilistId: anilistId,
+            episodeNumber: episodeNumber
+        });
+        
+        const options = {
+            hostname: 'www.animerealms.org',
+            path: '/api/watch',
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Content-Length': Buffer.byteLength(postData),
+                'Referer': 'https://www.animerealms.org/en/watch/' + anilistId + '/' + episodeNumber,
+                'Origin': 'https://www.animerealms.org',
+                'Cookie': '__Host-authjs.csrf-token=78f2694c0cc09f6ce564239018ccc01568c553645944459ef139123511eaa258%7Ce9c67743f1d1a54cf5d25c8a46f1069f92d7d9d1deabdde61e474ae7fde5fb6d; __Secure-authjs.callback-url=https%3A%2F%2Fbeta.animerealms.org',
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36',
+                'Accept': '*/*',
+                'Accept-Language': 'en-US,en;q=0.7',
+                'Accept-Encoding': 'gzip, deflate, br, zstd',
+                'sec-ch-ua': '"Chromium";v="142", "Brave";v="142", "Not_A Brand";v="99"',
+                'sec-ch-ua-mobile': '?0',
+                'sec-ch-ua-platform': '"Windows"',
+                'sec-fetch-dest': 'empty',
+                'sec-fetch-mode': 'cors',
+                'sec-fetch-site': 'same-origin',
+                'sec-gpc': '1',
+                'priority': 'u=1, i'
+            }
+        };
+        
+        const apiRequest = https.request(options, (apiResponse) => {
+            let data = [];
+            
+            apiResponse.on('data', (chunk) => {
+                data.push(chunk);
+            });
+            
+            apiResponse.on('end', () => {
+                try {
+                    const buffer = Buffer.concat(data);
+                    const encoding = apiResponse.headers['content-encoding'];
+                    
+                    let decompressed;
+                    if (encoding === 'gzip') {
+                        decompressed = zlib.gunzipSync(buffer);
+                    } else if (encoding === 'deflate') {
+                        decompressed = zlib.inflateSync(buffer);
+                    } else if (encoding === 'br') {
+                        decompressed = zlib.brotliDecompressSync(buffer);
+                    } else {
+                        decompressed = buffer;
+                    }
+                    
+                    const result = JSON.parse(decompressed.toString());
+                    resolve(result);
+                } catch (error) {
+                    reject(error);
+                }
+            });
+        });
+        
+        apiRequest.on('error', (error) => {
+            reject(error);
+        });
+        
+        apiRequest.write(postData);
+        apiRequest.end();
+    });
+}
 
 // ============================================================================
 // ERROR HANDLERS & SERVER STARTUP

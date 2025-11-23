@@ -36,7 +36,7 @@ app.on("ready", () => {
   win.loadURL(`file://${__dirname}/index.html`);
   
   global.mainWindow = win;
-  // Pass arguments to renderer: URL, TMDB ID, Season, Episode
+  // Pass arguments to renderer: URL, TMDB ID, Season, Episode, Subtitles JSON
   const args = process.argv.filter(arg => !arg.startsWith("-") && arg !== process.execPath && !arg.endsWith("index.js") && !arg.endsWith("example") && !arg.endsWith(".exe"));
   if (args.length > 0) {
     global.initialUrl = args[0];
@@ -48,6 +48,15 @@ app.on("ready", () => {
     }
     if (args.length > 3) {
       global.episodeNum = args[3];
+    }
+    if (args.length > 4) {
+      // Parse subtitles JSON string
+      try {
+        global.subtitles = JSON.parse(args[4]);
+      } catch (e) {
+        console.error('[Subtitles] Failed to parse subtitles JSON:', e);
+        global.subtitles = null;
+      }
     }
   }
 });
