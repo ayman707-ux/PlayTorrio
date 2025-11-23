@@ -8122,6 +8122,10 @@
             <i class="fas fa-book"></i>
             <span>Books</span>
         </div>
+        <div class="floating-nav-item" data-action="audiobooks">
+            <i class="fas fa-headphones"></i>
+            <span>AudioBooks</span>
+        </div>
         <div class="floating-nav-item" data-action="booktorrio">
             <i class="fas fa-book-open"></i>
             <span>BookTorrio</span>
@@ -8224,6 +8228,11 @@
                 <span>Books</span>
                 <span class="nav-badge" style="background: linear-gradient(135deg, #f59e0b, #d97706);">Z-Lib</span>
             </div>
+            <div class="nav-item" data-page="audiobooks">
+                <i class="fas fa-headphones" style="color: #8b5cf6;"></i>
+                <span>AudioBooks</span>
+                <span class="nav-badge" style="background: linear-gradient(135deg, #8b5cf6, #7c3aed);">Audio</span>
+            </div>
             <div class="nav-item" data-page="booktorrio">
                 <i class="fas fa-book-open" style="color: #06b6d4;"></i>
                 <span>BookTorrio</span>
@@ -8234,6 +8243,7 @@
                 <span>Anime</span>
                 <span class="nav-badge" style="background: linear-gradient(135deg, #3b82f6, #2563eb);">Nyaa</span>
             </div>
+
             <div class="nav-item" data-page="comics">
                 <i class="fas fa-mask" style="color: #f97316;"></i>
                 <span>Comics</span>
@@ -10144,6 +10154,115 @@
         </div>
     </div>
 
+    <!-- AudioBooks Page -->
+    <div id="audiobooks-page" style="display: none;">
+        <!-- Books View -->
+        <div id="audiobooks-books-view">
+            <div class="page-header-enhanced">
+                <div class="page-title-section">
+                    <h2 class="section-title">
+                        <i class="fas fa-headphones" style="color: #8b5cf6;"></i> <span>AudioBooks</span>
+                    </h2>
+                    <p class="page-subtitle">Search and stream audiobooks</p>
+                </div>
+            </div>
+
+            <div class="page-content">
+                <!-- Search Section -->
+                <div class="search-section" style="margin-bottom: 2rem;">
+                    <div class="search-container-books">
+                        <input type="text" id="audiobookSearchInput" placeholder="Search for audiobooks..." class="search-input-books">
+                        <button id="searchAudioBooksBtn" class="search-btn-books">
+                            <i class="fas fa-search"></i> Search
+                        </button>
+                        <button id="clearAudioBookSearchBtn" class="search-btn-books" style="margin-left: 0.5rem; background: #e74c3c; display: none;">
+                            <i class="fas fa-arrow-left"></i> Back to Home
+                        </button>
+                    </div>
+                </div>
+
+                <div id="audiobookSearchResults" class="books-grid">
+                    <div class="search-placeholder">
+                        <i class="fas fa-headphones" style="font-size: 3rem; color: #8b5cf6; margin-bottom: 1rem;"></i>
+                        <h3>Discover AudioBooks</h3>
+                        <p>Browse audiobooks or search for your favorites</p>
+                    </div>
+                </div>
+
+                <!-- Loading indicator -->
+                <div id="audiobookLoading" style="display: none; text-align: center; padding: 2rem;">
+                    <i class="fas fa-spinner fa-spin" style="font-size: 2rem; color: #8b5cf6;"></i>
+                    <p style="margin-top: 1rem; color: #666;">Loading audiobooks...</p>
+                </div>
+
+                <!-- Load More Button -->
+                <div id="audiobookLoadMoreContainer" style="display: none; text-align: center; margin: 2rem auto; width: 100%;">
+                    <button id="audiobookLoadMoreBtn" class="action-btn" style="background: linear-gradient(135deg, #8b5cf6, #7c3aed); padding: 1rem 2.5rem; font-size: 1rem;">
+                        <i class="fas fa-plus-circle"></i> Load More
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Chapters View -->
+        <div id="audiobooks-chapters-view" style="display: none;">
+            <div class="page-header-enhanced">
+                <div class="page-title-section">
+                    <button id="audiobooksBackToBooks" class="action-btn" style="margin-right: 1rem;">
+                        <i class="fas fa-arrow-left"></i> Back to Books
+                    </button>
+                    <h2 class="section-title" id="audiobooksChapterBookTitle" style="color: #8b5cf6;">
+                        <i class="fas fa-headphones"></i> <span></span>
+                    </h2>
+                </div>
+            </div>
+
+            <div class="page-content">
+                <div id="audiobooksChapterLoading" style="display: none; text-align: center; padding: 2rem;">
+                    <i class="fas fa-spinner fa-spin" style="font-size: 2rem; color: #8b5cf6;"></i>
+                    <p style="margin-top: 1rem; color: #666;">Loading chapters...</p>
+                </div>
+
+                <div id="audiobooksChaptersList" style="display: flex; flex-direction: column; gap: 10px;">
+                    <!-- Chapters will be inserted here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Audio Player (Fixed at bottom within audiobooks page) -->
+        <div id="audiobooksPlayer" style="display: none; position: fixed; bottom: 0; left: 240px; right: 0; background: linear-gradient(135deg, #8b5cf6, #7c3aed); padding: 20px; box-shadow: 0 -5px 20px rgba(0,0,0,0.3); z-index: 1000;">
+            <button id="audiobooksClosePlayer" style="position: absolute; top: 10px; right: 10px; background: rgba(255,255,255,0.2); border: none; color: white; width: 30px; height: 30px; border-radius: 50%; cursor: pointer; font-size: 18px;">✕</button>
+            
+            <div style="max-width: 1200px; margin: 0 auto;">
+                <div style="color: white; margin-bottom: 15px; text-align: center;">
+                    <div id="audiobooksPlayerTitle" style="font-size: 18px; font-weight: 600; margin-bottom: 5px;">No Audio Selected</div>
+                    <div id="audiobooksPlayerChapter" style="font-size: 14px; opacity: 0.9;"></div>
+                </div>
+                
+                <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px;">
+                    <button id="audiobooksPrevBtn" class="action-btn" style="background: rgba(255,255,255,0.2); color: white; min-width: 45px; padding: 0.5rem;">⏮</button>
+                    <button id="audiobooksPlayPauseBtn" class="action-btn" style="background: white; color: #8b5cf6; font-size: 24px; min-width: 55px; padding: 0.75rem;">▶</button>
+                    <button id="audiobooksNextBtn" class="action-btn" style="background: rgba(255,255,255,0.2); color: white; min-width: 45px; padding: 0.5rem;">⏭</button>
+                    
+                    <div style="flex: 1; display: flex; align-items: center; gap: 10px;">
+                        <span id="audiobooksCurrentTime" style="color: white; font-size: 13px; min-width: 45px;">0:00</span>
+                        <div id="audiobooksProgressBar" style="flex: 1; height: 6px; background: rgba(255,255,255,0.3); border-radius: 3px; cursor: pointer; position: relative;">
+                            <div id="audiobooksProgressFilled" style="height: 100%; background: white; border-radius: 3px; width: 0%; position: relative;">
+                                <div style="position: absolute; right: -6px; top: 50%; transform: translateY(-50%); width: 12px; height: 12px; background: white; border-radius: 50%; box-shadow: 0 2px 5px rgba(0,0,0,0.3);"></div>
+                            </div>
+                        </div>
+                        <span id="audiobooksDuration" style="color: white; font-size: 13px; min-width: 45px;">0:00</span>
+                    </div>
+
+                    <button id="audiobooksVolumeBtn" class="action-btn" style="background: rgba(255,255,255,0.2); color: white; min-width: 45px; padding: 0.5rem;">🔊</button>
+                    <input type="range" id="audiobooksVolumeSlider" min="0" max="100" value="100" style="width: 80px;">
+                </div>
+            </div>
+        </div>
+
+        <audio id="audiobooksAudioElement" preload="metadata"></audio>
+    </div>
+
     <!-- BookTorrio Page -->
     <div id="booktorrio-page" style="display: none;">
         <div class="page-header-enhanced">
@@ -11691,6 +11810,7 @@ Your browser does not support the video tag.
             setupEventListeners();
             initIptvSourceSelector(); // Initialize IPTV dropdown
             initializeBookTorrio(); // Initialize BookTorrio functionality
+            initializeAudioBooks(); // Initialize AudioBooks functionality
             initializeAnime(); // Initialize Anime functionality
             // Comics initialization moved to showSection when page is shown
             initializeManga(); // Initialize Manga functionality
@@ -15672,6 +15792,374 @@ Your browser does not support the video tag.
             window.location.hash = '#/music';
         }
         
+        function showAudioBooksPage() {
+            window.location.hash = '#/audiobooks';
+            loadInitialAudioBooks();
+        }
+
+        let allAudioBooks = [];
+        let isAudioBookSearchMode = false;
+        let currentAudioBookChapters = [];
+        let currentAudioBookChapterIndex = 0;
+        let currentAudioBookTitle = '';
+        let currentAudioBookPage = 1;
+        let isLoadingMoreAudioBooks = false;
+
+        async function loadInitialAudioBooks() {
+            try {
+                const booksView = document.getElementById('audiobooks-books-view');
+                const chaptersView = document.getElementById('audiobooks-chapters-view');
+                const resultsContainer = document.getElementById('audiobookSearchResults');
+                const loadingEl = document.getElementById('audiobookLoading');
+                const clearBtn = document.getElementById('clearAudioBookSearchBtn');
+                const loadMoreContainer = document.getElementById('audiobookLoadMoreContainer');
+                
+                // Reset page counter
+                currentAudioBookPage = 1;
+                isAudioBookSearchMode = false;
+                
+                // Show books view, hide chapters view
+                booksView.style.display = 'block';
+                chaptersView.style.display = 'none';
+                clearBtn.style.display = 'none';
+                
+                resultsContainer.innerHTML = '';
+                loadingEl.style.display = 'block';
+                
+                const response = await fetch('/api/audiobooks/all');
+                const data = await response.json();
+                
+                if (data.success && data.data.length > 0) {
+                    allAudioBooks = data.data;
+                    displayAudioBooks(data.data);
+                    loadMoreContainer.style.display = 'block';
+                } else {
+                    resultsContainer.innerHTML = `
+                        <div class="search-placeholder">
+                            <i class="fas fa-exclamation-circle" style="font-size: 3rem; color: #e74c3c; margin-bottom: 1rem;"></i>
+                            <h3>No AudioBooks Found</h3>
+                            <p>Unable to load audiobooks at this time</p>
+                        </div>
+                    `;
+                    loadMoreContainer.style.display = 'none';
+                }
+            } catch (error) {
+                console.error('Error loading audiobooks:', error);
+                const resultsContainer = document.getElementById('audiobookSearchResults');
+                resultsContainer.innerHTML = `
+                    <div class="search-placeholder">
+                        <i class="fas fa-exclamation-circle" style="font-size: 3rem; color: #e74c3c; margin-bottom: 1rem;"></i>
+                        <h3>Error Loading AudioBooks</h3>
+                        <p>${error.message}</p>
+                    </div>
+                `;
+                document.getElementById('audiobookLoadMoreContainer').style.display = 'none';
+            } finally {
+                document.getElementById('audiobookLoading').style.display = 'none';
+            }
+        }
+
+        async function loadMoreAudioBooks() {
+            if (isLoadingMoreAudioBooks || isAudioBookSearchMode) return;
+            
+            try {
+                isLoadingMoreAudioBooks = true;
+                const loadMoreBtn = document.getElementById('audiobookLoadMoreBtn');
+                const originalText = loadMoreBtn.innerHTML;
+                loadMoreBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading...';
+                loadMoreBtn.disabled = true;
+                
+                currentAudioBookPage++;
+                const response = await fetch(`/api/audiobooks/more/${currentAudioBookPage}`);
+                const data = await response.json();
+                
+                if (data.success && data.data.length > 0) {
+                    allAudioBooks = [...allAudioBooks, ...data.data];
+                    displayAudioBooks(allAudioBooks);
+                    loadMoreBtn.innerHTML = originalText;
+                    loadMoreBtn.disabled = false;
+                } else {
+                    loadMoreBtn.innerHTML = '<i class="fas fa-check-circle"></i> No More Books';
+                    setTimeout(() => {
+                        document.getElementById('audiobookLoadMoreContainer').style.display = 'none';
+                    }, 2000);
+                }
+            } catch (error) {
+                console.error('Error loading more audiobooks:', error);
+                currentAudioBookPage--; // Revert page increment
+                const loadMoreBtn = document.getElementById('audiobookLoadMoreBtn');
+                loadMoreBtn.innerHTML = '<i class="fas fa-plus-circle"></i> Load More';
+                loadMoreBtn.disabled = false;
+                showNotification('Error loading more books', 'error');
+            } finally {
+                isLoadingMoreAudioBooks = false;
+            }
+        }
+
+        async function searchAudioBooks(query) {
+            try {
+                const resultsContainer = document.getElementById('audiobookSearchResults');
+                const loadingEl = document.getElementById('audiobookLoading');
+                const clearBtn = document.getElementById('clearAudioBookSearchBtn');
+                const loadMoreContainer = document.getElementById('audiobookLoadMoreContainer');
+                
+                resultsContainer.innerHTML = '';
+                loadingEl.style.display = 'block';
+                
+                const response = await fetch(`/api/audiobooks/search?q=${encodeURIComponent(query)}`);
+                const data = await response.json();
+                
+                if (data.success && data.data.length > 0) {
+                    isAudioBookSearchMode = true;
+                    clearBtn.style.display = 'inline-block';
+                    loadMoreContainer.style.display = 'none';
+                    displayAudioBooks(data.data);
+                } else {
+                    clearBtn.style.display = 'inline-block';
+                    loadMoreContainer.style.display = 'none';
+                    resultsContainer.innerHTML = `
+                        <div class="search-placeholder">
+                            <i class="fas fa-search" style="font-size: 3rem; color: #8b5cf6; margin-bottom: 1rem;"></i>
+                            <h3>No Results Found</h3>
+                            <p>Try searching for something else</p>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                console.error('Error searching audiobooks:', error);
+                const resultsContainer = document.getElementById('audiobookSearchResults');
+                resultsContainer.innerHTML = `
+                    <div class="search-placeholder">
+                        <i class="fas fa-exclamation-circle" style="font-size: 3rem; color: #e74c3c; margin-bottom: 1rem;"></i>
+                        <h3>Search Error</h3>
+                        <p>${error.message}</p>
+                    </div>
+                `;
+                document.getElementById('audiobookLoadMoreContainer').style.display = 'none';
+            } finally {
+                document.getElementById('audiobookLoading').style.display = 'none';
+            }
+        }
+
+        function displayAudioBooks(audiobooks) {
+            const resultsContainer = document.getElementById('audiobookSearchResults');
+            resultsContainer.innerHTML = '';
+            
+            audiobooks.forEach(book => {
+                const bookCard = document.createElement('div');
+                bookCard.className = 'book-card';
+                bookCard.style.cursor = 'pointer';
+                
+                bookCard.innerHTML = `
+                    <img src="${book.image || 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22200%22 height=%22280%22%3E%3Crect fill=%22%23ddd%22 width=%22200%22 height=%22280%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%23999%22 font-family=%22Arial%22 font-size=%2216%22%3ENo Image%3C/text%3E%3C/svg%3E'}" 
+                         alt="${book.title}" 
+                         class="book-cover"
+                         onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22200%22 height=%22280%22%3E%3Crect fill=%22%23ddd%22 width=%22200%22 height=%22280%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%23999%22 font-family=%22Arial%22 font-size=%2216%22%3ENo Image%3C/text%3E%3C/svg%3E'">
+                    <div class="book-info">
+                        <h3 class="book-title">${book.title}</h3>
+                    </div>
+                `;
+                
+                bookCard.onclick = () => openAudioBookChapters(book);
+                resultsContainer.appendChild(bookCard);
+            });
+        }
+
+        async function openAudioBookChapters(book) {
+            try {
+                const booksView = document.getElementById('audiobooks-books-view');
+                const chaptersView = document.getElementById('audiobooks-chapters-view');
+                const chapterTitle = document.getElementById('audiobooksChapterBookTitle').querySelector('span');
+                const chaptersList = document.getElementById('audiobooksChaptersList');
+                const chapterLoading = document.getElementById('audiobooksChapterLoading');
+                
+                currentAudioBookTitle = book.title;
+                chapterTitle.textContent = book.title;
+                
+                booksView.style.display = 'none';
+                chaptersView.style.display = 'block';
+                chapterLoading.style.display = 'block';
+                chaptersList.innerHTML = '';
+                
+                const response = await fetch(`/api/audiobooks/chapters/${book.post_name}`);
+                const data = await response.json();
+                
+                if (data.success && data.data) {
+                    currentAudioBookChapters = data.data;
+                    renderAudioBookChapters();
+                } else {
+                    chaptersList.innerHTML = `
+                        <div style="text-align: center; padding: 2rem; color: #666;">
+                            <i class="fas fa-exclamation-circle" style="font-size: 3rem; color: #e74c3c; margin-bottom: 1rem;"></i>
+                            <h3>Failed to Load Chapters</h3>
+                            <p>Unable to load chapters for this audiobook</p>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                console.error('Error loading chapters:', error);
+                const chaptersList = document.getElementById('audiobooksChaptersList');
+                chaptersList.innerHTML = `
+                    <div style="text-align: center; padding: 2rem; color: #666;">
+                        <i class="fas fa-exclamation-circle" style="font-size: 3rem; color: #e74c3c; margin-bottom: 1rem;"></i>
+                        <h3>Error Loading Chapters</h3>
+                        <p>${error.message}</p>
+                    </div>
+                `;
+            } finally {
+                document.getElementById('audiobooksChapterLoading').style.display = 'none';
+            }
+        }
+
+        function renderAudioBookChapters() {
+            const chaptersList = document.getElementById('audiobooksChaptersList');
+            chaptersList.innerHTML = '';
+            
+            currentAudioBookChapters.forEach((chapter, index) => {
+                const chapterItem = document.createElement('div');
+                chapterItem.className = 'book-card';
+                chapterItem.style.cursor = 'pointer';
+                chapterItem.style.padding = '15px 20px';
+                chapterItem.style.display = 'flex';
+                chapterItem.style.justifyContent = 'space-between';
+                chapterItem.style.alignItems = 'center';
+                chapterItem.style.gap = '10px';
+                chapterItem.setAttribute('data-chapter-index', index);
+                
+                const chapterInfo = document.createElement('div');
+                chapterInfo.style.flex = '1';
+                chapterInfo.style.display = 'flex';
+                chapterInfo.style.justifyContent = 'space-between';
+                chapterInfo.style.alignItems = 'center';
+                chapterInfo.style.minWidth = '0';
+                chapterInfo.innerHTML = `
+                    <span style="font-weight: 600; font-size: 15px;">${chapter.track}. ${chapter.name}</span>
+                    <span style="color: #666; font-size: 13px;">${chapter.duration}</span>
+                `;
+                chapterInfo.onclick = () => playAudioBookChapter(index);
+                
+                const downloadBtn = document.createElement('button');
+                downloadBtn.className = 'action-btn';
+                downloadBtn.innerHTML = '<i class="fas fa-download"></i> Download';
+                downloadBtn.style.background = 'linear-gradient(135deg, #8b5cf6, #7c3aed)';
+                downloadBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    downloadAudioBookChapter(chapter, index);
+                };
+                
+                chapterItem.appendChild(chapterInfo);
+                chapterItem.appendChild(downloadBtn);
+                chaptersList.appendChild(chapterItem);
+            });
+        }
+
+        async function playAudioBookChapter(index) {
+            try {
+                currentAudioBookChapterIndex = index;
+                const chapter = currentAudioBookChapters[index];
+                
+                // Skip welcome track
+                if (chapter.chapter_id === "0" || chapter.post_id === "0") {
+                    if (index < currentAudioBookChapters.length - 1) {
+                        playAudioBookChapter(index + 1);
+                    }
+                    return;
+                }
+                
+                const playerEl = document.getElementById('audiobooksPlayer');
+                const audioEl = document.getElementById('audiobooksAudioElement');
+                const titleEl = document.getElementById('audiobooksPlayerTitle');
+                const chapterEl = document.getElementById('audiobooksPlayerChapter');
+                const playPauseBtn = document.getElementById('audiobooksPlayPauseBtn');
+                
+                updateAudioBookChapterActive(index);
+                titleEl.textContent = currentAudioBookTitle;
+                chapterEl.textContent = chapter.name;
+                playerEl.style.display = 'block';
+                
+                const response = await fetch('/api/audiobooks/stream', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        chapterId: parseInt(chapter.chapter_id),
+                        serverType: 1
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success && data.data.link_mp3) {
+                    audioEl.src = data.data.link_mp3;
+                    audioEl.play();
+                    playPauseBtn.textContent = '⏸';
+                } else {
+                    showNotification('Failed to get audio stream', 'error');
+                }
+            } catch (error) {
+                console.error('Error playing chapter:', error);
+                showNotification('Error playing chapter: ' + error.message, 'error');
+            }
+        }
+
+        async function downloadAudioBookChapter(chapter, index) {
+            try {
+                if (chapter.chapter_id === "0" || chapter.post_id === "0") {
+                    showNotification('Cannot download welcome track', 'error');
+                    return;
+                }
+                
+                const response = await fetch('/api/audiobooks/stream', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        chapterId: parseInt(chapter.chapter_id),
+                        serverType: 1
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success && data.data.link_mp3) {
+                    // Open download link in default browser
+                    if (window.electronAPI && window.electronAPI.openExternal) {
+                        await window.electronAPI.openExternal(data.data.link_mp3);
+                        showNotification('Opening download in browser', 'success');
+                    } else {
+                        // Fallback for non-Electron environments
+                        window.open(data.data.link_mp3, '_blank');
+                        showNotification('Download opened', 'success');
+                    }
+                } else {
+                    showNotification('Failed to get download link', 'error');
+                }
+            } catch (error) {
+                console.error('Error downloading chapter:', error);
+                showNotification('Error downloading: ' + error.message, 'error');
+            }
+        }
+
+        function updateAudioBookChapterActive(index) {
+            const items = document.querySelectorAll('#audiobooksChaptersList .book-card');
+            items.forEach((item, i) => {
+                if (i === index) {
+                    item.style.background = 'linear-gradient(135deg, #8b5cf6, #7c3aed)';
+                    item.style.color = 'white';
+                    item.querySelector('span:last-child').style.color = 'rgba(255,255,255,0.9)';
+                } else {
+                    item.style.background = '';
+                    item.style.color = '';
+                    item.querySelector('span:last-child').style.color = '#666';
+                }
+            });
+        }
+
+        function formatAudioTime(seconds) {
+            if (isNaN(seconds)) return '0:00';
+            const mins = Math.floor(seconds / 60);
+            const secs = Math.floor(seconds % 60);
+            return `${mins}:${secs.toString().padStart(2, '0')}`;
+        }
+        
         function showBookTorrioPage() {
             window.location.hash = '#/booktorrio';
         }
@@ -17994,6 +18482,8 @@ Your browser does not support the video tag.
                         showMiniGamesPage();
                     } else if (page === 'books') {
                         showBooksPage();
+                    } else if (page === 'audiobooks') {
+                        showAudioBooksPage();
                     } else if (page === 'music') {
                         showMusicPage();
                     } else if (page === 'booktorrio') {
@@ -18095,6 +18585,9 @@ Your browser does not support the video tag.
                                 break;
                             case 'books':
                                 showBooksPage();
+                                break;
+                            case 'audiobooks':
+                                showAudioBooksPage();
                                 break;
                             case 'booktorrio':
                                 showBookTorrioPage();
@@ -22387,6 +22880,10 @@ Your browser does not support the video tag.
     activeRoute = 'books';
     showSection('books');
     return;
+} else if (hash === '#/audiobooks') {
+    activeRoute = 'audiobooks';
+    showSection('audiobooks');
+    return;
 } else if (hash === '#/music') {
     activeRoute = 'music';
     showSection('music');
@@ -22428,7 +22925,7 @@ Your browser does not support the video tag.
             const allPageIds = [
                 'homePage','genresPage','genreDetailsPage','myListPage','doneWatchingPage',
                 'trakt-page','livetv-page','iptv-page','games-downloader-page','minigames-page','books-page','music-page',
-                'booktorrio-page','anime-page','comics-page','comics-reader-page','manga-page','manga-reader-page','downloader-page','settings-page'
+                'audiobooks-page','booktorrio-page','anime-page','comics-page','comics-reader-page','manga-page','manga-reader-page','downloader-page','settings-page'
             ];
             allPageIds.forEach(id => { const el = document.getElementById(id); if (el) el.style.display = 'none'; });
 
@@ -22469,6 +22966,7 @@ Your browser does not support the video tag.
                 'minigames': 'minigames-page',
                 'books': 'books-page',
                 'music': 'music-page',
+                'audiobooks': 'audiobooks-page',
                 'booktorrio': 'booktorrio-page',
                 'anime': 'anime-page',
                 'comics': 'comics-page',
@@ -27320,6 +27818,158 @@ Your browser does not support the video tag.
                 }
             } catch {
                 htmlSubsList.innerHTML = '<div class="subs-help">Failed to load subtitles.</div>';
+            }
+        }
+
+        // ---- AudioBooks functionality ----
+        function initializeAudioBooks() {
+            const searchInput = document.getElementById('audiobookSearchInput');
+            const searchBtn = document.getElementById('searchAudioBooksBtn');
+            const clearBtn = document.getElementById('clearAudioBookSearchBtn');
+            const backToBooks = document.getElementById('audiobooksBackToBooks');
+            const closePlayer = document.getElementById('audiobooksClosePlayer');
+            const playPauseBtn = document.getElementById('audiobooksPlayPauseBtn');
+            const prevBtn = document.getElementById('audiobooksPrevBtn');
+            const nextBtn = document.getElementById('audiobooksNextBtn');
+            const progressBar = document.getElementById('audiobooksProgressBar');
+            const volumeBtn = document.getElementById('audiobooksVolumeBtn');
+            const volumeSlider = document.getElementById('audiobooksVolumeSlider');
+            const audioEl = document.getElementById('audiobooksAudioElement');
+
+            if (!searchInput || !searchBtn || !clearBtn) return;
+
+            // Search on button click
+            searchBtn.addEventListener('click', () => {
+                const query = searchInput.value.trim();
+                if (query) {
+                    searchAudioBooks(query);
+                }
+            });
+
+            // Search on Enter key
+            searchInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    const query = searchInput.value.trim();
+                    if (query) {
+                        searchAudioBooks(query);
+                    }
+                }
+            });
+
+            // Clear search and return to home
+            clearBtn.addEventListener('click', () => {
+                searchInput.value = '';
+                isAudioBookSearchMode = false;
+                clearBtn.style.display = 'none';
+                loadInitialAudioBooks();
+            });
+
+            // Back to books button
+            if (backToBooks) {
+                backToBooks.addEventListener('click', () => {
+                    document.getElementById('audiobooks-books-view').style.display = 'block';
+                    document.getElementById('audiobooks-chapters-view').style.display = 'none';
+                });
+            }
+
+            // Close player
+            if (closePlayer && audioEl) {
+                closePlayer.addEventListener('click', () => {
+                    audioEl.pause();
+                    document.getElementById('audiobooksPlayer').style.display = 'none';
+                    playPauseBtn.textContent = '▶';
+                });
+            }
+
+            // Play/Pause
+            if (playPauseBtn && audioEl) {
+                playPauseBtn.addEventListener('click', () => {
+                    if (audioEl.paused) {
+                        audioEl.play();
+                        playPauseBtn.textContent = '⏸';
+                    } else {
+                        audioEl.pause();
+                        playPauseBtn.textContent = '▶';
+                    }
+                });
+            }
+
+            // Previous chapter
+            if (prevBtn) {
+                prevBtn.addEventListener('click', () => {
+                    if (currentAudioBookChapterIndex > 0) {
+                        playAudioBookChapter(currentAudioBookChapterIndex - 1);
+                    }
+                });
+            }
+
+            // Next chapter
+            if (nextBtn) {
+                nextBtn.addEventListener('click', () => {
+                    if (currentAudioBookChapterIndex < currentAudioBookChapters.length - 1) {
+                        playAudioBookChapter(currentAudioBookChapterIndex + 1);
+                    }
+                });
+            }
+
+            // Progress bar
+            if (audioEl && progressBar) {
+                audioEl.addEventListener('timeupdate', () => {
+                    const percent = (audioEl.currentTime / audioEl.duration) * 100;
+                    document.getElementById('audiobooksProgressFilled').style.width = percent + '%';
+                    document.getElementById('audiobooksCurrentTime').textContent = formatAudioTime(audioEl.currentTime);
+                });
+
+                audioEl.addEventListener('loadedmetadata', () => {
+                    document.getElementById('audiobooksDuration').textContent = formatAudioTime(audioEl.duration);
+                });
+
+                progressBar.addEventListener('click', (e) => {
+                    const rect = progressBar.getBoundingClientRect();
+                    const percent = (e.clientX - rect.left) / rect.width;
+                    audioEl.currentTime = percent * audioEl.duration;
+                });
+
+                // Auto-play next chapter
+                audioEl.addEventListener('ended', () => {
+                    if (currentAudioBookChapterIndex < currentAudioBookChapters.length - 1) {
+                        playAudioBookChapter(currentAudioBookChapterIndex + 1);
+                    } else {
+                        playPauseBtn.textContent = '▶';
+                    }
+                });
+            }
+
+            // Volume control
+            if (volumeSlider && audioEl && volumeBtn) {
+                volumeSlider.addEventListener('input', (e) => {
+                    audioEl.volume = e.target.value / 100;
+                    if (audioEl.volume === 0) {
+                        volumeBtn.textContent = '🔇';
+                    } else if (audioEl.volume < 0.5) {
+                        volumeBtn.textContent = '🔉';
+                    } else {
+                        volumeBtn.textContent = '🔊';
+                    }
+                });
+
+                volumeBtn.addEventListener('click', () => {
+                    if (audioEl.volume > 0) {
+                        audioEl.volume = 0;
+                        volumeSlider.value = 0;
+                        volumeBtn.textContent = '🔇';
+                    } else {
+                        audioEl.volume = 1;
+                        volumeSlider.value = 100;
+                        volumeBtn.textContent = '🔊';
+                    }
+                });
+            }
+
+            // Load More button
+            const loadMoreBtn = document.getElementById('audiobookLoadMoreBtn');
+            if (loadMoreBtn) {
+                loadMoreBtn.addEventListener('click', loadMoreAudioBooks);
             }
         }
 

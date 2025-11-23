@@ -366,6 +366,7 @@ export function startServer(userDataPath, executablePath = null) {
 
     app.use(cors());
     app.use(express.static(path.join(__dirname, 'public')));
+    app.use('/audiobooks', express.static(path.join(__dirname, 'AudioBooks', 'public')));
     app.use(express.json());
     
     // Apply cache middleware to all API routes

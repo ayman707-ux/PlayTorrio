@@ -3552,6 +3552,324 @@ function fetchFromRealmProvider(provider, anilistId, episodeNumber) {
 }
 
 // ============================================================================
+// AUDIOBOOKS API (zaudiobooks.com scraper)
+// ============================================================================
+
+app.get('/api/audiobooks/all', async (req, res) => {
+    try {
+        const response = await axios.get('https://zaudiobooks.com/');
+        const html = response.data;
+        const $ = cheerio.load(html);
+        
+        const audiobooks = [];
+        
+        $('#more_content_books .post').each((index, element) => {
+            const $element = $(element);
+            const $summary = $element.find('.summary');
+            
+            const link = $summary.find('a').first().attr('href');
+            const image = $summary.find('img').attr('src');
+            const title = $summary.find('.news-title a').text().trim();
+            
+            if (title && link) {
+                audiobooks.push({
+                    title: title,
+                    link: link,
+                    image: image || '',
+                    post_name: link.split('/').filter(Boolean).pop()
+                });
+            }
+        });
+        
+        res.json({
+            success: true,
+            count: audiobooks.length,
+            data: audiobooks
+        });
+    } catch (error) {
+        console.error('[AUDIOBOOKS] Error fetching:', error.message);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to fetch audiobooks'
+        });
+    }
+});
+
+app.get('/api/audiobooks/search', async (req, res) => {
+    try {
+        const query = req.query.q;
+        if (!query) {
+            return res.status(400).json({ success: false, error: 'Query parameter required' });
+        }
+        
+        const searchUrl = `https://zaudiobooks.com/?s=${encodeURIComponent(query)}`;
+        const response = await axios.get(searchUrl);
+        const html = response.data;
+        const $ = cheerio.load(html);
+        
+        const audiobooks = [];
+        
+        // Parse search results from article.post elements
+        const articles = $('article.post');
+        
+        // Fetch images for each book by visiting their individual pages
+        const bookPromises = [];
+        
+        articles.each((index, element) => {
+            const $article = $(element);
+            const title = $article.find('.entry-title a').text().trim();
+            const link = $article.find('.entry-title a').attr('href');
+            
+            if (title && link) {
+                bookPromises.push(
+                    axios.get(link)
+                        .then(pageResponse => {
+                            const page$ = cheerio.load(pageResponse.data);
+                            const image = page$('meta[property="og:image:secure_url"]').attr('content') || '';
+                            
+                            return {
+                                title: title,
+                                link: link,
+                                image: image,
+                                post_name: link.split('/').filter(Boolean).pop()
+                            };
+                        })
+                        .catch(error => {
+                            console.error(`[AUDIOBOOKS] Error fetching image for ${link}:`, error.message);
+                            return {
+                                title: title,
+                                link: link,
+                                image: '',
+                                post_name: link.split('/').filter(Boolean).pop()
+                            };
+                        })
+                );
+            }
+        });
+        
+        const results = await Promise.all(bookPromises);
+        
+        res.json({
+            success: true,
+            query: query,
+            count: results.length,
+            data: results
+        });
+    } catch (error) {
+        console.error('[AUDIOBOOKS] Search error:', error.message);
+        res.status(500).json({
+            success: false,
+            error: 'Search failed'
+        });
+    }
+});
+
+// AudioBooks load more endpoint
+app.get('/api/audiobooks/more/:page', async (req, res) => {
+    try {
+        const page = parseInt(req.params.page) || 2;
+        
+        const response = await axios.post(
+            'https://zaudiobooks.com/api/top_view_more_public.php',
+            { page: page },
+            {
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            }
+        );
+        
+        const books = response.data;
+        
+        // Transform the data to a consistent format
+        const audiobooks = books.map(book => ({
+            post_id: book.post_id,
+            title: book.post_title,
+            post_name: book.post_name,
+            image: book.image ? `https://zaudiobooks.com/wp-content/uploads/post_images/${book.image}` : '',
+            link: `https://zaudiobooks.com/${book.post_name}`,
+            score: book.score
+        }));
+        
+        res.json({
+            success: true,
+            page: page,
+            count: audiobooks.length,
+            data: audiobooks
+        });
+    } catch (error) {
+        console.error('[AUDIOBOOKS] Load more error:', error.message);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to load more audiobooks'
+        });
+    }
+});
+
+app.get('/api/audiobooks/details/:post_name', async (req, res) => {
+    try {
+        const postName = req.params.post_name;
+        const url = `https://zaudiobooks.com/${postName}/`;
+        
+        const response = await axios.get(url);
+        const html = response.data;
+        const $ = cheerio.load(html);
+        
+        const title = $('.entry-title').text().trim();
+        const image = $('.entry-content img').first().attr('src');
+        const description = $('.entry-content p').first().text().trim();
+        
+        const downloadLinks = [];
+        $('.entry-content a').each((index, element) => {
+            const $link = $(element);
+            const href = $link.attr('href');
+            const text = $link.text().trim();
+            
+            if (href && (href.includes('mega.nz') || href.includes('drive.google') || 
+                         href.includes('mediafire') || href.includes('dropbox') ||
+                         text.toLowerCase().includes('download'))) {
+                downloadLinks.push({
+                    text: text,
+                    url: href
+                });
+            }
+        });
+        
+        res.json({
+            success: true,
+            data: {
+                title,
+                image,
+                description,
+                downloadLinks
+            }
+        });
+    } catch (error) {
+        console.error('[AUDIOBOOKS] Details error:', error.message);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to fetch details'
+        });
+    }
+});
+
+// AudioBooks chapters endpoint
+app.get('/api/audiobooks/chapters/:post_name', async (req, res) => {
+    try {
+        const postName = req.params.post_name;
+        const bookUrl = `https://zaudiobooks.com/${postName}/`;
+        
+        const response = await axios.get(bookUrl, {
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36',
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+                'Accept-Language': 'en-US,en;q=0.9',
+                'Referer': 'https://zaudiobooks.com/'
+            }
+        });
+        const html = response.data;
+        
+        // Extract tracks array from the JavaScript code
+        const startMatch = html.match(/tracks\s*=\s*\[/);
+        
+        if (startMatch) {
+            const startIndex = startMatch.index + startMatch[0].length - 1;
+            let bracketCount = 0;
+            let endIndex = startIndex;
+            
+            // Find the matching closing bracket
+            for (let i = startIndex; i < html.length; i++) {
+                if (html[i] === '[' || html[i] === '{') bracketCount++;
+                if (html[i] === ']' || html[i] === '}') bracketCount--;
+                
+                if (bracketCount === 0 && html[i] === ']') {
+                    endIndex = i + 1;
+                    break;
+                }
+            }
+            
+            const tracksStr = html.substring(startIndex, endIndex);
+            
+            try {
+                // Clean up the JavaScript object to make it valid JSON
+                let tracksJson = tracksStr
+                    .replace(/,(\s*[}\]])/g, '$1')         // Remove trailing commas
+                    .replace(/(\s)(\w+):/g, '$1"$2":')     // Add quotes to keys
+                    .replace(/'/g, '"');                    // Replace single quotes
+                
+                const chapters = JSON.parse(tracksJson);
+                
+                res.json({
+                    success: true,
+                    postName: postName,
+                    count: chapters.length,
+                    data: chapters
+                });
+            } catch (parseError) {
+                console.error('[AUDIOBOOKS] Parse error:', parseError.message);
+                res.status(500).json({
+                    success: false,
+                    error: 'Failed to parse chapters data'
+                });
+            }
+        } else {
+            res.status(404).json({
+                success: false,
+                error: 'Chapters not found on page'
+            });
+        }
+    } catch (error) {
+        console.error('[AUDIOBOOKS] Chapters error:', error.message);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to fetch chapters'
+        });
+    }
+});
+
+// AudioBooks stream endpoint
+app.post('/api/audiobooks/stream', async (req, res) => {
+    try {
+        const { chapterId, serverType = 1 } = req.body;
+        
+        if (!chapterId) {
+            return res.status(400).json({
+                success: false,
+                error: 'chapterId is required'
+            });
+        }
+        
+        const response = await axios.post(
+            'https://api.galaxyaudiobook.com/api/getMp3Link',
+            {
+                chapterId: parseInt(chapterId),
+                serverType: serverType
+            },
+            {
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json, text/javascript, */*; q=0.01',
+                    'Origin': 'https://zaudiobooks.com',
+                    'Referer': 'https://zaudiobooks.com/',
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36'
+                }
+            }
+        );
+        
+        res.json({
+            success: true,
+            data: response.data
+        });
+    } catch (error) {
+        console.error('[AUDIOBOOKS] Stream error:', error.message);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to get stream link'
+        });
+    }
+});
+
+// ============================================================================
 // ERROR HANDLERS & SERVER STARTUP
 // ============================================================================
 
