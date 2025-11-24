@@ -3719,13 +3719,79 @@
             box-shadow: 0 8px 25px rgba(6, 182, 212, 0.2);
         }
         
+        .book-cover-container {
+            position: relative;
+            width: 100%;
+            margin-bottom: 1rem;
+        }
+        
         .book-cover {
             width: 100%;
             height: 200px;
             object-fit: cover;
             border-radius: 12px;
-            margin-bottom: 1rem;
             background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
+            display: block;
+        }
+        
+        .playtorrio-logo {
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            width: 50%;
+            height: 50%;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 2px;
+            border-radius: 0 0 12px 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            backdrop-filter: blur(10px);
+            border-left: 2px solid rgba(139, 92, 246, 0.5);
+            border-top: 2px solid rgba(139, 92, 246, 0.5);
+            box-shadow: 
+                0 -2px 15px rgba(139, 92, 246, 0.3),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1),
+                0 4px 10px rgba(0, 0, 0, 0.3);
+            z-index: 10;
+            pointer-events: none;
+            overflow: hidden;
+        }
+        
+        .playtorrio-logo::before {
+            content: '▶';
+            font-size: 1.8rem;
+            color: #8b5cf6;
+            filter: drop-shadow(0 2px 6px rgba(139, 92, 246, 0.8));
+            animation: pulse 2s ease-in-out infinite;
+            margin-bottom: 2px;
+        }
+        
+        .playtorrio-logo::after {
+            content: 'AUDIOBOOK';
+            font-size: 0.65rem;
+            font-weight: 600;
+            letter-spacing: 2.5px;
+            color: rgba(255, 255, 255, 0.9);
+            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+            border-top: 1px solid rgba(139, 92, 246, 0.3);
+            padding-top: 4px;
+            width: 90%;
+            text-align: center;
+        }
+        
+        @keyframes pulse {
+            0%, 100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+            50% {
+                transform: scale(1.1);
+                opacity: 0.8;
+            }
         }
         
         .book-title {
@@ -10231,7 +10297,7 @@
 
         <!-- Audio Player (Fixed at bottom within audiobooks page) -->
         <div id="audiobooksPlayer" style="display: none; position: fixed; bottom: 0; left: 240px; right: 0; background: linear-gradient(135deg, #8b5cf6, #7c3aed); padding: 20px; box-shadow: 0 -5px 20px rgba(0,0,0,0.3); z-index: 1000;">
-            <button id="audiobooksClosePlayer" style="position: absolute; top: 10px; right: 10px; background: rgba(255,255,255,0.2); border: none; color: white; width: 30px; height: 30px; border-radius: 50%; cursor: pointer; font-size: 18px;">✕</button>
+            <button id="audiobooksClosePlayer" style="position: absolute; top: 10px; right: 10px; background: rgba(255,255,255,0.2); border: none; color: white; width: 30px; height: 30px; border-radius: 50%; cursor: pointer; font-size: 18px; display: flex; align-items: center; justify-content: center; transition: all 0.3s;">✕</button>
             
             <div style="max-width: 1200px; margin: 0 auto;">
                 <div style="color: white; margin-bottom: 15px; text-align: center;">
@@ -10240,9 +10306,9 @@
                 </div>
                 
                 <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px;">
-                    <button id="audiobooksPrevBtn" class="action-btn" style="background: rgba(255,255,255,0.2); color: white; min-width: 45px; padding: 0.5rem;">⏮</button>
-                    <button id="audiobooksPlayPauseBtn" class="action-btn" style="background: white; color: #8b5cf6; font-size: 24px; min-width: 55px; padding: 0.75rem;">▶</button>
-                    <button id="audiobooksNextBtn" class="action-btn" style="background: rgba(255,255,255,0.2); color: white; min-width: 45px; padding: 0.5rem;">⏭</button>
+                    <button id="audiobooksPrevBtn" class="action-btn" style="background: rgba(255,255,255,0.2); color: white; min-width: 45px; height: 45px; padding: 0; display: flex; align-items: center; justify-content: center; font-size: 18px; transition: all 0.3s;"><i class="fas fa-step-backward"></i></button>
+                    <button id="audiobooksPlayPauseBtn" class="action-btn" style="background: white; color: #8b5cf6; font-size: 20px; min-width: 55px; height: 55px; padding: 0; display: flex; align-items: center; justify-content: center; transition: all 0.3s;"><i class="fas fa-play"></i></button>
+                    <button id="audiobooksNextBtn" class="action-btn" style="background: rgba(255,255,255,0.2); color: white; min-width: 45px; height: 45px; padding: 0; display: flex; align-items: center; justify-content: center; font-size: 18px; transition: all 0.3s;"><i class="fas fa-step-forward"></i></button>
                     
                     <div style="flex: 1; display: flex; align-items: center; gap: 10px;">
                         <span id="audiobooksCurrentTime" style="color: white; font-size: 13px; min-width: 45px;">0:00</span>
@@ -10254,7 +10320,7 @@
                         <span id="audiobooksDuration" style="color: white; font-size: 13px; min-width: 45px;">0:00</span>
                     </div>
 
-                    <button id="audiobooksVolumeBtn" class="action-btn" style="background: rgba(255,255,255,0.2); color: white; min-width: 45px; padding: 0.5rem;">🔊</button>
+                    <button id="audiobooksVolumeBtn" class="action-btn" style="background: rgba(255,255,255,0.2); color: white; min-width: 45px; height: 45px; padding: 0; display: flex; align-items: center; justify-content: center; font-size: 18px; transition: all 0.3s;"><i class="fas fa-volume-up"></i></button>
                     <input type="range" id="audiobooksVolumeSlider" min="0" max="100" value="100" style="width: 80px;">
                 </div>
             </div>
@@ -15831,7 +15897,12 @@ Your browser does not support the video tag.
                 
                 if (data.success && data.data.length > 0) {
                     allAudioBooks = data.data;
-                    displayAudioBooks(data.data);
+                    // Filter out specific audiobooks for home page display
+                    const filteredBooks = data.data.filter(book => {
+                        const title = book.title.toLowerCase();
+                        return !title.includes('1001 nights') && !title.includes('the fox and the wolf');
+                    });
+                    displayAudioBooks(filteredBooks);
                     loadMoreContainer.style.display = 'block';
                 } else {
                     resultsContainer.innerHTML = `
@@ -15875,7 +15946,12 @@ Your browser does not support the video tag.
                 
                 if (data.success && data.data.length > 0) {
                     allAudioBooks = [...allAudioBooks, ...data.data];
-                    displayAudioBooks(allAudioBooks);
+                    // Filter out specific audiobooks from display
+                    const filteredBooks = allAudioBooks.filter(book => {
+                        const title = book.title.toLowerCase();
+                        return !title.includes('1001 nights') && !title.includes('the fox and the wolf');
+                    });
+                    displayAudioBooks(filteredBooks);
                     loadMoreBtn.innerHTML = originalText;
                     loadMoreBtn.disabled = false;
                 } else {
@@ -15951,10 +16027,13 @@ Your browser does not support the video tag.
                 bookCard.style.cursor = 'pointer';
                 
                 bookCard.innerHTML = `
-                    <img src="${book.image || 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22200%22 height=%22280%22%3E%3Crect fill=%22%23ddd%22 width=%22200%22 height=%22280%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%23999%22 font-family=%22Arial%22 font-size=%2216%22%3ENo Image%3C/text%3E%3C/svg%3E'}" 
-                         alt="${book.title}" 
-                         class="book-cover"
-                         onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22200%22 height=%22280%22%3E%3Crect fill=%22%23ddd%22 width=%22200%22 height=%22280%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%23999%22 font-family=%22Arial%22 font-size=%2216%22%3ENo Image%3C/text%3E%3C/svg%3E'">
+                    <div class="book-cover-container">
+                        <img src="${book.image || 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22200%22 height=%22280%22%3E%3Crect fill=%22%23ddd%22 width=%22200%22 height=%22280%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%23999%22 font-family=%22Arial%22 font-size=%2216%22%3ENo Image%3C/text%3E%3C/svg%3E'}" 
+                             alt="${book.title}" 
+                             class="book-cover"
+                             onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22200%22 height=%22280%22%3E%3Crect fill=%22%23ddd%22 width=%22200%22 height=%22280%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%23999%22 font-family=%22Arial%22 font-size=%2216%22%3ENo Image%3C/text%3E%3C/svg%3E'">
+                        <div class="playtorrio-logo">PlayTorrio</div>
+                    </div>
                     <div class="book-info">
                         <h3 class="book-title">${book.title}</h3>
                     </div>
@@ -16091,7 +16170,7 @@ Your browser does not support the video tag.
                 if (data.success && data.data.link_mp3) {
                     audioEl.src = data.data.link_mp3;
                     audioEl.play();
-                    playPauseBtn.textContent = '⏸';
+                    playPauseBtn.innerHTML = '<i class="fas fa-pause"></i>';
                 } else {
                     showNotification('Failed to get audio stream', 'error');
                 }
@@ -27877,7 +27956,7 @@ Your browser does not support the video tag.
                 closePlayer.addEventListener('click', () => {
                     audioEl.pause();
                     document.getElementById('audiobooksPlayer').style.display = 'none';
-                    playPauseBtn.textContent = '▶';
+                    playPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
                 });
             }
 
@@ -27886,10 +27965,10 @@ Your browser does not support the video tag.
                 playPauseBtn.addEventListener('click', () => {
                     if (audioEl.paused) {
                         audioEl.play();
-                        playPauseBtn.textContent = '⏸';
+                        playPauseBtn.innerHTML = '<i class="fas fa-pause"></i>';
                     } else {
                         audioEl.pause();
-                        playPauseBtn.textContent = '▶';
+                        playPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
                     }
                 });
             }
@@ -27935,7 +28014,7 @@ Your browser does not support the video tag.
                     if (currentAudioBookChapterIndex < currentAudioBookChapters.length - 1) {
                         playAudioBookChapter(currentAudioBookChapterIndex + 1);
                     } else {
-                        playPauseBtn.textContent = '▶';
+                        playPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
                     }
                 });
             }
@@ -27945,11 +28024,11 @@ Your browser does not support the video tag.
                 volumeSlider.addEventListener('input', (e) => {
                     audioEl.volume = e.target.value / 100;
                     if (audioEl.volume === 0) {
-                        volumeBtn.textContent = '🔇';
+                        volumeBtn.innerHTML = '<i class="fas fa-volume-mute"></i>';
                     } else if (audioEl.volume < 0.5) {
-                        volumeBtn.textContent = '🔉';
+                        volumeBtn.innerHTML = '<i class="fas fa-volume-down"></i>';
                     } else {
-                        volumeBtn.textContent = '🔊';
+                        volumeBtn.innerHTML = '<i class="fas fa-volume-up"></i>';
                     }
                 });
 
@@ -27957,11 +28036,11 @@ Your browser does not support the video tag.
                     if (audioEl.volume > 0) {
                         audioEl.volume = 0;
                         volumeSlider.value = 0;
-                        volumeBtn.textContent = '🔇';
+                        volumeBtn.innerHTML = '<i class="fas fa-volume-mute"></i>';
                     } else {
                         audioEl.volume = 1;
                         volumeSlider.value = 100;
-                        volumeBtn.textContent = '🔊';
+                        volumeBtn.innerHTML = '<i class="fas fa-volume-up"></i>';
                     }
                 });
             }
