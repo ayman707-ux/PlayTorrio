@@ -3902,6 +3902,398 @@ app.post('/api/audiobooks/stream', async (req, res) => {
 });
 
 // ============================================================================
+// MANGA SERVICE (WeebCentral scraper)
+// ============================================================================
+
+// API endpoint to scrape manga data
+app.get('/api/manga/all', async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const response = await axios.get(`https://weebcentral.com/latest-updates/${page}`, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36'
+      }
+    });
+
+    const $ = cheerio.load(response.data);
+    const mangas = [];
+
+    // Parse each article element
+    $('article.bg-base-100').each((index, element) => {
+      const $article = $(element);
+      
+      // Get manga name from data-tip attribute
+      const name = $article.attr('data-tip');
+      
+      // Get poster URL and series ID from the first link
+      const $posterLink = $article.find('a').first();
+      const seriesPageUrl = $posterLink.attr('href');
+      const posterUrl = $article.find('source[type="image/webp"]').attr('srcset') || 
+                       $article.find('img').attr('src');
+      
+      // Extract series ID from series page URL: https://weebcentral.com/series/01JZ0EQ9370BN5XD4GN2SD77N1/...
+      const seriesIdMatch = seriesPageUrl?.match(/\/series\/([^\/]+)/);
+      const seriesId = seriesIdMatch ? seriesIdMatch[1] : null;
+      
+      // Get the chapter URL from the second link (latest chapter)
+      const $chapterLink = $article.find('a').eq(1);
+      const latestChapterUrl = $chapterLink.attr('href');
+      const chapterIdMatch = latestChapterUrl?.match(/\/chapters\/([^\/]+)/);
+      const chapterId = chapterIdMatch ? chapterIdMatch[1] : null;
+      
+      if (name && posterUrl && seriesId && chapterId) {
+        mangas.push({
+          id: index,
+          name: name,
+          poster: posterUrl,
+          seriesId: seriesId,
+          latestChapterId: chapterId
+        });
+      }
+    });
+
+    res.json({
+      success: true,
+      count: mangas.length,
+      data: mangas
+    });
+  } catch (error) {
+    console.error('[MANGA] Scraping error:', error.message);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// Search API endpoint
+app.get('/api/manga/search', async (req, res) => {
+  try {
+    const query = req.query.q || '';
+    if (!query.trim()) {
+      return res.json({
+        success: true,
+        count: 0,
+        data: []
+      });
+    }
+
+    const response = await axios.get('https://weebcentral.com/search/data', {
+      params: {
+        author: '',
+        text: query,
+        sort: 'Best Match',
+        order: 'Descending',
+        official: 'Any',
+        anime: 'Any',
+        adult: 'Any',
+        display_mode: 'Full Display'
+      },
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36'
+      }
+    });
+
+    const $ = cheerio.load(response.data);
+    const mangas = [];
+
+    // Parse search results
+    $('article.bg-base-300').each((index, element) => {
+      const $article = $(element);
+      
+      // Get manga name and series info from the link
+      const $link = $article.find('a[href*="/series/"]').first();
+      const seriesUrl = $link.attr('href');
+      const name = $link.attr('href')?.split('/').pop()?.replace(/-/g, ' ').trim() || 
+                   $article.find('.line-clamp-1').text().trim();
+      
+      // Extract series ID from URL: https://weebcentral.com/series/01J76XYBPP2A7D38XGF4PSQVPD/...
+      const seriesIdMatch = seriesUrl?.match(/\/series\/([^\/]+)/);
+      const seriesId = seriesIdMatch ? seriesIdMatch[1] : null;
+      
+      // Get poster URL
+      const posterUrl = $article.find('source[type="image/webp"]').attr('srcset') || 
+                       $article.find('img').attr('src');
+      
+      // Get latest chapter link if available (might be in the article)
+      const $chapterLink = $article.find('a[href*="/chapters/"]').first();
+      const latestChapterUrl = $chapterLink.attr('href');
+      const latestChapterIdMatch = latestChapterUrl?.match(/\/chapters\/([^\/]+)/);
+      const latestChapterId = latestChapterIdMatch ? latestChapterIdMatch[1] : null;
+      
+      if (name && posterUrl && seriesId) {
+        mangas.push({
+          id: `${query}-${index}`,
+          name: name,
+          poster: posterUrl,
+          seriesId: seriesId,
+          latestChapterId: latestChapterId
+        });
+      }
+    });
+
+    res.json({
+      success: true,
+      count: mangas.length,
+      data: mangas
+    });
+  } catch (error) {
+    console.error('[MANGA] Search error:', error.message);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// Get chapters for a manga series
+app.get('/api/manga/chapters', async (req, res) => {
+  try {
+    const seriesId = req.query.seriesId;
+    let latestChapterId = req.query.latestChapterId;
+    
+    if (!seriesId) {
+      return res.status(400).json({
+        success: false,
+        error: 'seriesId required'
+      });
+    }
+
+    // If latestChapterId is not provided or is 'latest', fetch the series page to get it
+    if (!latestChapterId || latestChapterId === 'latest') {
+      try {
+        const seriesPageResponse = await axios.get(`https://weebcentral.com/series/${seriesId}`, {
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36'
+          }
+        });
+        
+        const $series = cheerio.load(seriesPageResponse.data);
+        const $latestChapterLink = $series('a[href*="/chapters/"]').first();
+        const latestChapterUrl = $latestChapterLink.attr('href');
+        const latestChapterIdMatch = latestChapterUrl?.match(/\/chapters\/([^\/]+)/);
+        latestChapterId = latestChapterIdMatch ? latestChapterIdMatch[1] : null;
+
+        if (!latestChapterId) {
+          return res.status(404).json({
+            success: false,
+            error: 'Could not find latest chapter'
+          });
+        }
+      } catch (error) {
+        return res.status(500).json({
+          success: false,
+          error: 'Failed to fetch series information'
+        });
+      }
+    }
+
+    // Fetch the chapter-select page with the latest chapter
+    const url = `https://weebcentral.com/series/${seriesId}/chapter-select?current_chapter=${latestChapterId}&current_page=0`;
+    
+    const response = await axios.get(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36'
+      }
+    });
+
+    const $ = cheerio.load(response.data);
+    const chapters = [];
+
+    // Parse chapter list - look for both <button> and <a> elements in the grid
+    $('div.grid button, div.grid a').each((index, element) => {
+      const $el = $(element);
+      const text = $el.text().trim();
+      const href = $el.attr('href');
+      
+      if (text) {
+        // For selected button without href, extract chapter ID from current_chapter parameter
+        let chapterId = href ? href.split('/').pop() : null;
+        
+        if (!chapterId && $el.attr('id') === 'selected_chapter') {
+          // Extract from the URL query parameter
+          const urlObj = new URL(url);
+          const currentChapter = urlObj.searchParams.get('current_chapter');
+          chapterId = currentChapter;
+        }
+        
+        if (chapterId) {
+          chapters.push({
+            id: chapterId,
+            name: text,
+            url: href,
+            isSelected: $el.attr('id') === 'selected_chapter'
+          });
+        }
+      }
+    });
+
+    res.json({
+      success: true,
+      count: chapters.length,
+      data: chapters
+    });
+  } catch (error) {
+    console.error('[MANGA] Chapters error:', error.message);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// Proxy endpoint for manga page images (to bypass CORS)
+app.get('/api/proxy-image', async (req, res) => {
+  try {
+    const imageUrl = req.query.url;
+    
+    if (!imageUrl) {
+      return res.status(400).json({ error: 'url parameter required' });
+    }
+
+    const response = await axios.get(imageUrl, {
+      responseType: 'stream',
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36'
+      }
+    });
+
+    // Set the correct content type
+    res.setHeader('Content-Type', response.headers['content-type']);
+    res.setHeader('Cache-Control', 'public, max-age=31536000');
+    
+    response.data.pipe(res);
+  } catch (error) {
+    console.error('[MANGA] Proxy image error:', error.message);
+    res.status(500).json({ error: 'Failed to fetch image' });
+  }
+});
+
+// Get pages from a chapter (streams valid pages in real-time)
+app.get('/api/chapter/pages', async (req, res) => {
+  try {
+    const chapterId = req.query.chapterId;
+    
+    if (!chapterId) {
+      return res.status(400).json({
+        success: false,
+        error: 'chapterId required'
+      });
+    }
+
+    const url = `https://weebcentral.com/chapters/${chapterId}`;
+    
+    const response = await axios.get(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36'
+      }
+    });
+
+    const $ = cheerio.load(response.data);
+    
+    // Get the first page URL from preload link
+    let firstPageUrl = $('link[rel="preload"][as="image"]').attr('href');
+    
+    if (!firstPageUrl) {
+      return res.status(404).json({
+        success: false,
+        error: 'No pages found'
+      });
+    }
+
+    // Extract the base URL and chapter number
+    const urlParts = firstPageUrl.split('/');
+    const fileName = urlParts[urlParts.length - 1];
+    const baseUrl = firstPageUrl.substring(0, firstPageUrl.lastIndexOf('/') + 1);
+    
+    // Extract chapter number from filename - handle multiple formats
+    // Format 1: 123-001.png (traditional format)
+    // Format 2: 1.1-001.png or 1.1.1-001.png (decimal format)
+    let chapterNum = null;
+    let pageFormat = null;
+    
+    const match1 = fileName.match(/^(\d+)-\d+\.png$/);
+    const match2 = fileName.match(/^([\d.]+)-\d+\.png$/);
+    
+    if (match1) {
+      chapterNum = match1[1];
+      pageFormat = 'simple'; // 123-001.png
+    } else if (match2) {
+      chapterNum = match2[1];
+      pageFormat = 'decimal'; // 1.1-001.png or 1.1.1-001.png
+    }
+    
+    if (!chapterNum) {
+      return res.status(404).json({
+        success: false,
+        error: 'Could not parse page URL'
+      });
+    }
+    
+    // Set up streaming response
+    res.setHeader('Content-Type', 'application/x-ndjson');
+    res.setHeader('Transfer-Encoding', 'chunked');
+    
+    let consecutiveFailures = 0;
+    const maxFailures = 3;
+    let pageCount = 0;
+    let i = 1;
+    
+    // Keep checking pages until 3 consecutive failures (no page limit)
+    while (true) {
+      const pageNum = String(i).padStart(3, '0');
+      const pageUrl = `${baseUrl}${chapterNum}-${pageNum}.png`;
+      
+      // Try to check if page exists
+      let pageExists = false;
+      try {
+        const checkResponse = await axios.head(pageUrl, {
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36'
+          },
+          timeout: 5000
+        });
+        pageExists = checkResponse.status === 200;
+      } catch (error) {
+        pageExists = false;
+      }
+      
+      if (pageExists) {
+        pageCount++;
+        // Send valid page immediately
+        res.write(JSON.stringify({
+          number: i,
+          url: pageUrl,
+          type: 'page'
+        }) + '\n');
+        consecutiveFailures = 0;
+      } else {
+        consecutiveFailures++;
+        
+        // If we've had 3 consecutive failures, stop looking
+        if (consecutiveFailures >= maxFailures) {
+          console.log(`[MANGA] Chapter ${chapterId}: Found ${pageCount} pages, stopped after ${maxFailures} consecutive failures`);
+          res.write(JSON.stringify({
+            type: 'complete',
+            totalPages: pageCount
+          }) + '\n');
+          res.end();
+          return;
+        }
+      }
+      
+      i++;
+    }
+  } catch (error) {
+    console.error('[MANGA] Pages error:', error.message);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// ============================================================================
 // ERROR HANDLERS & SERVER STARTUP
 // ============================================================================
 
